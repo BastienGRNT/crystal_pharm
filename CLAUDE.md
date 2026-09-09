@@ -14,11 +14,16 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   - Architecture **DDD lite** : 4 projets, `Domain` (entités, aucune
     dépendance externe), `Application` (services, interfaces, DTOs),
     `Infrastructure` (EF Core, Identity, implémentations), `Api`
-    (Controllers, Program.cs, DI). Chaque couche reste plate à l'intérieur
-    (pas de sous-dossiers par feature tant qu'un projet ne le justifie
-    pas) — le découpage en 4 projets est la seule structure actée
-    d'avance, le reste suit la même règle anti-anticipation que le reste
-    de ce fichier.
+    (Controllers, Program.cs, DI).
+  - Convention de sous-dossiers **fixée dès le départ**, dans chaque
+    projet, même vide au début : `Domain/Entities`, `Domain/ValueObjects` ;
+    `Application/Dtos`, `Application/Interfaces`, `Application/Services` ;
+    `Infrastructure/Persistence`, `Infrastructure/Repositories`,
+    `Infrastructure/Services` ; `Api/Controllers`. Ce n'est pas de
+    l'anticipation métier (la règle anti-anticipation plus bas ne
+    s'applique pas ici) — c'est une convention de plomberie/namespaces
+    dont le coût de correction grandit avec le temps (tout import à
+    reprendre), donc actée une bonne fois, dès le premier fichier.
 - **SvelteKit + Drizzle** : tout le reste (sites, modules de contenu,
   rendu public, formulaires manager). Développé **brique par brique**, chaque
   brique testable seule avant la suivante.
