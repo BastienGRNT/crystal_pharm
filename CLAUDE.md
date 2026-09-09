@@ -23,7 +23,8 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   rendu public, formulaires manager). Développé **brique par brique**, chaque
   brique testable seule avant la suivante.
 - Une seule base Postgres, deux schémas :
-  - `platform` (Tenant, Identity...) → migré **uniquement** par EF Core.
+  - `identity` (Tenant, Identity, futur Plan/facturation) → migré
+    **uniquement** par EF Core.
   - `content` (Site, SiteModule...) → migré **uniquement** par Drizzle.
   - Règle absolue : un schéma = un seul outil de migration, jamais les deux.
 - Isolation multi-tenant sur `content.*` : Row-Level Security Postgres,
