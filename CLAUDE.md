@@ -18,12 +18,24 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   - Convention de sous-dossiers **fixée dès le départ**, dans chaque
     projet, même vide au début : `Domain/Entities`, `Domain/ValueObjects` ;
     `Application/Dtos`, `Application/Interfaces`, `Application/Services` ;
-    `Infrastructure/Persistence`, `Infrastructure/Repositories`,
-    `Infrastructure/Services` ; `Api/Controllers`. Ce n'est pas de
+    `Infrastructure/Persistence`, `Infrastructure/Persistence/Configurations`,
+    `Infrastructure/Repositories`, `Infrastructure/Services` ;
+    `Api/Controllers`. Ce n'est pas de
     l'anticipation métier (la règle anti-anticipation plus bas ne
     s'applique pas ici) — c'est une convention de plomberie/namespaces
     dont le coût de correction grandit avec le temps (tout import à
     reprendre), donc actée une bonne fois, dès le premier fichier.
+  - Le mapping EF Core de chaque entité vit dans sa propre classe
+    `IEntityTypeConfiguration<T>` sous `Infrastructure/Persistence/Configurations`,
+    appliquées via `ApplyConfigurationsFromAssembly` — jamais empilées dans
+    `OnModelCreating`, qui reste illisible dès la 2e ou 3e entité. Base du
+    DDD, pas une règle à part.
+  - Secrets et connection strings : jamais dans `appsettings*.json`, toujours
+    via le `.env` racine (déjà utilisé par Docker), lu par l'Api au démarrage
+    (`DotNetEnv`) puis exposé via les variables d'environnement standard
+    (`ConnectionStrings__Default`, `Jwt__Secret`, ...). Un seul `.env` pour
+    tout le repo, pas un par outil — pipelines/CI s'appuient sur les mêmes
+    variables d'environnement, pas sur des fichiers de config par environnement.
 - **SvelteKit + Drizzle** : tout le reste (sites, modules de contenu,
   rendu public, formulaires manager). Développé **brique par brique**, chaque
   brique testable seule avant la suivante.
