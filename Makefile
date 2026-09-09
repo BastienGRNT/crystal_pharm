@@ -1,9 +1,12 @@
 start:
 	docker compose up -d
-	# TODO: lancer l'API C# et l'app SvelteKit une fois qu'ils existent
+	# TODO: lancer l'app SvelteKit une fois qu'elle existe
 	until docker compose exec -T postgres pg_isready -U $$(grep -oP '(?<=^POSTGRES_USER=).*' .env) > /dev/null 2>&1; do sleep 1; done
 
 logs:
 	docker compose logs -f
 
-.PHONY: start logs
+api:
+	cd app/api/CrystalPharm.Api && dotnet watch run
+
+.PHONY: start logs api
