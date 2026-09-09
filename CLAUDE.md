@@ -51,10 +51,18 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
 
 ## Commandes
 
-- `start` : lance Postgres (Docker), l'API C#, l'app SvelteKit.
-- `logs` : suit les logs des trois.
-- Rien d'autre tant que le besoin n'est pas réel. Ne pas ajouter de commande,
-  de script, ou d'outil de manière spéculative.
+- `make start` : lance uniquement ce qui tourne en continu sans qu'on y
+  touche — pour l'instant, Postgres (Docker). N'inclut jamais un process
+  de dev qu'on relance sans arrêt (API .NET, SvelteKit) : ceux-là se
+  lancent à la main, dans leur propre terminal, en foreground, avec le
+  rechargement à chaud de l'outil (`dotnet watch run`, `npm run dev`) —
+  jamais en arrière-plan via `make`, sinon chaque modification de code
+  oblige à tuer/relancer un process cadré à la main.
+- `make logs` : suit les logs de ce que `make start` a lancé (Docker
+  pour l'instant). Les process en foreground (API, front) affichent déjà
+  leurs logs dans leur propre terminal, pas besoin de les y ajouter.
+- Rien d'autre tant que le besoin n'est pas réel. Ne pas ajouter de
+  commande, de script, ou d'outil de manière spéculative.
 
 ## Workflow de session
 
