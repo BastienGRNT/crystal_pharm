@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { BrandsModule } from '../../../modules/brands';
-	import { officineLumiereMeta } from '../layout.meta';
+	import type { BrandsModule } from '../../../modules/catalogue/brands';
+	import { cataloguePartielMeta } from '../layout.meta';
 
 	// Le type de props est dérivé de `layout.meta.ts` (supports.brands),
 	// pas retapé à la main : une seule source de vérité pour les champs
 	// que ce layout affiche.
-	type Brand = PickedFields<BrandsModule, typeof officineLumiereMeta.supports.brands>;
+	type Brand = PickedFields<BrandsModule, typeof cataloguePartielMeta.supports.brands>;
 	let { brands }: { brands: Brand[] } = $props();
 </script>
 

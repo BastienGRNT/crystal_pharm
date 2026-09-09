@@ -5,7 +5,7 @@ import type { ModuleFieldContract, PickedFields } from './layout-module-contract
 // Le type de retour colle exactement au contrat : pas besoin de le
 // retaper côté organism.
 export function pickFields<
-	T extends Record<string, unknown>,
+	T extends object,
 	Contract extends ModuleFieldContract<Extract<keyof T, string>>
 >(data: T, contract: Contract): PickedFields<T, Contract> {
 	if (contract === true) return data as PickedFields<T, Contract>;
