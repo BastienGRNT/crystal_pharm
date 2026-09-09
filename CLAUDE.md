@@ -76,30 +76,29 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
 - `app/platform-web` (admin/back-office) : **ne pas créer**, tant qu'il n'y a
   pas de vrai besoin opérationnel de gérer plusieurs tenants au quotidien.
   La création de tenant se teste au `curl` en attendant.
-- `app/packages/layouts` : contrat de modules sans variante `bespoke`.
-  Tout layout a ses modules éditables/activables côté manager, sans
-  exception ; un layout atypique ou réservé à un tenant reste un layout
-  normal, avec un module exclusif en plus — jamais un formulaire manager
-  câblé en dur par module. La forme canonique d'un module reste unique
-  (dérivée à terme du contrat C#/NSwag) ; les données d'un site restent
-  layout-agnostiques, un changement de layout ne perd jamais une donnée
-  saisie même si le nouveau layout ne l'affiche pas.
-- Un layout tient dans **un seul fichier** : son `.svelte`, qui se déclare
-  lui-même dans son `<script module>` via `defineLayout` (ou
-  `definePartialLayout`). Pas de fichier de config à côté. Un layout ne
-  déclare **que ce qui aurait pu être différent** : son genre (`kind`)
-  suffit à garantir ses modules, `plus` ajoute un module hors famille,
-  `order` impose un ordre (et rend le layout non réordonnable), `modules`
-  n'existe que pour un layout partiel. Les modules `main` sont implicites
-  partout et ne s'écrivent jamais.
-- Ajouter un module au produit = une ligne dans `src/module-registry.ts`,
-  rien à répercuter dans les layouts. Un layout n'est publié que via
-  `registerLayout` (`src/index.ts`), qui confronte ce qu'il déclare à ce
-  que son composant accepte : un layout en désaccord avec lui-même échoue
-  là, pas chez celui qui l'utilise.
-- Ces garanties sont uniquement statiques ; `make check-layout` est le
-  filet. Quand les données viendront de l'API C# au lieu des mocks, une
-  validation à l'exécution restera à ajouter.
+- `app/packages/layouts` : pas de variante `bespoke`. Un layout atypique
+  ou réservé à un tenant reste un layout normal, avec un module exclusif en
+  plus. La forme canonique d'un module est unique (dérivée à terme du
+  contrat C#/NSwag) ; les données d'un site restent layout-agnostiques, un
+  changement de layout ne perd jamais une donnée saisie.
+- Un layout tient dans un dossier : un `layout.ts` qui le déclare, et un
+  composant Svelte par module qu'il affiche. Rien d'autre.
+- Un layout ne déclare **que ce qui aurait pu être différent** : son genre
+  (`kind`) impose ses modules, `plus` en ajoute un d'une autre famille,
+  `orderable` dit si le site peut les réordonner, et `sections` associe un
+  composant à chaque module — l'ordre d'écriture y est l'ordre d'affichage.
+  Les modules `main` sont imposés à tous les genres et ne s'écrivent jamais.
+- Ajouter un module au produit = une ligne dans `src/modules/registry.ts` et
+  une dans `MODULE_FAMILY`. Tous les layouts de la famille concernée cessent
+  alors de compiler, en nommant le module à ajouter. Les autres ne bougent
+  pas. C'est le seul garde-fou à maintenir.
+- Aucun layout n'écrit de code de rendu : `LayoutHost` est le seul composant
+  qui affiche, pour tous les layouts. Un module que le site n'a pas activé
+  n'est jamais affiché — un module fraîchement ajouté reste donc invisible
+  chez les clients qui ne l'ont pas rempli.
+- Ces garanties sont statiques ; `make check-layout` est le filet, car Vite
+  ne vérifie aucun type. Quand les données viendront de l'API C# au lieu des
+  mocks, une validation à l'exécution restera à ajouter.
 
 ## Commandes
 
