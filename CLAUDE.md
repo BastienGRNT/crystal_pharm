@@ -96,6 +96,9 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   arrière-plan (pas de `&`, pas de détachement). Ctrl+C dans ce terminal
   tue le process normalement, comme un lancement direct : `make` ne fait
   ici qu'exécuter la commande, pas la détacher.
+- `make dev-layouts` : lance la page de preview des layouts (Vite,
+  `app/packages/layouts`), en foreground dans son propre terminal comme
+  `make api`. Ne dépend ni de la base, ni de l'API : rendu sur mocks.
 - `make logs` : suit les logs de ce que `make start` a lancé (Docker
   pour l'instant). Les process en foreground (API, front) affichent déjà
   leurs logs dans leur propre terminal, pas besoin de les y ajouter.
