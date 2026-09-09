@@ -1,0 +1,7 @@
+{
+	"name": "crystal-pharm",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"packageManager": "pnpm@11.22.0"
+}

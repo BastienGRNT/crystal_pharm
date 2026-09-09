@@ -60,9 +60,15 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   dossier de plomberie sans contenu métier, pas une anticipation de besoin.
   En revanche, ce que `app/` contient reste soumis à la règle : chaque
   sous-dossier n'est créé que lorsque son besoin est réel.
-- Pas de `packages/` créé à l'avance. Un seul projet SvelteKit au départ
-  (`app/site-web`), créé au moment où le premier rendu public en a
-  besoin — pas avant.
+- Exception à l'anti-anticipation : `app/packages/layouts` (le système
+  de layouts) est créé et développé **avant** `site-web` et `manager-web`,
+  car c'est le cœur partagé par les deux. Il est développé et vérifié en
+  vase clos, avec des données mockées en dur, sans dépendre de `site-web`,
+  `manager-web`, d'un tenant, d'une base ou de l'API C#. `site-web`, quand
+  il naîtra, démarre avec **zéro** code de layout dedans (pages plomberie
+  du type `<p>{tenant.nom}</p>` pour vérifier routing/tenant/auth) ; le
+  branchement au vrai rendu via `layouts` vient dans une brique
+  séparée, une fois la plomberie et le layout validés chacun de son côté.
 - `app/manager-web` est un projet **séparé**, mais créé seulement quand le
   premier formulaire manager en a besoin. Séparé de `site-web` pour une
   vraie raison (le site public doit rester ~0 KB de JS ; le manager a besoin
@@ -70,19 +76,26 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
 - `app/platform-web` (admin/back-office) : **ne pas créer**, tant qu'il n'y a
   pas de vrai besoin opérationnel de gérer plusieurs tenants au quotidien.
   La création de tenant se teste au `curl` en attendant.
-- `app/packages/site-themes` (ou équivalent partagé) : à créer seulement
-  quand un **deuxième** layout existe réellement. Avant ça, le code de
-  rendu vit directement dans `app/site-web/src/lib/`.
+- `app/packages/layouts` : contrat de modules sans variante `bespoke`.
+  Tout layout a ses modules éditables/activables côté manager, sans
+  exception ; un layout atypique ou réservé à un tenant reste un layout
+  normal dont `supports` contient un module exclusif. `supports` déclare,
+  module par module, soit `true` (tous les champs de la forme canonique)
+  soit `{ fields: [...] }` (un sous-ensemble nommé et ordonné) — jamais un
+  formulaire manager câblé en dur par module. La forme canonique d'un
+  module reste unique (dérivée à terme du contrat C#/NSwag) ; les données
+  d'un site restent layout-agnostiques, un changement de layout ne perd
+  jamais une donnée saisie même si le nouveau layout ne l'affiche pas.
 
 ## Commandes
 
 - `make start` : lance uniquement ce qui tourne en continu sans qu'on y
-  touche — pour l'instant, Postgres (Docker). N'inclut jamais un process
-  de dev qu'on relance sans arrêt (API .NET, SvelteKit) : ceux-là se
-  lancent à la main, dans leur propre terminal, en foreground, avec le
-  rechargement à chaud de l'outil (`dotnet watch run`, `npm run dev`) —
-  jamais en arrière-plan via `make`, sinon chaque modification de code
-  oblige à tuer/relancer un process cadré à la main.
+  touche — pour l'instant, Postgres (Docker).
+- `make api` : lance l'API .NET avec rechargement à chaud (`dotnet watch
+  run`), toujours en foreground dans son propre terminal — jamais en
+  arrière-plan (pas de `&`, pas de détachement). Ctrl+C dans ce terminal
+  tue le process normalement, comme un lancement direct : `make` ne fait
+  ici qu'exécuter la commande, pas la détacher.
 - `make logs` : suit les logs de ce que `make start` a lancé (Docker
   pour l'instant). Les process en foreground (API, front) affichent déjà
   leurs logs dans leur propre terminal, pas besoin de les y ajouter.
