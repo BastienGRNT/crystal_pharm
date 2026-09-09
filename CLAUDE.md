@@ -10,6 +10,15 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   login), et plus tard tout ce qui touche au paiement ou à une règle métier
   vraiment critique. Développé et validé par lots larges — pas de
   micro-découpage ici, la maîtrise C# est déjà acquise.
+  - API en **Controllers** (jamais Minimal API — lisibilité prioritaire).
+  - Architecture **DDD lite** : 4 projets, `Domain` (entités, aucune
+    dépendance externe), `Application` (services, interfaces, DTOs),
+    `Infrastructure` (EF Core, Identity, implémentations), `Api`
+    (Controllers, Program.cs, DI). Chaque couche reste plate à l'intérieur
+    (pas de sous-dossiers par feature tant qu'un projet ne le justifie
+    pas) — le découpage en 4 projets est la seule structure actée
+    d'avance, le reste suit la même règle anti-anticipation que le reste
+    de ce fichier.
 - **SvelteKit + Drizzle** : tout le reste (sites, modules de contenu,
   rendu public, formulaires manager). Développé **brique par brique**, chaque
   brique testable seule avant la suivante.
