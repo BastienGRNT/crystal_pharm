@@ -7,145 +7,148 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
 ## Stack et frontière de responsabilité
 
 - **C# (.NET)** : tenant, authentification (Identity + cookie + JWT émis au
-  login), et plus tard tout ce qui touche au paiement ou à une règle métier
-  vraiment critique. Développé et validé par lots larges — pas de
-  micro-découpage ici, la maîtrise C# est déjà acquise.
+  login), et plus tard le paiement ou toute règle métier vraiment critique.
+  Développé par lots larges — pas de micro-découpage, la maîtrise C# est
+  acquise.
   - API en **Controllers** (jamais Minimal API — lisibilité prioritaire).
-  - Architecture **DDD lite** : 4 projets, `Domain` (entités, aucune
-    dépendance externe), `Application` (services, interfaces, DTOs),
-    `Infrastructure` (EF Core, Identity, implémentations), `Api`
-    (Controllers, Program.cs, DI).
-  - Convention de sous-dossiers **fixée dès le départ**, dans chaque
-    projet, même vide au début : `Domain/Entities`, `Domain/ValueObjects` ;
-    `Application/Dtos`, `Application/Interfaces`, `Application/Services` ;
-    `Infrastructure/Persistence`, `Infrastructure/Persistence/Configurations`,
-    `Infrastructure/Repositories`, `Infrastructure/Services` ;
-    `Api/Controllers`. Ce n'est pas de
-    l'anticipation métier (la règle anti-anticipation plus bas ne
-    s'applique pas ici) — c'est une convention de plomberie/namespaces
-    dont le coût de correction grandit avec le temps (tout import à
-    reprendre), donc actée une bonne fois, dès le premier fichier.
+  - **DDD lite**, 4 projets : `Domain` (entités, aucune dépendance externe),
+    `Application` (services, interfaces, DTOs), `Infrastructure` (EF Core,
+    Identity, implémentations), `Api` (Controllers, Program.cs, DI).
+  - Sous-dossiers **fixés dès le départ**, même vides : `Domain/{Entities,
+    ValueObjects}` ; `Application/{Dtos,Interfaces,Services}` ;
+    `Infrastructure/{Persistence,Persistence/Configurations,Repositories,
+    Services}` ; `Api/Controllers`. C'est de la plomberie de namespaces, pas
+    de l'anticipation métier : le coût de correction grandit avec le temps
+    (tout import à reprendre), donc acté dès le premier fichier.
   - Le mapping EF Core de chaque entité vit dans sa propre classe
-    `IEntityTypeConfiguration<T>` sous `Infrastructure/Persistence/Configurations`,
-    appliquées via `ApplyConfigurationsFromAssembly` — jamais empilées dans
-    `OnModelCreating`, qui reste illisible dès la 2e ou 3e entité. Base du
-    DDD, pas une règle à part.
+    `IEntityTypeConfiguration<T>` sous `Persistence/Configurations`, appliquée
+    via `ApplyConfigurationsFromAssembly` — jamais empilé dans
+    `OnModelCreating`, illisible dès la 3e entité.
   - Secrets et connection strings : jamais dans `appsettings*.json`, toujours
-    via le `.env` racine (déjà utilisé par Docker), lu par l'Api au démarrage
-    (`DotNetEnv`) puis exposé via les variables d'environnement standard
-    (`ConnectionStrings__Default`, `Jwt__Secret`, ...). Un seul `.env` pour
-    tout le repo, pas un par outil — pipelines/CI s'appuient sur les mêmes
-    variables d'environnement, pas sur des fichiers de config par environnement.
-- **SvelteKit + Drizzle** : tout le reste (sites, modules de contenu,
-  rendu public, formulaires manager). Développé **brique par brique**, chaque
-  brique testable seule avant la suivante.
-- Une seule base Postgres, deux schémas :
-  - `identity` (Tenant, Identity, futur Plan/facturation) → migré
-    **uniquement** par EF Core.
-  - `content` (Site, SiteModule...) → migré **uniquement** par Drizzle.
-  - Règle absolue : un schéma = un seul outil de migration, jamais les deux.
-- Isolation multi-tenant sur `content.*` : Row-Level Security Postgres,
-  jamais une simple clause `WHERE` côté code. Le rôle applicatif Drizzle
-  n'est jamais propriétaire des tables.
-- Le pont entre les deux mondes : un JWT émis par le C# au login, vérifié
-  côté SvelteKit dans `hooks.server.ts`, sans appel réseau vers l'API C#.
+    via le `.env` racine (déjà utilisé par Docker), lu au démarrage
+    (`DotNetEnv`) puis exposé en variables standard
+    (`ConnectionStrings__Default`, `Jwt__Secret`…). Un seul `.env` pour tout
+    le repo : la CI s'appuie sur les mêmes variables, pas sur des fichiers par
+    environnement.
+- **SvelteKit + Drizzle** : tout le reste (sites, contenu, rendu public,
+  formulaires manager). Développé **brique par brique**, chaque brique
+  testable seule avant la suivante.
+- Une seule base Postgres, deux schémas : `identity` (Tenant, Identity, futur
+  Plan/facturation) migré **uniquement** par EF Core, `content` (Site,
+  contenu des sections…) migré **uniquement** par Drizzle. Règle absolue :
+  un schéma = un seul outil de migration, jamais les deux.
+- Isolation multi-tenant sur `content.*` : Row-Level Security Postgres, jamais
+  une simple clause `WHERE` côté code. Le rôle applicatif Drizzle n'est jamais
+  propriétaire des tables.
+- Le pont entre les deux mondes : un JWT émis par le C# au login, vérifié côté
+  SvelteKit dans `hooks.server.ts`, sans appel réseau vers l'API C#.
 
 ## Topologie des apps (important : ne pas recopier l'ancien repo)
 
-- Tout le code des projets vit sous `app/` à la racine (`app/api` pour le
-  C#, `app/site-web`, `app/manager-web` plus tard), pour garder la racine
-  du repo lisible face aux fichiers de conf/infra (`compose.yml`,
-  `Makefile`, `.env`, futurs dossiers de déploiement). `app/` lui-même est
-  une exception actée à la règle anti-anticipation ci-dessous : c'est un
-  dossier de plomberie sans contenu métier, pas une anticipation de besoin.
-  En revanche, ce que `app/` contient reste soumis à la règle : chaque
-  sous-dossier n'est créé que lorsque son besoin est réel.
-- Exception à l'anti-anticipation : `app/packages/layouts` (le système
-  de layouts) est créé et développé **avant** `site-web` et `manager-web`,
-  car c'est le cœur partagé par les deux. Il est développé et vérifié en
-  vase clos, avec des données mockées en dur, sans dépendre de `site-web`,
-  `manager-web`, d'un tenant, d'une base ou de l'API C#. `site-web`, quand
-  il naîtra, démarre avec **zéro** code de layout dedans (pages plomberie
-  du type `<p>{tenant.nom}</p>` pour vérifier routing/tenant/auth) ; le
-  branchement au vrai rendu via `layouts` vient dans une brique
-  séparée, une fois la plomberie et le layout validés chacun de son côté.
-- `app/manager-web` est un projet **séparé**, mais créé seulement quand le
-  premier formulaire manager en a besoin. Séparé de `site-web` pour une
-  vraie raison (le site public doit rester ~0 KB de JS ; le manager a besoin
-  de formulaires riches) — pas par habitude de l'ancien repo.
-- `app/platform-web` (admin/back-office) : **ne pas créer**, tant qu'il n'y a
-  pas de vrai besoin opérationnel de gérer plusieurs tenants au quotidien.
-  La création de tenant se teste au `curl` en attendant.
-- `app/packages/layouts` : pas de variante `bespoke`. Un layout atypique
-  ou réservé à un tenant reste un layout normal, avec un module exclusif en
-  plus. La forme canonique d'un module est unique (dérivée à terme du
-  contrat C#/NSwag) ; les données d'un site restent layout-agnostiques, un
-  changement de layout ne perd jamais une donnée saisie.
-- Un layout tient dans un dossier : un `layout.ts` qui le déclare, et un
-  composant Svelte par module qu'il affiche. Rien d'autre.
-- Un layout ne déclare **que ce qui aurait pu être différent** : son genre
-  (`kind`) impose ses modules, `plus` en ajoute un d'une autre famille,
-  `orderable` dit si le site peut les réordonner, et `sections` associe un
-  composant à chaque module — l'ordre d'écriture y est l'ordre d'affichage.
-  Les modules `main` sont imposés à tous les genres et ne s'écrivent jamais.
-- Ajouter un module au produit = une ligne dans `src/modules/registry.ts` et
-  une dans `MODULE_FAMILY`. Tous les layouts de la famille concernée cessent
-  alors de compiler, en nommant le module à ajouter. Les autres ne bougent
-  pas. C'est le seul garde-fou à maintenir.
-- Aucun layout n'écrit de code de rendu : `LayoutHost` est le seul composant
-  qui affiche, pour tous les layouts. Un module que le site n'a pas activé
-  n'est jamais affiché — un module fraîchement ajouté reste donc invisible
-  chez les clients qui ne l'ont pas rempli.
-- Ces garanties sont statiques ; `make check-layout` est le filet, car Vite
-  ne vérifie aucun type. Quand les données viendront de l'API C# au lieu des
-  mocks, une validation à l'exécution restera à ajouter.
+- Tout le code vit sous `app/` (`app/api`, `app/site-web` et
+  `app/manager-web` plus tard), pour garder la racine lisible face aux
+  fichiers d'infra (`compose.yml`, `Makefile`, `.env`). `app/` est une
+  exception actée à la règle anti-anticipation : dossier de plomberie sans
+  contenu métier. Ce qu'il contient y reste soumis — chaque sous-dossier n'est
+  créé que lorsque son besoin est réel.
+- Autre exception : `app/packages/designs` est développé **avant** `site-web`
+  et `manager-web`, car c'est le cœur partagé par les deux. Il se vérifie en
+  vase clos, sur mocks, sans tenant, sans base, sans API. `site-web` naîtra
+  avec **zéro** code de design dedans (pages plomberie du type
+  `<p>{tenant.nom}</p>`) ; le branchement au vrai rendu est une brique
+  séparée, une fois les deux validés chacun de leur côté.
+- `app/manager-web` est un projet **séparé**, créé seulement quand le premier
+  formulaire manager en a besoin. Séparé pour une vraie raison : le site
+  public doit rester ~0 KB de JS, le manager a besoin de formulaires riches.
+- `app/platform-web` (admin/back-office) : **ne pas créer** tant qu'il n'y a
+  pas de vrai besoin de gérer plusieurs tenants au quotidien. La création de
+  tenant se teste au `curl` en attendant.
+
+## Le système de designs (`app/packages/designs`)
+
+Un **design** est ce que le pharmacien choisit ; une **section** est un bloc
+de sa page ; une **assurance** est la promesse que porte le design.
+
+- Trois assurances, et elles seules. `complete` garantit toutes les sections
+  essentielles ; `signature` laisse le design libre et ne garantit que
+  l'essentiel de l'officine ; `custom` est un sur-mesure qui ne promet rien,
+  pas même l'essentiel, et dont l'accès est restreint à des tenants nommés.
+  Lire `src/assurances.ts`, c'est connaître chaque promesse.
+- **L'assurance décide de la quantité de vérification.** Un design n'est
+  jamais bridé au-delà de ce qu'il promet. C'est ce qui permet des designs
+  originaux sans jamais décevoir un pharmacien : l'étiquette dit la vérité.
+- Un design tient en **deux fichiers** : `design.ts` (nom, assurance,
+  réordonnable) et `Page.svelte`, où tout son HTML vit — une section par
+  `{#snippet}`, l'ordre d'écriture étant l'ordre d'affichage. Il ne déclare ni
+  son id (c'est le dossier) ni la liste de ses sections. **Rien n'est généré,
+  aucune commande n'est nécessaire pour que le code fonctionne.**
+- **Loi des frères** : une section possède tout son HTML (ses `div`, ses
+  `aside`, sa grille, son fond) et les sections sont posées côte à côte. Ce
+  n'est pas une règle à respecter : c'est l'hôte de gamme qui les pose, un
+  design n'a aucun moyen de les imbriquer. Une mise en page 2D se fait en CSS
+  sur cette liste de frères.
+- Ajouter une section au produit = une ligne dans `src/sections/registry.ts`
+  plus son analyseur. **Ça ne casse aucun design.** Ça ne devient une promesse
+  que le jour où on l'ajoute à une assurance — et là, tous les designs de
+  cette gamme cessent de compiler en nommant la section. Les deux décisions
+  sont séparées exprès.
+- **Frontière de validation** : tout contenu entre en `unknown` et ne ressort
+  que scellé (`Trusted<T>`). Un design ne peut ni fabriquer du contenu scellé
+  ni aller en chercher : le seul contenu qu'il voit est le paramètre que
+  l'hôte passe à son snippet, appelé uniquement si la section est remplie —
+  donc aucun design n'écrit de garde d'absence. Les URLs sont des types
+  produits par `new URL()` + allowlist (`https:`, `mailto:`, `tel:`), jamais
+  des `string`. Une section à qui il manque une donnée requise n'est pas
+  affichée : la dégradation est par section, jamais par champ.
+- L'ordre stocké par un site traverse la même frontière : clé inconnue
+  écartée, doublon écarté, section oubliée remise à sa place. Un design à
+  ordre fixe ignore l'ordre stocké.
+- `SiteRenderer` est le seul composant qui rend un site, et il prend le
+  contenu en `unknown` : aucun chemin n'alimente un design sans franchir la
+  frontière.
+- Tout ce qui est promis est vérifié par le seul `svelte-check` : section
+  promise oubliée (nommée), écrite deux fois, inventée, sur-mesure sans
+  `tenants`. Aucun générateur, aucun lint maison, aucun rendu de vérification.
 
 ## Commandes
 
-- `make start` : lance uniquement ce qui tourne en continu sans qu'on y
-  touche — pour l'instant, Postgres (Docker).
-- `make api` : lance l'API .NET avec rechargement à chaud (`dotnet watch
-  run`), toujours en foreground dans son propre terminal — jamais en
-  arrière-plan (pas de `&`, pas de détachement). Ctrl+C dans ce terminal
-  tue le process normalement, comme un lancement direct : `make` ne fait
-  ici qu'exécuter la commande, pas la détacher.
-- `make dev-layout` : lance la page de preview des layouts (Vite,
-  `app/packages/layouts`), en foreground dans son propre terminal comme
-  `make api`. Ne dépend ni de la base, ni de l'API : rendu sur mocks.
-- `make check-layout` : surveille en continu les erreurs de type des
-  layouts (`svelte-check --watch`), à laisser tourner dans son terminal
-  pendant qu'on écrit un layout.
-- `make logs` : suit les logs de ce que `make start` a lancé (Docker
-  pour l'instant). Les process en foreground (API, front) affichent déjà
-  leurs logs dans leur propre terminal, pas besoin de les y ajouter.
-- Rien d'autre tant que le besoin n'est pas réel. Ne pas ajouter de
-  commande, de script, ou d'outil de manière spéculative.
+- `make start` : lance ce qui tourne en continu sans qu'on y touche — pour
+  l'instant, Postgres (Docker).
+- `make api` : lance l'API .NET en rechargement à chaud (`dotnet watch run`).
+- `make dev-design` : lance la preview des designs (Vite). Ne dépend ni de la
+  base ni de l'API : rendu sur mocks.
+- `make check-design` : surveille en continu les erreurs de type
+  (`svelte-check --watch`), à laisser tourner pendant qu'on écrit un design.
+- `make logs` : suit les logs de ce que `make start` a lancé.
+- `make api`, `make dev-design` et `make check-design` tournent **toujours en
+  foreground, dans leur propre terminal** — jamais en arrière-plan, jamais
+  détachés. Ctrl+C les tue normalement : `make` exécute la commande, il ne la
+  détache pas.
+- Rien d'autre tant que le besoin n'est pas réel. Ne pas ajouter de commande,
+  de script ou d'outil de manière spéculative.
 
 ## Workflow de session
 
-- Un lot = une session = une branche = un commit. Jamais deux sujets
-  mélangés dans la même session, même s'ils semblent liés.
+- Un lot = une session = une branche = un commit. Jamais deux sujets mélangés
+  dans la même session, même s'ils semblent liés.
 - Une brique Svelte n'est valable que si : (1) elle touche peu de fichiers,
   (2) elle se vérifie par un geste concret en moins de 2 minutes (curl, test,
   page affichée), (3) je peux la réexpliquer avec mes mots juste après. Si un
   des trois manque, on redécoupe avant de continuer.
 - Ne jamais anticiper un besoin qui n'existe pas encore (pas de règle, pas
-  d'abstraction, pas de fichier de spec écrit avant qu'un cas réel ne
-  l'exige).
-- Commits : jamais de mention "Co-Authored-By: Claude", jamais de trailer
-  ou de signature générée par l'outil. Message de commit uniquement, comme
-  s'il avait été écrit par moi.
+  d'abstraction, pas de fichier de spec avant qu'un cas réel ne l'exige).
+- Commits : jamais de "Co-Authored-By", jamais de trailer ou de signature
+  générée par l'outil. Message de commit uniquement, comme si je l'avais écrit.
 
 ## NOTES.md
 
-- Journal de décisions, pas un cahier des charges. 3-4 lignes ajoutées
-  seulement quand une décision est prise et validée, pas avant.
+- Journal de décisions, pas un cahier des charges. Une entrée seulement quand
+  une décision est prise et validée, pas avant.
 - Format par entrée : quoi / pourquoi / comment c'est vérifié / commit lié.
-- Ne pas relire tout `NOTES.md` à chaque session : ne consulter que la
-  dernière entrée pertinente au sujet du jour, pour économiser du contexte.
+- Ne pas relire tout `NOTES.md` à chaque session : seulement la dernière
+  entrée pertinente au sujet du jour, pour économiser du contexte.
 
 ## Ancien projet (`crystal_pharm-legacy`)
 
-Lecture seule, jamais importé tel quel. Consulté à la demande, seulement
-pour une question précise (ex. une règle a11y déjà tranchée) — jamais lu en
-entier par défaut.
+Lecture seule, jamais importé tel quel. Consulté à la demande, seulement pour
+une question précise (ex. une règle a11y déjà tranchée) — jamais lu en entier.

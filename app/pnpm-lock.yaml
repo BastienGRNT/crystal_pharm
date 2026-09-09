@@ -8,7 +8,7 @@ importers:
 
   .: {}
 
-  packages/layouts:
+  packages/designs:
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^7.3.0

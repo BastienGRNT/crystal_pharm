@@ -1,6 +1,40 @@
 <!-- Journal de décisions. Une entrée seulement quand une décision est
      prise et validée. Format : quoi / pourquoi / comment vérifié / commit. -->
 
+## Le layout devient un design, et l'étiquette devient le curseur
+
+- Quoi : `app/packages/layouts` remplacé par `app/packages/designs`. Un
+  *design* est ce que le pharmacien choisit, une *section* un bloc de sa page,
+  une *assurance* la promesse portée par le design (`complete`, `signature`,
+  `custom`). L'assurance n'est plus une famille technique : c'est elle qui
+  décide de la quantité de vérification. Un design tient en deux fichiers —
+  `design.ts` (nom, gamme, réordonnable) et `Page.svelte`, où tout son HTML vit,
+  une section par `{#snippet}` recevant son contenu déjà scellé en paramètre.
+  L'hôte de gamme pose les sections côte à côte, donc la loi des frères est
+  structurelle. Frontière de validation : tout contenu entre en `unknown` et ne
+  ressort que scellé (`Trusted<T>`, `TrustedUrl`).
+- Pourquoi : la version précédente obligeait chaque layout à redire ce que sa
+  famille impliquait déjà (`kind` + `sections`) et bridait le design — or il
+  faut pouvoir faire des designs originaux qui refusent des sections sans
+  décevoir un pharmacien. Une première tentative a remplacé cette config par un
+  fichier assemblé (`tools/assemble.mjs` + `src/generated/designs.ts`) : pire,
+  puisqu'il fallait alors *fabriquer* un artefact pour que le code fonctionne.
+  Les snippets Svelte 5 donnent la même garantie sans rien générer : les
+  snippets requis par l'hôte de gamme sont des props obligatoires, donc c'est
+  `svelte-check` seul qui nomme la section manquante.
+- Comment vérifié : `svelte-check` 0 erreur / 0 warning sur 114 fichiers ;
+  `make dev-design` sert la preview sans aucune étape préalable (4 designs,
+  3 jeux de mocks dont un hostile, réordonnancement à la souris). Quatre fautes
+  injectées puis retirées, toutes signalées par le compilateur seul : section
+  promise oubliée (`Property 'team' is missing`), section ajoutée à une
+  assurance (les 2 designs `complete` cassent en nommant `about`), section
+  écrite deux fois (`duplicate`), section inventée (`'equipe' does not exist in
+  type 'Promised<"complete"> & Optional'`). Rendu SSR sur données hostiles :
+  aucun `javascript:`, aucun `data:text/html`, aucun `<script>`, aucune image en
+  http, titre hors bornes écarté, avis bornés à 30, ordre corrompu dédupliqué
+  et complété, design à ordre fixe ignorant l'ordre stocké.
+- Commit lié : "Remplace les layouts par un système de designs à assurances".
+
 ## Solution C# : Tenant + Auth Identity/JWT
 
 - Quoi : solution .NET à 4 projets (Domain, Application, Infrastructure,
