@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { HeroModule } from '../../../modules/unique/hero';
-	import { cataloguePlusUnMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { cataloguePlusUnMeta } from '../CataloguePlusUnLayout.svelte';
 
-	type Hero = PickedFields<HeroModule, typeof cataloguePlusUnMeta.supports.hero>;
-	let { hero }: { hero: Hero } = $props();
+	type Item = ModuleProps<typeof cataloguePlusUnMeta, 'hero'>;
+	let { hero }: { hero: Item } = $props();
 </script>
 
 <section>

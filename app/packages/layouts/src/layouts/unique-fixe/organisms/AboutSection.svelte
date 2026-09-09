@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { AboutModule } from '../../../modules/unique/about';
-	import { uniqueFixeMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { uniqueFixeMeta } from '../UniqueFixeLayout.svelte';
 
-	type About = PickedFields<AboutModule, typeof uniqueFixeMeta.supports.about>;
-	let { about }: { about: About } = $props();
+	type Item = ModuleProps<typeof uniqueFixeMeta, 'about'>;
+	let { about }: { about: Item } = $props();
 </script>
 
 <section>

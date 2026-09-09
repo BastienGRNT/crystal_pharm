@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { BrandsModule } from '../../../modules/catalogue/brands';
-	import { catalogueOrdonneMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { catalogueOrdonneMeta } from '../CatalogueOrdonneLayout.svelte';
 
-	type Brand = PickedFields<BrandsModule, typeof catalogueOrdonneMeta.supports.brands>;
-	let { brands }: { brands: Brand[] } = $props();
+	type Item = ModuleProps<typeof catalogueOrdonneMeta, 'brands'>;
+	let { brands }: { brands: Item[] } = $props();
 </script>
 
 <section>

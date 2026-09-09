@@ -1,10 +1,11 @@
-import type { UniqueFixeSiteData } from '../../src/layouts/unique-fixe/layout.meta';
+import type { LayoutProps } from '../../src/define-layout';
+import type { uniqueFixeMeta } from '../../src/layouts/unique-fixe/UniqueFixeLayout.svelte';
 
 // L'ordre demandé par le site (`modules`) est volontairement mélangé pour
 // vérifier qu'il est bien IGNORÉ : layout orderable: false, donc le rendu
 // doit suivre l'ordre canonique de `supports` (pharmacyInfo, hero, about),
 // quel que soit l'ordre ci-dessous.
-export const mockUniqueFixeSiteData: UniqueFixeSiteData = {
+export const mockUniqueFixeSiteData: LayoutProps<typeof uniqueFixeMeta> = {
 	modules: [
 		{ module: 'about', order: 1 },
 		{ module: 'hero', order: 2 },

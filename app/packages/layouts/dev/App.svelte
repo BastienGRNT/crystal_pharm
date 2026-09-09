@@ -1,17 +1,12 @@
 <script lang="ts">
-	import CataloguePartielLayout from '../src/layouts/catalogue-partiel/CataloguePartielLayout.svelte';
-	import CatalogueOrdonneLayout from '../src/layouts/catalogue-ordonne/CatalogueOrdonneLayout.svelte';
-	import CatalogueFixeLayout from '../src/layouts/catalogue-fixe/CatalogueFixeLayout.svelte';
-	import CataloguePlusUnLayout from '../src/layouts/catalogue-plus-un/CataloguePlusUnLayout.svelte';
-	import UniqueOrdonneLayout from '../src/layouts/unique-ordonne/UniqueOrdonneLayout.svelte';
-	import UniqueFixeLayout from '../src/layouts/unique-fixe/UniqueFixeLayout.svelte';
-
-	import { cataloguePartielMeta } from '../src/layouts/catalogue-partiel/layout.meta';
-	import { catalogueOrdonneMeta } from '../src/layouts/catalogue-ordonne/layout.meta';
-	import { catalogueFixeMeta } from '../src/layouts/catalogue-fixe/layout.meta';
-	import { cataloguePlusUnMeta } from '../src/layouts/catalogue-plus-un/layout.meta';
-	import { uniqueOrdonneMeta } from '../src/layouts/unique-ordonne/layout.meta';
-	import { uniqueFixeMeta } from '../src/layouts/unique-fixe/layout.meta';
+	import {
+		cataloguePartiel,
+		catalogueOrdonne,
+		catalogueFixe,
+		cataloguePlusUn,
+		uniqueOrdonne,
+		uniqueFixe
+	} from '../src/index';
 
 	import { mockCataloguePartielSiteData } from './mocks/catalogue-partiel';
 	import { mockCatalogueOrdonneSiteData } from './mocks/catalogue-ordonne';
@@ -20,56 +15,61 @@
 	import { mockUniqueOrdonneSiteData } from './mocks/unique-ordonne';
 	import { mockUniqueFixeSiteData } from './mocks/unique-fixe';
 
-	import { orderModules } from '../src/module-order';
-	import type { LayoutMeta } from '../src/layout-module-contracts';
-	import type { SiteModuleInstance } from '../src/module-order';
+	import { orderModules, type SiteModuleInstance } from '../src/module-order';
+	import type { ModuleKey } from '../src/module-registry';
 
-	// Chaque layout a un meta/mock/composant de type différent : on les
-	// affiche explicitement un par un plutôt que via un tableau générique
-	// (mélanger des types hétérogènes dans un même tableau typé fait
-	// dériver TS vers une intersection impossible — vu avec svelte-check).
-	function orderSummary(meta: LayoutMeta, modules: readonly SiteModuleInstance[]) {
+	// La preview consomme les layouts comme le fera site-web : par le
+	// registre, jamais en important un composant directement.
+	interface PreviewMeta {
+		id: string;
+		kind: string;
+		orderable: boolean;
+		keys: readonly ModuleKey[];
+	}
+
+	function orderSummary(meta: PreviewMeta, modules: readonly SiteModuleInstance<ModuleKey>[]) {
 		return JSON.stringify(orderModules(meta, modules));
 	}
 </script>
 
-{#snippet header(meta: LayoutMeta, modules: readonly SiteModuleInstance[])}
+{#snippet header(meta: PreviewMeta, modules: readonly SiteModuleInstance<ModuleKey>[])}
 	<hr />
-	<h2>{meta.id} — orderable: {meta.orderable}</h2>
+	<h2>{meta.id} — {meta.kind} — orderable: {meta.orderable}</h2>
+	<p>modules du layout : {JSON.stringify(meta.keys)}</p>
 	<p>modules demandés par le site : {JSON.stringify(modules)}</p>
 	<p>ordre rendu : {orderSummary(meta, modules)}</p>
 {/snippet}
 
 <h1>Preview des layouts — pour trafiquer les mocks dans dev/mocks/*.ts et voir l'effet</h1>
 
-{@render header(cataloguePartielMeta, mockCataloguePartielSiteData.modules)}
+{@render header(cataloguePartiel.meta, mockCataloguePartielSiteData.modules)}
 <div class="preview-frame">
-	<CataloguePartielLayout data={mockCataloguePartielSiteData} />
+	<cataloguePartiel.Component {...mockCataloguePartielSiteData} />
 </div>
 
-{@render header(catalogueOrdonneMeta, mockCatalogueOrdonneSiteData.modules)}
+{@render header(catalogueOrdonne.meta, mockCatalogueOrdonneSiteData.modules)}
 <div class="preview-frame">
-	<CatalogueOrdonneLayout data={mockCatalogueOrdonneSiteData} />
+	<catalogueOrdonne.Component {...mockCatalogueOrdonneSiteData} />
 </div>
 
-{@render header(catalogueFixeMeta, mockCatalogueFixeSiteData.modules)}
+{@render header(catalogueFixe.meta, mockCatalogueFixeSiteData.modules)}
 <div class="preview-frame">
-	<CatalogueFixeLayout data={mockCatalogueFixeSiteData} />
+	<catalogueFixe.Component {...mockCatalogueFixeSiteData} />
 </div>
 
-{@render header(cataloguePlusUnMeta, mockCataloguePlusUnSiteData.modules)}
+{@render header(cataloguePlusUn.meta, mockCataloguePlusUnSiteData.modules)}
 <div class="preview-frame">
-	<CataloguePlusUnLayout data={mockCataloguePlusUnSiteData} />
+	<cataloguePlusUn.Component {...mockCataloguePlusUnSiteData} />
 </div>
 
-{@render header(uniqueOrdonneMeta, mockUniqueOrdonneSiteData.modules)}
+{@render header(uniqueOrdonne.meta, mockUniqueOrdonneSiteData.modules)}
 <div class="preview-frame">
-	<UniqueOrdonneLayout data={mockUniqueOrdonneSiteData} />
+	<uniqueOrdonne.Component {...mockUniqueOrdonneSiteData} />
 </div>
 
-{@render header(uniqueFixeMeta, mockUniqueFixeSiteData.modules)}
+{@render header(uniqueFixe.meta, mockUniqueFixeSiteData.modules)}
 <div class="preview-frame">
-	<UniqueFixeLayout data={mockUniqueFixeSiteData} />
+	<uniqueFixe.Component {...mockUniqueFixeSiteData} />
 </div>
 
 <style>

@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { TestimonialsModule } from '../../../modules/catalogue/testimonials';
-	import { catalogueFixeMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { catalogueFixeMeta } from '../CatalogueFixeLayout.svelte';
 
-	type Testimonial = PickedFields<TestimonialsModule, typeof catalogueFixeMeta.supports.testimonials>;
-	let { testimonials }: { testimonials: Testimonial[] } = $props();
+	type Item = ModuleProps<typeof catalogueFixeMeta, 'testimonials'>;
+	let { testimonials }: { testimonials: Item[] } = $props();
 </script>
 
 <section>

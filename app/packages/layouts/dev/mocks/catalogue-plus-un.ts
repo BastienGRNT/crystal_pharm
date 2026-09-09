@@ -1,9 +1,10 @@
-import type { CataloguePlusUnSiteData } from '../../src/layouts/catalogue-plus-un/layout.meta';
+import type { LayoutProps } from '../../src/define-layout';
+import type { cataloguePlusUnMeta } from '../../src/layouts/catalogue-plus-un/CataloguePlusUnLayout.svelte';
 
 // hero est placé au milieu de l'ordre demandé par le site, pour vérifier
 // qu'un module unique se réordonne exactement comme un module catalogue
 // (layout orderable: true — l'ordre voulu par le site est rendu tel quel).
-export const mockCataloguePlusUnSiteData: CataloguePlusUnSiteData = {
+export const mockCataloguePlusUnSiteData: LayoutProps<typeof cataloguePlusUnMeta> = {
 	modules: [
 		{ module: 'testimonials', order: 1 },
 		{ module: 'hero', order: 2 },

@@ -1,9 +1,10 @@
-import type { CatalogueOrdonneSiteData } from '../../src/layouts/catalogue-ordonne/layout.meta';
+import type { LayoutProps } from '../../src/define-layout';
+import type { catalogueOrdonneMeta } from '../../src/layouts/catalogue-ordonne/CatalogueOrdonneLayout.svelte';
 
 // Ordre volontairement différent de celui déclaré dans `supports`
 // (pharmacyInfo, brands, testimonials, team), pour vérifier que l'ordre
 // voulu par le site est bien rendu (layout orderable: true).
-export const mockCatalogueOrdonneSiteData: CatalogueOrdonneSiteData = {
+export const mockCatalogueOrdonneSiteData: LayoutProps<typeof catalogueOrdonneMeta> = {
 	modules: [
 		{ module: 'team', order: 1 },
 		{ module: 'testimonials', order: 2 },

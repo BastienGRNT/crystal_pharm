@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { TeamModule } from '../../../modules/catalogue/team';
-	import { catalogueOrdonneMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { catalogueOrdonneMeta } from '../CatalogueOrdonneLayout.svelte';
 
-	type Member = PickedFields<TeamModule, typeof catalogueOrdonneMeta.supports.team>;
-	let { team }: { team: Member[] } = $props();
+	type Item = ModuleProps<typeof catalogueOrdonneMeta, 'team'>;
+	let { team }: { team: Item[] } = $props();
 </script>
 
 <section>

@@ -1,9 +1,10 @@
-import type { UniqueOrdonneSiteData } from '../../src/layouts/unique-ordonne/layout.meta';
+import type { LayoutProps } from '../../src/define-layout';
+import type { uniqueOrdonneMeta } from '../../src/layouts/unique-ordonne/UniqueOrdonneLayout.svelte';
 
 // Ordre volontairement différent de celui déclaré dans `supports`
 // (pharmacyInfo, hero, about), pour vérifier que l'ordre voulu par le
 // site est bien rendu (layout orderable: true).
-export const mockUniqueOrdonneSiteData: UniqueOrdonneSiteData = {
+export const mockUniqueOrdonneSiteData: LayoutProps<typeof uniqueOrdonneMeta> = {
 	modules: [
 		{ module: 'about', order: 1 },
 		{ module: 'pharmacyInfo', order: 2 },

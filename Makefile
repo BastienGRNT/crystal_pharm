@@ -9,7 +9,7 @@ logs:
 api:
 	cd app/api/CrystalPharm.Api && dotnet watch run
 
-dev-layouts:
+dev-layout:
 	cd app && pnpm --filter @crystal-pharm/layouts dev
 
-.PHONY: start logs api dev-layouts
+.PHONY: start logs api dev-layout

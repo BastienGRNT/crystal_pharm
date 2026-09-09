@@ -1,10 +1,11 @@
-import type { CatalogueFixeSiteData } from '../../src/layouts/catalogue-fixe/layout.meta';
+import type { LayoutProps } from '../../src/define-layout';
+import type { catalogueFixeMeta } from '../../src/layouts/catalogue-fixe/CatalogueFixeLayout.svelte';
 
 // L'ordre demandé par le site (`modules`) est volontairement mélangé pour
 // vérifier qu'il est bien IGNORÉ : layout orderable: false, donc le rendu
 // doit suivre l'ordre canonique de `supports` (pharmacyInfo, brands,
 // testimonials, team), quel que soit l'ordre ci-dessous.
-export const mockCatalogueFixeSiteData: CatalogueFixeSiteData = {
+export const mockCatalogueFixeSiteData: LayoutProps<typeof catalogueFixeMeta> = {
 	modules: [
 		{ module: 'team', order: 1 },
 		{ module: 'testimonials', order: 2 },

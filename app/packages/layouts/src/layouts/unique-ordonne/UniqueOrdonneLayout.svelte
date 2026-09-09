@@ -1,28 +1,44 @@
+<script module lang="ts">
+	import { defineLayout } from '../../define-layout';
+
+	// Layout de test : tous les modules unique, réordonnables par le site.
+	export const uniqueOrdonneMeta = defineLayout({
+		id: 'unique-ordonne',
+		kind: 'unique-complet'
+	});
+</script>
+
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import PharmacyInfoSection from './organisms/PharmacyInfoSection.svelte';
 	import HeroSection from './organisms/HeroSection.svelte';
 	import AboutSection from './organisms/AboutSection.svelte';
-	import { uniqueOrdonneMeta, type UniqueOrdonneModuleKey, type UniqueOrdonneSiteData } from './layout.meta';
 	import { orderModules } from '../../module-order';
+	import type { LayoutKey, LayoutProps } from '../../define-layout';
 
-	let { data }: { data: UniqueOrdonneSiteData } = $props();
+	// Une prop par module garanti par le genre : en oublier une souligne la
+	// balise d'appel du layout.
+	let {
+		modules,
+		pharmacyInfo,
+		hero,
+		about,
+	}: LayoutProps<typeof uniqueOrdonneMeta> = $props();
 
-	const orderedModules = $derived(orderModules(uniqueOrdonneMeta, data.modules));
+	const orderedModules = $derived(orderModules(uniqueOrdonneMeta, modules));
 
-	// Record<ModuleKey, Snippet> : oublier une clé ici ne compile pas —
-	// garantie qu'aucun module déclaré par ce layout ne peut être oublié
-	// au rendu (chaque snippet est déclaré plus bas, dans le markup).
+	// Oublier une clé ici ne compile pas : aucun module déclaré par ce
+	// layout ne peut être absent du rendu.
 	const sections = $derived({
 		pharmacyInfo: renderPharmacyInfo,
 		hero: renderHero,
-		about: renderAbout
-	} satisfies Record<UniqueOrdonneModuleKey, Snippet>);
+		about: renderAbout,
+	} satisfies Record<LayoutKey<typeof uniqueOrdonneMeta>, Snippet>);
 </script>
 
-{#snippet renderPharmacyInfo()}<PharmacyInfoSection info={data.pharmacyInfo} />{/snippet}
-{#snippet renderHero()}<HeroSection hero={data.hero} />{/snippet}
-{#snippet renderAbout()}<AboutSection about={data.about} />{/snippet}
+{#snippet renderPharmacyInfo()}<PharmacyInfoSection info={pharmacyInfo} />{/snippet}
+{#snippet renderHero()}<HeroSection {hero} />{/snippet}
+{#snippet renderAbout()}<AboutSection {about} />{/snippet}
 
 {#each orderedModules as moduleKey}
 	{@render sections[moduleKey]()}

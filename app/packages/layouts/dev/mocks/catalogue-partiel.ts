@@ -1,4 +1,5 @@
-import type { CataloguePartielSiteData } from '../../src/layouts/catalogue-partiel/layout.meta';
+import type { LayoutProps } from '../../src/define-layout';
+import type { cataloguePartielMeta } from '../../src/layouts/catalogue-partiel/CataloguePartielLayout.svelte';
 
 // Simule l'objet que l'API C# renverra pour un site utilisant ce layout.
 // "description" est présente dans "brands" mais absente du contrat déclaré
@@ -7,7 +8,7 @@ import type { CataloguePartielSiteData } from '../../src/layouts/catalogue-parti
 // dans `supports` (testimonials avant brands avant pharmacyInfo), pour
 // vérifier que c'est bien l'ordre voulu par le site qui est rendu
 // (layout orderable: true).
-export const mockCataloguePartielSiteData: CataloguePartielSiteData = {
+export const mockCataloguePartielSiteData: LayoutProps<typeof cataloguePartielMeta> = {
 	modules: [
 		{ module: 'testimonials', order: 1 },
 		{ module: 'brands', order: 2 },

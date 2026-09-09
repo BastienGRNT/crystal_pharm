@@ -79,13 +79,27 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
 - `app/packages/layouts` : contrat de modules sans variante `bespoke`.
   Tout layout a ses modules éditables/activables côté manager, sans
   exception ; un layout atypique ou réservé à un tenant reste un layout
-  normal dont `supports` contient un module exclusif. `supports` déclare,
-  module par module, soit `true` (tous les champs de la forme canonique)
-  soit `{ fields: [...] }` (un sous-ensemble nommé et ordonné) — jamais un
-  formulaire manager câblé en dur par module. La forme canonique d'un
-  module reste unique (dérivée à terme du contrat C#/NSwag) ; les données
-  d'un site restent layout-agnostiques, un changement de layout ne perd
-  jamais une donnée saisie même si le nouveau layout ne l'affiche pas.
+  normal, avec un module exclusif en plus — jamais un formulaire manager
+  câblé en dur par module. La forme canonique d'un module reste unique
+  (dérivée à terme du contrat C#/NSwag) ; les données d'un site restent
+  layout-agnostiques, un changement de layout ne perd jamais une donnée
+  saisie même si le nouveau layout ne l'affiche pas.
+- Un layout tient dans **un seul fichier** : son `.svelte`, qui se déclare
+  lui-même dans son `<script module>` via `defineLayout` (ou
+  `definePartialLayout`). Pas de fichier de config à côté. Un layout ne
+  déclare **que ce qui aurait pu être différent** : son genre (`kind`)
+  suffit à garantir ses modules, `plus` ajoute un module hors famille,
+  `order` impose un ordre (et rend le layout non réordonnable), `modules`
+  n'existe que pour un layout partiel. Les modules `main` sont implicites
+  partout et ne s'écrivent jamais.
+- Ajouter un module au produit = une ligne dans `src/module-registry.ts`,
+  rien à répercuter dans les layouts. Un layout n'est publié que via
+  `registerLayout` (`src/index.ts`), qui confronte ce qu'il déclare à ce
+  que son composant accepte : un layout en désaccord avec lui-même échoue
+  là, pas chez celui qui l'utilise.
+- Ces garanties sont uniquement statiques ; `make dev-layout` et
+  `svelte-check` sont le filet. Quand les données viendront de l'API C# au
+  lieu des mocks, une validation à l'exécution restera à ajouter.
 
 ## Commandes
 
@@ -96,7 +110,7 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   arrière-plan (pas de `&`, pas de détachement). Ctrl+C dans ce terminal
   tue le process normalement, comme un lancement direct : `make` ne fait
   ici qu'exécuter la commande, pas la détacher.
-- `make dev-layouts` : lance la page de preview des layouts (Vite,
+- `make dev-layout` : lance la page de preview des layouts (Vite,
   `app/packages/layouts`), en foreground dans son propre terminal comme
   `make api`. Ne dépend ni de la base, ni de l'API : rendu sur mocks.
 - `make logs` : suit les logs de ce que `make start` a lancé (Docker

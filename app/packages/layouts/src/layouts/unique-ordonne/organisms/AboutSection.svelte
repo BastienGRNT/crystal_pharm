@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { AboutModule } from '../../../modules/unique/about';
-	import { uniqueOrdonneMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { uniqueOrdonneMeta } from '../UniqueOrdonneLayout.svelte';
 
-	type About = PickedFields<AboutModule, typeof uniqueOrdonneMeta.supports.about>;
-	let { about }: { about: About } = $props();
+	type Item = ModuleProps<typeof uniqueOrdonneMeta, 'about'>;
+	let { about }: { about: Item } = $props();
 </script>
 
 <section>

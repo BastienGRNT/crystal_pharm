@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { PharmacyInfoModule } from '../../../modules/main/pharmacy-info';
-	import { cataloguePartielMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { cataloguePartielMeta } from '../CataloguePartielLayout.svelte';
 
-	type Info = PickedFields<PharmacyInfoModule, typeof cataloguePartielMeta.supports.pharmacyInfo>;
-	let { info }: { info: Info } = $props();
+	type Item = ModuleProps<typeof cataloguePartielMeta, 'pharmacyInfo'>;
+	let { info }: { info: Item } = $props();
 </script>
 
 <section>

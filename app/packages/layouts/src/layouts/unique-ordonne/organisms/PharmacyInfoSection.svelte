@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { PharmacyInfoModule } from '../../../modules/main/pharmacy-info';
-	import { uniqueOrdonneMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { uniqueOrdonneMeta } from '../UniqueOrdonneLayout.svelte';
 
-	type Info = PickedFields<PharmacyInfoModule, typeof uniqueOrdonneMeta.supports.pharmacyInfo>;
-	let { info }: { info: Info } = $props();
+	type Item = ModuleProps<typeof uniqueOrdonneMeta, 'pharmacyInfo'>;
+	let { info }: { info: Item } = $props();
 </script>
 
 <section>

@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { PickedFields } from '../../../layout-module-contracts';
-	import type { BrandsModule } from '../../../modules/catalogue/brands';
-	import { catalogueFixeMeta } from '../layout.meta';
+	import type { ModuleProps } from '../../../define-layout';
+	import { catalogueFixeMeta } from '../CatalogueFixeLayout.svelte';
 
-	type Brand = PickedFields<BrandsModule, typeof catalogueFixeMeta.supports.brands>;
-	let { brands }: { brands: Brand[] } = $props();
+	type Item = ModuleProps<typeof catalogueFixeMeta, 'brands'>;
+	let { brands }: { brands: Item[] } = $props();
 </script>
 
 <section>

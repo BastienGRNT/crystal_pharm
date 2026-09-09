@@ -1,33 +1,48 @@
+<script module lang="ts">
+	import { definePartialLayout } from '../../define-layout';
+
+	// Layout de test : sous-ensemble de modules ET de champs.
+	export const cataloguePartielMeta = definePartialLayout({
+		id: 'catalogue-partiel',
+		// La liste des modules est la seule vraie information d'un layout
+		// partiel. `pharmacyInfo` reste implicite, comme partout ailleurs.
+		// "description" n'est pas affiché ici, mais la donnée reste saisissable
+		// et conservée (cf. CLAUDE.md).
+		modules: { brands: ['name', 'logoUrl'], testimonials: true }
+	});
+</script>
+
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import PharmacyInfoSection from './organisms/PharmacyInfoSection.svelte';
 	import BrandsSection from './organisms/BrandsSection.svelte';
 	import TestimonialsSection from './organisms/TestimonialsSection.svelte';
-	import { cataloguePartielMeta, type CataloguePartielModuleKey, type CataloguePartielSiteData } from './layout.meta';
 	import { orderModules } from '../../module-order';
-	import { pickFields } from '../../pick-fields';
+	import type { LayoutKey, LayoutProps } from '../../define-layout';
 
-	// Reçoit la donnée telle que l'API la renverra (cf. CataloguePartielSiteData)
-	// et génère la page : ordre des modules + filtrage des champs, tous deux
-	// pilotés par `cataloguePartielMeta`, jamais par l'appelant.
-	let { data }: { data: CataloguePartielSiteData } = $props();
+	// Une prop par module garanti par le genre : en oublier une souligne la
+	// balise d'appel du layout.
+	let {
+		modules,
+		pharmacyInfo,
+		brands,
+		testimonials,
+	}: LayoutProps<typeof cataloguePartielMeta> = $props();
 
-	const orderedModules = $derived(orderModules(cataloguePartielMeta, data.modules));
-	const brands = $derived(data.brands.map((b) => pickFields(b, cataloguePartielMeta.supports.brands)));
+	const orderedModules = $derived(orderModules(cataloguePartielMeta, modules));
 
-	// Record<ModuleKey, Snippet> : oublier une clé ici ne compile pas —
-	// garantie qu'aucun module déclaré par ce layout ne peut être oublié
-	// au rendu (chaque snippet est déclaré plus bas, dans le markup).
+	// Oublier une clé ici ne compile pas : aucun module déclaré par ce
+	// layout ne peut être absent du rendu.
 	const sections = $derived({
 		pharmacyInfo: renderPharmacyInfo,
 		brands: renderBrands,
-		testimonials: renderTestimonials
-	} satisfies Record<CataloguePartielModuleKey, Snippet>);
+		testimonials: renderTestimonials,
+	} satisfies Record<LayoutKey<typeof cataloguePartielMeta>, Snippet>);
 </script>
 
-{#snippet renderPharmacyInfo()}<PharmacyInfoSection info={data.pharmacyInfo} />{/snippet}
+{#snippet renderPharmacyInfo()}<PharmacyInfoSection info={pharmacyInfo} />{/snippet}
 {#snippet renderBrands()}<BrandsSection {brands} />{/snippet}
-{#snippet renderTestimonials()}<TestimonialsSection testimonials={data.testimonials} />{/snippet}
+{#snippet renderTestimonials()}<TestimonialsSection {testimonials} />{/snippet}
 
 {#each orderedModules as moduleKey}
 	{@render sections[moduleKey]()}
