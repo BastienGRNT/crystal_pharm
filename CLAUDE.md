@@ -52,19 +52,27 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
 
 ## Topologie des apps (important : ne pas recopier l'ancien repo)
 
-- Pas de dossier `apps/` à plusieurs entrées ni de `packages/` créés à
-  l'avance. Un seul projet SvelteKit au départ (`site-web`), créé au moment
-  où le premier rendu public en a besoin — pas avant.
-- `manager-web` est un projet **séparé**, mais créé seulement quand le
+- Tout le code des projets vit sous `app/` à la racine (`app/api` pour le
+  C#, `app/site-web`, `app/manager-web` plus tard), pour garder la racine
+  du repo lisible face aux fichiers de conf/infra (`compose.yml`,
+  `Makefile`, `.env`, futurs dossiers de déploiement). `app/` lui-même est
+  une exception actée à la règle anti-anticipation ci-dessous : c'est un
+  dossier de plomberie sans contenu métier, pas une anticipation de besoin.
+  En revanche, ce que `app/` contient reste soumis à la règle : chaque
+  sous-dossier n'est créé que lorsque son besoin est réel.
+- Pas de `packages/` créé à l'avance. Un seul projet SvelteKit au départ
+  (`app/site-web`), créé au moment où le premier rendu public en a
+  besoin — pas avant.
+- `app/manager-web` est un projet **séparé**, mais créé seulement quand le
   premier formulaire manager en a besoin. Séparé de `site-web` pour une
   vraie raison (le site public doit rester ~0 KB de JS ; le manager a besoin
   de formulaires riches) — pas par habitude de l'ancien repo.
-- `platform-web` (admin/back-office) : **ne pas créer**, tant qu'il n'y a
+- `app/platform-web` (admin/back-office) : **ne pas créer**, tant qu'il n'y a
   pas de vrai besoin opérationnel de gérer plusieurs tenants au quotidien.
   La création de tenant se teste au `curl` en attendant.
-- `packages/site-themes` (ou équivalent partagé) : à créer seulement quand
-  un **deuxième** layout existe réellement. Avant ça, le code de rendu vit
-  directement dans `site-web/src/lib/`.
+- `app/packages/site-themes` (ou équivalent partagé) : à créer seulement
+  quand un **deuxième** layout existe réellement. Avant ça, le code de
+  rendu vit directement dans `app/site-web/src/lib/`.
 
 ## Commandes
 
