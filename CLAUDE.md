@@ -97,9 +97,9 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   `registerLayout` (`src/index.ts`), qui confronte ce qu'il déclare à ce
   que son composant accepte : un layout en désaccord avec lui-même échoue
   là, pas chez celui qui l'utilise.
-- Ces garanties sont uniquement statiques ; `make dev-layout` et
-  `svelte-check` sont le filet. Quand les données viendront de l'API C# au
-  lieu des mocks, une validation à l'exécution restera à ajouter.
+- Ces garanties sont uniquement statiques ; `make check-layout` est le
+  filet. Quand les données viendront de l'API C# au lieu des mocks, une
+  validation à l'exécution restera à ajouter.
 
 ## Commandes
 
@@ -113,6 +113,9 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
 - `make dev-layout` : lance la page de preview des layouts (Vite,
   `app/packages/layouts`), en foreground dans son propre terminal comme
   `make api`. Ne dépend ni de la base, ni de l'API : rendu sur mocks.
+- `make check-layout` : surveille en continu les erreurs de type des
+  layouts (`svelte-check --watch`), à laisser tourner dans son terminal
+  pendant qu'on écrit un layout.
 - `make logs` : suit les logs de ce que `make start` a lancé (Docker
   pour l'instant). Les process en foreground (API, front) affichent déjà
   leurs logs dans leur propre terminal, pas besoin de les y ajouter.

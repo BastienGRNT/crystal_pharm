@@ -12,4 +12,7 @@ api:
 dev-layout:
 	cd app && pnpm --filter @crystal-pharm/layouts dev
 
-.PHONY: start logs api dev-layout
+check-layout:
+	cd app && pnpm --filter @crystal-pharm/layouts check:watch
+
+.PHONY: start logs api dev-layout check-layout
