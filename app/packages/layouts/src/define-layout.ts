@@ -1,3 +1,4 @@
+import type { Snippet } from 'svelte';
 import {
 	MODULE_FAMILY,
 	type MainModuleKey,
@@ -87,6 +88,31 @@ export type LayoutProps<Meta extends AnyLayoutMeta> = {
 } & {
 	[K in LayoutKey<Meta>]: ModuleData[K];
 };
+
+// Même principe que MissingFromOrder, pour le rendu : le type nomme le
+// module oublié plutôt que d'afficher deux objets à comparer à l'œil.
+export interface MissingSection<Missing extends string> {
+	readonly __erreur: 'module déclaré par le layout mais absent du rendu';
+	readonly manquant: Missing;
+}
+
+export type ExhaustiveSections<Key extends ModuleKey, Sections> = [
+	Exclude<Key, keyof Sections>
+] extends [never]
+	? Sections
+	: MissingSection<Exclude<Key, keyof Sections>>;
+
+// À appeler dans chaque layout : associe un rendu à chaque module déclaré.
+// En oublier un ne compile pas, et l'erreur dit lequel.
+export function renderEachModule<
+	Meta extends AnyLayoutMeta,
+	const Sections extends Partial<Record<LayoutKey<Meta>, Snippet>>
+>(
+	_meta: Meta,
+	sections: Sections & ExhaustiveSections<LayoutKey<Meta>, Sections>
+): Record<LayoutKey<Meta>, Snippet> {
+	return sections as Record<LayoutKey<Meta>, Snippet>;
+}
 
 // Ce qu'un organism reçoit : la forme unitaire du module, réduite aux
 // champs que le layout a déclarés. Lire un champ non déclaré ne compile pas.
