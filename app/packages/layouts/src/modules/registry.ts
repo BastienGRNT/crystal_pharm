@@ -1,9 +1,9 @@
-import type { PharmacyInfo } from './pharmacy-info';
-import type { Brand } from './brands';
-import type { Testimonial } from './testimonials';
-import type { TeamMember } from './team';
-import type { Hero } from './hero';
-import type { About } from './about';
+import type { PharmacyInfo } from './main/pharmacy-info';
+import type { Brand } from './catalogue/brands';
+import type { Testimonial } from './catalogue/testimonials';
+import type { TeamMember } from './catalogue/team';
+import type { Hero } from './unique/hero';
+import type { About } from './unique/about';
 
 // LE registre. Ajouter un module au produit = une ligne ici et une dans
 // MODULE_FAMILY. Tout le reste en découle : les layouts concernés

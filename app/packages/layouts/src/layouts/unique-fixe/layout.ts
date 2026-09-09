@@ -1,7 +1,7 @@
 import { defineLayout } from '../../layout';
-import PharmacyInfo from './PharmacyInfo.svelte';
-import Hero from './Hero.svelte';
-import About from './About.svelte';
+import PharmacyInfo from './organisms/PharmacyInfo.svelte';
+import Hero from './organisms/Hero.svelte';
+import About from './organisms/About.svelte';
 
 // Tous les modules unique, dans l'ordre imposé ci-dessous.
 export const uniqueFixe = defineLayout({

@@ -1,10 +1,10 @@
 export * from './modules/registry';
-export * from './modules/pharmacy-info';
-export * from './modules/brands';
-export * from './modules/testimonials';
-export * from './modules/team';
-export * from './modules/hero';
-export * from './modules/about';
+export * from './modules/main/pharmacy-info';
+export * from './modules/catalogue/brands';
+export * from './modules/catalogue/testimonials';
+export * from './modules/catalogue/team';
+export * from './modules/unique/hero';
+export * from './modules/unique/about';
 
 export * from './layout';
 export { default as LayoutHost } from './render/LayoutHost.svelte';
