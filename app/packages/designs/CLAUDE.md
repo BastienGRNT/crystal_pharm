@@ -1,7 +1,8 @@
 # Le système de designs
 
-Règles de ce package. `CLAUDE.md` à la racine n'en garde que les invariants ;
-tout le détail est ici, à côté du code qu'il décrit.
+Règles de ce package. Le `CLAUDE.md` racine n'en garde que les invariants ;
+tout le détail est ici, à côté du code qu'il décrit, et se charge tout seul
+dès qu'on travaille dans `app/packages/designs`.
 
 Un **design** est ce que le pharmacien choisit ; une **section** est un bloc
 de sa page ; une **assurance** est la promesse que porte le design.

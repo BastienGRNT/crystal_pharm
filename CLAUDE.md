@@ -68,8 +68,9 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
 
 Un **design** est ce que le pharmacien choisit ; une **section** est un bloc de
 sa page ; une **assurance** est la promesse que porte le design (`complete`,
-`signature`, `custom`). Trois invariants, le reste est dans
-`app/packages/designs/README.md`, à lire avant de toucher au package :
+`signature`, `custom`). Trois invariants ; tout le reste vit dans
+`app/packages/designs/CLAUDE.md`, chargé automatiquement dès qu'on travaille
+dans le package :
 
 - **L'assurance décide de la quantité de vérification**, et rien d'autre ne
   bride un design. C'est ce qui permet des designs originaux sans décevoir un

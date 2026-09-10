@@ -9,7 +9,8 @@
   contre 290). En parallèle, `seal` n'est plus exporté nulle part : les
   analyseurs de `src/sections/` rendent du contenu nu et `registry.ts` est le
   seul fichier du dépôt capable de sceller. La section designs de `CLAUDE.md`
-  est partie dans `app/packages/designs/README.md` (le fichier dépassait sa
+  est partie dans `app/packages/designs/CLAUDE.md` — chargé automatiquement
+  quand on travaille dans le package (le fichier racine dépassait sa
   propre limite de ~150 lignes ; il est retombé à 124).
 - Pourquoi : le `Page.svelte` d'un design portait tout son HTML, ce qui le
   rendait illisible dès 6 sections. Le découpage ne coûte rien au contrat : la
