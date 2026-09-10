@@ -1,4 +1,4 @@
-import { field, image, list, prose, seal, text, type Trusted, type TrustedImageUrl } from '../trusted';
+import { field, image, list, prose, text, type TrustedImageUrl } from '../trusted';
 
 /**
  * `note` est saisi par le gérant même si certains designs ne l'affichent pas.
@@ -9,7 +9,7 @@ export type TeamContent = {
 	members: { name: string; role: string; photo: TrustedImageUrl | null; note: string | null }[];
 };
 
-export function parseTeam(raw: unknown): Trusted<TeamContent> | null {
+export function parseTeam(raw: unknown): TeamContent | null {
 	const title = text(field(raw, 'title'), 80);
 	const members = list(
 		field(raw, 'members'),
@@ -27,5 +27,5 @@ export function parseTeam(raw: unknown): Trusted<TeamContent> | null {
 		30
 	);
 	if (title === null || members.length === 0) return null;
-	return seal({ title, members });
+	return { title, members };
 }

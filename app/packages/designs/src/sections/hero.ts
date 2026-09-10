@@ -1,4 +1,4 @@
-import { field, image, link, prose, seal, text, type Trusted, type TrustedImageUrl, type TrustedUrl } from '../trusted';
+import { field, image, link, prose, text, type TrustedImageUrl, type TrustedUrl } from '../trusted';
 
 export type HeroContent = {
 	title: string;
@@ -15,13 +15,13 @@ function parseCallToAction(raw: unknown): { label: string; url: TrustedUrl } | n
 	return { label, url };
 }
 
-export function parseHero(raw: unknown): Trusted<HeroContent> | null {
+export function parseHero(raw: unknown): HeroContent | null {
 	const title = text(field(raw, 'title'), 120);
 	if (title === null) return null;
-	return seal({
+	return {
 		title,
 		tagline: prose(field(raw, 'tagline'), 300),
 		image: image(field(raw, 'image')),
 		callToAction: parseCallToAction(field(raw, 'callToAction'))
-	});
+	};
 }

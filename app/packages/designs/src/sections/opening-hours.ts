@@ -1,4 +1,4 @@
-import { field, list, seal, text, type Trusted } from '../trusted';
+import { field, list, text } from '../trusted';
 
 export type OpeningHoursContent = {
 	title: string;
@@ -6,7 +6,7 @@ export type OpeningHoursContent = {
 	note: string | null;
 };
 
-export function parseOpeningHours(raw: unknown): Trusted<OpeningHoursContent> | null {
+export function parseOpeningHours(raw: unknown): OpeningHoursContent | null {
 	const title = text(field(raw, 'title'), 80);
 	const days = list(
 		field(raw, 'days'),
@@ -19,5 +19,5 @@ export function parseOpeningHours(raw: unknown): Trusted<OpeningHoursContent> | 
 		14
 	);
 	if (title === null || days.length === 0) return null;
-	return seal({ title, days, note: text(field(raw, 'note'), 200) });
+	return { title, days, note: text(field(raw, 'note'), 200) };
 }

@@ -1,11 +1,11 @@
-import { field, list, prose, seal, text, type Trusted } from '../trusted';
+import { field, list, prose, text } from '../trusted';
 
 export type ServicesContent = {
 	title: string;
 	items: { name: string; description: string | null }[];
 };
 
-export function parseServices(raw: unknown): Trusted<ServicesContent> | null {
+export function parseServices(raw: unknown): ServicesContent | null {
 	const title = text(field(raw, 'title'), 80);
 	const items = list(
 		field(raw, 'items'),
@@ -17,5 +17,5 @@ export function parseServices(raw: unknown): Trusted<ServicesContent> | null {
 		12
 	);
 	if (title === null || items.length === 0) return null;
-	return seal({ title, items });
+	return { title, items };
 }

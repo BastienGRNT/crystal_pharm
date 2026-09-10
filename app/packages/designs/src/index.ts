@@ -10,4 +10,4 @@ export { DESIGNS, designById, type Design } from './designs';
 export { default as SiteRenderer } from './render/SiteRenderer.svelte';
 export { SECTION_NAMES, type SectionName } from './sections/registry';
 export { isDesignAllowed, resolveOrder, type SiteContent } from './site';
-export type { Trusted, TrustedImageUrl, TrustedUrl } from './trusted';
+

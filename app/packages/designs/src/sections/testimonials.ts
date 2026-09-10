@@ -1,11 +1,11 @@
-import { count, field, list, prose, seal, text, type Trusted } from '../trusted';
+import { count, field, list, prose, text } from '../trusted';
 
 export type TestimonialsContent = {
 	title: string;
 	items: { author: string; quote: string; rating: number | null }[];
 };
 
-export function parseTestimonials(raw: unknown): Trusted<TestimonialsContent> | null {
+export function parseTestimonials(raw: unknown): TestimonialsContent | null {
 	const title = text(field(raw, 'title'), 80);
 	const items = list(
 		field(raw, 'items'),
@@ -18,5 +18,5 @@ export function parseTestimonials(raw: unknown): Trusted<TestimonialsContent> | 
 		30
 	);
 	if (title === null || items.length === 0) return null;
-	return seal({ title, items });
+	return { title, items };
 }

@@ -1,11 +1,11 @@
-import { field, image, link, list, seal, text, type Trusted, type TrustedImageUrl, type TrustedUrl } from '../trusted';
+import { field, image, link, list, text, type TrustedImageUrl, type TrustedUrl } from '../trusted';
 
 export type BrandsContent = {
 	title: string;
 	items: { name: string; logo: TrustedImageUrl | null; site: TrustedUrl | null }[];
 };
 
-export function parseBrands(raw: unknown): Trusted<BrandsContent> | null {
+export function parseBrands(raw: unknown): BrandsContent | null {
 	const title = text(field(raw, 'title'), 80);
 	const items = list(
 		field(raw, 'items'),
@@ -17,5 +17,5 @@ export function parseBrands(raw: unknown): Trusted<BrandsContent> | null {
 		40
 	);
 	if (title === null || items.length === 0) return null;
-	return seal({ title, items });
+	return { title, items };
 }

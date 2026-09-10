@@ -1,17 +1,8 @@
 /**
- * La frontière. Tout ce qui vient d'un gérant (aujourd'hui des mocks, demain
- * l'API C#) entre ici en `unknown` et n'en ressort que scellé.
- *
- * Un composant de section ne peut pas fabriquer de `Trusted<T>` : le symbole
- * qui le marque n'est exporté nulle part. Le seul producteur est `seal()`,
- * appelé uniquement par les analyseurs de `src/sections/`. Un design qui
- * importe ce fichier est refusé par `tools/assemble.mjs`.
+ * Les analyseurs primitifs de la frontière. Ils rendent du contenu **nu** :
+ * le sceau est posé ailleurs, par `sections/registry.ts`, qui est le seul
+ * endroit du dépôt capable de le poser.
  */
-
-declare const sealed: unique symbol;
-
-/** Une valeur qui a franchi la frontière. */
-export type Trusted<T> = T & { readonly [sealed]: 'content' };
 
 declare const safeLink: unique symbol;
 
@@ -22,11 +13,6 @@ declare const safeImage: unique symbol;
 
 /** Une URL d'image en https. Jamais une `string` brute. */
 export type TrustedImageUrl = string & { readonly [safeImage]: 'image' };
-
-/** Réservé aux analyseurs de sections. Ne jamais exporter depuis `src/index.ts`. */
-export function seal<T>(value: T): Trusted<T> {
-	return value as Trusted<T>;
-}
 
 /**
  * Un texte affichable : non vide, borné. La borne n'est pas cosmétique — un

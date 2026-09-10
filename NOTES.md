@@ -1,6 +1,32 @@
 <!-- Journal de décisions. Une entrée seulement quand une décision est
      prise et validée. Format : quoi / pourquoi / comment vérifié / commit. -->
 
+## Atomic design dans les designs, et le sceau verrouillé
+
+- Quoi : chaque design est découpé en `organisms/` (une section entière,
+  appelée par son snippet), `molecules/` et `atoms/`, propres au design — un
+  `Page.svelte` ne garde que le contrat et l'ordre (22 lignes pour `classique`
+  contre 290). En parallèle, `seal` n'est plus exporté nulle part : les
+  analyseurs de `src/sections/` rendent du contenu nu et `registry.ts` est le
+  seul fichier du dépôt capable de sceller. La section designs de `CLAUDE.md`
+  est partie dans `app/packages/designs/README.md` (le fichier dépassait sa
+  propre limite de ~150 lignes ; il est retombé à 124).
+- Pourquoi : le `Page.svelte` d'un design portait tout son HTML, ce qui le
+  rendait illisible dès 6 sections. Le découpage ne coûte rien au contrat : la
+  promesse est portée par la **déclaration** du snippet, pas par son contenu.
+  Pour le sceau, la suppression de l'assembleur avait emporté avec elle le
+  garde-fou qui interdisait à un design d'importer `seal` : le rendre
+  inexportable remplace un outil externe par une impossibilité structurelle.
+- Comment vérifié : `svelte-check` 0 erreur / 0 warning sur 148 fichiers ;
+  `make dev-design` sert la preview. Fautes injectées puis retirées : snippet
+  `team` retiré d'un design `complete` (`Property 'team' is missing` — la
+  garantie survit au découpage), `import { seal }` dans un design (`has no
+  exported member 'seal'`). Rendu SSR identique à avant découpage sur les
+  4 designs et les 3 jeux de mocks, hostile compris. Limite constatée et
+  documentée : retaper le type d'un sous-composant au lieu de le dériver
+  élargit `TrustedImageUrl` en `string` sans aucune erreur.
+- Commit lié : "Découpe les designs en atomic design et verrouille le sceau".
+
 ## Le layout devient un design, et l'étiquette devient le curseur
 
 - Quoi : `app/packages/layouts` remplacé par `app/packages/designs`. Un

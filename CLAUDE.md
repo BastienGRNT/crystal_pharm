@@ -57,58 +57,28 @@ d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
   avec **zéro** code de design dedans (pages plomberie du type
   `<p>{tenant.nom}</p>`) ; le branchement au vrai rendu est une brique
   séparée, une fois les deux validés chacun de leur côté.
-- `app/manager-web` est un projet **séparé**, créé seulement quand le premier
-  formulaire manager en a besoin. Séparé pour une vraie raison : le site
-  public doit rester ~0 KB de JS, le manager a besoin de formulaires riches.
+- `app/manager-web` est un projet **séparé**, créé quand le premier formulaire
+  manager en a besoin : le site public doit rester ~0 KB de JS, le manager a
+  besoin de formulaires riches.
 - `app/platform-web` (admin/back-office) : **ne pas créer** tant qu'il n'y a
   pas de vrai besoin de gérer plusieurs tenants au quotidien. La création de
   tenant se teste au `curl` en attendant.
 
 ## Le système de designs (`app/packages/designs`)
 
-Un **design** est ce que le pharmacien choisit ; une **section** est un bloc
-de sa page ; une **assurance** est la promesse que porte le design.
+Un **design** est ce que le pharmacien choisit ; une **section** est un bloc de
+sa page ; une **assurance** est la promesse que porte le design (`complete`,
+`signature`, `custom`). Trois invariants, le reste est dans
+`app/packages/designs/README.md`, à lire avant de toucher au package :
 
-- Trois assurances, et elles seules. `complete` garantit toutes les sections
-  essentielles ; `signature` laisse le design libre et ne garantit que
-  l'essentiel de l'officine ; `custom` est un sur-mesure qui ne promet rien,
-  pas même l'essentiel, et dont l'accès est restreint à des tenants nommés.
-  Lire `src/assurances.ts`, c'est connaître chaque promesse.
-- **L'assurance décide de la quantité de vérification.** Un design n'est
-  jamais bridé au-delà de ce qu'il promet. C'est ce qui permet des designs
-  originaux sans jamais décevoir un pharmacien : l'étiquette dit la vérité.
-- Un design tient en **deux fichiers** : `design.ts` (nom, assurance,
-  réordonnable) et `Page.svelte`, où tout son HTML vit — une section par
-  `{#snippet}`, l'ordre d'écriture étant l'ordre d'affichage. Il ne déclare ni
-  son id (c'est le dossier) ni la liste de ses sections. **Rien n'est généré,
-  aucune commande n'est nécessaire pour que le code fonctionne.**
-- **Loi des frères** : une section possède tout son HTML (ses `div`, ses
-  `aside`, sa grille, son fond) et les sections sont posées côte à côte. Ce
-  n'est pas une règle à respecter : c'est l'hôte de gamme qui les pose, un
-  design n'a aucun moyen de les imbriquer. Une mise en page 2D se fait en CSS
-  sur cette liste de frères.
-- Ajouter une section au produit = une ligne dans `src/sections/registry.ts`
-  plus son analyseur. **Ça ne casse aucun design.** Ça ne devient une promesse
-  que le jour où on l'ajoute à une assurance — et là, tous les designs de
-  cette gamme cessent de compiler en nommant la section. Les deux décisions
-  sont séparées exprès.
-- **Frontière de validation** : tout contenu entre en `unknown` et ne ressort
-  que scellé (`Trusted<T>`). Un design ne peut ni fabriquer du contenu scellé
-  ni aller en chercher : le seul contenu qu'il voit est le paramètre que
-  l'hôte passe à son snippet, appelé uniquement si la section est remplie —
-  donc aucun design n'écrit de garde d'absence. Les URLs sont des types
-  produits par `new URL()` + allowlist (`https:`, `mailto:`, `tel:`), jamais
-  des `string`. Une section à qui il manque une donnée requise n'est pas
-  affichée : la dégradation est par section, jamais par champ.
-- L'ordre stocké par un site traverse la même frontière : clé inconnue
-  écartée, doublon écarté, section oubliée remise à sa place. Un design à
-  ordre fixe ignore l'ordre stocké.
-- `SiteRenderer` est le seul composant qui rend un site, et il prend le
-  contenu en `unknown` : aucun chemin n'alimente un design sans franchir la
-  frontière.
-- Tout ce qui est promis est vérifié par le seul `svelte-check` : section
-  promise oubliée (nommée), écrite deux fois, inventée, sur-mesure sans
-  `tenants`. Aucun générateur, aucun lint maison, aucun rendu de vérification.
+- **L'assurance décide de la quantité de vérification**, et rien d'autre ne
+  bride un design. C'est ce qui permet des designs originaux sans décevoir un
+  pharmacien : l'étiquette dit la vérité, vérifiée par le seul `svelte-check`.
+- **Rien n'est généré.** Aucune commande n'est nécessaire pour que le code
+  fonctionne : pas de générateur, pas de lint maison, pas de rendu de
+  vérification.
+- **Tout contenu entre en `unknown`** et ne ressort que scellé par
+  `sections/registry.ts`, seul fichier du dépôt capable de sceller.
 
 ## Commandes
 
