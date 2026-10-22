@@ -1,0 +1,925 @@
+@import '@fontsource/fraunces/latin-600.css';
+@import '@fontsource/fraunces/latin-700.css';
+@import '@fontsource/nunito/latin-400.css';
+@import '@fontsource/nunito/latin-700.css';
+
+/* Layout « neighborhood » : classique et chaleureux. Crème, vert pharmacie, formes arrondies. */
+
+.layout-neighborhood {
+  --nb-color-background: #fbf6ec;
+  --nb-color-surface: #ffffff;
+  --nb-color-tint: #f1ead9;
+  --nb-color-primary: #1f6b45;
+  --nb-color-primary-dark: #154a30;
+  --nb-color-primary-soft: #dcebdf;
+  --nb-color-accent: #f2b84b;
+  --nb-color-text: #2b2a26;
+  --nb-color-muted: #6b675d;
+  --nb-color-danger: #b4432c;
+  --nb-font-heading: 'Fraunces', Georgia, serif;
+  --nb-font-body: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  --nb-radius-large: 28px;
+  --nb-radius: 18px;
+  --nb-shadow: 0 10px 30px rgba(54, 45, 20, 0.08);
+  --nb-content-width: 1120px;
+
+  min-height: 100vh;
+  background: var(--nb-color-background);
+  color: var(--nb-color-text);
+  font-family: var(--nb-font-body);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.layout-neighborhood *,
+.layout-neighborhood *::before,
+.layout-neighborhood *::after {
+  box-sizing: border-box;
+}
+
+.layout-neighborhood h1,
+.layout-neighborhood h2,
+.layout-neighborhood h3 {
+  margin: 0;
+  font-family: var(--nb-font-heading);
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+
+.layout-neighborhood p {
+  margin: 0;
+}
+
+.layout-neighborhood a {
+  color: var(--nb-color-primary);
+}
+
+.layout-neighborhood ul,
+.layout-neighborhood ol {
+  margin: 0;
+  padding: 0;
+}
+
+/* Boutons */
+
+.layout-neighborhood .nb-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease;
+}
+
+.layout-neighborhood .nb-button:hover {
+  transform: translateY(-1px);
+}
+
+.layout-neighborhood .nb-button--primary {
+  background: var(--nb-color-primary);
+  color: #fff;
+}
+
+.layout-neighborhood .nb-button--primary:hover {
+  background: var(--nb-color-primary-dark);
+}
+
+.layout-neighborhood .nb-button--secondary {
+  border-color: var(--nb-color-primary);
+  background: transparent;
+  color: var(--nb-color-primary);
+}
+
+.layout-neighborhood .nb-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+  transform: none;
+}
+
+/* Barre de navigation */
+
+.layout-neighborhood .nb-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  padding: 14px max(20px, calc((100% - var(--nb-content-width)) / 2));
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 0 rgba(54, 45, 20, 0.08);
+}
+
+.layout-neighborhood .nb-navigation__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--nb-color-text);
+  font-family: var(--nb-font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.layout-neighborhood .nb-navigation__logo {
+  width: 40px;
+  height: 40px;
+}
+
+.layout-neighborhood .nb-navigation__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout-neighborhood .nb-navigation__links {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.layout-neighborhood .nb-navigation__links a {
+  color: var(--nb-color-muted);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.layout-neighborhood .nb-navigation__links a:hover {
+  color: var(--nb-color-primary);
+}
+
+@media (max-width: 760px) {
+  .layout-neighborhood .nb-navigation {
+    justify-content: space-between;
+  }
+
+  .layout-neighborhood .nb-navigation__links {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .layout-neighborhood .nb-navigation .nb-button {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Bandeau de garde */
+
+.layout-neighborhood .nb-on-duty-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: var(--nb-color-accent);
+  color: var(--nb-color-text);
+  font-weight: 700;
+  text-align: center;
+}
+
+.layout-neighborhood .nb-on-duty-banner--now {
+  background: var(--nb-color-primary);
+  color: #fff;
+}
+
+.layout-neighborhood .nb-on-duty-banner__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: nb-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes nb-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Hero */
+
+.layout-neighborhood .nb-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  align-items: center;
+  gap: 40px;
+  padding: 56px max(20px, calc((100% - var(--nb-content-width)) / 2));
+}
+
+.layout-neighborhood .nb-hero__text {
+  display: grid;
+  gap: 20px;
+  justify-items: start;
+}
+
+.layout-neighborhood .nb-hero__title {
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  color: var(--nb-color-primary-dark);
+}
+
+.layout-neighborhood .nb-hero__slogan {
+  font-size: 1.2rem;
+  color: var(--nb-color-muted);
+}
+
+.layout-neighborhood .nb-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.layout-neighborhood .nb-hero__image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--nb-radius-large) var(--nb-radius-large) var(--nb-radius-large) 120px;
+  object-fit: cover;
+  box-shadow: var(--nb-shadow);
+}
+
+.layout-neighborhood .nb-hero__image--illustration {
+  position: relative;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.25) 0 18%, transparent 19%),
+    radial-gradient(circle at 75% 70%, rgba(242, 184, 75, 0.55) 0 22%, transparent 23%),
+    linear-gradient(135deg, var(--nb-color-primary) 0%, var(--nb-color-primary-dark) 100%);
+}
+
+.layout-neighborhood .nb-hero__image--illustration::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 30%;
+  aspect-ratio: 1;
+  background:
+    linear-gradient(#fff 0 0) center / 34% 100% no-repeat,
+    linear-gradient(#fff 0 0) center / 100% 34% no-repeat;
+  opacity: 0.9;
+}
+
+/* Groupement : mis en avant dans le menu, le hero et le pied de page. Absent, rien ne s'affiche. */
+
+.layout-neighborhood .nb-group-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+  padding: 8px 20px;
+  background: var(--nb-color-surface);
+  border-bottom: 3px solid var(--nb-color-accent);
+  color: var(--nb-color-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.layout-neighborhood .nb-group-bar__logo {
+  height: 28px;
+  width: auto;
+}
+
+.layout-neighborhood .nb-group-bar__name {
+  color: var(--nb-color-primary-dark);
+}
+
+.layout-neighborhood .nb-hero--with-group {
+  background: linear-gradient(180deg, var(--nb-color-primary-soft) 0%, transparent 70%);
+}
+
+.layout-neighborhood .nb-group-spotlight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 20px;
+  padding: 18px 24px;
+  border-radius: var(--nb-radius);
+  background: var(--nb-color-surface);
+  box-shadow: var(--nb-shadow);
+  border-left: 6px solid var(--nb-color-accent);
+}
+
+.layout-neighborhood .nb-group-spotlight__logo {
+  height: 64px;
+  width: auto;
+  max-width: 100%;
+}
+
+.layout-neighborhood .nb-group-spotlight__text {
+  display: grid;
+}
+
+.layout-neighborhood .nb-group-spotlight__label {
+  color: var(--nb-color-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.layout-neighborhood .nb-group-spotlight__name {
+  font-family: var(--nb-font-heading);
+  font-size: 1.5rem;
+  color: var(--nb-color-primary-dark);
+}
+
+.layout-neighborhood .nb-hero__visual {
+  position: relative;
+}
+
+.layout-neighborhood .nb-hero__group-stamp {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+}
+
+.layout-neighborhood .nb-hero__group-stamp .nb-group-badge {
+  padding: 10px 18px;
+}
+
+.layout-neighborhood .nb-hero__group-stamp .nb-group-badge__logo {
+  height: 42px;
+}
+
+/* Badge du groupement */
+
+.layout-neighborhood .nb-group-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--nb-color-surface);
+  box-shadow: var(--nb-shadow);
+}
+
+.layout-neighborhood .nb-group-badge__logo {
+  height: 30px;
+  width: auto;
+}
+
+.layout-neighborhood .nb-group-badge__name {
+  color: var(--nb-color-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+/* Sections */
+
+.layout-neighborhood .nb-section {
+  padding: 64px max(20px, calc((100% - var(--nb-content-width)) / 2));
+}
+
+/* Un fond sur deux, quels que soient les modules activés : deux sections teintées ne se suivent jamais. */
+.layout-neighborhood .nb-main > section:nth-of-type(even) {
+  background: var(--nb-color-tint);
+}
+
+.layout-neighborhood .nb-section-heading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 32px;
+}
+
+.layout-neighborhood .nb-section-heading__eyebrow {
+  color: var(--nb-color-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.layout-neighborhood .nb-section-heading__title {
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+}
+
+.layout-neighborhood .nb-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 20px;
+  list-style: none;
+}
+
+/* Horaires */
+
+.layout-neighborhood .nb-hours__layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.layout-neighborhood .nb-hours__days {
+  padding: 12px 24px;
+  border-radius: var(--nb-radius);
+  background: var(--nb-color-surface);
+  box-shadow: var(--nb-shadow);
+  list-style: none;
+}
+
+.layout-neighborhood .nb-day {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 12px 0;
+  border-bottom: 1px dashed #e4dccb;
+}
+
+.layout-neighborhood .nb-day:last-child {
+  border-bottom: 0;
+}
+
+.layout-neighborhood .nb-day--today {
+  color: var(--nb-color-primary-dark);
+  font-weight: 700;
+}
+
+.layout-neighborhood .nb-day__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layout-neighborhood .nb-day__today {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--nb-color-primary-soft);
+  font-size: 0.75rem;
+}
+
+.layout-neighborhood .nb-day__periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.layout-neighborhood .nb-day__closed {
+  color: var(--nb-color-muted);
+}
+
+.layout-neighborhood .nb-hours__on-duty {
+  display: grid;
+  gap: 12px;
+  padding: 28px;
+  border-radius: var(--nb-radius);
+  background: var(--nb-color-primary);
+  color: #fff;
+}
+
+.layout-neighborhood .nb-hours__hotline {
+  justify-self: start;
+  padding: 6px 20px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--nb-color-primary-dark);
+  font-family: var(--nb-font-heading);
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Services */
+
+.layout-neighborhood .nb-service-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 24px;
+  border-radius: var(--nb-radius);
+  background: var(--nb-color-surface);
+  box-shadow: var(--nb-shadow);
+}
+
+.layout-neighborhood .nb-service-icon {
+  width: 52px;
+  height: 52px;
+  padding: 12px;
+  border-radius: 50%;
+  background: var(--nb-color-primary-soft);
+  fill: none;
+  stroke: var(--nb-color-primary);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.layout-neighborhood .nb-service-card__title {
+  font-size: 1.2rem;
+}
+
+.layout-neighborhood .nb-service-card__description {
+  color: var(--nb-color-muted);
+}
+
+/* Équipe */
+
+.layout-neighborhood .nb-team {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 28px;
+  list-style: none;
+}
+
+.layout-neighborhood .nb-team-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.layout-neighborhood .nb-portrait {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 8px;
+  border: 6px solid var(--nb-color-surface);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--nb-shadow);
+}
+
+.layout-neighborhood .nb-portrait--initials {
+  display: grid;
+  place-items: center;
+  background: var(--nb-color-primary-soft);
+  color: var(--nb-color-primary);
+  font-family: var(--nb-font-heading);
+  font-size: 2.6rem;
+  font-weight: 700;
+}
+
+.layout-neighborhood .nb-team-card__name {
+  font-family: var(--nb-font-heading);
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.layout-neighborhood .nb-team-card__role {
+  color: var(--nb-color-muted);
+  font-size: 0.95rem;
+}
+
+/* Carte de fidélité : la carte en image si elle existe, sinon le texte sur un fond jaune. */
+
+.layout-neighborhood .nb-loyalty__card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: center;
+  gap: 40px;
+  padding: 40px;
+  border-radius: var(--nb-radius-large);
+  background: var(--nb-color-surface);
+  box-shadow: var(--nb-shadow);
+}
+
+.layout-neighborhood .nb-loyalty__card--text-only {
+  grid-template-columns: 1fr;
+  background: var(--nb-color-accent);
+}
+
+.layout-neighborhood .nb-loyalty__image {
+  width: 100%;
+  max-width: 420px;
+  justify-self: center;
+  border-radius: 18px;
+  transform: rotate(-4deg);
+  box-shadow: 0 24px 40px rgba(54, 45, 20, 0.2);
+}
+
+.layout-neighborhood .nb-loyalty__content {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+}
+
+.layout-neighborhood .nb-loyalty__content .nb-section-heading {
+  margin-bottom: 0;
+}
+
+.layout-neighborhood .nb-loyalty__text {
+  font-size: 1.15rem;
+}
+
+/* Actualités */
+
+.layout-neighborhood .nb-news-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border-radius: var(--nb-radius);
+  background: var(--nb-color-surface);
+  box-shadow: var(--nb-shadow);
+}
+
+.layout-neighborhood .nb-card-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+
+.layout-neighborhood .nb-card-image--placeholder {
+  background-color: var(--nb-color-primary-soft);
+  background-image: radial-gradient(circle, rgba(31, 107, 69, 0.18) 2px, transparent 2.5px);
+  background-size: 22px 22px;
+  position: relative;
+}
+
+.layout-neighborhood .nb-card-image--placeholder::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 56px;
+  height: 56px;
+  background:
+    linear-gradient(var(--nb-color-primary) 0 0) center / 18px 56px no-repeat,
+    linear-gradient(var(--nb-color-primary) 0 0) center / 56px 18px no-repeat;
+  border-radius: 6px;
+  opacity: 0.8;
+}
+
+.layout-neighborhood .nb-news-card__body {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 20px 24px 24px;
+}
+
+.layout-neighborhood .nb-news-card__date {
+  color: var(--nb-color-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.layout-neighborhood .nb-news-card__title {
+  font-size: 1.25rem;
+}
+
+.layout-neighborhood .nb-news-card__summary {
+  color: var(--nb-color-muted);
+}
+
+/* Trouvez-nous */
+
+.layout-neighborhood .nb-find-us__card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  overflow: hidden;
+  border-radius: var(--nb-radius-large);
+  background: var(--nb-color-surface);
+  box-shadow: var(--nb-shadow);
+}
+
+.layout-neighborhood .nb-find-us__details {
+  display: grid;
+  gap: 12px;
+  align-content: center;
+  justify-items: start;
+  padding: 36px;
+}
+
+.layout-neighborhood .nb-find-us__address {
+  font-family: var(--nb-font-heading);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.layout-neighborhood .nb-find-us__map {
+  min-height: 260px;
+  background:
+    radial-gradient(circle at 55% 45%, var(--nb-color-danger) 0 9px, #fff 10px 14px, transparent 15px),
+    linear-gradient(100deg, transparent 47%, #fff 47% 51%, transparent 51%),
+    linear-gradient(10deg, transparent 58%, #fff 58% 61%, transparent 61%),
+    linear-gradient(160deg, transparent 30%, rgba(255, 255, 255, 0.7) 30% 32%, transparent 32%),
+    var(--nb-color-primary-soft);
+}
+
+/* Page ordonnance */
+
+.layout-neighborhood .nb-prescription {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 40px;
+  align-items: start;
+}
+
+.layout-neighborhood .nb-prescription__intro {
+  display: grid;
+  gap: 16px;
+}
+
+.layout-neighborhood .nb-prescription__title {
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  color: var(--nb-color-primary-dark);
+}
+
+.layout-neighborhood .nb-prescription__steps {
+  display: grid;
+  gap: 12px;
+  padding-left: 0;
+  list-style: none;
+  counter-reset: nb-step;
+}
+
+.layout-neighborhood .nb-prescription__steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  counter-increment: nb-step;
+}
+
+.layout-neighborhood .nb-prescription__steps li::before {
+  content: counter(nb-step);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--nb-color-accent);
+  font-weight: 700;
+}
+
+.layout-neighborhood .nb-prescription__form-card {
+  padding: 32px;
+  border-radius: var(--nb-radius-large);
+  background: var(--nb-color-surface);
+  box-shadow: var(--nb-shadow);
+}
+
+.layout-neighborhood .nb-form {
+  display: grid;
+  gap: 18px;
+}
+
+.layout-neighborhood .nb-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 18px;
+}
+
+.layout-neighborhood .nb-field {
+  display: grid;
+  gap: 6px;
+}
+
+.layout-neighborhood .nb-field__label {
+  font-weight: 700;
+}
+
+.layout-neighborhood .nb-field__hint {
+  margin-top: -4px;
+  color: var(--nb-color-muted);
+  font-size: 0.9rem;
+}
+
+.layout-neighborhood .nb-field__error {
+  color: var(--nb-color-danger);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.layout-neighborhood .nb-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e4dccb;
+  border-radius: 14px;
+  background: var(--nb-color-background);
+  color: inherit;
+  font: inherit;
+}
+
+.layout-neighborhood .nb-input:focus-visible,
+.layout-neighborhood .nb-dropzone:focus-within {
+  border-color: var(--nb-color-primary);
+  outline: 3px solid var(--nb-color-primary-soft);
+}
+
+.layout-neighborhood .nb-field--invalid .nb-input,
+.layout-neighborhood .nb-field--invalid .nb-dropzone {
+  border-color: var(--nb-color-danger);
+}
+
+.layout-neighborhood .nb-dropzone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 110px;
+  padding: 16px;
+  border: 2px dashed #cfc5ae;
+  border-radius: var(--nb-radius);
+  background: var(--nb-color-background);
+  color: var(--nb-color-primary);
+  font-weight: 700;
+  text-align: center;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.layout-neighborhood .nb-dropzone__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.layout-neighborhood .nb-form__submit {
+  justify-self: start;
+}
+
+.layout-neighborhood .nb-form__failure {
+  color: var(--nb-color-danger);
+  font-weight: 700;
+}
+
+.layout-neighborhood .nb-form-sent {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.layout-neighborhood .nb-form-sent__check {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--nb-color-primary);
+  color: #fff;
+  font-size: 2rem;
+}
+
+.layout-neighborhood .nb-unavailable {
+  display: grid;
+  gap: 16px;
+  text-align: center;
+}
+
+/* Pied de page et mentions légales */
+
+.layout-neighborhood .nb-footer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 28px;
+  padding: 48px max(20px, calc((100% - var(--nb-content-width)) / 2));
+  background: var(--nb-color-primary-dark);
+  color: #e7efe9;
+}
+
+.layout-neighborhood .nb-footer a {
+  color: #fff;
+}
+
+.layout-neighborhood .nb-footer__column {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  justify-items: start;
+}
+
+.layout-neighborhood .nb-footer__name {
+  font-family: var(--nb-font-heading);
+  font-size: 1.3rem;
+  overflow-wrap: anywhere;
+}
+
+.layout-neighborhood .nb-footer__title {
+  color: var(--nb-color-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.layout-neighborhood .nb-legal-notice {
+  display: grid;
+  gap: 4px;
+  padding: 20px max(20px, calc((100% - var(--nb-content-width)) / 2));
+  background: #0f3824;
+  color: #b9cbbf;
+  font-size: 0.85rem;
+}
+
+.layout-neighborhood .nb-legal-notice .legal-notice__title {
+  font-family: var(--nb-font-body);
+  font-size: 0.85rem;
+  color: #fff;
+}

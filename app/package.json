@@ -3,5 +3,11 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
-	"packageManager": "pnpm@11.22.0"
+	"packageManager": "pnpm@11.22.0",
+	"scripts": {
+		"check": "pnpm --recursive check"
+	},
+	"devDependencies": {
+		"typescript": "^6.0.3"
+	}
 }

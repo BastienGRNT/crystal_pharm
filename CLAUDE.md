@@ -1,132 +1,202 @@
 # CLAUDE.md
 
-Ce fichier est la seule source de vérité sur l'architecture et le workflow.
-Il reste volontairement court. S'il dépasse ~150 lignes, on en reparle avant
-d'en ajouter — on éclate en fichiers séparés à ce moment-là, pas avant.
+Règles du monorepo, valables partout. Chaque zone a son `CLAUDE.md`, lu
+automatiquement quand tu y travailles : il précise celui-ci sans le contredire
+ni le répéter. Ce fichier reste sous ~250 lignes : au-delà, on en reparle.
 
-## Stack et frontière de responsabilité
+Une règle dit comment coder une zone **le jour où on la code**. Elle ne
+justifie jamais de créer du code, des fichiers ou de l'outillage en avance.
 
-- **C# (.NET)** : tenant, authentification (Identity + cookie + JWT émis au
-  login), et plus tard tout ce qui touche au paiement ou à une règle métier
-  vraiment critique. Développé et validé par lots larges — pas de
-  micro-découpage ici, la maîtrise C# est déjà acquise.
-  - API en **Controllers** (jamais Minimal API — lisibilité prioritaire).
-  - Architecture **DDD lite** : 4 projets, `Domain` (entités, aucune
-    dépendance externe), `Application` (services, interfaces, DTOs),
-    `Infrastructure` (EF Core, Identity, implémentations), `Api`
-    (Controllers, Program.cs, DI).
-  - Convention de sous-dossiers **fixée dès le départ**, dans chaque
-    projet, même vide au début : `Domain/Entities`, `Domain/ValueObjects` ;
-    `Application/Dtos`, `Application/Interfaces`, `Application/Services` ;
-    `Infrastructure/Persistence`, `Infrastructure/Persistence/Configurations`,
-    `Infrastructure/Repositories`, `Infrastructure/Services` ;
-    `Api/Controllers`. Ce n'est pas de
-    l'anticipation métier (la règle anti-anticipation plus bas ne
-    s'applique pas ici) — c'est une convention de plomberie/namespaces
-    dont le coût de correction grandit avec le temps (tout import à
-    reprendre), donc actée une bonne fois, dès le premier fichier.
-  - Le mapping EF Core de chaque entité vit dans sa propre classe
-    `IEntityTypeConfiguration<T>` sous `Infrastructure/Persistence/Configurations`,
-    appliquées via `ApplyConfigurationsFromAssembly` — jamais empilées dans
-    `OnModelCreating`, qui reste illisible dès la 2e ou 3e entité. Base du
-    DDD, pas une règle à part.
-  - Secrets et connection strings : jamais dans `appsettings*.json`, toujours
-    via le `.env` racine (déjà utilisé par Docker), lu par l'Api au démarrage
-    (`DotNetEnv`) puis exposé via les variables d'environnement standard
-    (`ConnectionStrings__Default`, `Jwt__Secret`, ...). Un seul `.env` pour
-    tout le repo, pas un par outil — pipelines/CI s'appuient sur les mêmes
-    variables d'environnement, pas sur des fichiers de config par environnement.
-- **SvelteKit + Drizzle** : tout le reste (sites, modules de contenu,
-  rendu public, formulaires manager). Développé **brique par brique**, chaque
-  brique testable seule avant la suivante.
-- Une seule base Postgres, deux schémas :
-  - `identity` (Tenant, Identity, futur Plan/facturation) → migré
-    **uniquement** par EF Core.
-  - `content` (Site, SiteModule...) → migré **uniquement** par Drizzle.
-  - Règle absolue : un schéma = un seul outil de migration, jamais les deux.
-- Isolation multi-tenant sur `content.*` : Row-Level Security Postgres,
-  jamais une simple clause `WHERE` côté code. Le rôle applicatif Drizzle
-  n'est jamais propriétaire des tables.
-- Le pont entre les deux mondes : un JWT émis par le C# au login, vérifié
-  côté SvelteKit dans `hooks.server.ts`, sans appel réseau vers l'API C#.
+## Les CLAUDE.md eux-mêmes
 
-## Topologie des apps (important : ne pas recopier l'ancien repo)
+- Une règle, un seul endroit : commune → ici ; propre à une zone → le
+  `CLAUDE.md` de la zone, qui renvoie ici au lieu de recopier.
+- Tu ne modifies un `CLAUDE.md` que si on te le demande. Avant d'écrire, tu
+  relis tous les autres et tu signales toute contradiction.
 
-- Tout le code des projets vit sous `app/` à la racine (`app/api` pour le
-  C#, `app/site-web`, `app/manager-web` plus tard), pour garder la racine
-  du repo lisible face aux fichiers de conf/infra (`compose.yml`,
-  `Makefile`, `.env`, futurs dossiers de déploiement). `app/` lui-même est
-  une exception actée à la règle anti-anticipation ci-dessous : c'est un
-  dossier de plomberie sans contenu métier, pas une anticipation de besoin.
-  En revanche, ce que `app/` contient reste soumis à la règle : chaque
-  sous-dossier n'est créé que lorsque son besoin est réel.
-- Exception à l'anti-anticipation : `app/packages/layouts` (le système
-  de layouts) est créé et développé **avant** `site-web` et `manager-web`,
-  car c'est le cœur partagé par les deux. Il est développé et vérifié en
-  vase clos, avec des données mockées en dur, sans dépendre de `site-web`,
-  `manager-web`, d'un tenant, d'une base ou de l'API C#. `site-web`, quand
-  il naîtra, démarre avec **zéro** code de layout dedans (pages plomberie
-  du type `<p>{tenant.nom}</p>` pour vérifier routing/tenant/auth) ; le
-  branchement au vrai rendu via `layouts` vient dans une brique
-  séparée, une fois la plomberie et le layout validés chacun de son côté.
-- `app/manager-web` est un projet **séparé**, mais créé seulement quand le
-  premier formulaire manager en a besoin. Séparé de `site-web` pour une
-  vraie raison (le site public doit rester ~0 KB de JS ; le manager a besoin
-  de formulaires riches) — pas par habitude de l'ancien repo.
-- `app/platform-web` (admin/back-office) : **ne pas créer**, tant qu'il n'y a
-  pas de vrai besoin opérationnel de gérer plusieurs tenants au quotidien.
-  La création de tenant se teste au `curl` en attendant.
-- `app/packages/layouts` : contrat de modules sans variante `bespoke`.
-  Tout layout a ses modules éditables/activables côté manager, sans
-  exception ; un layout atypique ou réservé à un tenant reste un layout
-  normal dont `supports` contient un module exclusif. `supports` déclare,
-  module par module, soit `true` (tous les champs de la forme canonique)
-  soit `{ fields: [...] }` (un sous-ensemble nommé et ordonné) — jamais un
-  formulaire manager câblé en dur par module. La forme canonique d'un
-  module reste unique (dérivée à terme du contrat C#/NSwag) ; les données
-  d'un site restent layout-agnostiques, un changement de layout ne perd
-  jamais une donnée saisie même si le nouveau layout ne l'affiche pas.
+## Vocabulaire — jamais de synonyme dans le code
 
-## Commandes
+`Tenant` (une pharmacie cliente, `tenantId`) · `Manager` (le pharmacien ou
+son équipe, connecté aux outils) · `Visitor` (la personne sur le site public,
+sans compte pour l'instant) · `TenantSite` (les données d'un site, validées
+par `packages/schema`) · `Layout` (un dossier de `packages/layouts`, son nom
+est l'identifiant) · `Module` (un bloc activable d'un site) · `Platform`
+(nous, l'opérateur du SaaS).
 
-- `make start` : lance uniquement ce qui tourne en continu sans qu'on y
-  touche — pour l'instant, Postgres (Docker).
-- `make api` : lance l'API .NET avec rechargement à chaud (`dotnet watch
-  run`), toujours en foreground dans son propre terminal — jamais en
-  arrière-plan (pas de `&`, pas de détachement). Ctrl+C dans ce terminal
-  tue le process normalement, comme un lancement direct : `make` ne fait
-  ici qu'exécuter la commande, pas la détacher.
-- `make logs` : suit les logs de ce que `make start` a lancé (Docker
-  pour l'instant). Les process en foreground (API, front) affichent déjà
-  leurs logs dans leur propre terminal, pas besoin de les y ajouter.
-- Rien d'autre tant que le besoin n'est pas réel. Ne pas ajouter de
-  commande, de script, ou d'outil de manière spéculative.
+## La carte
+
+```
+├─ CLAUDE.md  README.md  Makefile  compose.yml  .env
+├─ docker/                  Caddy : passerelle de dev
+└─ app/
+   ├─ packages/             LE MOTEUR (Solid) : schema · renderer · layouts
+   ├─ shared/               partagé, modifiable : ui · auth · api-client · content-db
+   ├─ apps/
+   │  ├─ site/              SolidStart : les sites publics + /__preview
+   │  ├─ home/              connexion + menu des outils
+   │  ├─ site-manager/      édition du site (Drizzle → `content`)
+   │  ├─ planning/          planning de l'équipe (→ C#)
+   │  ├─ booking/           rendez-vous (→ C#)
+   │  └─ prescriptions/     ordonnances reçues (→ C#)
+   └─ api/                  C# : un hôte (Api) + Modules/<Module>/ (Domain · Application · Infrastructure)
+```
+
+## Qui fait quoi
+
+- **C#** (`app/api`) : ce qui est sensible ou a des règles complexes — comptes
+  et tenants (Identity), planning, rendez-vous, ordonnances. Une seule API,
+  un module par domaine.
+- **SvelteKit + Drizzle** : ce qui est public ou simple — le contenu des
+  sites (schéma `content`), écrit par `site-manager`.
+- **SolidStart** (`apps/site`) : rend les sites, lit `content` directement
+  (jamais via le C#).
+- Un envoi du Visitor appartient au module qui le traite : un rendez-vous →
+  `Booking`, une ordonnance → `Prescriptions`. Un nouveau type d'envoi sans
+  module évident : on en parle avant.
+
+## Sécurité — invariants
+
+- Le C# n'est **jamais exposé à Internet**. Il n'accepte que deux appelants
+  identifiés : un Manager (son JWT) ou le service `site` (identité de service).
+- Le `tenantId` vient du JWT pour un Manager, de la passerelle pour un
+  Visitor (elle écrase tout en-tête tenant venu du navigateur). Jamais d'un
+  paramètre, d'une URL ou d'un champ de formulaire.
+- Chaque processus n'a que ses propres secrets : la clé privée du JWT n'existe
+  que dans l'environnement de l'API.
+- Chaque app a son rôle Postgres, avec des droits sur son schéma seulement.
+
+## Données de santé — règle absolue
+
+Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
+
+- stockés **uniquement** par le C#, dans `booking` et `prescriptions` (et leurs
+  fichiers), derrière des interfaces d'`Application` : local en dev, HDS en prod ;
+- en prod, seules ces données sont chez l'hébergeur HDS, le reste est sur un
+  serveur normal. Donc aucune clé étrangère ni jointure entre un schéma de
+  santé et un autre : on se référence par identifiant ;
+- côté Node, ils ne font que transiter : jamais en cache, sur disque, dans une
+  URL, un log, un message d'erreur ou un outil d'analytics.
+
+## Dépendances autorisées
+
+| Depuis | Peut importer |
+|---|---|
+| `apps/site` | `packages/*`, `shared/content-db`, `shared/api-client` |
+| une app Svelte | `shared/*`, `packages/schema` |
+| `apps/site-manager` | en plus : l'export sans Solid de `layouts` (`/manifest`) |
+| `shared/*` | voir `app/shared/CLAUDE.md` |
+| `packages/*` | entre eux seulement : `layouts → renderer → schema` |
+
+- Chaque `package.json` ne déclare que ce que ce tableau autorise : pnpm
+  bloque alors le reste.
+- Une app n'importe **jamais** une autre app, ni un composant Solid dans du
+  Svelte. L'aperçu d'un site passe par une iframe vers `apps/site/__preview`.
+
+## Le moteur (`app/packages/`) se consomme, il ne se modifie pas
+
+Tu le lis et tu l'importes ; tu ne le modifies **que si la demande porte
+explicitement sur lui**. Si une tâche ailleurs semble l'exiger : tu t'arrêtes
+et tu le signales. Aucun contournement par le shell (`sed`, `>`, script).
+Créer ou modifier un layout : lis d'abord `app/packages/docs/creer-un-layout.md`.
+
+## Contrats
+
+- **Données d'un site** : `packages/schema` (Valibot) fait foi. Le C# ne les
+  connaît pas.
+- **Données métier** : le C# fait foi. Son OpenAPI génère `shared/api-client`
+  (`make gen-types`), **jamais édité à la main**. Les types régénérés vont
+  dans le commit qui change le contrat.
+- À la frontière, un **adapter** (une fonction qui traduit un type dans
+  l'autre), dans l'app qui en a besoin.
+
+## Base de données
+
+- Un schéma = un seul outil de migration : `content` → Drizzle ; `identity`,
+  `planning`, `booking`, `prescriptions` → EF Core. Jamais les deux.
+- Isolation entre tenants : Row-Level Security sur `content`, `booking` et
+  `prescriptions` ; global query filter EF sur tout le C#. Le tenant se pose
+  par transaction (`SET LOCAL`), jamais pour toute la connexion.
+- Toute table liée à un tenant a un index qui commence par `tenant_id`.
+
+## Docs et maquettes
+
+- La doc d'une zone vit dans le dossier `docs/` de la zone, créé avec sa
+  première doc. Un `docs/` racine n'existe que pour une doc qui concerne
+  plusieurs zones.
+- Maquettes : `docs/maquettes/` de la zone (`app/apps/<app>/`, et
+  `app/packages/` avec un dossier par layout) ; le design system des outils :
+  `app/shared/ui/docs/design-system/`.
+- Chaque dossier de maquette a un `README.md` de 3 lignes (ce qu'il montre,
+  ce qui est validé, ce qui est brouillon) : tu le lis d'abord, et tu ne
+  reproduis jamais une partie brouillon. Une seule version par maquette, jamais
+  de zip ; tu ne lis que celle de l'écran en cours.
+
+## Principes de code
+
+- SOLID, KISS, DRY. Clean architecture dès que la zone le permet : les
+  dépendances pointent vers le domaine, jamais l'inverse.
+- Noms longs et explicites, sans abréviation, pour les fonctions, variables,
+  fichiers et dossiers : `calculateNextAvailableAppointmentSlot`, pas `calcSlot`.
+- Le code se lit comme une recette : une fonction = une étape nommée, et une
+  fonction de haut niveau enchaîne des étapes de même niveau.
+- Pas de commentaire sur un code qui s'explique seul : s'il en faut un, c'est
+  d'abord un nom à améliorer. Ils sont réservés au code qui ne peut pas être
+  clair seul (algorithme, contournement, contrainte externe) et disent
+  pourquoi, jamais quoi.
+- Rangement : jamais un tas de fichiers à plat. Au-delà de ~8 éléments
+  (fichiers + dossiers) à un même niveau, tu regroupes en sous-dossiers par
+  fonctionnalité (`components/agenda/`, `services/appointment-booking/`).
+  À la racine d'un projet, seulement la configuration : le code va dans
+  `src/`. Pas de dossier pour un seul fichier, sauf structure imposée
+  (couches, atomic design).
+- UI en français, code en anglais. TypeScript strict, jamais de `any`.
 
 ## Workflow de session
 
-- Un lot = une session = une branche = un commit. Jamais deux sujets
-  mélangés dans la même session, même s'ils semblent liés.
-- Une brique Svelte n'est valable que si : (1) elle touche peu de fichiers,
-  (2) elle se vérifie par un geste concret en moins de 2 minutes (curl, test,
-  page affichée), (3) je peux la réexpliquer avec mes mots juste après. Si un
-  des trois manque, on redécoupe avant de continuer.
-- Ne jamais anticiper un besoin qui n'existe pas encore (pas de règle, pas
-  d'abstraction, pas de fichier de spec écrit avant qu'un cas réel ne
-  l'exige).
-- Commits : jamais de mention "Co-Authored-By: Claude", jamais de trailer
-  ou de signature générée par l'outil. Message de commit uniquement, comme
-  s'il avait été écrit par moi.
+- Un lot = une session = une branche, dans **une** zone (une app, `app/api`
+  ou le moteur), plus `shared/` si la tâche l'exige. Jamais une autre app.
+- Vérification, une seule fois, à la fin :
+  - le typecheck de la zone (`pnpm --filter <package> check` — le script
+    s'appelle `check` partout — ou `dotnet build app/api`) ;
+  - si tu as touché `shared/` ou le moteur : aussi le typecheck des packages
+    qui en dépendent, en lecture seule (tu signales, tu ne corriges pas) ;
+  - les tests si tu as touché au domaine ; un test d'intégration pour toute
+    règle d'isolation entre tenants, de concurrence ou d'auth ;
+  - au plus 2 tentatives de correction, puis tu t'arrêtes et tu signales.
+- Jamais de serveur (`make api`, dev), de lint, de formatage, de navigateur
+  ni de capture : c'est nous qui les lançons.
+- Erreur signalée à l'exécution : tu peux lancer ce qu'il faut pour
+  l'observer (`curl`, logs) plutôt que deviner.
 
-## NOTES.md
+Quand tu t'arrêtes, toujours ce format :
+`Arrêt — zone : … · bloqué par : … · proposition : …`
 
-- Journal de décisions, pas un cahier des charges. 3-4 lignes ajoutées
-  seulement quand une décision est prise et validée, pas avant.
-- Format par entrée : quoi / pourquoi / comment c'est vérifié / commit lié.
-- Ne pas relire tout `NOTES.md` à chaque session : ne consulter que la
-  dernière entrée pertinente au sujet du jour, pour économiser du contexte.
+## Commandes
 
-## Ancien projet (`crystal_pharm-legacy`)
+`make start` (Postgres) · `make logs` · `make api` · `make gen-types` (créée
+avec le premier appel d'une app au C#). Dépendances JS : `pnpm install` dans
+`app/`. Rien d'autre tant que le besoin n'est pas réel.
 
-Lecture seule, jamais importé tel quel. Consulté à la demande, seulement
-pour une question précise (ex. une règle a11y déjà tranchée) — jamais lu en
-entier par défaut.
+## Git (git flow)
+
+- `main` = la prod, `develop` = l'intégration. Sauf demande explicite, tu ne
+  travailles, ne commites et ne merges **jamais** sur `main` ni `develop`.
+- Avant de modifier un fichier, tu vérifies la branche : sur `main` ou
+  `develop`, tu crées d'abord celle de la tâche depuis `develop` (si le sujet
+  n'est pas clair, tu demandes son nom).
+- Branche : `<type>/<scope>/<sujet>`, ex. `feat/booking/annulation-par-le-patient`.
+  - type : `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf` ;
+    `hotfix` seulement depuis `main` ; `release/<version>` est créée par nous ;
+  - scope : le dossier de la zone (`site`, `home`, `site-manager`, `planning`,
+    `booking`, `prescriptions`, `api`, `renderer`, `schema`, `layouts`, `ui`,
+    `auth`, `api-client`, `content-db`), ou `repo` pour la racine ;
+  - sujet : en kebab-case, ce que ça change pour le produit.
+- Commit : `<type>(<scope>): <sujet>`, en français, mêmes types et scopes. Le
+  corps dit pourquoi, sauf pour un changement trivial.
+- **Jamais** de `Co-Authored-By`, de signature ni de trailer d'outil.
+- Tu ne commites et ne pushes que si on te le demande.
+
+## Anciens projets
+
+`crystal_pharm-legacy`, `crystal_pharm_proto` : lecture seule, pour une
+question précise, jamais copiés tels quels.

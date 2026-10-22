@@ -1,11 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
@@ -17,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CrystalPharm.Application\CrystalPharm.Application.csproj" />
-    <ProjectReference Include="..\CrystalPharm.Infrastructure\CrystalPharm.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Identity\CrystalPharm.Identity.Application\CrystalPharm.Identity.Application.csproj" />
+    <ProjectReference Include="..\Modules\Identity\CrystalPharm.Identity.Infrastructure\CrystalPharm.Identity.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

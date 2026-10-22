@@ -1,0 +1,445 @@
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-700.css';
+
+/* Layout « essential » : brutaliste, typographique, monochrome, très dense. */
+
+.layout-essential {
+  --essential-color-ink: #0b0b0b;
+  --essential-color-paper: #f2f1ec;
+  --essential-color-muted: #5c5c58;
+  --essential-color-highlight: #0b0b0b;
+  --essential-color-on-highlight: #f2f1ec;
+  --essential-font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --essential-rule-width: 3px;
+
+  min-height: 100vh;
+  background: var(--essential-color-paper);
+  color: var(--essential-color-ink);
+  font-family: var(--essential-font-family);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.layout-essential *,
+.layout-essential *::before,
+.layout-essential *::after {
+  box-sizing: border-box;
+}
+
+.layout-essential a {
+  color: inherit;
+}
+
+.layout-essential h1,
+.layout-essential h2,
+.layout-essential h3,
+.layout-essential p,
+.layout-essential ul {
+  margin: 0;
+}
+
+.layout-essential .essential {
+  border: var(--essential-rule-width) solid var(--essential-color-ink);
+  margin: 12px;
+}
+
+/* En-tête : le nom de la pharmacie en énorme, rien d'autre. */
+
+.layout-essential .essential-masthead {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: var(--essential-rule-width) solid var(--essential-color-ink);
+}
+
+.layout-essential .essential-masthead__logo {
+  height: 48px;
+  width: auto;
+  filter: grayscale(1) contrast(1.4);
+}
+
+.layout-essential .essential-masthead__name {
+  font-size: clamp(2.2rem, 7vw, 6.5rem);
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.layout-essential .essential-masthead__contact,
+.layout-essential .essential-masthead__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-masthead__group-logo {
+  height: 24px;
+  width: auto;
+  filter: grayscale(1) contrast(1.4);
+}
+
+/* La grille : les filets noirs entre les blocs sont le fond qui apparaît dans les interstices. */
+
+.layout-essential .essential-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: var(--essential-rule-width);
+  background: var(--essential-color-ink);
+}
+
+.layout-essential .essential-block {
+  min-width: 0;
+  padding: 16px;
+  background: var(--essential-color-paper);
+}
+
+.layout-essential .essential-block--news,
+.layout-essential .essential-prescription {
+  grid-column: 1 / -1;
+}
+
+.layout-essential .essential-heading {
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-heading::before {
+  content: '■ ';
+}
+
+/* Horaires */
+
+.layout-essential .essential-on-duty {
+  margin-bottom: 12px;
+  padding: 8px;
+  background: var(--essential-color-highlight);
+  color: var(--essential-color-on-highlight);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-hours {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.layout-essential .essential-hours__day,
+.layout-essential .essential-hours__periods {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--essential-color-ink);
+  text-align: left;
+  vertical-align: top;
+}
+
+.layout-essential .essential-hours__day {
+  width: 9ch;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-hours__row--today {
+  background: var(--essential-color-highlight);
+  color: var(--essential-color-on-highlight);
+  font-weight: 700;
+}
+
+.layout-essential .essential-hours__row--today > * {
+  padding-inline: 4px;
+}
+
+.layout-essential .essential-hotline {
+  display: block;
+  margin-top: 12px;
+  color: var(--essential-color-muted);
+  font-size: 0.8rem;
+}
+
+/* Services */
+
+.layout-essential .essential-services {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-essential .essential-services__title {
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-services__description {
+  color: var(--essential-color-muted);
+}
+
+/* Équipe */
+
+.layout-essential .essential-team {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-essential .essential-team__member {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+}
+
+.layout-essential .essential-portrait {
+  grid-row: 1 / span 2;
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.2);
+}
+
+.layout-essential .essential-portrait--initials {
+  display: grid;
+  place-items: center;
+  background: var(--essential-color-ink);
+  color: var(--essential-color-paper);
+  font-weight: 700;
+}
+
+.layout-essential .essential-team__name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.layout-essential .essential-team__role {
+  color: var(--essential-color-muted);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+/* Actualités */
+
+.layout-essential .essential-news {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+}
+
+.layout-essential .essential-news__article {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding-top: 8px;
+  border-top: var(--essential-rule-width) solid var(--essential-color-ink);
+}
+
+.layout-essential .essential-news__image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.15);
+}
+
+.layout-essential .essential-news__date {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-news__title {
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.layout-essential .essential-news__summary {
+  color: var(--essential-color-muted);
+}
+
+/* Carte de fidélité */
+
+.layout-essential .essential-loyalty {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.layout-essential .essential-loyalty__image {
+  width: 100%;
+  max-width: 320px;
+  filter: grayscale(1) contrast(1.2);
+}
+
+.layout-essential .essential-loyalty__link {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Ordonnance : la carte se déplie en animant la hauteur de sa grille (0fr → 1fr). */
+
+.layout-essential .essential-prescription {
+  padding: 0;
+}
+
+.layout-essential .essential-prescription__toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  background: var(--essential-color-ink);
+  color: var(--essential-color-paper);
+  font: inherit;
+  font-size: clamp(1.1rem, 3vw, 1.8rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layout-essential .essential-prescription__toggle:hover,
+.layout-essential .essential-prescription__toggle:focus-visible {
+  outline: var(--essential-rule-width) solid var(--essential-color-ink);
+  outline-offset: calc(-2 * var(--essential-rule-width));
+  background: var(--essential-color-paper);
+  color: var(--essential-color-ink);
+}
+
+.layout-essential .essential-prescription__toggle-sign {
+  font-size: 1.5em;
+  line-height: 1;
+}
+
+.layout-essential .essential-prescription__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 450ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+.layout-essential .essential-prescription--open .essential-prescription__panel {
+  grid-template-rows: 1fr;
+}
+
+.layout-essential .essential-prescription__panel-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.layout-essential .essential-prescription__introduction {
+  padding: 16px 16px 0;
+}
+
+/* Formulaire d'ordonnance */
+
+.layout-essential .essential-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.layout-essential .essential-form__group {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: var(--essential-rule-width) solid var(--essential-color-ink);
+}
+
+.layout-essential .essential-form__group-title {
+  padding: 0 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-field {
+  display: grid;
+  gap: 4px;
+}
+
+.layout-essential .essential-field__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-field__error {
+  font-weight: 700;
+}
+
+.layout-essential .essential-field__error::before {
+  content: '! ';
+}
+
+.layout-essential .essential-input {
+  width: 100%;
+  padding: 8px;
+  border: 2px solid var(--essential-color-ink);
+  border-radius: 0;
+  background: var(--essential-color-paper);
+  color: inherit;
+  font: inherit;
+}
+
+.layout-essential .essential-input:focus-visible {
+  outline: var(--essential-rule-width) solid var(--essential-color-ink);
+  outline-offset: 2px;
+}
+
+.layout-essential .essential-input::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 10px;
+  border: 2px solid var(--essential-color-ink);
+  background: var(--essential-color-ink);
+  color: var(--essential-color-paper);
+  font: inherit;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.layout-essential .essential-form__submit {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 12px 20px;
+  border: var(--essential-rule-width) solid var(--essential-color-ink);
+  background: var(--essential-color-ink);
+  color: var(--essential-color-paper);
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.layout-essential .essential-form__submit:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.layout-essential .essential-form__status {
+  grid-column: 1 / -1;
+  padding: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Mentions légales */
+
+.layout-essential .essential-legal-notice {
+  margin: 0 12px 12px;
+  padding: 12px 16px;
+  border: var(--essential-rule-width) solid var(--essential-color-ink);
+  border-top: 0;
+  color: var(--essential-color-muted);
+  font-size: 0.75rem;
+}
+
+.layout-essential .essential-legal-notice .legal-notice__title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}

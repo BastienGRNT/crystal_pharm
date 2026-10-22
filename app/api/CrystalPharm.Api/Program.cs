@@ -1,4 +1,4 @@
-using CrystalPharm.Infrastructure;
+using CrystalPharm.Identity.Infrastructure;
 using DotNetEnv;
 
 var envFile = new DirectoryInfo(Directory.GetCurrentDirectory());
@@ -17,7 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddIdentityModule(builder.Configuration);
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

@@ -1,4 +1,15 @@
 {
   "attribution": { "commit": "", "pr": "" },
-  "includeCoAuthoredBy": false
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "ask": [
+      "Edit(/app/packages/renderer/**)",
+      "Edit(/app/packages/schema/**)",
+      "Edit(**/CLAUDE.md)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Edit(/app/shared/api-client/**)"
+    ]
+  }
 }
