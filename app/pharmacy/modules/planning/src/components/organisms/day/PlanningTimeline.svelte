@@ -1,4 +1,7 @@
 <script lang="ts">
+	import AbsenceBlock from '../../atoms/AbsenceBlock.svelte';
+	import ShiftChip from '../../atoms/ShiftChip.svelte';
+	import EmployeeIdentity from '../../molecules/EmployeeIdentity.svelte';
 	import type { PlanningTimelineHour, PlanningTimelineRow } from './planningTimeline';
 
 	type PlanningTimelineProps = {
@@ -29,17 +32,7 @@
 			{#each rows as row (row.key)}
 				<li class="flex border-line-soft not-last:border-b">
 					<div class="w-[190px] flex-none px-4 py-2">
-						<b class="block font-semibold text-ink">
-							{row.personName}
-							{#if row.personTag}
-								<span
-									class="ml-0.5 inline-flex rounded-xs bg-surface-muted px-[5px] text-[11px] leading-4 font-medium text-ink-muted"
-								>
-									{row.personTag}
-								</span>
-							{/if}
-						</b>
-						<small class="text-small block text-ink-subtle">{row.personDetail}</small>
+						<EmployeeIdentity name={row.personName} detail={row.personDetail} tag={row.personTag} />
 					</div>
 
 					<div class="relative mr-6 ml-3 min-h-14 flex-1">
@@ -52,22 +45,14 @@
 						{/each}
 
 						{#if row.absence}
-							<div
-								class="absolute inset-y-1.5 right-0 left-0 rounded-xs bg-absence px-2 py-1 text-[12.5px] text-on-absence"
-							>
-								<b>{row.absence.label}</b> · {row.absence.detail}
-							</div>
+							<AbsenceBlock label={row.absence.label} detail={row.absence.detail} placement="timeline" />
 						{:else if row.bars.length === 0}
 							<p class="text-small absolute top-1/2 left-2 -translate-y-1/2 text-ink-subtle">Pas de créneau</p>
 						{:else}
 							{#each row.bars as bar (bar.id)}
-								<div
-									class="text-slot absolute inset-y-2.5 flex items-center overflow-hidden rounded-xs bg-accent-soft px-2 whitespace-nowrap text-ink shadow-[inset_2px_0_0_var(--accent-value)]"
-									style:left="{bar.startPercent}%"
-									style:width="{bar.widthPercent}%"
-								>
-									<span class="sr-only">{row.personName}, </span>{bar.label}
-								</div>
+								<ShiftChip label={bar.label} timelinePosition={bar}>
+									<span class="sr-only">{row.personName}, </span>
+								</ShiftChip>
 							{/each}
 						{/if}
 

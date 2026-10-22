@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Icon from '../atoms/Icon.svelte';
-	import type { IconName } from '../atoms/icons';
+	import Icon from '../atoms/icons/Icon.svelte';
+	import type { IconName } from '../atoms/icons/icons';
 
 	type AlertTone = 'danger' | 'warning' | 'success' | 'info';
 

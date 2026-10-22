@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import IconButton from '../atoms/IconButton.svelte';
-	import { applyAndRememberTheme, readCurrentTheme, type Theme } from '../theme/themePreference';
+	import IconButton from '../atoms/actions/IconButton.svelte';
+	import { applyAndRememberTheme, readCurrentTheme, type Theme } from './themePreference';
 
 	let { surface = 'page' }: { surface?: 'page' | 'rail' } = $props();
 

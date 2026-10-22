@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { signInAndOpen } from '@crystal-pharm/auth/client';
 	import { AuthenticationScreen, LoginForm, TextLink } from '@crystal-pharm/ui';
+	import { pharmacyAuthenticationSpace } from './pharmacyAuthenticationSpace';
 </script>
 
-<AuthenticationScreen title="Connexion" subtitle="Espace gérant de votre pharmacie.">
+<AuthenticationScreen space={pharmacyAuthenticationSpace} title="Connexion" subtitle="Avec l’email et le mot de passe de votre compte.">
 	<LoginForm onSubmit={(credentials) => signInAndOpen(credentials, '/')} />
 
 	{#snippet footer()}

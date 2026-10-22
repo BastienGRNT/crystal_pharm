@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Button from '../../atoms/Button.svelte';
-	import Input from '../../atoms/Input.svelte';
+	import Button from '../../atoms/actions/Button.svelte';
+	import Input from '../../atoms/fields/Input.svelte';
 	import Alert from '../../molecules/Alert.svelte';
-	import Field from '../../molecules/Field.svelte';
+	import Field from '../../molecules/fields/Field.svelte';
 	import type { AuthenticationSubmission, RegistrationDetails } from './authenticationForms';
 
 	type RegisterFormProps = {

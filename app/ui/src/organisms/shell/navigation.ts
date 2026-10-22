@@ -1,5 +1,5 @@
-import type { IconName } from './atoms/icons';
-import type { ModuleKey } from './modules';
+import type { IconName } from '../../atoms/icons/icons';
+import type { ModuleKey } from '../../modules';
 
 export type NavigationLink = {
 	label: string;

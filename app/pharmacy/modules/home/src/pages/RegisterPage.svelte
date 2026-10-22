@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { registerAndOpen } from '@crystal-pharm/auth/client';
 	import { AuthenticationScreen, RegisterForm, TextLink } from '@crystal-pharm/ui';
+	import { pharmacyAuthenticationSpace } from './pharmacyAuthenticationSpace';
 </script>
 
-<AuthenticationScreen title="Créer un compte" subtitle="Accédez aux outils de votre pharmacie.">
+<AuthenticationScreen space={pharmacyAuthenticationSpace} title="Créer un compte" subtitle="Accédez aux outils de votre pharmacie.">
 	<RegisterForm onSubmit={(newAccount) => registerAndOpen(newAccount, '/')} />
 
 	{#snippet footer()}

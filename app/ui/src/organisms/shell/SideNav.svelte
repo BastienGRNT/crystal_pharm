@@ -1,10 +1,10 @@
 <script lang="ts">
-	import Avatar from '../atoms/Avatar.svelte';
-	import Icon from '../atoms/Icon.svelte';
-	import IconButton from '../atoms/IconButton.svelte';
-	import LogoMark from '../atoms/LogoMark.svelte';
-	import ThemeToggle from '../molecules/ThemeToggle.svelte';
-	import type { NavigationLink, SignedInUserSummary } from '../navigation';
+	import Avatar from '../../atoms/Avatar.svelte';
+	import Icon from '../../atoms/icons/Icon.svelte';
+	import IconButton from '../../atoms/actions/IconButton.svelte';
+	import LogoMark from '../../atoms/LogoMark.svelte';
+	import ThemeToggle from '../../molecules/ThemeToggle.svelte';
+	import type { NavigationLink, SignedInUserSummary } from './navigation';
 
 	type SideNavProps = {
 		navigationLinks: readonly NavigationLink[];

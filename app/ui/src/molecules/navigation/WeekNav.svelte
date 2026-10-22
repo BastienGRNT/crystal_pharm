@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Icon from '../atoms/Icon.svelte';
+	import Icon from '../../atoms/icons/Icon.svelte';
 
 	type WeekNavProps = {
 		weekLabel: string;

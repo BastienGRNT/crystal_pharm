@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Icon from './Icon.svelte';
-	import type { IconName } from './icons';
+	import Icon from '../icons/Icon.svelte';
+	import type { IconName } from '../icons/icons';
 	import type { ButtonVariant } from './button';
 
 	type ButtonProps = {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import Icon from '../atoms/Icon.svelte';
-	import Input from '../atoms/Input.svelte';
+	import Icon from '../../../atoms/icons/Icon.svelte';
+	import Input from '../../../atoms/fields/Input.svelte';
 	import {
 		addDays,
 		addMonths,

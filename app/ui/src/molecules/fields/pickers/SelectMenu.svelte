@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import Icon from '../atoms/Icon.svelte';
-	import Select from '../atoms/Select.svelte';
+	import Icon from '../../../atoms/icons/Icon.svelte';
+	import Select from '../../../atoms/fields/Select.svelte';
 	import { dismissOnOutsidePointerDown } from './dismissOnOutsidePointerDown';
 	import { pickerOptionClasses, pickerPopoverClasses, pickerTriggerClasses } from './pickerClasses';
 	import type { SelectMenuOption } from './selectMenu';

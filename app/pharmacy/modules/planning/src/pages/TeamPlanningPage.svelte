@@ -1,14 +1,8 @@
 <script lang="ts">
-	import {
-		Button,
-		PageHeader,
-		PlanningGrid,
-		PlanningTimeline,
-		SegmentedControl,
-		SidePanel,
-		WeekNav
-	} from '@crystal-pharm/ui';
-	import AddShiftForm from '../components/AddShiftForm.svelte';
+	import { Button, PageHeader, SegmentedControl, SidePanel, WeekNav } from '@crystal-pharm/ui';
+	import AddShiftForm from '../components/organisms/AddShiftForm.svelte';
+	import PlanningTimeline from '../components/organisms/day/PlanningTimeline.svelte';
+	import PlanningGrid from '../components/organisms/week/PlanningGrid.svelte';
 	import type { AddShiftFailure, PlanningPageData } from './teamPlanningPageData';
 
 	type TeamPlanningPageProps = {

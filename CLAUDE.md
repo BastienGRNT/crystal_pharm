@@ -152,9 +152,13 @@ Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
 
 Svelte 5 (runes), SvelteKit 2, Tailwind 4, TypeScript strict.
 
-- Atomic design : les composants communs viennent de `ui` ; un composant
-  métier reste dans son app (ou son module) ; un composant utilisé par deux
-  apps ou deux modules part dans `ui`.
+- Atomic design partout, `ui` comme les `components/` d'un module ou d'une
+  app (`atoms/` → `molecules/` → `organisms/`, chacun créé avec son premier
+  composant), construits avec les pièces de `ui`, jamais l'inverse.
+- Où ranger un composant : s'il parle du métier (employé, créneau, absence…)
+  dans son nom ou ses props, dans son app ou son module ; sinon dans `ui`,
+  même s'il ne sert qu'une fois. Deux modules ont besoin du même composant
+  métier : on le rend générique (sans vocabulaire métier) et il part dans `ui`.
 - Couleurs, polices, rayons, espacements : uniquement les tokens de `ui`,
   jamais de valeur en dur.
 - Une maquette (cf. « Docs et maquettes ») se traduit en tokens et composants
@@ -242,7 +246,8 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
   pourquoi, jamais quoi.
 - Rangement : jamais un tas de fichiers à plat. Au-delà de ~8 éléments
   (fichiers + dossiers) à un même niveau, tu regroupes en sous-dossiers par
-  fonctionnalité (`components/agenda/`, `services/appointment-booking/`).
+  fonctionnalité, à l'intérieur de la structure imposée
+  (`organisms/agenda/`, `services/appointment-booking/`).
   À la racine d'un projet, seulement la configuration : le code va dans
   `src/`. Pas de dossier pour un seul fichier, sauf structure imposée
   (couches, atomic design).

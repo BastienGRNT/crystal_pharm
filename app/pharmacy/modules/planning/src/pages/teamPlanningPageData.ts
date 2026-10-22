@@ -1,10 +1,6 @@
-import type {
-	PlanningGridDay,
-	PlanningGridRow,
-	PlanningTimelineHour,
-	PlanningTimelineRow,
-	SegmentedControlOption
-} from '@crystal-pharm/ui';
+import type { SegmentedControlOption } from '@crystal-pharm/ui';
+import type { PlanningTimelineHour, PlanningTimelineRow } from '../components/organisms/day/planningTimeline';
+import type { PlanningGridDay, PlanningGridRow } from '../components/organisms/week/planningGrid';
 import type { Employee } from '../domain/planning';
 
 export type PeriodNavigation = {

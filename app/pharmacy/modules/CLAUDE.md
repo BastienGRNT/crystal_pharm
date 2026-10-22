@@ -21,7 +21,7 @@ Chaque outil est un module : un package Svelte 5 (runes), monté par
 src/
 ├─ index.ts                 la partie publique côté client (les pages)
 ├─ pages/                   un composant par écran, qui reçoit ses données en props
-├─ components/              composants métier, construits avec ui
+├─ components/              composants métier en atomic design (atoms/ → molecules/ → organisms/), construits avec ui
 ├─ domain/                  types et calculs purs, testés
 └─ server/
    ├─ index.server.ts       la partie publique côté serveur (load, actions, endpoints)

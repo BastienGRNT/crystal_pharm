@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button, DatePicker, Field, SelectMenu, TimePicker } from '@crystal-pharm/ui';
-	import type { Employee } from '../domain/planning';
+	import type { Employee } from '../../domain/planning';
 
 	type AddShiftFormProps = {
 		formAction: string;

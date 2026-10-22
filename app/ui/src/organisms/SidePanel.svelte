@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Icon from '../atoms/Icon.svelte';
+	import Icon from '../atoms/icons/Icon.svelte';
 
 	type SidePanelProps = {
 		title: string;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { findCurrentNavigationLink, type NavigationLink, type SignedInUserSummary } from '../navigation';
+	import { findCurrentNavigationLink, type NavigationLink, type SignedInUserSummary } from './navigation';
 	import SideNav from './SideNav.svelte';
 	import TopBar from './TopBar.svelte';
 

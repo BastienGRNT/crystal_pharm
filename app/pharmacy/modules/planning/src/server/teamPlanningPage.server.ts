@@ -1,5 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import type { PlanningGridRow, PlanningTimelineRow, SegmentedControlOption } from '@crystal-pharm/ui';
+import type { SegmentedControlOption } from '@crystal-pharm/ui';
+import type { PlanningTimelineRow } from '../components/organisms/day/planningTimeline';
+import type { PlanningGridRow } from '../components/organisms/week/planningGrid';
 import {
 	buildPlanningRows,
 	formatDuration,

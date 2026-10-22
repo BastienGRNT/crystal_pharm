@@ -10,7 +10,15 @@ navigation sombre).
   module sans couleur garde l'accent de la marque ; une nouvelle couleur se
   propose.
 - `atoms/` → `molecules/` → `organisms/` : dépendances descendantes
-  uniquement. Composants faits main.
+  uniquement. Composants faits main. Dans chaque niveau, un dossier par
+  fonctionnalité dès qu'il y en a plusieurs du même genre :
+  - `atoms/` : `actions/` (boutons, liens), `fields/` (saisie), `icons/` ;
+  - `molecules/` : `fields/` (`Field`, et `pickers/` pour date, heure, liste),
+    `navigation/` (choix de vue, semaine) ;
+  - `organisms/` : `shell/` (le cadre et son menu), `authentication/`.
+- Seul le générique vit ici : aucun vocabulaire métier dans un nom ou une
+  prop (cf. racine, « Svelte »). La grille du planning, qui parle d'employés
+  et de créneaux, vit dans son module.
 - Composants **purs** : props en entrée, callbacks en sortie. Aucun fetch,
   aucun store global, aucune connaissance d'une app, d'un module ou du C#.
 - `AppShell` (la colonne `SideNav`, la barre `TopBar`, le contenu) reçoit le
