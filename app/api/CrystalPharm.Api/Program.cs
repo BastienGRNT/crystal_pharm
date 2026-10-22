@@ -1,4 +1,3 @@
-using CrystalPharm.Identity.Infrastructure;
 using DotNetEnv;
 
 var envFile = new DirectoryInfo(Directory.GetCurrentDirectory());
@@ -17,18 +16,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.AddIdentityModule(builder.Configuration);
-
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Cookie.Name = "CrystalPharm.Auth";
-    options.Events.OnRedirectToLogin = context =>
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return Task.CompletedTask;
-    };
-});
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -37,9 +24,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapControllers();
 

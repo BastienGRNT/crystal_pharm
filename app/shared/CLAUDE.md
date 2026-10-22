@@ -1,38 +1,45 @@
 # Partagé — `app/shared/`
 
-Modifiable. Un changement ici touche plusieurs apps : garde la compatibilité
-(ajouter plutôt que renommer ou supprimer). Tu ne modifies pas les apps qui
+Uniquement du TypeScript **sans interface**, utilisé par au moins deux zones
+(un module, `tools/host`, `app/site`…). Un composant Svelte va dans
+`tools/ui` ; un code utilisé par une seule zone reste dans cette zone.
+
+Modifiable. Un changement ici touche plusieurs zones : garde la compatibilité
+(ajouter plutôt que renommer ou supprimer). Tu ne modifies pas les zones qui
 l'utilisent dans la même session : tu lances leur typecheck et tu signales.
 
-Seul `ui` existe pour l'instant. `auth`, `api-client` et `content-db` sont
-créés avec leur premier besoin réel, selon les règles ci-dessous.
+`auth`, `pharmacy`, `content-db` et `api-client` sont créés avec leur premier
+besoin réel, selon les règles ci-dessous.
 
 ## Dépendances entre packages partagés
 
-`ui`, `auth` et `api-client` ne dépendent d'aucun autre package partagé.
-`content-db` dépend seulement de `packages/schema`.
+`auth` et `api-client` ne dépendent d'aucun autre package partagé.
+`pharmacy` dépend seulement de `auth` (un Employee peut être relié à un
+compte). `content-db` dépend seulement de `packages/schema`.
 
-## `ui` — l'interface commune des apps Svelte
+## `auth` — Better Auth
 
-- `tokens/theme.css` : la seule source des couleurs, polices, rayons et
-  espacements (clair et sombre).
-- `atoms/` → `molecules/` → `organisms/` : dépendances descendantes
-  uniquement. Composants faits main, Tailwind 4.
-- Composants **purs** : props en entrée, callbacks en sortie. Aucun fetch,
-  aucun store global, aucune connaissance d'une app ou du C#.
-- `AppShell` (le cadre commun) reçoit les entrées du menu en props. La liste
-  des outils est une simple donnée (`toolLinks.ts`) : ajouter un outil = une
-  ligne.
-- Les types partagés vont dans un `.ts`, jamais exportés depuis un `.svelte`.
-- La référence visuelle des tokens et des composants communs :
-  `ui/docs/design-system/`.
+- La configuration de Better Auth (adaptateur Drizzle) et le schéma `auth`,
+  avec ses migrations.
+- Les routes de Better Auth (`/api/auth/*`) ne sont servies que par
+  `tools/host` ; les écrans de connexion sont dans `tools/modules/home`.
+- Le hook SvelteKit commun : vérifie la session, remplit `locals.user`
+  (`userId`, `tenantId`, rôles).
+- Pour appeler le C# : un JWT court (plugin `jwt`, `tenantId` dans les
+  claims), clés publiques exposées en JWKS interne par `tools/host`.
+- Pour l'app mobile : un jeton porteur (plugin `bearer`), vérifié par le même
+  hook.
 
-## `auth` — vérifier, jamais émettre
+## `pharmacy` — le commun : la fiche de la pharmacie et ses employés
 
-- Le hook SvelteKit : lit le cookie, vérifie l'access token (JWKS de
-  l'API mis en cache, `kid`, `iss`, `aud`), le renouvelle avec le refresh
-  token s'il a expiré, remplit `locals.user` (`userId`, `tenantId`, rôles).
-- Ne connaît jamais la clé privée, ne crée jamais de token.
+- Le schéma `pharmacy` (le Tenant, ses coordonnées, ses Employees) et ses
+  migrations.
+- Ses fonctions publiques sont **le seul moyen d'écrire** ces tables
+  (`addEmployee`, `updatePharmacyContactDetails`…). `home` et `planning` les
+  appellent toutes les deux : la règle métier n'existe qu'ici.
+- Ses tables sont exportées pour la lecture : une app peut faire une
+  jointure dessus, jamais un `insert`, un `update` ni un `delete`.
+- Chaque fonction prend le `tenantId` en premier paramètre.
 
 ## `api-client` — généré
 
@@ -47,3 +54,5 @@ corrige dans le C#, puis on régénère.
   Les écritures vivent dans `site-manager`.
 - Chaque requête passe par la Row-Level Security (cf. racine, « Base de
   données »).
+- Les infos de la pharmacie ne sont pas ici : `app/site` les lit dans
+  `pharmacy`.

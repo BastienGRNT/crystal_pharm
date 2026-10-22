@@ -16,9 +16,9 @@ Chaque zone garde sa doc dans son propre dossier `docs/`.
 - [Les données de l'API](app/packages/docs/donnees-api.md) : ce qu'un site reçoit, et ce qu'il renvoie
 - [Prochaines étapes](app/packages/docs/prochaines-etapes.md) : les décisions prises et le plan du moteur
 
-**Les maquettes** : `docs/maquettes/` de chaque app (`app/apps/<app>/`) et du
-moteur (un dossier par layout) ; le design system des outils dans
-`app/shared/ui/docs/design-system/`.
+**Les maquettes** : `docs/maquettes/` de chaque module
+(`app/tools/modules/<module>/`) et du moteur (un dossier par layout) ; le
+design system des outils dans `app/tools/ui/docs/design-system/`.
 
 ## Démarrer
 
@@ -28,16 +28,13 @@ cp .env.example .env                  # une fois, puis adapter
 make start                            # Postgres
 make api                              # l'API C#, dans son propre terminal
 cd app && pnpm install                # les dépendances JS
-pnpm --filter @crystal-pharm/planning dev
+pnpm --filter @crystal-pharm/tools dev
 ```
 
-| App | Port de dev | Chemin |
+| Déployable | Port de dev | Contenu |
 |---|---|---|
-| `home` | 5173 | `/` |
-| `site-manager` | 5174 | `/site-manager` |
-| `planning` | 5175 | `/planning` |
-| `booking` | 5176 | `/booking` |
-| `prescriptions` | 5177 | `/prescriptions` |
-| API C# | 5158 | — |
+| `tools/host` | 5173 | les outils : `/`, `/site-manager`, `/planning`, `/booking`, `/prescriptions` |
+| `app/site` | — | les sites publics (créé à l'étape 2 du moteur) |
+| API C# | 5158 | `Booking`, `Prescriptions` |
 
 `pnpm check` dans `app/` vérifie les types de tout le workspace.

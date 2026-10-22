@@ -1,6 +1,8 @@
 packages:
   - "packages/*"
   - "shared/*"
-  - "apps/*"
+  - "tools/host"
+  - "tools/ui"
+  - "tools/modules/*"
 allowBuilds:
   esbuild: true
