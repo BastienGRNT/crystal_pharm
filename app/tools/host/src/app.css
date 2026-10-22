@@ -1,0 +1,4 @@
+@import 'tailwindcss';
+@import '@crystal-pharm/ui/theme.css';
+@source '../../ui/src';
+@source '../../modules';

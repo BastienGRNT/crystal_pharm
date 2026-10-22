@@ -16,8 +16,10 @@ justifie jamais de créer du code, des fichiers ou de l'outillage en avance.
 
 ## Vocabulaire — jamais de synonyme dans le code
 
-`Tenant` (une pharmacie cliente, `tenantId`) · `Manager` (le pharmacien ou
-son équipe, connecté aux outils) · `Visitor` (la personne sur le site public,
+`Tenant` (une pharmacie cliente, `tenantId` ; sa fiche vit dans
+`shared/pharmacy`) · `Employee` (une personne de l'équipe d'un Tenant, avec ou
+sans compte) · `Manager` (une personne connectée aux outils) · `Visitor` (la
+personne sur le site public,
 sans compte pour l'instant) · `TenantSite` (les données d'un site, validées
 par `packages/schema`) · `Layout` (un dossier de `packages/layouts`, son nom
 est l'identifiant) · `Module` (un bloc activable d'un site) · `Platform`
@@ -30,40 +32,61 @@ est l'identifiant) · `Module` (un bloc activable d'un site) · `Platform`
 ├─ docker/                  Caddy : passerelle de dev
 └─ app/
    ├─ packages/             LE MOTEUR (Solid) : schema · renderer · layouts
-   ├─ shared/               partagé, modifiable : ui · auth · api-client · content-db
-   ├─ apps/
-   │  ├─ site/              SolidStart : les sites publics + /__preview
-   │  ├─ home/              connexion + menu des outils
-   │  ├─ site-manager/      édition du site (Drizzle → `content`)
-   │  ├─ planning/          planning de l'équipe (→ C#)
-   │  ├─ booking/           rendez-vous (→ C#)
-   │  └─ prescriptions/     ordonnances reçues (→ C#)
-   └─ api/                  C# : un hôte (Api) + Modules/<Module>/ (Domain · Application · Infrastructure)
+   ├─ shared/               TS sans interface, partagé entre zones : auth · pharmacy · content-db · api-client
+   ├─ tools/                tout le Svelte des outils
+   │  ├─ host/              SvelteKit : monte les modules, sert l'auth et l'API mobile
+   │  ├─ ui/                le design system
+   │  └─ modules/           home · site-manager · planning · booking · prescriptions
+   ├─ site/                 SolidStart : les sites publics + /__preview
+   └─ api/                  C# : Modules/Booking · Modules/Prescriptions
 ```
 
 ## Qui fait quoi
 
-- **C#** (`app/api`) : ce qui est sensible ou a des règles complexes — comptes
-  et tenants (Identity), planning, rendez-vous, ordonnances. Une seule API,
-  un module par domaine.
-- **SvelteKit + Drizzle** : ce qui est public ou simple — le contenu des
-  sites (schéma `content`), écrit par `site-manager`.
-- **SolidStart** (`apps/site`) : rend les sites, lit `content` directement
-  (jamais via le C#).
+- **TypeScript** (SvelteKit + Drizzle + Better Auth) : tout ce qui n'est ni
+  une donnée de santé ni une règle lourde — comptes et sessions, la fiche de
+  la pharmacie et ses employés, le planning, le contenu des sites.
+- **C#** (`app/api`) : seulement `Booking` (concurrence, file d'attente) et
+  `Prescriptions`, qui portent les données de santé. Une seule API.
+- **Les outils** (`app/tools/`) : des modules montés par une seule app
+  SvelteKit, `tools/host` — un seul déploiement, des frontières de packages.
+- **SolidStart** (`app/site`) : rend les sites. Lit `content` et
+  `shared/pharmacy` directement, jamais via le C#.
+- **L'app mobile du planning** (créée avec son premier besoin) : consomme
+  l'API versionnée de `tools/modules/planning`, exposée par `tools/host`.
 - Un envoi du Visitor appartient au module qui le traite : un rendez-vous →
   `Booking`, une ordonnance → `Prescriptions`. Un nouveau type d'envoi sans
   module évident : on en parle avant.
 
+## Trois déployables, et quand en ajouter un
+
+`app/site`, `tools/host` et `app/api` : chacun a une raison réelle d'être à
+part (techno, trafic public, données de santé). Avant de découper, on fait
+grossir : `tools/host` est sans état, on lance plusieurs instances.
+
+Un module ne sort dans sa propre app que pour une raison constatée, jamais
+supposée, et toujours avec nous :
+
+- une équipe à part qui doit livrer à son propre rythme ;
+- une charge mesurée très différente des autres modules ;
+- des contraintes d'hébergement ou de sécurité différentes.
+
+Un module étant un package, le sortir = créer une app qui le monte.
+
 ## Sécurité — invariants
 
+- Les comptes et les sessions : Better Auth, servi par `tools/host` seul. Pas
+  d'autre système d'auth.
 - Le C# n'est **jamais exposé à Internet**. Il n'accepte que deux appelants
-  identifiés : un Manager (son JWT) ou le service `site` (identité de service).
-- Le `tenantId` vient du JWT pour un Manager, de la passerelle pour un
-  Visitor (elle écrase tout en-tête tenant venu du navigateur). Jamais d'un
-  paramètre, d'une URL ou d'un champ de formulaire.
-- Chaque processus n'a que ses propres secrets : la clé privée du JWT n'existe
-  que dans l'environnement de l'API.
-- Chaque app a son rôle Postgres, avec des droits sur son schéma seulement.
+  identifiés : un Manager (JWT court de Better Auth, vérifié par sa clé
+  publique) ou le service `site` (identité de service).
+- Le `tenantId` vient de la session (ou de son JWT) pour un Manager, de la
+  passerelle pour un Visitor (elle écrase tout en-tête tenant venu du
+  navigateur). Jamais d'un paramètre, d'une URL ou d'un champ de formulaire.
+- Chaque processus n'a que ses propres secrets : le C# n'a ni le secret de
+  Better Auth ni accès au schéma `auth`.
+- Chaque app a son rôle Postgres : écriture sur les schémas qu'elle possède
+  ou qu'elle écrit par leurs fonctions, lecture seule sur ce qu'elle lit.
 
 ## Données de santé — règle absolue
 
@@ -81,16 +104,19 @@ Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
 
 | Depuis | Peut importer |
 |---|---|
-| `apps/site` | `packages/*`, `shared/content-db`, `shared/api-client` |
-| une app Svelte | `shared/*`, `packages/schema` |
-| `apps/site-manager` | en plus : l'export sans Solid de `layouts` (`/manifest`) |
+| `app/site` | `packages/*`, `shared/content-db`, `shared/pharmacy`, `shared/api-client` |
+| `tools/host` | la partie publique des `tools/modules/*`, `tools/ui`, `shared/auth` |
+| un module | `tools/ui`, `shared/*`, `packages/schema` |
+| `tools/ui` | rien d'autre que Svelte |
+| `tools/modules/site-manager` | en plus : l'export sans Solid de `layouts` (`/manifest`) |
 | `shared/*` | voir `app/shared/CLAUDE.md` |
 | `packages/*` | entre eux seulement : `layouts → renderer → schema` |
 
 - Chaque `package.json` ne déclare que ce que ce tableau autorise : pnpm
   bloque alors le reste.
-- Une app n'importe **jamais** une autre app, ni un composant Solid dans du
-  Svelte. L'aperçu d'un site passe par une iframe vers `apps/site/__preview`.
+- Un module n'importe **jamais** un autre module ; seul `tools/host` importe
+  les modules. Jamais de composant Solid dans du Svelte : l'aperçu d'un site
+  passe par une iframe vers `app/site/__preview`.
 
 ## Le moteur (`app/packages/`) se consomme, il ne se modifie pas
 
@@ -101,21 +127,42 @@ Créer ou modifier un layout : lis d'abord `app/packages/docs/creer-un-layout.md
 
 ## Contrats
 
-- **Données d'un site** : `packages/schema` (Valibot) fait foi. Le C# ne les
-  connaît pas.
-- **Données métier** : le C# fait foi. Son OpenAPI génère `shared/api-client`
+- **Données d'un site** : `packages/schema` (Valibot) fait foi. La fiche
+  affichée (nom, adresse, téléphone) vient de `shared/pharmacy`, jamais
+  ressaisie dans `content`.
+- **Données TS** : le schéma Drizzle de leur propriétaire fait foi, les types
+  en sont déduits. Aucune génération.
+- **Données du C#** : son OpenAPI génère `shared/api-client`
   (`make gen-types`), **jamais édité à la main**. Les types régénérés vont
   dans le commit qui change le contrat.
+- **La seule frontière TS → C#** : la vue `planning.staff_availability`, lue
+  par `Booking`. Changer ses colonnes = changer un contrat : le C# s'adapte
+  dans la même branche.
 - À la frontière, un **adapter** (une fonction qui traduit un type dans
-  l'autre), dans l'app qui en a besoin.
+  l'autre), dans la zone qui en a besoin.
+
+## Versionner les API
+
+- Une API consommée par un client déployé à part (l'app mobile, un client
+  externe) est versionnée dans l'URL : `/api/v1/…`. Dans une version, on
+  ajoute, on ne retire ni ne renomme jamais. Un changement cassant = `/v2`,
+  et la v1 vit tant qu'un client l'utilise.
+- Entre les apps du monorepo et le C# (déployés ensemble, mais pas au même
+  instant) : pas de version dans l'URL, mais toujours compatible — on ajoute
+  d'abord, on retire seulement quand plus personne ne l'utilise.
+- Les `load` et actions SvelteKit ne sont pas une API : rien à versionner.
 
 ## Base de données
 
-- Un schéma = un seul outil de migration : `content` → Drizzle ; `identity`,
-  `planning`, `booking`, `prescriptions` → EF Core. Jamais les deux.
-- Isolation entre tenants : Row-Level Security sur `content`, `booking` et
-  `prescriptions` ; global query filter EF sur tout le C#. Le tenant se pose
-  par transaction (`SET LOCAL`), jamais pour toute la connexion.
+- Un schéma = un seul outil de migration **et un seul propriétaire** :
+  `auth` → `shared/auth`, `pharmacy` → `shared/pharmacy`, `planning` →
+  `tools/modules/planning`, `content` → `shared/content-db` (Drizzle) ; `booking`,
+  `prescriptions` → le C# (EF Core).
+- Lire les tables d'un autre propriétaire (jointure comprise) : autorisé, par
+  ce qu'il exporte. Les écrire : seulement par ses fonctions.
+- Isolation entre tenants : Row-Level Security sur tout schéma lié à un
+  tenant, global query filter EF côté C#. Le tenant se pose par transaction
+  (`SET LOCAL`), jamais pour toute la connexion.
 - Toute table liée à un tenant a un index qui commence par `tenant_id`.
 
 ## Docs et maquettes
@@ -123,9 +170,9 @@ Créer ou modifier un layout : lis d'abord `app/packages/docs/creer-un-layout.md
 - La doc d'une zone vit dans le dossier `docs/` de la zone, créé avec sa
   première doc. Un `docs/` racine n'existe que pour une doc qui concerne
   plusieurs zones.
-- Maquettes : `docs/maquettes/` de la zone (`app/apps/<app>/`, et
+- Maquettes : `docs/maquettes/` de la zone (`app/tools/modules/<module>/`, et
   `app/packages/` avec un dossier par layout) ; le design system des outils :
-  `app/shared/ui/docs/design-system/`.
+  `app/tools/ui/docs/design-system/`.
 - Chaque dossier de maquette a un `README.md` de 3 lignes (ce qu'il montre,
   ce qui est validé, ce qui est brouillon) : tu le lis d'abord, et tu ne
   reproduis jamais une partie brouillon. Une seule version par maquette, jamais
@@ -153,8 +200,9 @@ Créer ou modifier un layout : lis d'abord `app/packages/docs/creer-un-layout.md
 
 ## Workflow de session
 
-- Un lot = une session = une branche, dans **une** zone (une app, `app/api`
-  ou le moteur), plus `shared/` si la tâche l'exige. Jamais une autre app.
+- Un lot = une session = une branche, dans **une** zone (un module, une app,
+  `app/api` ou le moteur), plus `shared/` et le branchement dans `tools/host`
+  si la tâche l'exige. Jamais un autre module.
 - Vérification, une seule fois, à la fin :
   - le typecheck de la zone (`pnpm --filter <package> check` — le script
     s'appelle `check` partout — ou `dotnet build app/api`) ;
@@ -187,9 +235,9 @@ avec le premier appel d'une app au C#). Dépendances JS : `pnpm install` dans
 - Branche : `<type>/<scope>/<sujet>`, ex. `feat/booking/annulation-par-le-patient`.
   - type : `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf` ;
     `hotfix` seulement depuis `main` ; `release/<version>` est créée par nous ;
-  - scope : le dossier de la zone (`site`, `home`, `site-manager`, `planning`,
+  - scope : le dossier de la zone (`site`, `host`, `home`, `site-manager`, `planning`,
     `booking`, `prescriptions`, `api`, `renderer`, `schema`, `layouts`, `ui`,
-    `auth`, `api-client`, `content-db`), ou `repo` pour la racine ;
+    `auth`, `pharmacy`, `api-client`, `content-db`), ou `repo` pour la racine ;
   - sujet : en kebab-case, ce que ça change pour le produit.
 - Commit : `<type>(<scope>): <sujet>`, en français, mêmes types et scopes. Le
   corps dit pourquoi, sauf pour un changement trivial.

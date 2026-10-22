@@ -32,18 +32,27 @@ Lis tous les `CLAUDE.md` du repo (`git ls-files '*CLAUDE.md'`) et cherche :
 Pour chaque règle vérifiable, cherche les écarts dans le code. Au minimum :
 
 - **Dépendances** : chaque `package.json` ne déclare que ce que le tableau
-  « Dépendances autorisées » permet ; aucune app n'importe une autre app ;
-  aucun composant Solid dans une app Svelte ; `layouts → renderer → schema`.
+  « Dépendances autorisées » permet ; aucun module n'importe un autre module ;
+  aucun composant Solid dans du Svelte ; `layouts → renderer → schema`.
 - **Moteur** : aucune modification de `app/packages/renderer` ou
   `app/packages/schema` hors d'une branche dont le scope est `renderer` ou
   `schema` (`git log --name-only develop..HEAD`).
-- **Svelte** : aucun import de `$lib/server` depuis un `.svelte` ; aucun
-  Drizzle hors de `lib/server/repositories/` ; aucun appel au C# hors de
-  `lib/server/api/` ; aucune couleur ou police en dur (hex, `rgb(`, nom de
+- **Svelte** : aucun import de `server/` ou d'un `*.server.ts` depuis un
+  `.svelte` ; aucun Drizzle hors des `src/server/repositories/` des modules et
+  de `shared/` ; aucun appel au C# hors de `src/server/api/` ; aucune logique
+  dans `tools/host/src/routes/` (au-delà d'importer et de ré-exporter) ;
+  aucune couleur ou police en dur (hex, `rgb(`, nom de
   police) hors des tokens ; aucun `any`.
+- **Schémas** : chaque schéma n'est migré que par son propriétaire (cf.
+  racine, « Base de données ») ; aucun `insert`, `update` ou `delete` sur les
+  tables d'un autre propriétaire (ex. `pharmacy` hors de `shared/pharmacy`).
+- **Contrat TS → C#** : si `planning.staff_availability` a changé sur la
+  branche, le mapping de `Booking` a changé dans la même branche.
+- **API versionnées** : aucun champ, paramètre ou route retiré ou renommé
+  dans un `routes/api/v<n>/` existant (`git diff develop...HEAD`).
 - **C#** : aucun projet de module qui référence un projet d'un autre module
-  autre que son `Contracts` (lire les `.csproj`) ; seul
-  `Booking → Planning.Contracts` ; rien de `public` dans `Infrastructure`
+  autre que son `Contracts` (lire les `.csproj`) ; `Booking` et
+  `Prescriptions` indépendants ; rien de `public` dans `Infrastructure`
   hors `<Module>ModuleRegistration` et les migrations générées ; aucun `IgnoreQueryFilters`,
   `EnableSensitiveDataLogging`, ni `TenantId =` posé à la main ; aucune entité
   renvoyée par un controller ; aucun secret dans `appsettings*.json` ; aucun
