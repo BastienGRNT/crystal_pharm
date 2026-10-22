@@ -23,6 +23,4 @@ navigation sombre).
 - Une app prend sa couleur principale par le `data-module` de son `<body>`
   (`app.html`), jamais en dur dans un composant.
 - Les types partagés vont dans un `.ts`, jamais exportés depuis un `.svelte`.
-- La référence visuelle : `tokens/theme.css` et les composants.
-  `docs/design-system/` est l'ancienne direction (« Logiciel métier ») : ne
-  pas la suivre.
+- La référence visuelle : `tokens/theme.css` et les composants eux-mêmes.

@@ -14,5 +14,5 @@ Une app simple, sans modules (cf. racine, « Svelte »).
 - Les abonnements, les prix, les groupements et leurs quotas s'écrivent par
   les fonctions de leur propriétaire (`shared/group-db`…), jamais par une
   requête Drizzle propre à `admin`.
-- Sa couleur principale : le module `accueil` (ardoise) du design system,
-  posé par `data-module` sur le `<body>` de `src/app.html`.
+- Sa couleur principale : le module `admin` (olive) du design system, posé
+  par `data-module` sur le `<body>` de `src/app.html`.

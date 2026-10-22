@@ -91,6 +91,12 @@
 	--equipe-text: #8a2f6b;
 	--on-equipe: #ffffff;
 	--equipe-on-rail: #f2a3d3;
+	--admin: #5c6a10;
+	--admin-hover: #4b570b;
+	--admin-soft: #f1f4dd;
+	--admin-text: #556310;
+	--on-admin: #ffffff;
+	--admin-on-rail: #c9da7c;
 	--success: #0b6656;
 	--success-soft: #e3f4ef;
 	--warning: #9a5800;
@@ -164,6 +170,12 @@
 		--equipe-text: #f4b0da;
 		--on-equipe: #1f0a18;
 		--equipe-on-rail: #f2a3d3;
+		--admin: #c4d46c;
+		--admin-hover: #d3e08b;
+		--admin-soft: #22290b;
+		--admin-text: #cfdd84;
+		--on-admin: #141a03;
+		--admin-on-rail: #c9da7c;
 		--success: #5fd1b0;
 		--success-soft: #0e2a24;
 		--warning: #f0b955;
@@ -237,6 +249,12 @@
 	--equipe-text: #f4b0da;
 	--on-equipe: #1f0a18;
 	--equipe-on-rail: #f2a3d3;
+	--admin: #c4d46c;
+	--admin-hover: #d3e08b;
+	--admin-soft: #22290b;
+	--admin-text: #cfdd84;
+	--on-admin: #141a03;
+	--admin-on-rail: #c9da7c;
 	--success: #5fd1b0;
 	--success-soft: #0e2a24;
 	--warning: #f0b955;
@@ -322,6 +340,15 @@
 	--accent-text-value: var(--equipe-text);
 	--accent-on-rail-value: var(--equipe-on-rail);
 	--on-accent-value: var(--on-equipe);
+}
+
+[data-module='admin'] {
+	--accent-value: var(--admin);
+	--accent-hover-value: var(--admin-hover);
+	--accent-soft-value: var(--admin-soft);
+	--accent-text-value: var(--admin-text);
+	--accent-on-rail-value: var(--admin-on-rail);
+	--on-accent-value: var(--on-admin);
 }
 
 [data-module='grp'] {

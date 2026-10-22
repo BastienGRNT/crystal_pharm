@@ -18,7 +18,7 @@ Chaque zone garde sa doc dans son propre dossier `docs/`.
 
 **Les maquettes** : `docs/maquettes/` de chaque module
 (`app/pharmacy/modules/<module>/`) et du moteur (un dossier par layout) ; le
-design system dans `app/ui/docs/design-system/`.
+design system dans `app/ui/` (ses tokens : `app/ui/src/tokens/theme.css`).
 
 ## Démarrer
 
