@@ -7,17 +7,28 @@
 			"types": "./src/index.ts",
 			"svelte": "./src/index.ts",
 			"default": "./src/index.ts"
+		},
+		"./server": {
+			"types": "./src/server/index.server.ts",
+			"default": "./src/server/index.server.ts"
 		}
 	},
 	"scripts": {
-		"check": "svelte-check --tsconfig ./tsconfig.json"
+		"check": "svelte-check --tsconfig ./tsconfig.json",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@crystal-pharm/ui": "workspace:*"
 	},
 	"peerDependencies": {
-		"svelte": "^5.56.1"
+		"svelte": "^5.56.1",
+		"@sveltejs/kit": "^2.63.0"
 	},
 	"devDependencies": {
+		"@sveltejs/kit": "^2.63.0",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
-		"typescript": "^6.0.3"
+		"typescript": "^6.0.3",
+		"vitest": "^5.0.5"
 	}
 }

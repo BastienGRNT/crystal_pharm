@@ -6,4 +6,4 @@
 	<title>Accueil · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader icon="house" title="Accueil" />
+<PageHeader icon="house" title="Accueil" context="Les outils de votre pharmacie." />

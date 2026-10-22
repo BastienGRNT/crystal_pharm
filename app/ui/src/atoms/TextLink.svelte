@@ -9,9 +9,6 @@
 	let { href, children }: TextLinkProps = $props();
 </script>
 
-<a
-	{href}
-	class="rounded-sm font-medium text-accent-text underline decoration-1 underline-offset-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
->
+<a {href} class="rounded-xs font-medium text-accent-text underline decoration-1 underline-offset-3">
 	{@render children()}
 </a>

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Button from '../../atoms/Button.svelte';
+	import Input from '../../atoms/Input.svelte';
 	import Alert from '../../molecules/Alert.svelte';
-	import TextField from '../../molecules/TextField.svelte';
+	import Field from '../../molecules/Field.svelte';
 	import type { AuthenticationSubmission, RegistrationDetails } from './authenticationForms';
 
 	type RegisterFormProps = {
@@ -10,7 +11,8 @@
 
 	let { onSubmit }: RegisterFormProps = $props();
 
-	let name = $state('');
+	let firstName = $state('');
+	let lastName = $state('');
 	let email = $state('');
 	let password = $state('');
 	let failureMessage = $state<string | undefined>();
@@ -19,29 +21,46 @@
 	async function submitRegistration(submitEvent: SubmitEvent) {
 		submitEvent.preventDefault();
 		isSubmitting = true;
-		failureMessage = await onSubmit({ name, email, password });
+		failureMessage = await onSubmit({ firstName, lastName, email, password });
 		isSubmitting = failureMessage === undefined;
 	}
 </script>
 
 <form class="grid gap-3" onsubmit={submitRegistration}>
-	<TextField label="Prénom et nom" name="name" autocomplete="name" required height="lg" bind:value={name} />
-	<TextField label="Email" type="email" name="email" autocomplete="email" required height="lg" bind:value={email} />
-	<TextField
-		label="Mot de passe"
-		type="password"
-		name="password"
-		autocomplete="new-password"
-		required
-		minlength={8}
-		hint="8 caractères minimum."
-		height="lg"
-		bind:value={password}
-	/>
+	<div class="grid grid-cols-2 gap-3">
+		<Field label="Prénom">
+			{#snippet control(controlAttributes)}
+				<Input {...controlAttributes} name="firstName" autocomplete="given-name" required bind:value={firstName} />
+			{/snippet}
+		</Field>
+		<Field label="Nom">
+			{#snippet control(controlAttributes)}
+				<Input {...controlAttributes} name="lastName" autocomplete="family-name" required bind:value={lastName} />
+			{/snippet}
+		</Field>
+	</div>
+	<Field label="Email">
+		{#snippet control(controlAttributes)}
+			<Input {...controlAttributes} type="email" name="email" autocomplete="email" required bind:value={email} />
+		{/snippet}
+	</Field>
+	<Field label="Mot de passe" hint="8 caractères minimum.">
+		{#snippet control(controlAttributes)}
+			<Input
+				{...controlAttributes}
+				type="password"
+				name="password"
+				autocomplete="new-password"
+				required
+				minlength={8}
+				bind:value={password}
+			/>
+		{/snippet}
+	</Field>
 	{#if failureMessage}
 		<Alert tone="danger">{failureMessage}</Alert>
 	{/if}
-	<Button type="submit" size="lg" isFullWidth disabled={isSubmitting}>
+	<Button type="submit" isFullWidth disabled={isSubmitting}>
 		{isSubmitting ? 'Création du compte…' : 'Créer mon compte'}
 	</Button>
 </form>

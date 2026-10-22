@@ -1,12 +1,3 @@
 @import 'tailwindcss';
 @import '@crystal-pharm/ui/theme.css';
 @source '../../ui/src';
-
-/* L'administration se reconnaît à sa couleur principale : l'ardoise du design system. */
-:root {
-	--color-accent: var(--color-module-reglages);
-	--color-accent-hover: var(--color-module-reglages-hover);
-	--color-accent-soft: var(--color-module-reglages-soft);
-	--color-accent-text: var(--color-module-reglages-text);
-	--color-on-accent: var(--color-on-module-reglages);
-}

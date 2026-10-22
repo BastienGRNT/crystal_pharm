@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';
 import {
 	connectToDatabase,
+	personNameFields,
 	readRequiredEnvironmentVariable,
 	toBetterAuthDrizzleSchema
 } from '@crystal-pharm/auth/toolkit';
@@ -21,6 +22,7 @@ function createPlatformBetterAuth() {
 			schema: toBetterAuthDrizzleSchema({ users, sessions, accounts, verifications })
 		}),
 		emailAndPassword: { enabled: true },
+		user: { additionalFields: personNameFields },
 		session: { expiresIn: eightHoursInSeconds },
 		advanced: { cookiePrefix: 'crystal-pharm-platform' },
 		databaseHooks: {

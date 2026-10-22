@@ -33,6 +33,8 @@ dépend seulement de `engine/schema`.
     dépendance à SvelteKit, pour drizzle-kit) ;
   - `./client` : le navigateur (`signInAndOpen`, `registerAndOpen`,
     `signOutAndOpen`, et les messages d'échec en français).
+- Un compte a un `firstName`, un `lastName` et un `name` (les deux réunis,
+  exigé par Better Auth) : `personNameFields`, commun aux deux identités.
 - Les routes de Better Auth (`/api/auth/*`) sont servies par `pharmacy/host`
   et `group`, chacune sur son domaine ; les écrans de connexion sont dans
   `pharmacy/modules/home` et dans `group`.

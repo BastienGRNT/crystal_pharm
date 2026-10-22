@@ -16,6 +16,9 @@ export function defineBetterAuthTables(databaseSchema: PgSchema) {
 	const users = databaseSchema.table('users', {
 		id: text('id').primaryKey(),
 		name: text('name').notNull(),
+		// Vides pour les comptes créés avant leur ajout ; obligatoires à l'inscription.
+		firstName: text('first_name').notNull().default(''),
+		lastName: text('last_name').notNull().default(''),
 		email: text('email').notNull().unique(),
 		emailVerified: boolean('email_verified').notNull().default(false),
 		image: text('image'),

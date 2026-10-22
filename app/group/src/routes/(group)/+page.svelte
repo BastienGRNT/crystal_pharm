@@ -6,4 +6,4 @@
 	<title>Tableau de bord · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader icon="house" title="Tableau de bord" />
+<PageHeader icon="house" title="Tableau de bord" context="Rien à afficher pour l’instant." />

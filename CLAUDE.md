@@ -221,8 +221,8 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
 - La doc d'une zone vit dans son `docs/`, créé avec sa première doc ; un
   `docs/` racine seulement pour une doc qui concerne plusieurs zones.
 - Maquettes : `docs/maquettes/` de la zone (un module, `group`, `admin`, et
-  `app/engine/` avec un dossier par layout) ; le design system :
-  `app/ui/docs/design-system/`.
+  `app/engine/` avec un dossier par layout) ; le design system : `app/ui/`
+  (cf. son `CLAUDE.md`).
 - Chaque dossier de maquette a un `README.md` de 3 lignes (ce qu'il montre,
   ce qui est validé, ce qui est brouillon) : tu le lis d'abord, et tu ne
   reproduis jamais une partie brouillon. Une seule version par maquette, jamais

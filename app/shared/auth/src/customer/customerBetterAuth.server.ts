@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { toBetterAuthDrizzleSchema } from '../toolkit/betterAuthTables';
+import { personNameFields } from '../toolkit/personNameFields';
 import { connectToDatabase } from '../toolkit/databaseConnection.server';
 import { readRequiredEnvironmentVariable } from '../toolkit/environment.server';
 import { accounts, sessions, users, verifications } from './customerAuthSchema';
@@ -13,7 +14,8 @@ function createCustomerBetterAuth(baseUrlEnvironmentVariable: string) {
 			provider: 'pg',
 			schema: toBetterAuthDrizzleSchema({ users, sessions, accounts, verifications })
 		}),
-		emailAndPassword: { enabled: true }
+		emailAndPassword: { enabled: true },
+		user: { additionalFields: personNameFields }
 	});
 }
 

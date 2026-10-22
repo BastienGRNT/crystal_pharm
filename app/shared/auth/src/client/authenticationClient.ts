@@ -1,13 +1,17 @@
 import { createAuthClient } from 'better-auth/client';
+import { inferAdditionalFields } from 'better-auth/client/plugins';
+import { personNameFields } from '../toolkit/personNameFields';
 import { authenticationFailureMessages, identifyFailureReason, type BetterAuthClientError } from './authenticationFailures';
 
 // Sans `baseURL`, le client parle au Better Auth du domaine courant : chaque
 // app (pharmacy, group, admin) atteint ainsi sa propre identité.
-const betterAuthClient = createAuthClient();
+const betterAuthClient = createAuthClient({
+	plugins: [inferAdditionalFields({ user: personNameFields })]
+});
 
 export type Credentials = { email: string; password: string };
 
-export type NewAccount = Credentials & { name: string };
+export type NewAccount = Credentials & { firstName: string; lastName: string };
 
 /** Ouvre `destinationPathname` en cas de succès, sinon renvoie le message d'échec. */
 export async function signInAndOpen(credentials: Credentials, destinationPathname: string): Promise<string | undefined> {
@@ -17,7 +21,14 @@ export async function signInAndOpen(credentials: Credentials, destinationPathnam
 
 /** Ouvre `destinationPathname` en cas de succès, sinon renvoie le message d'échec. */
 export async function registerAndOpen(newAccount: NewAccount, destinationPathname: string): Promise<string | undefined> {
-	const { error } = await betterAuthClient.signUp.email(newAccount);
+	const firstName = newAccount.firstName.trim();
+	const lastName = newAccount.lastName.trim();
+	const { error } = await betterAuthClient.signUp.email({
+		...newAccount,
+		firstName,
+		lastName,
+		name: `${firstName} ${lastName}`
+	});
 	return openOrDescribeFailure(error, destinationPathname);
 }
 

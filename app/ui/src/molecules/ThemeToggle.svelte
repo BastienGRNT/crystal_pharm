@@ -3,6 +3,8 @@
 	import IconButton from '../atoms/IconButton.svelte';
 	import { applyAndRememberTheme, readCurrentTheme, type Theme } from '../theme/themePreference';
 
+	let { surface = 'page' }: { surface?: 'page' | 'rail' } = $props();
+
 	let currentTheme = $state<Theme>('light');
 
 	onMount(() => {
@@ -16,7 +18,7 @@
 </script>
 
 {#if currentTheme === 'dark'}
-	<IconButton icon="sun" label="Passer au thème clair" onclick={switchTheme} />
+	<IconButton icon="sun" label="Passer au thème clair" {surface} onclick={switchTheme} />
 {:else}
-	<IconButton icon="moon" label="Passer au thème sombre" onclick={switchTheme} />
+	<IconButton icon="moon" label="Passer au thème sombre" {surface} onclick={switchTheme} />
 {/if}

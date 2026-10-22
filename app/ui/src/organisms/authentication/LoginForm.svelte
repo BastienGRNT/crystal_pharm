@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Button from '../../atoms/Button.svelte';
+	import Input from '../../atoms/Input.svelte';
 	import Alert from '../../molecules/Alert.svelte';
-	import TextField from '../../molecules/TextField.svelte';
+	import Field from '../../molecules/Field.svelte';
 	import type { AuthenticationSubmission, LoginCredentials } from './authenticationForms';
 
 	type LoginFormProps = {
@@ -24,20 +25,27 @@
 </script>
 
 <form class="grid gap-3" onsubmit={submitCredentials}>
-	<TextField label="Email" type="email" name="email" autocomplete="email" required height="lg" bind:value={email} />
-	<TextField
-		label="Mot de passe"
-		type="password"
-		name="password"
-		autocomplete="current-password"
-		required
-		height="lg"
-		bind:value={password}
-	/>
+	<Field label="Email">
+		{#snippet control(controlAttributes)}
+			<Input {...controlAttributes} type="email" name="email" autocomplete="email" required bind:value={email} />
+		{/snippet}
+	</Field>
+	<Field label="Mot de passe">
+		{#snippet control(controlAttributes)}
+			<Input
+				{...controlAttributes}
+				type="password"
+				name="password"
+				autocomplete="current-password"
+				required
+				bind:value={password}
+			/>
+		{/snippet}
+	</Field>
 	{#if failureMessage}
 		<Alert tone="danger">{failureMessage}</Alert>
 	{/if}
-	<Button type="submit" size="lg" isFullWidth disabled={isSubmitting}>
+	<Button type="submit" isFullWidth disabled={isSubmitting}>
 		{isSubmitting ? 'Connexion…' : 'Se connecter'}
 	</Button>
 </form>

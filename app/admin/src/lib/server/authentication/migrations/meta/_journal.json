@@ -8,6 +8,13 @@
       "when": 1792674747725,
       "tag": "0000_create_platform_auth_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792676353799,
+      "tag": "0001_add_person_names",
+      "breakpoints": true
     }
   ]
 }

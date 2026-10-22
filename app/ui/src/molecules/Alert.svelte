@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Icon from '../atoms/icon/Icon.svelte';
-	import type { IconName } from '../atoms/icon/phosphorIcons';
+	import Icon from '../atoms/Icon.svelte';
+	import type { IconName } from '../atoms/icons';
 
 	type AlertTone = 'danger' | 'warning' | 'success' | 'info';
 
@@ -28,10 +28,8 @@
 	};
 </script>
 
-<div role={roleByTone[tone]} class={['flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-control text-ink', toneStyles[tone].containerClasses]}>
-	<span class={['mt-px', toneStyles[tone].iconClasses]}>
-		<Icon name={toneStyles[tone].iconName} />
-	</span>
+<div role={roleByTone[tone]} class="flex items-start gap-2.5 rounded-md border px-3 py-2.5 text-body text-ink {toneStyles[tone].containerClasses}">
+	<Icon name={toneStyles[tone].iconName} class="mt-px {toneStyles[tone].iconClasses}" />
 	<div>
 		{#if title}
 			<strong class="block font-semibold">{title}</strong>

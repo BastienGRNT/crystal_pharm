@@ -9,11 +9,11 @@
 	let { spacing = 'regular', children }: CardProps = $props();
 
 	const spacingClasses = {
-		regular: 'rounded-lg p-6',
-		spacious: 'rounded-xl p-8'
+		regular: 'p-5',
+		spacious: 'p-8'
 	};
 </script>
 
-<div class={['border border-line bg-surface shadow-xs', spacingClasses[spacing]]}>
+<div class="rounded-lg border border-line bg-surface shadow-card {spacingClasses[spacing]}">
 	{@render children()}
 </div>
