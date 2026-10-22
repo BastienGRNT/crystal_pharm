@@ -1,0 +1,30 @@
+{
+	"name": "@crystal-pharm/auth",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.server.ts",
+		"./toolkit": "./src/toolkit.server.ts",
+		"./tables": "./src/toolkit/betterAuthTables.ts",
+		"./client": "./src/client.ts"
+	},
+	"scripts": {
+		"check": "tsc --project tsconfig.json",
+		"generate-migration": "drizzle-kit generate",
+		"migrate": "drizzle-kit migrate"
+	},
+	"dependencies": {
+		"better-auth": "^1.7.12",
+		"drizzle-orm": "^0.45.4",
+		"postgres": "^3.4.9"
+	},
+	"devDependencies": {
+		"@sveltejs/kit": "^2.70.3",
+		"@types/node": "^24.19.2",
+		"drizzle-kit": "^0.31.11",
+		"typescript": "^6.0.3"
+	},
+	"peerDependencies": {
+		"@sveltejs/kit": "^2.70.3"
+	}
+}

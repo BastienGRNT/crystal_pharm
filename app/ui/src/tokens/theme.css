@@ -1,0 +1,202 @@
+/*
+ * Les tokens des outils, traduits de docs/design-system/tokens/tokens.json.
+ * Chaque couleur porte ses deux thèmes (light-dark) : le réglage de l'appareil
+ * choisit, `data-theme` sur <html> force.
+ */
+@font-face {
+	font-family: 'Geist';
+	src: url('../fonts/Geist-400.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Geist';
+	src: url('../fonts/Geist-500.woff2') format('woff2');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Geist';
+	src: url('../fonts/Geist-600.woff2') format('woff2');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Geist';
+	src: url('../fonts/Geist-700.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+:root {
+	color-scheme: light dark;
+}
+:root[data-theme='light'] {
+	color-scheme: light;
+}
+:root[data-theme='dark'] {
+	color-scheme: dark;
+}
+
+@theme static {
+	--color-surface: light-dark(#ffffff, #0c0c0d);
+	--color-surface-subtle: light-dark(#fafafa, #131315);
+	--color-surface-muted: light-dark(#f4f4f5, #1c1c1f);
+	--color-line: light-dark(#e8e8ea, #27272b);
+	--color-line-strong: light-dark(#8b8b93, #76767e);
+	--color-ink: light-dark(#0b0b0c, #f4f4f5);
+	--color-ink-muted: light-dark(#5e5e66, #a8a8b0);
+	--color-ink-subtle: light-dark(#6e6e76, #909098);
+
+	--color-brand: light-dark(#0f5c46, #5fd1a5);
+	--color-brand-hover: light-dark(#0b4a38, #7adcb6);
+	--color-brand-soft: light-dark(#e6f1ec, #10291f);
+	--color-on-brand: light-dark(#ffffff, #06140f);
+
+	/* Une couleur par module ; `data-module` sur un conteneur en fait l'accent. */
+	--color-module-equipe: light-dark(#2552c4, #8fb0ff);
+	--color-module-equipe-hover: light-dark(#1d43a3, #a8c1ff);
+	--color-module-equipe-soft: light-dark(#eaf0fd, #16213d);
+	--color-module-equipe-text: light-dark(#2552c4, #a8c1ff);
+	--color-on-module-equipe: light-dark(#ffffff, #0b1020);
+	--color-module-planning: light-dark(#0f6b4f, #5fd1a5);
+	--color-module-planning-hover: light-dark(#0b5740, #7adcb6);
+	--color-module-planning-soft: light-dark(#e6f4ee, #10291f);
+	--color-module-planning-text: light-dark(#0f6b4f, #7adcb6);
+	--color-on-module-planning: light-dark(#ffffff, #06140f);
+	--color-module-absences: light-dark(#8a2f6b, #f09ad0);
+	--color-module-absences-hover: light-dark(#722658, #f4b0da);
+	--color-module-absences-soft: light-dark(#f8eaf3, #2f1427);
+	--color-module-absences-text: light-dark(#8a2f6b, #f4b0da);
+	--color-on-module-absences: light-dark(#ffffff, #1f0a18);
+	--color-module-site: light-dark(#0b6f7a, #5fcfd9);
+	--color-module-site-hover: light-dark(#095b64, #7fd9e1);
+	--color-module-site-soft: light-dark(#e3f4f5, #0f2a2d);
+	--color-module-site-text: light-dark(#0b6f7a, #7fd9e1);
+	--color-on-module-site: light-dark(#ffffff, #061416);
+	--color-module-reglages: light-dark(#3f4a5a, #b3bdcc);
+	--color-module-reglages-hover: light-dark(#323b48, #c3ccd8);
+	--color-module-reglages-soft: light-dark(#eef0f3, #1d2229);
+	--color-module-reglages-text: light-dark(#3f4a5a, #c3ccd8);
+	--color-on-module-reglages: light-dark(#ffffff, #0f1216);
+
+	/* L'accent est celui de la marque hors module (connexion, accueil). */
+	--color-accent: var(--color-brand);
+	--color-accent-hover: var(--color-brand-hover);
+	--color-accent-soft: var(--color-brand-soft);
+	--color-accent-text: var(--color-brand);
+	--color-on-accent: var(--color-on-brand);
+
+	--color-success: light-dark(#047857, #4fd1a1);
+	--color-success-soft: light-dark(#e7f6ef, #0d2a1f);
+	--color-warning: light-dark(#a15c00, #f0b955);
+	--color-warning-soft: light-dark(#fdf1dc, #33260c);
+	--color-danger: light-dark(#c0262d, #ff8f8f);
+	--color-danger-soft: light-dark(#fdeaea, #3a1515);
+
+	/* Le symbole ne change jamais avec le module, seulement avec le thème. */
+	--color-logo-base: light-dark(#0f5c46, #3f9c78);
+	--color-logo-facet: light-dark(#7fcfad, #9bdcc0);
+	--color-logo-highlight: light-dark(#e5efe9, #f2efe8);
+
+	--font-sans: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+	--text-title-1: 24px;
+	--text-title-1--line-height: 30px;
+	--text-title-1--font-weight: 600;
+	--text-title-1--letter-spacing: -0.015em;
+	--text-title-2: 18px;
+	--text-title-2--line-height: 24px;
+	--text-title-2--font-weight: 600;
+	--text-title-2--letter-spacing: -0.01em;
+	--text-title-3: 15px;
+	--text-title-3--line-height: 22px;
+	--text-title-3--font-weight: 600;
+	--text-body: 14px;
+	--text-body--line-height: 20px;
+	--text-label: 13px;
+	--text-label--line-height: 18px;
+	--text-label--font-weight: 500;
+	--text-small: 13px;
+	--text-small--line-height: 18px;
+	--text-control: 13.5px;
+	--text-control--line-height: 20px;
+	--text-caption: 12px;
+	--text-caption--line-height: 16px;
+	--text-caption--font-weight: 500;
+	--text-overline: 11px;
+	--text-overline--line-height: 16px;
+	--text-overline--font-weight: 600;
+	--text-overline--letter-spacing: 0.06em;
+
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 8px;
+	--radius-xl: 12px;
+
+	--spacing-control-sm: 28px;
+	--spacing-control-md: 34px;
+	--spacing-control-lg: 40px;
+	--spacing-topbar: 52px;
+	--spacing-sidebar: 232px;
+
+	--container-content: 1240px;
+
+	--shadow-xs: 0 1px 2px light-dark(rgb(11 11 12 / 0.05), rgb(0 0 0 / 0.5));
+	--shadow-md: 0 8px 24px -8px light-dark(rgb(11 11 12 / 0.16), rgb(0 0 0 / 0.7));
+	--shadow-control-primary:
+		inset 0 1px 0 rgb(255 255 255 / 0.12), 0 1px 2px light-dark(rgb(11 11 12 / 0.05), rgb(0 0 0 / 0.5));
+	/* La barre de 3px à la couleur du module, en haut du contenu. */
+	--shadow-module-bar: inset 0 3px 0 var(--color-accent);
+}
+
+[data-module='equipe'] {
+	--color-accent: var(--color-module-equipe);
+	--color-accent-hover: var(--color-module-equipe-hover);
+	--color-accent-soft: var(--color-module-equipe-soft);
+	--color-accent-text: var(--color-module-equipe-text);
+	--color-on-accent: var(--color-on-module-equipe);
+}
+[data-module='planning'] {
+	--color-accent: var(--color-module-planning);
+	--color-accent-hover: var(--color-module-planning-hover);
+	--color-accent-soft: var(--color-module-planning-soft);
+	--color-accent-text: var(--color-module-planning-text);
+	--color-on-accent: var(--color-on-module-planning);
+}
+[data-module='absences'] {
+	--color-accent: var(--color-module-absences);
+	--color-accent-hover: var(--color-module-absences-hover);
+	--color-accent-soft: var(--color-module-absences-soft);
+	--color-accent-text: var(--color-module-absences-text);
+	--color-on-accent: var(--color-on-module-absences);
+}
+[data-module='site'] {
+	--color-accent: var(--color-module-site);
+	--color-accent-hover: var(--color-module-site-hover);
+	--color-accent-soft: var(--color-module-site-soft);
+	--color-accent-text: var(--color-module-site-text);
+	--color-on-accent: var(--color-on-module-site);
+}
+[data-module='reglages'] {
+	--color-accent: var(--color-module-reglages);
+	--color-accent-hover: var(--color-module-reglages-hover);
+	--color-accent-soft: var(--color-module-reglages-soft);
+	--color-accent-text: var(--color-module-reglages-text);
+	--color-on-accent: var(--color-on-module-reglages);
+}
+
+@layer base {
+	body {
+		background-color: var(--color-surface);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+		font-size: var(--text-body);
+		line-height: var(--text-body--line-height);
+		-webkit-font-smoothing: antialiased;
+	}
+}

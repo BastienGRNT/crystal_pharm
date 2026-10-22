@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import '@crystal-pharm/ui/theme.css';
+@source '../../ui/src';
+
+/* L'espace des groupements se reconnaît à sa couleur principale : le bleu du design system. */
+:root {
+	--color-accent: var(--color-module-equipe);
+	--color-accent-hover: var(--color-module-equipe-hover);
+	--color-accent-soft: var(--color-module-equipe-soft);
+	--color-accent-text: var(--color-module-equipe-text);
+	--color-on-accent: var(--color-on-module-equipe);
+}

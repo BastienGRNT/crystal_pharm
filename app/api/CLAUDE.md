@@ -37,7 +37,7 @@ app/api/
   sources exclusives** : le JWT de Better Auth d'un Manager, ou l'identité de
   service de `site` (qui transmet le `tenantId` de la passerelle).
 - Le C# n'émet aucun token et ne connaît aucun compte. Il vérifie le JWT par
-  le JWKS interne de `tools/host` (`kid`, `iss`, `aud`). Le JWT est court
+  le JWKS interne de `pharmacy/host` (`kid`, `iss`, `aud`). Le JWT est court
   (≤ 15 min) : un compte désactivé perd l'accès au plus tard à son expiration.
 - Les endpoints du Visitor sont dans leurs propres controllers et
   **exigent** l'identité de service `site`. Un JWT de Manager y est refusé,
@@ -64,7 +64,7 @@ app/api/
 ## Les disponibilités (lues, jamais écrites)
 
 - `Booking` lit `planning.staff_availability`, une vue créée et migrée par
-  `tools/modules/planning`, par une connexion **en lecture seule** au serveur normal
+  `pharmacy/modules/planning`, par une connexion **en lecture seule** au serveur normal
   (`ConnectionStrings__PlanningReadOnly`).
 - Elle est mappée sans clé (`ToView`) et n'est jamais migrée ni écrite côté C#.
   Ses colonnes sont un contrat (cf. racine, « Contrats »).

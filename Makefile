@@ -5,7 +5,10 @@ start:
 logs:
 	docker compose logs -f
 
+migrate:
+	cd app && pnpm --recursive migrate
+
 api:
 	cd app/api/CrystalPharm.Api && dotnet watch run
 
-.PHONY: start logs api
+.PHONY: start logs migrate api

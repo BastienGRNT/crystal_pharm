@@ -1,8 +1,10 @@
 packages:
-  - "packages/*"
+  - "engine/*"
   - "shared/*"
-  - "tools/host"
-  - "tools/ui"
-  - "tools/modules/*"
+  - "ui"
+  - "pharmacy/host"
+  - "pharmacy/modules/*"
+  - "group"
+  - "admin"
 allowBuilds:
   esbuild: true

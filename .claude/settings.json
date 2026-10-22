@@ -3,8 +3,8 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "ask": [
-      "Edit(/app/packages/renderer/**)",
-      "Edit(/app/packages/schema/**)",
+      "Edit(/app/engine/renderer/**)",
+      "Edit(/app/engine/schema/**)",
       "Edit(**/CLAUDE.md)"
     ],
     "deny": [
