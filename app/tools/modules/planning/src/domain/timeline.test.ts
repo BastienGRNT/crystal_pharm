@@ -19,6 +19,13 @@ describe('computeTimelineRange', () => {
 	it('s’élargit à l’heure pleine pour un créneau plus tôt ou plus tard', () => {
 		expect(computeTimelineRange([shift('07:15', '20:30')])).toEqual({ startMinutes: 420, endMinutes: 1260 });
 	});
+
+	it('s’élargit aussi aux horaires d’ouverture', () => {
+		expect(computeTimelineRange([], { opensAt: '07:30', closesAt: '20:15' })).toEqual({
+			startMinutes: 420,
+			endMinutes: 1260
+		});
+	});
 });
 
 describe('positions sur l’axe', () => {

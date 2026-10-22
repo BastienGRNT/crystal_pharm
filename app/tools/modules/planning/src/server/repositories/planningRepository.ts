@@ -6,6 +6,7 @@
  * toucher à la page. Aucune règle ici : chevauchements et contraintes de
  * présence iront dans server/services/.
  */
+import type { OpeningHours } from '../../domain/coverage';
 import type { Absence, Employee, Shift, WeekPlanning } from '../../domain/planning';
 import { addDays, getMondayOfWeek, toCalendarDay, toIsoDate } from '../../domain/week';
 
@@ -50,6 +51,15 @@ const absences: Absence[] = [
 	{ id: 'absence-helene-dubois', employeeId: 'employee-helene-dubois', firstDate: dateInCurrentWeek(4), lastDate: dateInCurrentWeek(4), kind: 'RTT' },
 	{ id: 'absence-yanis-benali', employeeId: 'employee-yanis-benali', firstDate: dateInCurrentWeek(0), lastDate: dateInCurrentWeek(2), kind: 'Congé' }
 ];
+
+const sundayDayIndex = 0;
+const demonstrationOpeningHours: OpeningHours = { opensAt: '08:30', closesAt: '19:30' };
+
+/** Les horaires d'ouverture du jour (`undefined` s'il est fermé) : du lundi au samedi, 08:30–19:30. */
+export async function getOpeningHours(date: string): Promise<OpeningHours | undefined> {
+	const isSunday = new Date(`${date}T00:00:00Z`).getUTCDay() === sundayDayIndex;
+	return isSunday ? undefined : demonstrationOpeningHours;
+}
 
 export async function getWeekPlanning(firstDate: string, lastDate: string): Promise<WeekPlanning> {
 	return {

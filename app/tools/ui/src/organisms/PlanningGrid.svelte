@@ -1,15 +1,18 @@
 <script lang="ts">
 	import Icon from '../atoms/Icon.svelte';
-	import type { PlanningGridDay, PlanningGridRow } from './planningGrid';
+	import StatusBadge from '../atoms/StatusBadge.svelte';
+	import type { PlanningGridDay, PlanningGridRow, PlanningGridSummary } from './planningGrid';
+	import { planningSlotToneClasses } from './planningSlot';
 
 	type PlanningGridProps = {
 		days: PlanningGridDay[];
 		rows: PlanningGridRow[];
+		summary?: PlanningGridSummary;
 		/** Action du formulaire de suppression ; reçoit le champ `slotId`. Sans elle, pas de bouton. */
 		deleteSlotFormAction?: string;
 	};
 
-	let { days, rows, deleteSlotFormAction }: PlanningGridProps = $props();
+	let { days, rows, summary, deleteSlotFormAction }: PlanningGridProps = $props();
 
 	const dayCellClasses = 'border-l border-line';
 	const rowSeparatorClasses = '[tr:not(:last-child)>&]:border-b [tr:not(:last-child)>&]:border-line-soft';
@@ -52,16 +55,21 @@
 			{#each rows as row (row.key)}
 				<tr>
 					<th scope="row" class="{rowSeparatorClasses} px-4 py-2 text-left align-middle font-normal">
-						<b class="block font-semibold text-ink">
-							{row.personName}
-							{#if row.personTag}
-								<span
-									class="ml-0.5 inline-flex rounded-xs bg-surface-muted px-[5px] text-[11px] leading-4 font-medium text-ink-muted"
-								>
-									{row.personTag}
-								</span>
+						<div class="flex items-baseline gap-2">
+							<b class="min-w-0 flex-1 font-semibold text-ink">
+								{row.personName}
+								{#if row.personTag}
+									<span
+										class="ml-0.5 inline-flex rounded-xs bg-surface-muted px-[5px] text-[11px] leading-4 font-medium text-ink-muted"
+									>
+										{row.personTag}
+									</span>
+								{/if}
+							</b>
+							{#if row.personHours}
+								<span class="text-small flex-none font-normal text-ink-subtle tabular-nums">{row.personHours}</span>
 							{/if}
-						</b>
+						</div>
 						<small class="text-small block text-ink-subtle">{row.personDetail}</small>
 					</th>
 					{#each row.cells as cell (cell.key)}
@@ -76,7 +84,9 @@
 							<td class="{dayCellClasses} {rowSeparatorClasses} p-[5px] align-top">
 								{#each cell.slots as slot (slot.id)}
 									<div
-										class="group text-slot relative mb-1 overflow-hidden rounded-xs bg-accent-soft px-2 py-1 whitespace-nowrap text-ink shadow-[inset_2px_0_0_var(--accent-value)]"
+										class="group text-slot relative mb-1 overflow-hidden rounded-xs px-2 py-1 whitespace-nowrap {planningSlotToneClasses[
+											slot.tone
+										]}"
 									>
 										{slot.label}
 										{#if deleteSlotFormAction}
@@ -99,5 +109,19 @@
 				</tr>
 			{/each}
 		</tbody>
+		{#if summary}
+			<tfoot>
+				<tr class="bg-surface-subtle">
+					<th scope="row" class="border-t border-line px-4 py-2 text-left text-[12.5px] leading-[17px] font-semibold text-ink-muted">
+						{summary.label}
+					</th>
+					{#each summary.cells as cell (cell.key)}
+						<td class="{dayCellClasses} border-t px-2 py-1.5 align-middle">
+							<StatusBadge tone={cell.tone}>{cell.text}</StatusBadge>
+						</td>
+					{/each}
+				</tr>
+			</tfoot>
+		{/if}
 	</table>
 </div>

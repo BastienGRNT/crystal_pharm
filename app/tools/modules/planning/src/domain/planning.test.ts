@@ -30,8 +30,8 @@ describe('durée planifiée', () => {
 	});
 
 	it('écrit une durée comme on la dit', () => {
-		expect(formatDuration(168 * 60)).toBe('168 h');
-		expect(formatDuration(9 * 60 + 30)).toBe('9 h 30');
-		expect(formatDuration(65)).toBe('1 h 05');
+		expect(formatDuration(168 * 60)).toBe('168\u00a0h');
+		expect(formatDuration(9 * 60 + 30)).toBe('9\u00a0h\u00a030');
+		expect(formatDuration(65)).toBe('1\u00a0h\u00a005');
 	});
 });

@@ -56,11 +56,15 @@ export function sumPlannedMinutes(shifts: Shift[]): number {
 	);
 }
 
+// Insécable : « 8 h » ne doit jamais se couper entre le nombre et l'unité.
+const nonBreakingSpace = '\u00a0';
+
 /** « 168 h », « 7 h 30 » : une durée comme on la dit. */
 export function formatDuration(totalMinutes: number): string {
 	const hours = Math.floor(totalMinutes / 60);
 	const minutes = totalMinutes % 60;
-	return minutes === 0 ? `${hours} h` : `${hours} h ${String(minutes).padStart(2, '0')}`;
+	const hoursText = `${hours}${nonBreakingSpace}h`;
+	return minutes === 0 ? hoursText : `${hoursText}${nonBreakingSpace}${String(minutes).padStart(2, '0')}`;
 }
 
 /** Une ligne par employé, une cellule par jour : l'absence du jour, sinon ses créneaux dans l'ordre de la journée. */

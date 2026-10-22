@@ -3,10 +3,12 @@
 		Button,
 		PageHeader,
 		PlanningGrid,
+		PlanningLegend,
 		PlanningTimeline,
 		SegmentedControl,
 		SidePanel,
-		WeekNav
+		WeekNav,
+		type PlanningLegendItem
 	} from '@crystal-pharm/ui';
 	import AddShiftForm from '../components/AddShiftForm.svelte';
 	import type { AddShiftFailure, PlanningPageData } from './teamPlanningPageData';
@@ -17,13 +19,30 @@
 	};
 
 	let { data, form }: TeamPlanningPageProps = $props();
+
+	const slotLegendItems: PlanningLegendItem[] = [
+		{ label: 'Pharmacien', swatch: 'slotStrong' },
+		{ label: 'Autre employé', swatch: 'slotSoft' },
+		{ label: 'Absence', swatch: 'absence' }
+	];
+
+	const legendItems: PlanningLegendItem[] = $derived(
+		data.view === 'week'
+			? slotLegendItems
+			: [
+					...slotLegendItems,
+					{ label: 'Aucun pharmacien', swatch: 'uncovered' },
+					{ label: 'Pharmacie fermée', swatch: 'closed' },
+					...(data.now ? [{ label: 'Maintenant', swatch: 'now' } as const] : [])
+				]
+	);
 </script>
 
 <svelte:head>
 	<title>Planning · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader title="Planning" context={data.context} icon="calendar-dots" />
+<PageHeader title={data.title} context={data.context} icon="calendar-dots" />
 
 <div class="flex flex-wrap items-center gap-3">
 	<SegmentedControl label="Vue du planning" options={data.viewOptions} />
@@ -36,20 +55,29 @@
 			navigationLabel={data.periodNavigation.navigationLabel}
 			previousLabel={data.periodNavigation.previousLabel}
 			nextLabel={data.periodNavigation.nextLabel}
+			todayHref={data.periodNavigation.todayHref}
 		/>
 	</div>
 </div>
 
 {#if data.view === 'week'}
-	<PlanningGrid days={data.days} rows={data.rows} deleteSlotFormAction={data.deleteShiftFormAction} />
+	<PlanningGrid
+		days={data.days}
+		rows={data.rows}
+		summary={data.pharmacistCoverage}
+		deleteSlotFormAction={data.deleteShiftFormAction}
+	/>
 {:else}
 	<PlanningTimeline
 		hours={data.hours}
 		rows={data.rows}
-		nowPercent={data.nowPercent}
-		nowLabel={data.nowLabel}
+		opening={data.opening}
+		coverage={data.pharmacistCoverage}
+		now={data.now}
 	/>
 {/if}
+
+<PlanningLegend items={legendItems} />
 
 {#if data.addShiftPanel.isOpen}
 	<SidePanel title="Ajouter un créneau" closeHref={data.addShiftPanel.closeHref}>

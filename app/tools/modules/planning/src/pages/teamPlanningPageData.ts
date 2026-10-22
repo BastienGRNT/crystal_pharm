@@ -1,7 +1,11 @@
 import type {
 	PlanningGridDay,
 	PlanningGridRow,
+	PlanningGridSummary,
+	PlanningTimelineCoverage,
 	PlanningTimelineHour,
+	PlanningTimelineNow,
+	PlanningTimelineOpening,
 	PlanningTimelineRow,
 	SegmentedControlOption
 } from '@crystal-pharm/ui';
@@ -14,6 +18,8 @@ export type PeriodNavigation = {
 	navigationLabel: string;
 	previousLabel: string;
 	nextLabel: string;
+	/** Absent quand la période affichée contient déjà aujourd'hui. */
+	todayHref: string | undefined;
 };
 
 export type AddShiftPanel = {
@@ -31,6 +37,7 @@ export type FormActions = {
 export type CommonPlanningPageData = FormActions & {
 	viewOptions: SegmentedControlOption[];
 	periodNavigation: PeriodNavigation;
+	title: string;
 	context: string;
 	defaultShiftDate: string;
 	employees: Employee[];
@@ -40,14 +47,16 @@ export type WeekViewData = CommonPlanningPageData & {
 	view: 'week';
 	days: PlanningGridDay[];
 	rows: PlanningGridRow[];
+	pharmacistCoverage: PlanningGridSummary;
 };
 
 export type DayViewData = CommonPlanningPageData & {
 	view: 'day';
 	hours: PlanningTimelineHour[];
 	rows: PlanningTimelineRow[];
-	nowPercent: number | undefined;
-	nowLabel: string | undefined;
+	opening: PlanningTimelineOpening | undefined;
+	pharmacistCoverage: PlanningTimelineCoverage | undefined;
+	now: PlanningTimelineNow | undefined;
 };
 
 export type PlanningPageData = WeekViewData | DayViewData;
