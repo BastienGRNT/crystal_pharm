@@ -1,27 +1,483 @@
 /*
- * Les tokens des outils. Valeurs provisoires, remplacées par celles de
- * docs/design/tools/design-system/ quand la maquette existera.
+ * Les tokens des outils, direction « Santé » : traduits du design system
+ * Crystal Pharm (tokens.json), colonne de navigation sombre et une couleur
+ * par module.
  */
-@theme {
-	--color-background: #f7f7f5;
-	--color-surface: #ffffff;
-	--color-text: #1d1d1b;
-	--color-text-muted: #5f5f5a;
-	--color-border: #e2e2dd;
-	--color-accent: #1f6b45;
-	--color-accent-text: #ffffff;
 
-	--font-sans: system-ui, sans-serif;
+@font-face {
+	font-family: 'IBM Plex Sans';
+	src: url('./fonts/IBMPlexSans-400.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
 
-	--radius-control: 0.5rem;
+@font-face {
+	font-family: 'IBM Plex Sans';
+	src: url('./fonts/IBMPlexSans-500.woff2') format('woff2');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'IBM Plex Sans';
+	src: url('./fonts/IBMPlexSans-600.woff2') format('woff2');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'IBM Plex Sans';
+	src: url('./fonts/IBMPlexSans-700.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+:root,
+[data-theme='light'] {
+	--app: #f6f8fa;
+	--surface: #ffffff;
+	--surface-subtle: #f8fafb;
+	--surface-muted: #eef2f4;
+	--field: #f1f4f7;
+	--line: #e1e7eb;
+	--line-soft: #eef2f4;
+	--line-strong: #7d8e97;
+	--ink: #14232b;
+	--ink-muted: #4d5f68;
+	--ink-subtle: #5f7079;
+	--rail: #0e2a2f;
+	--rail-raised: #17414a;
+	--rail-ink: #a9c4c1;
+	--on-rail: #e7f0ef;
+	--brand: #0e7c6b;
+	--on-brand: #ffffff;
+	--accueil: #3e5560;
+	--accueil-hover: #334750;
+	--accueil-soft: #e8eef0;
+	--accueil-text: #3e5560;
+	--on-accueil: #ffffff;
+	--accueil-on-rail: #b6cbd2;
+	--site: #6a3fb5;
+	--site-hover: #58329a;
+	--site-soft: #f0eafb;
+	--site-text: #6a3fb5;
+	--on-site: #ffffff;
+	--site-on-rail: #c9b0f7;
+	--rdv: #2459c2;
+	--rdv-hover: #1d4aa3;
+	--rdv-soft: #e8effc;
+	--rdv-text: #2459c2;
+	--on-rdv: #ffffff;
+	--rdv-on-rail: #8db1ff;
+	--ordo: #b0570b;
+	--ordo-hover: #924708;
+	--ordo-soft: #fdf0e3;
+	--ordo-text: #9c4d09;
+	--on-ordo: #ffffff;
+	--ordo-on-rail: #f7b26a;
+	--planning: #0e7c6b;
+	--planning-hover: #0b6457;
+	--planning-soft: #e2f3ef;
+	--planning-text: #0b6c5d;
+	--on-planning: #ffffff;
+	--planning-on-rail: #6fd6c0;
+	--equipe: #8a2f6b;
+	--equipe-hover: #722658;
+	--equipe-soft: #f7eaf2;
+	--equipe-text: #8a2f6b;
+	--on-equipe: #ffffff;
+	--equipe-on-rail: #f2a3d3;
+	--success: #0b6656;
+	--success-soft: #e3f4ef;
+	--warning: #9a5800;
+	--warning-soft: #fdf1dc;
+	--danger: #b42318;
+	--danger-soft: #fdeaea;
+	--notify: #e5484d;
+	--badge: #f5b84b;
+	--on-badge: #2b1a00;
+	--focus-ring: #2459c2;
+	--shadow-card-value: 0 1px 2px rgba(20,35,43,0.04);
+	--shadow-float-value: 0 8px 24px -12px rgba(20,35,43,0.25);
+	color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--app: #0b1416;
+		--surface: #111c1f;
+		--surface-subtle: #142226;
+		--surface-muted: #1c2c31;
+		--field: #18272b;
+		--line: #24363c;
+		--line-soft: #1b2b30;
+		--line-strong: #647b85;
+		--ink: #e7eef0;
+		--ink-muted: #a6b6bd;
+		--ink-subtle: #8fa2aa;
+		--rail: #081a1d;
+		--rail-raised: #123238;
+		--rail-ink: #a9c4c1;
+		--on-rail: #e7f0ef;
+		--brand: #5fd1b8;
+		--on-brand: #06140f;
+		--accueil: #a9c0c9;
+		--accueil-hover: #c0d3da;
+		--accueil-soft: #1b2a2f;
+		--accueil-text: #b6cbd2;
+		--on-accueil: #0b1416;
+		--accueil-on-rail: #b6cbd2;
+		--site: #c4a6f7;
+		--site-hover: #d5bffa;
+		--site-soft: #251a3a;
+		--site-text: #cdb3f8;
+		--on-site: #150b26;
+		--site-on-rail: #c9b0f7;
+		--rdv: #8fb0ff;
+		--rdv-hover: #a8c1ff;
+		--rdv-soft: #16223d;
+		--rdv-text: #a8c1ff;
+		--on-rdv: #0b1020;
+		--rdv-on-rail: #8db1ff;
+		--ordo: #f2a65a;
+		--ordo-hover: #f6bb7f;
+		--ordo-soft: #33220f;
+		--ordo-text: #f6b373;
+		--on-ordo: #1d1004;
+		--ordo-on-rail: #f7b26a;
+		--planning: #5fd1b8;
+		--planning-hover: #7fdcc7;
+		--planning-soft: #0f2a25;
+		--planning-text: #7adcc6;
+		--on-planning: #06140f;
+		--planning-on-rail: #6fd6c0;
+		--equipe: #f09ad0;
+		--equipe-hover: #f4b0da;
+		--equipe-soft: #2f1427;
+		--equipe-text: #f4b0da;
+		--on-equipe: #1f0a18;
+		--equipe-on-rail: #f2a3d3;
+		--success: #5fd1b0;
+		--success-soft: #0e2a24;
+		--warning: #f0b955;
+		--warning-soft: #33260c;
+		--danger: #ff8f86;
+		--danger-soft: #3a1515;
+		--notify: #ff6b6f;
+		--badge: #f5b84b;
+		--on-badge: #2b1a00;
+		--focus-ring: #8fb0ff;
+		--shadow-card-value: 0 1px 2px rgba(0,0,0,0.4);
+		--shadow-float-value: 0 8px 24px -12px rgba(0,0,0,0.7);
+		color-scheme: dark;
+	}
 }
 
 [data-theme='dark'] {
-	--color-background: #161615;
-	--color-surface: #20201e;
-	--color-text: #ededea;
-	--color-text-muted: #a3a39d;
-	--color-border: #34342f;
-	--color-accent: #4fae7f;
-	--color-accent-text: #0f1f17;
+	--app: #0b1416;
+	--surface: #111c1f;
+	--surface-subtle: #142226;
+	--surface-muted: #1c2c31;
+	--field: #18272b;
+	--line: #24363c;
+	--line-soft: #1b2b30;
+	--line-strong: #647b85;
+	--ink: #e7eef0;
+	--ink-muted: #a6b6bd;
+	--ink-subtle: #8fa2aa;
+	--rail: #081a1d;
+	--rail-raised: #123238;
+	--rail-ink: #a9c4c1;
+	--on-rail: #e7f0ef;
+	--brand: #5fd1b8;
+	--on-brand: #06140f;
+	--accueil: #a9c0c9;
+	--accueil-hover: #c0d3da;
+	--accueil-soft: #1b2a2f;
+	--accueil-text: #b6cbd2;
+	--on-accueil: #0b1416;
+	--accueil-on-rail: #b6cbd2;
+	--site: #c4a6f7;
+	--site-hover: #d5bffa;
+	--site-soft: #251a3a;
+	--site-text: #cdb3f8;
+	--on-site: #150b26;
+	--site-on-rail: #c9b0f7;
+	--rdv: #8fb0ff;
+	--rdv-hover: #a8c1ff;
+	--rdv-soft: #16223d;
+	--rdv-text: #a8c1ff;
+	--on-rdv: #0b1020;
+	--rdv-on-rail: #8db1ff;
+	--ordo: #f2a65a;
+	--ordo-hover: #f6bb7f;
+	--ordo-soft: #33220f;
+	--ordo-text: #f6b373;
+	--on-ordo: #1d1004;
+	--ordo-on-rail: #f7b26a;
+	--planning: #5fd1b8;
+	--planning-hover: #7fdcc7;
+	--planning-soft: #0f2a25;
+	--planning-text: #7adcc6;
+	--on-planning: #06140f;
+	--planning-on-rail: #6fd6c0;
+	--equipe: #f09ad0;
+	--equipe-hover: #f4b0da;
+	--equipe-soft: #2f1427;
+	--equipe-text: #f4b0da;
+	--on-equipe: #1f0a18;
+	--equipe-on-rail: #f2a3d3;
+	--success: #5fd1b0;
+	--success-soft: #0e2a24;
+	--warning: #f0b955;
+	--warning-soft: #33260c;
+	--danger: #ff8f86;
+	--danger-soft: #3a1515;
+	--notify: #ff6b6f;
+	--badge: #f5b84b;
+	--on-badge: #2b1a00;
+	--focus-ring: #8fb0ff;
+	--shadow-card-value: 0 1px 2px rgba(0,0,0,0.4);
+	--shadow-float-value: 0 8px 24px -12px rgba(0,0,0,0.7);
+	color-scheme: dark;
+}
+
+/*
+ * L'accent suit le module : brand par défaut, la couleur du module dès qu'un
+ * ancêtre porte data-module. Un composant n'utilise jamais une couleur de
+ * module en dur, seulement l'accent.
+ */
+:root,
+[data-module] {
+	--accent-value: var(--brand);
+	--accent-hover-value: var(--brand);
+	--accent-soft-value: var(--surface-muted);
+	--accent-text-value: var(--brand);
+	--accent-on-rail-value: var(--rail-ink);
+	--on-accent-value: var(--on-brand);
+}
+
+[data-module='accueil'] {
+	--accent-value: var(--accueil);
+	--accent-hover-value: var(--accueil-hover);
+	--accent-soft-value: var(--accueil-soft);
+	--accent-text-value: var(--accueil-text);
+	--accent-on-rail-value: var(--accueil-on-rail);
+	--on-accent-value: var(--on-accueil);
+}
+
+[data-module='site'] {
+	--accent-value: var(--site);
+	--accent-hover-value: var(--site-hover);
+	--accent-soft-value: var(--site-soft);
+	--accent-text-value: var(--site-text);
+	--accent-on-rail-value: var(--site-on-rail);
+	--on-accent-value: var(--on-site);
+}
+
+[data-module='rdv'] {
+	--accent-value: var(--rdv);
+	--accent-hover-value: var(--rdv-hover);
+	--accent-soft-value: var(--rdv-soft);
+	--accent-text-value: var(--rdv-text);
+	--accent-on-rail-value: var(--rdv-on-rail);
+	--on-accent-value: var(--on-rdv);
+}
+
+[data-module='ordo'] {
+	--accent-value: var(--ordo);
+	--accent-hover-value: var(--ordo-hover);
+	--accent-soft-value: var(--ordo-soft);
+	--accent-text-value: var(--ordo-text);
+	--accent-on-rail-value: var(--ordo-on-rail);
+	--on-accent-value: var(--on-ordo);
+}
+
+[data-module='planning'] {
+	--accent-value: var(--planning);
+	--accent-hover-value: var(--planning-hover);
+	--accent-soft-value: var(--planning-soft);
+	--accent-text-value: var(--planning-text);
+	--accent-on-rail-value: var(--planning-on-rail);
+	--on-accent-value: var(--on-planning);
+}
+
+[data-module='equipe'] {
+	--accent-value: var(--equipe);
+	--accent-hover-value: var(--equipe-hover);
+	--accent-soft-value: var(--equipe-soft);
+	--accent-text-value: var(--equipe-text);
+	--accent-on-rail-value: var(--equipe-on-rail);
+	--on-accent-value: var(--on-equipe);
+}
+
+[data-module='grp'] {
+	--accent-value: var(--rail);
+	--accent-hover-value: var(--rail-raised);
+	--accent-soft-value: var(--surface-muted);
+	--accent-text-value: var(--ink);
+	--accent-on-rail-value: var(--rail-ink);
+	--on-accent-value: var(--on-rail);
+}
+
+/*
+ * Les classes Tailwind (bg-surface, text-ink, bg-accent…) lisent les variables
+ * ci-dessus au moment du rendu : c'est ce qui fait suivre le thème et le module.
+ */
+@theme inline {
+	--color-app: var(--app);
+	--color-surface: var(--surface);
+	--color-surface-subtle: var(--surface-subtle);
+	--color-surface-muted: var(--surface-muted);
+	--color-field: var(--field);
+	--color-line: var(--line);
+	--color-line-soft: var(--line-soft);
+	--color-line-strong: var(--line-strong);
+	--color-ink: var(--ink);
+	--color-ink-muted: var(--ink-muted);
+	--color-ink-subtle: var(--ink-subtle);
+	--color-rail: var(--rail);
+	--color-rail-raised: var(--rail-raised);
+	--color-rail-ink: var(--rail-ink);
+	--color-on-rail: var(--on-rail);
+	--color-brand: var(--brand);
+	--color-on-brand: var(--on-brand);
+	--color-success: var(--success);
+	--color-success-soft: var(--success-soft);
+	--color-warning: var(--warning);
+	--color-warning-soft: var(--warning-soft);
+	--color-danger: var(--danger);
+	--color-danger-soft: var(--danger-soft);
+	--color-notify: var(--notify);
+	--color-badge: var(--badge);
+	--color-on-badge: var(--on-badge);
+	--color-focus-ring: var(--focus-ring);
+	--color-accent: var(--accent-value);
+	--color-accent-hover: var(--accent-hover-value);
+	--color-accent-soft: var(--accent-soft-value);
+	--color-accent-text: var(--accent-text-value);
+	--color-accent-on-rail: var(--accent-on-rail-value);
+	--color-on-accent: var(--on-accent-value);
+
+	/* Une absence garde la teinte du module Équipe, quel que soit le module affiché. */
+	--color-absence: var(--equipe-soft);
+	--color-on-absence: var(--equipe-text);
+
+	/* Anciens noms, gardés tant que des apps les utilisent. */
+	--color-background: var(--app);
+	--color-text: var(--ink);
+	--color-text-muted: var(--ink-muted);
+	--color-border: var(--line);
+
+	--shadow-card: var(--shadow-card-value);
+	--shadow-float: var(--shadow-float-value);
+}
+
+@theme {
+	--font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+	--radius-xs: 4px;
+	--radius-sm: 6px;
+	--radius-md: 8px;
+	--radius-lg: 14px;
+	--radius-control: 6px;
+
+	--spacing-rail: 72px;
+	--spacing-topbar: 52px;
+	--spacing-module-bar: 3px;
+	--spacing-control: 36px;
+	--spacing-control-sm: 30px;
+	--spacing-control-touch: 46px;
+	--spacing-avatar: 32px;
+}
+
+@utility text-display {
+	font-size: 32px;
+	line-height: 40px;
+	font-weight: 600;
+	letter-spacing: -0.015em;
+}
+
+@utility title-1 {
+	font-size: 22px;
+	line-height: 28px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+@utility title-mobile {
+	font-size: 26px;
+	line-height: 32px;
+	font-weight: 600;
+	letter-spacing: -0.015em;
+}
+
+@utility title-2 {
+	font-size: 14px;
+	line-height: 20px;
+	font-weight: 600;
+}
+
+@utility text-kpi {
+	font-size: 24px;
+	line-height: 30px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+@utility text-body {
+	font-size: 14px;
+	line-height: 20px;
+	font-weight: 400;
+}
+
+@utility body-strong {
+	font-size: 14px;
+	line-height: 20px;
+	font-weight: 600;
+}
+
+@utility text-small {
+	font-size: 12.5px;
+	line-height: 17px;
+	font-weight: 400;
+}
+
+@utility text-label {
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 600;
+}
+
+@utility text-rail {
+	font-size: 10.5px;
+	line-height: 13px;
+	font-weight: 500;
+}
+
+@utility text-slot {
+	font-size: 12.5px;
+	line-height: 16px;
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+	body {
+		font-family: var(--font-sans);
+		font-size: 14px;
+		line-height: 20px;
+		color: var(--ink);
+		background: var(--app);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	:where(a, button, input, select, textarea):focus-visible {
+		outline: 2px solid var(--accent-value);
+		outline-offset: 2px;
+	}
 }

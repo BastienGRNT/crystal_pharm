@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { ToolLink } from '../toolLinks';
+	import SideNav from './SideNav.svelte';
+	import TopBar from './TopBar.svelte';
 
 	type AppShellProps = {
 		toolLinks: readonly ToolLink[];
@@ -9,24 +11,20 @@
 	};
 
 	let { toolLinks, currentToolHref, children }: AppShellProps = $props();
+
+	const currentToolLink = $derived(
+		toolLinks.find((toolLink) => toolLink.href === currentToolHref)
+	);
 </script>
 
-<div class="min-h-screen bg-background font-sans text-text">
-	<header class="border-b border-border bg-surface">
-		<nav class="mx-auto flex max-w-6xl gap-2 px-4 py-3" aria-label="Outils">
-			{#each toolLinks as toolLink (toolLink.href)}
-				<a
-					href={toolLink.href}
-					aria-current={toolLink.href === currentToolHref ? 'page' : undefined}
-					class="rounded-control px-3 py-2 text-text-muted hover:text-text aria-[current=page]:bg-accent aria-[current=page]:text-accent-text"
-				>
-					{toolLink.label}
-				</a>
-			{/each}
-		</nav>
-	</header>
+<div class="flex min-h-screen bg-app font-sans text-ink">
+	<SideNav {toolLinks} {currentToolHref} />
 
-	<main id="contenu" class="mx-auto max-w-6xl px-4 py-8">
-		{@render children()}
-	</main>
+	<div class="flex min-w-0 flex-1 flex-col" data-module={currentToolLink?.module}>
+		<TopBar sectionLabel={currentToolLink?.label ?? ''} />
+
+		<main id="contenu" class="flex flex-col gap-3.5 px-7 pt-5 pb-10 [&>*]:min-w-0 [&>*]:flex-none">
+			{@render children()}
+		</main>
+	</div>
 </div>
