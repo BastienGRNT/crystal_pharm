@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Field, Input, Select } from '@crystal-pharm/ui';
+	import { Button, DatePicker, Field, SelectMenu, TimePicker } from '@crystal-pharm/ui';
 	import type { Employee } from '$lib/domain/planning';
 
 	type AddShiftFormProps = {
@@ -13,33 +13,38 @@
 
 	let { formAction, cancelHref, employees, defaultDate, errorMessage, submittedValues }: AddShiftFormProps =
 		$props();
+
+	const employeeOptions = $derived(
+		employees.map((employee) => ({ value: employee.id, label: employee.fullName }))
+	);
 </script>
 
 <form method="POST" action={formAction} class="grid gap-3.5">
 	<Field label="Employé">
-		{#snippet control(controlAttributes)}
-			<Select {...controlAttributes} name="employeeId" value={submittedValues?.employeeId ?? ''}>
-				<option value="" disabled>Choisir un employé</option>
-				{#each employees as employee (employee.id)}
-					<option value={employee.id}>{employee.fullName}</option>
-				{/each}
-			</Select>
+		{#snippet control({ id })}
+			<SelectMenu
+				{id}
+				name="employeeId"
+				options={employeeOptions}
+				placeholder="Choisir un employé"
+				value={submittedValues?.employeeId ?? ''}
+			/>
 		{/snippet}
 	</Field>
 	<Field label="Jour">
-		{#snippet control(controlAttributes)}
-			<Input {...controlAttributes} type="date" name="date" value={submittedValues?.date ?? defaultDate} />
+		{#snippet control({ id })}
+			<DatePicker {id} name="date" value={submittedValues?.date ?? defaultDate} />
 		{/snippet}
 	</Field>
 	<div class="grid grid-cols-2 gap-3.5">
 		<Field label="Début">
-			{#snippet control(controlAttributes)}
-				<Input {...controlAttributes} type="time" name="startTime" value={submittedValues?.startTime ?? ''} />
+			{#snippet control({ id })}
+				<TimePicker {id} name="startTime" value={submittedValues?.startTime ?? ''} />
 			{/snippet}
 		</Field>
 		<Field label="Fin">
-			{#snippet control(controlAttributes)}
-				<Input {...controlAttributes} type="time" name="endTime" value={submittedValues?.endTime ?? ''} />
+			{#snippet control({ id })}
+				<TimePicker {id} name="endTime" value={submittedValues?.endTime ?? ''} />
 			{/snippet}
 		</Field>
 	</div>
