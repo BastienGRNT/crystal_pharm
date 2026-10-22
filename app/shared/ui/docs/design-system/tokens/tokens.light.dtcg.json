@@ -1,0 +1,461 @@
+{
+  "color": {
+    "surface": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Fond du contenu principal, des cartes et des tableaux."
+    },
+    "surface-subtle": {
+      "$type": "color",
+      "$value": "#fafafa",
+      "$description": "Navigation latérale, en-têtes de tableau, zones secondaires."
+    },
+    "surface-muted": {
+      "$type": "color",
+      "$value": "#f4f4f5",
+      "$description": "Survol de ligne, élément de navigation actif sans module, avatars, champs de recherche."
+    },
+    "line": {
+      "$type": "color",
+      "$value": "#e8e8ea",
+      "$description": "Bordures de cartes et tableaux, séparateurs. Décoratif."
+    },
+    "line-strong": {
+      "$type": "color",
+      "$value": "#8b8b93",
+      "$description": "Bordures des champs et contrôles (3:1 sur surface et surface-subtle)."
+    },
+    "ink": {
+      "$type": "color",
+      "$value": "#0b0b0c",
+      "$description": "Texte principal, sur toutes les surfaces et toutes les teintes *-soft."
+    },
+    "ink-muted": {
+      "$type": "color",
+      "$value": "#5e5e66",
+      "$description": "Texte secondaire : en-têtes de colonnes, fil d'Ariane, descriptions ; sur toutes les surfaces."
+    },
+    "ink-subtle": {
+      "$type": "color",
+      "$value": "#6e6e76",
+      "$description": "Métadonnées, emails sous un nom, placeholders ; 4.6:1 minimum sur toutes les surfaces."
+    },
+    "brand": {
+      "$type": "color",
+      "$value": "#0f5c46",
+      "$description": "Vert Crystal Pharm. Accent par défaut hors module (connexion, accueil)."
+    },
+    "brand-hover": {
+      "$type": "color",
+      "$value": "#0b4a38",
+      "$description": "Survol des éléments brand."
+    },
+    "brand-soft": {
+      "$type": "color",
+      "$value": "#e6f1ec",
+      "$description": "Fond teinté brand."
+    },
+    "on-brand": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Texte sur brand."
+    },
+    "module-equipe": {
+      "$type": "color",
+      "$value": "#2552c4",
+      "$description": "Couleur du module Équipe : bouton principal, onglet actif, icône de page, barre de module. 5.8:1 minimum avec on-module-equipe et sur surface."
+    },
+    "module-equipe-hover": {
+      "$type": "color",
+      "$value": "#1d43a3",
+      "$description": "Survol des éléments module-equipe."
+    },
+    "module-equipe-soft": {
+      "$type": "color",
+      "$value": "#eaf0fd",
+      "$description": "Fond teinté du module Équipe : lien actif de la navigation, tuile d'icône, créneaux."
+    },
+    "module-equipe-text": {
+      "$type": "color",
+      "$value": "#2552c4",
+      "$description": "Texte et icônes à la couleur du module Équipe, sur surface, surface-subtle et module-equipe-soft."
+    },
+    "on-module-equipe": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Texte sur module-equipe."
+    },
+    "module-planning": {
+      "$type": "color",
+      "$value": "#0f6b4f",
+      "$description": "Couleur du module Planning : bouton principal, onglet actif, icône de page, barre de module. 5.8:1 minimum avec on-module-planning et sur surface."
+    },
+    "module-planning-hover": {
+      "$type": "color",
+      "$value": "#0b5740",
+      "$description": "Survol des éléments module-planning."
+    },
+    "module-planning-soft": {
+      "$type": "color",
+      "$value": "#e6f4ee",
+      "$description": "Fond teinté du module Planning : lien actif de la navigation, tuile d'icône, créneaux."
+    },
+    "module-planning-text": {
+      "$type": "color",
+      "$value": "#0f6b4f",
+      "$description": "Texte et icônes à la couleur du module Planning, sur surface, surface-subtle et module-planning-soft."
+    },
+    "on-module-planning": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Texte sur module-planning."
+    },
+    "module-absences": {
+      "$type": "color",
+      "$value": "#8a2f6b",
+      "$description": "Couleur du module Absences : bouton principal, onglet actif, icône de page, barre de module. 5.8:1 minimum avec on-module-absences et sur surface."
+    },
+    "module-absences-hover": {
+      "$type": "color",
+      "$value": "#722658",
+      "$description": "Survol des éléments module-absences."
+    },
+    "module-absences-soft": {
+      "$type": "color",
+      "$value": "#f8eaf3",
+      "$description": "Fond teinté du module Absences : lien actif de la navigation, tuile d'icône, créneaux."
+    },
+    "module-absences-text": {
+      "$type": "color",
+      "$value": "#8a2f6b",
+      "$description": "Texte et icônes à la couleur du module Absences, sur surface, surface-subtle et module-absences-soft."
+    },
+    "on-module-absences": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Texte sur module-absences."
+    },
+    "module-site": {
+      "$type": "color",
+      "$value": "#0b6f7a",
+      "$description": "Couleur du module Site de la pharmacie (à venir) : bouton principal, onglet actif, icône de page, barre de module. 5.8:1 minimum avec on-module-site et sur surface."
+    },
+    "module-site-hover": {
+      "$type": "color",
+      "$value": "#095b64",
+      "$description": "Survol des éléments module-site."
+    },
+    "module-site-soft": {
+      "$type": "color",
+      "$value": "#e3f4f5",
+      "$description": "Fond teinté du module Site de la pharmacie (à venir) : lien actif de la navigation, tuile d'icône, créneaux."
+    },
+    "module-site-text": {
+      "$type": "color",
+      "$value": "#0b6f7a",
+      "$description": "Texte et icônes à la couleur du module Site de la pharmacie (à venir), sur surface, surface-subtle et module-site-soft."
+    },
+    "on-module-site": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Texte sur module-site."
+    },
+    "module-reglages": {
+      "$type": "color",
+      "$value": "#3f4a5a",
+      "$description": "Couleur du module Réglages : bouton principal, onglet actif, icône de page, barre de module. 5.8:1 minimum avec on-module-reglages et sur surface."
+    },
+    "module-reglages-hover": {
+      "$type": "color",
+      "$value": "#323b48",
+      "$description": "Survol des éléments module-reglages."
+    },
+    "module-reglages-soft": {
+      "$type": "color",
+      "$value": "#eef0f3",
+      "$description": "Fond teinté du module Réglages : lien actif de la navigation, tuile d'icône, créneaux."
+    },
+    "module-reglages-text": {
+      "$type": "color",
+      "$value": "#3f4a5a",
+      "$description": "Texte et icônes à la couleur du module Réglages, sur surface, surface-subtle et module-reglages-soft."
+    },
+    "on-module-reglages": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Texte sur module-reglages."
+    },
+    "success": {
+      "$type": "color",
+      "$value": "#047857",
+      "$description": "Statut Actif / Validé (point + mot). Sur surface, surface-subtle, success-soft."
+    },
+    "success-soft": {
+      "$type": "color",
+      "$value": "#e7f6ef",
+      "$description": "Fond du badge de statut et des bandeaux de succès."
+    },
+    "warning": {
+      "$type": "color",
+      "$value": "#a15c00",
+      "$description": "Statut En attente, compteurs de demandes. Sur surface, surface-subtle, warning-soft."
+    },
+    "warning-soft": {
+      "$type": "color",
+      "$value": "#fdf1dc",
+      "$description": "Fond du badge En attente et des bandeaux d'avertissement."
+    },
+    "danger": {
+      "$type": "color",
+      "$value": "#c0262d",
+      "$description": "Statut Refusé, erreurs, actions destructrices. Sur surface, surface-subtle, danger-soft."
+    },
+    "danger-soft": {
+      "$type": "color",
+      "$value": "#fdeaea",
+      "$description": "Fond des erreurs et du badge Refusé."
+    },
+    "absence": {
+      "$type": "color",
+      "$value": "#f8eaf3",
+      "$description": "Cellule d'absence dans le planning (teinte du module Absences)."
+    },
+    "on-absence": {
+      "$type": "color",
+      "$value": "#8a2f6b",
+      "$description": "Texte « Absent » dans une cellule absence."
+    }
+  },
+  "spacing": {
+    "space-1": {
+      "$type": "dimension",
+      "$value": "4px",
+      "$description": "Écart icône–texte serré."
+    },
+    "space-2": {
+      "$type": "dimension",
+      "$value": "8px",
+      "$description": "Écart entre boutons voisins, entre libellé et champ."
+    },
+    "space-3": {
+      "$type": "dimension",
+      "$value": "12px",
+      "$description": "Padding de cellule, écart avatar–nom."
+    },
+    "space-4": {
+      "$type": "dimension",
+      "$value": "16px",
+      "$description": "Padding horizontal des cellules, écart entre champs."
+    },
+    "space-5": {
+      "$type": "dimension",
+      "$value": "24px",
+      "$description": "Padding des cartes, écart entre blocs d'une page."
+    },
+    "space-6": {
+      "$type": "dimension",
+      "$value": "32px",
+      "$description": "Marges latérales du contenu."
+    },
+    "space-7": {
+      "$type": "dimension",
+      "$value": "48px",
+      "$description": "Respiration des états vides et de la connexion."
+    }
+  },
+  "radius": {
+    "radius-sm": {
+      "$type": "dimension",
+      "$value": "4px",
+      "$description": "Badges carrés, raccourcis clavier, créneaux."
+    },
+    "radius-md": {
+      "$type": "dimension",
+      "$value": "6px",
+      "$description": "Boutons, champs, liens de navigation."
+    },
+    "radius-lg": {
+      "$type": "dimension",
+      "$value": "8px",
+      "$description": "Cartes, tableaux, tuiles d'icône, bandeaux."
+    },
+    "radius-xl": {
+      "$type": "dimension",
+      "$value": "12px",
+      "$description": "Dialogues, carte de connexion."
+    },
+    "radius-full": {
+      "$type": "dimension",
+      "$value": "999px",
+      "$description": "Avatars, badges de statut, compteurs."
+    }
+  },
+  "shadow": {
+    "shadow-xs": {
+      "$type": "shadow",
+      "$value": "0 1px 2px rgba(11,11,12,0.05)",
+      "$description": "Boutons secondaires, cartes."
+    },
+    "shadow-md": {
+      "$type": "shadow",
+      "$value": "0 8px 24px -8px rgba(11,11,12,0.16)",
+      "$description": "Menus, dialogues."
+    }
+  },
+  "size": {
+    "control-sm": {
+      "$type": "dimension",
+      "$value": "28px",
+      "$description": "Boutons dans une ligne de tableau, bouton icône."
+    },
+    "control-md": {
+      "$type": "dimension",
+      "$value": "34px",
+      "$description": "Boutons et champs par défaut."
+    },
+    "control-lg": {
+      "$type": "dimension",
+      "$value": "40px",
+      "$description": "Connexion, tablette au comptoir."
+    },
+    "topbar": {
+      "$type": "dimension",
+      "$value": "52px",
+      "$description": "Hauteur de la barre du haut (fil d'Ariane)."
+    },
+    "sidebar-width": {
+      "$type": "dimension",
+      "$value": "232px",
+      "$description": "Largeur de la navigation latérale."
+    },
+    "module-bar": {
+      "$type": "dimension",
+      "$value": "3px",
+      "$description": "Épaisseur de la barre de couleur du module en haut du contenu."
+    }
+  },
+  "font": {
+    "family": {
+      "sans": {
+        "$type": "fontFamily",
+        "$value": "Geist, system-ui, -apple-system, \"Segoe UI\", sans-serif"
+      }
+    }
+  },
+  "typography": {
+    "display": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "32px",
+        "lineHeight": "38px",
+        "fontWeight": 600,
+        "letterSpacing": "-0.02em"
+      },
+      "$description": "Écran de connexion et accueil."
+    },
+    "title-1": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "24px",
+        "lineHeight": "30px",
+        "fontWeight": 600,
+        "letterSpacing": "-0.015em"
+      },
+      "$description": "Titre de page (h1)."
+    },
+    "title-2": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "18px",
+        "lineHeight": "24px",
+        "fontWeight": 600,
+        "letterSpacing": "-0.01em"
+      },
+      "$description": "Titre de carte, de section, de formulaire (h2)."
+    },
+    "title-3": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "15px",
+        "lineHeight": "22px",
+        "fontWeight": 600
+      },
+      "$description": "Titre de bloc secondaire."
+    },
+    "body": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": 400
+      },
+      "$description": "Texte courant, cellules de tableau, champs."
+    },
+    "body-strong": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": 600
+      },
+      "$description": "Nom dans un tableau, valeur mise en avant."
+    },
+    "label": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "13px",
+        "lineHeight": "18px",
+        "fontWeight": 500
+      },
+      "$description": "Libellés de champs, onglets, boutons compacts."
+    },
+    "small": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "13px",
+        "lineHeight": "18px",
+        "fontWeight": 400
+      },
+      "$description": "Métadonnées sous un nom, aide sous un champ, descriptions."
+    },
+    "caption": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "fontWeight": 500
+      },
+      "$description": "En-têtes de colonnes, badges, compteurs."
+    },
+    "overline": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "11px",
+        "lineHeight": "16px",
+        "fontWeight": 600,
+        "letterSpacing": "0.06em"
+      },
+      "$description": "Titre de section de la navigation, en capitales."
+    },
+    "time": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "12.5px",
+        "lineHeight": "16px",
+        "fontWeight": 500
+      },
+      "$description": "Horaires de créneaux, chiffres tabulaires."
+    }
+  }
+}

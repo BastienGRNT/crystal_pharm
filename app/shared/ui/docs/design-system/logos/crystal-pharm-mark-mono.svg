@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <clipPath id="cross"><path d="M20 4h8a4 4 0 0 1 4 4v8h8a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4h-8v8a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4v-8H8a4 4 0 0 1-4-4v-8a4 4 0 0 1 4-4h8V8a4 4 0 0 1 4-4z"/></clipPath>
+  </defs>
+  <g clip-path="url(#cross)">
+    <rect width="48" height="48" fill="#1a1a17"/>
+    <path d="M0 0L48 48" stroke="#ffffff" stroke-width="2.5"/>
+  </g>
+</svg>
