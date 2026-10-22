@@ -6,6 +6,6 @@
 	let { children }: { children: Snippet } = $props();
 </script>
 
-<AppShell {toolLinks} currentToolHref="/planning">
+<AppShell {toolLinks} currentToolHref="/planning" pageLabel="Semaine">
 	{@render children()}
 </AppShell>
