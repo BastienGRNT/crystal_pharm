@@ -1,0 +1,184 @@
+{
+  "color": {
+    "surface": {
+      "$type": "color",
+      "$value": "#0c0c0d"
+    },
+    "surface-subtle": {
+      "$type": "color",
+      "$value": "#131315"
+    },
+    "surface-muted": {
+      "$type": "color",
+      "$value": "#1c1c1f"
+    },
+    "line": {
+      "$type": "color",
+      "$value": "#27272b"
+    },
+    "line-strong": {
+      "$type": "color",
+      "$value": "#76767e"
+    },
+    "ink": {
+      "$type": "color",
+      "$value": "#f4f4f5"
+    },
+    "ink-muted": {
+      "$type": "color",
+      "$value": "#a8a8b0"
+    },
+    "ink-subtle": {
+      "$type": "color",
+      "$value": "#909098"
+    },
+    "brand": {
+      "$type": "color",
+      "$value": "#5fd1a5"
+    },
+    "brand-hover": {
+      "$type": "color",
+      "$value": "#7adcb6"
+    },
+    "brand-soft": {
+      "$type": "color",
+      "$value": "#10291f"
+    },
+    "on-brand": {
+      "$type": "color",
+      "$value": "#06140f"
+    },
+    "module-equipe": {
+      "$type": "color",
+      "$value": "#8fb0ff"
+    },
+    "module-equipe-hover": {
+      "$type": "color",
+      "$value": "#a8c1ff"
+    },
+    "module-equipe-soft": {
+      "$type": "color",
+      "$value": "#16213d"
+    },
+    "module-equipe-text": {
+      "$type": "color",
+      "$value": "#a8c1ff"
+    },
+    "on-module-equipe": {
+      "$type": "color",
+      "$value": "#0b1020"
+    },
+    "module-planning": {
+      "$type": "color",
+      "$value": "#5fd1a5"
+    },
+    "module-planning-hover": {
+      "$type": "color",
+      "$value": "#7adcb6"
+    },
+    "module-planning-soft": {
+      "$type": "color",
+      "$value": "#10291f"
+    },
+    "module-planning-text": {
+      "$type": "color",
+      "$value": "#7adcb6"
+    },
+    "on-module-planning": {
+      "$type": "color",
+      "$value": "#06140f"
+    },
+    "module-absences": {
+      "$type": "color",
+      "$value": "#f09ad0"
+    },
+    "module-absences-hover": {
+      "$type": "color",
+      "$value": "#f4b0da"
+    },
+    "module-absences-soft": {
+      "$type": "color",
+      "$value": "#2f1427"
+    },
+    "module-absences-text": {
+      "$type": "color",
+      "$value": "#f4b0da"
+    },
+    "on-module-absences": {
+      "$type": "color",
+      "$value": "#1f0a18"
+    },
+    "module-site": {
+      "$type": "color",
+      "$value": "#5fcfd9"
+    },
+    "module-site-hover": {
+      "$type": "color",
+      "$value": "#7fd9e1"
+    },
+    "module-site-soft": {
+      "$type": "color",
+      "$value": "#0f2a2d"
+    },
+    "module-site-text": {
+      "$type": "color",
+      "$value": "#7fd9e1"
+    },
+    "on-module-site": {
+      "$type": "color",
+      "$value": "#061416"
+    },
+    "module-reglages": {
+      "$type": "color",
+      "$value": "#b3bdcc"
+    },
+    "module-reglages-hover": {
+      "$type": "color",
+      "$value": "#c3ccd8"
+    },
+    "module-reglages-soft": {
+      "$type": "color",
+      "$value": "#1d2229"
+    },
+    "module-reglages-text": {
+      "$type": "color",
+      "$value": "#c3ccd8"
+    },
+    "on-module-reglages": {
+      "$type": "color",
+      "$value": "#0f1216"
+    },
+    "success": {
+      "$type": "color",
+      "$value": "#4fd1a1"
+    },
+    "success-soft": {
+      "$type": "color",
+      "$value": "#0d2a1f"
+    },
+    "warning": {
+      "$type": "color",
+      "$value": "#f0b955"
+    },
+    "warning-soft": {
+      "$type": "color",
+      "$value": "#33260c"
+    },
+    "danger": {
+      "$type": "color",
+      "$value": "#ff8f8f"
+    },
+    "danger-soft": {
+      "$type": "color",
+      "$value": "#3a1515"
+    },
+    "absence": {
+      "$type": "color",
+      "$value": "#2f1427"
+    },
+    "on-absence": {
+      "$type": "color",
+      "$value": "#f4b0da"
+    }
+  }
+}
