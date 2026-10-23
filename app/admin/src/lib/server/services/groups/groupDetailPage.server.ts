@@ -1,10 +1,11 @@
 import {
 	getGroupBillingOverview,
-	listPayments,
+	listInvoices,
 	platformBillingAccess,
 	setGroupContractStatus,
+	toInvoiceRow,
 	type GroupBillingOverview,
-	type Payment
+	type InvoiceRow
 } from '@crystal-pharm/billing-db';
 import type { GroupContractStatus, ToolKey } from '@crystal-pharm/billing-db/domain';
 import {
@@ -21,6 +22,7 @@ import {
 	type PharmacyGroupSummary
 } from '@crystal-pharm/group-db';
 import { error, fail, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
+import { invoicePdfPathname } from '../invoices/invoiceListPage.server';
 import { sendGroupMemberInvitation } from './groupMemberInvitationSending.server';
 
 export type MemberPharmacyRow = {
@@ -34,12 +36,12 @@ export type MemberPharmacyRow = {
 
 export type GroupDetailPageData = {
 	group: PharmacyGroupSummary;
-	billing: Pick<GroupBillingOverview, 'catalog' | 'contract' | 'groupMonthlyCostCents'>;
+	billing: Pick<GroupBillingOverview, 'catalog' | 'contract' | 'charge' | 'upcomingCharge'>;
 	memberPharmacies: MemberPharmacyRow[];
 	pendingPharmacyInvitations: PendingPharmacyInvitation[];
 	groupMembers: GroupMember[];
 	pendingGroupMemberInvitations: PendingGroupMemberInvitation[];
-	payments: Payment[];
+	invoices: InvoiceRow[];
 };
 
 export type GroupDetailActionResult =
@@ -56,7 +58,7 @@ export async function loadGroupDetailPage({ params }: { params: { groupId: strin
 	const memberPharmacies = await listMemberPharmacies(platformAccess, group.groupId);
 	return {
 		group,
-		billing: { catalog: billing.catalog, contract: billing.contract, groupMonthlyCostCents: billing.groupMonthlyCostCents },
+		billing: { catalog: billing.catalog, contract: billing.contract, charge: billing.charge, upcomingCharge: billing.upcomingCharge },
 		memberPharmacies: memberPharmacies.map((memberPharmacy) => {
 			const pharmacyBilling = billing.coveredPharmacies.find((covered) => covered.tenantId === memberPharmacy.tenantId);
 			return {
@@ -71,7 +73,9 @@ export async function loadGroupDetailPage({ params }: { params: { groupId: strin
 		pendingPharmacyInvitations: await listPendingPharmacyInvitations(platformAccess, group.groupId),
 		groupMembers: await listGroupMembers({ kind: 'platform' }, group.groupId),
 		pendingGroupMemberInvitations: await listPendingGroupMemberInvitations({ kind: 'platform' }, group.groupId),
-		payments: await listPayments({ groupId: group.groupId })
+		invoices: (await listInvoices({ groupId: group.groupId })).map((invoice) =>
+			toInvoiceRow(invoice, invoicePdfPathname(invoice.invoiceId))
+		)
 	};
 }
 

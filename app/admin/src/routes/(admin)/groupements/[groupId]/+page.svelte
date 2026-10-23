@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { formatEuros, summarizeCoverage, tools } from '@crystal-pharm/billing-db/domain';
+	import {
+		describeGroupBillingMode,
+		describeOveragePrice,
+		formatEuros,
+		summarizeCoverage,
+		tools
+	} from '@crystal-pharm/billing-db/domain';
 	import {
 		Alert,
 		Button,
@@ -10,6 +16,7 @@
 		EmptyState,
 		Field,
 		Input,
+		InvoiceTable,
 		PageHeader,
 		ProgressBar,
 		StatCard,
@@ -23,6 +30,14 @@
 	let { data, form }: PageProps = $props();
 
 	const contract = $derived(data.billing.contract);
+	const charge = $derived(data.billing.charge);
+	const upcomingCharge = $derived(data.billing.upcomingCharge);
+	const groupBilling = $derived({
+		billingMode: contract?.billingMode ?? 'usage',
+		flatRateMonthlyPriceCents: contract?.flatRateMonthlyPriceCents,
+		pharmacyQuota: data.group.pharmacyQuota
+	});
+	const overagePriceWording = $derived(describeOveragePrice(groupBilling));
 	const usedPlaces = $derived(data.group.memberPharmacyCount + data.group.pendingInvitationCount);
 	const invitationFailure = $derived(form && 'failedAction' in form ? form : undefined);
 	const invitedEmail = $derived(
@@ -70,8 +85,16 @@
 			</div>
 		{/snippet}
 	</StatCard>
-	<StatCard label="Coût mensuel pour le groupement" icon="receipt" value={formatEuros(data.billing.groupMonthlyCostCents)}>
-		{#snippet detail()}D’après les modules actifs de ses pharmacies.{/snippet}
+	<StatCard label="Ce que paie le groupement" icon="receipt" value="{formatEuros(charge.monthlyTotalCents)} HT / mois">
+		{#snippet detail()}
+			{#if contract?.billingMode === 'flat_rate'}
+				Forfait {formatEuros(charge.flatRateCents)}{charge.overagePharmacyCount > 0
+					? ` + ${charge.overagePharmacyCount} pharmacie(s) au-delà du quota × ${formatEuros(charge.overageUnitPriceCents)}`
+					: ''}.
+			{:else}
+				D’après les modules actifs de ses pharmacies.
+			{/if}
+		{/snippet}
 	</StatCard>
 	<StatCard label="Responsables" icon="users-three" value={String(data.groupMembers.length)}>
 		{#snippet detail()}{data.pendingGroupMemberInvitations.length} invitation(s) en attente{/snippet}
@@ -103,11 +126,13 @@
 						/>
 					{:else}
 						<ConfirmButton
-							label={contract.status === 'awaiting_payment' ? 'Marquer comme payé' : 'Réactiver'}
+							label={contract.status === 'awaiting_payment' ? 'Activer sans attendre la carte' : 'Réactiver'}
 							icon="check-circle"
 							variant="primary"
 							title={contract.status === 'awaiting_payment' ? 'Activer sans paiement par carte ?' : 'Réactiver le contrat ?'}
-							description="Les pharmacies membres retrouvent tout de suite les modules pris en charge."
+							description={contract.status === 'awaiting_payment'
+								? 'Les pharmacies membres ont tout de suite les modules pris en charge. La facture du premier mois part aussitôt, à régler par virement.'
+								: 'Les pharmacies membres retrouvent tout de suite les modules pris en charge.'}
 							confirmLabel="Activer"
 							name="status"
 							value="active"
@@ -116,6 +141,33 @@
 				</form>
 			{/if}
 		</div>
+		<dl class="grid gap-3 sm:grid-cols-2">
+			<div class="grid gap-0.5">
+				<dt class="text-label text-ink-muted">Facturation</dt>
+				<dd class="text-body text-ink">
+					{describeGroupBillingMode(groupBilling)}
+					{#if overagePriceWording}<br /><span class="text-small text-ink-muted">{overagePriceWording}</span>{/if}
+				</dd>
+			</div>
+			<div class="grid gap-0.5">
+				<dt class="text-label text-ink-muted">Prochaine échéance</dt>
+				<dd class="text-body text-ink">
+					{#if upcomingCharge}
+						Le {formatDay(upcomingCharge.dueOn)} :
+						<span class="body-strong tabular-nums">{formatEuros(upcomingCharge.totalCents)} TTC</span>
+						<br /><span class="text-small text-ink-muted">
+							{contract?.paymentMethod === 'card' ? 'Prélevée sur la carte du groupement' : 'Facture envoyée, à régler par virement'}
+						</span>
+					{:else if contract?.status === 'awaiting_payment'}
+						Au premier paiement par carte du groupement
+					{:else if contract}
+						Aucune tant que le contrat est suspendu
+					{:else}
+						Aucune : pas encore de contrat
+					{/if}
+				</dd>
+			</div>
+		</dl>
 		<ul class="grid gap-2 sm:grid-cols-2">
 			{#each tools as tool (tool.toolKey)}
 				<li class="flex items-center justify-between gap-3 rounded-md bg-surface-subtle px-3 py-2">
@@ -205,18 +257,32 @@
 	</div>
 </Card>
 
-{#if data.payments.length > 0}
-	<section aria-labelledby="payments-title" class="grid gap-2">
-		<h2 id="payments-title" class="title-2 text-ink">Paiements par carte</h2>
-		<DataTable caption="Paiements du groupement">
-			{#snippet head()}<th>Date</th><th>Libellé</th><th class="text-right">Montant</th>{/snippet}
-			{#each data.payments as payment (payment.paymentId)}
-				<tr>
-					<td class="text-ink-muted">{formatDay(payment.paidAt)}</td>
-					<td>{payment.description}</td>
-					<td class="text-right tabular-nums">{formatEuros(payment.amountCents)}</td>
-				</tr>
-			{/each}
-		</DataTable>
-	</section>
-{/if}
+<section aria-labelledby="invoices-title" class="grid gap-2">
+	<h2 id="invoices-title" class="title-2 text-ink">Factures</h2>
+	{#if data.invoices.length === 0}
+		<EmptyState
+			icon="file-text"
+			title="Aucune facture pour l’instant"
+			description="La première part au premier paiement du groupement, puis une chaque mois."
+		/>
+	{:else}
+		<InvoiceTable caption="Factures du groupement" invoices={data.invoices}>
+			{#snippet rowActions(invoice)}
+				{#if invoice.isDue}
+					<form method="POST" action="/factures?/markPaid">
+						<input type="hidden" name="invoiceId" value={invoice.invoiceId} />
+						<input type="hidden" name="invoiceNumber" value={invoice.number} />
+						<ConfirmButton
+							label="Marquer comme payée"
+							icon="check-circle"
+							variant="ghost"
+							title="Le virement de {invoice.totalLabel} est arrivé ?"
+							description="La facture {invoice.number} passe en « Payée ». À faire seulement une fois le virement reçu sur le compte."
+							confirmLabel="Marquer comme payée"
+						/>
+					</form>
+				{/if}
+			{/snippet}
+		</InvoiceTable>
+	{/if}
+</section>

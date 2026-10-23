@@ -145,6 +145,7 @@ export function listInvoices(payer: Payer): Promise<Invoice[]> {
 }
 
 export async function getInvoice(payer: Payer, invoiceId: string): Promise<Invoice | undefined> {
+	if (!isUuid(invoiceId)) return undefined;
 	const [invoiceRow] = await runWithBillingAccess(toPayerAccess(payer), (transaction) =>
 		transaction
 			.select()
@@ -168,6 +169,7 @@ export function listAllInvoices(): Promise<Invoice[]> {
 }
 
 export async function getInvoiceForPlatform(invoiceId: string): Promise<Invoice | undefined> {
+	if (!isUuid(invoiceId)) return undefined;
 	const [invoiceRow] = await runWithBillingAccess(platformBillingAccess, (transaction) =>
 		transaction.select().from(invoices).where(eq(invoices.id, invoiceId))
 	);
@@ -176,6 +178,7 @@ export async function getInvoiceForPlatform(invoiceId: string): Promise<Invoice 
 
 /** La Platform a reçu le virement d'une facture « à régler ». */
 export async function markInvoicePaid(invoiceId: string): Promise<void> {
+	if (!isUuid(invoiceId)) return;
 	await runWithBillingAccess(platformBillingAccess, (transaction) =>
 		transaction
 			.update(invoices)
@@ -206,6 +209,11 @@ async function describeCustomer(payer: Payer): Promise<{ name: string; addressLi
 	}
 	const group = await getPharmacyGroupForPlatform(payer.groupId);
 	return { name: group?.name ?? 'Groupement', addressLines: group?.contactEmail ? [group.contactEmail] : [] };
+}
+
+// Un identifiant venu d'une URL : Postgres refuserait de le comparer à une colonne uuid.
+function isUuid(candidate: string): boolean {
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate);
 }
 
 function toPayerColumns(payer: Payer) {

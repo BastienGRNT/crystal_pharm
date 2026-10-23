@@ -148,3 +148,14 @@ function toEncodableText(text: string, font: PDFFont): string {
 		})
 		.join('');
 }
+
+/** La réponse HTTP qui fait télécharger la facture : « CP-2026-00017.pdf ». */
+export async function respondWithInvoicePdf(invoice: Invoice): Promise<Response> {
+	const pdfBytes = await renderInvoicePdf(invoice);
+	return new Response(new Blob([pdfBytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }), {
+		headers: {
+			'content-disposition': `attachment; filename="${invoice.number}.pdf"`,
+			'cache-control': 'private, no-store'
+		}
+	});
+}

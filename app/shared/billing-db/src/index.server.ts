@@ -31,7 +31,8 @@ export {
 	markInvoicePaid,
 	type Invoice
 } from './invoicing/invoices.server';
-export { renderInvoicePdf } from './invoicing/invoicePdf.server';
+export { renderInvoicePdf, respondWithInvoicePdf } from './invoicing/invoicePdf.server';
+export { toInvoiceRow, type InvoiceRow } from './invoicing/invoiceRows';
 export {
 	describeGroupChargeLines,
 	getGroupBillingOverview,

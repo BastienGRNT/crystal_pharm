@@ -8,6 +8,8 @@ export { default as Card } from './atoms/Card.svelte';
 export { default as Icon } from './atoms/icons/Icon.svelte';
 export type { IconName } from './atoms/icons/icons';
 export { default as IconButton } from './atoms/actions/IconButton.svelte';
+export { default as InvoiceTable } from './organisms/billing/InvoiceTable.svelte';
+export type { InvoiceTableRow } from './organisms/billing/invoiceTable';
 export { default as Input } from './atoms/fields/Input.svelte';
 export { default as LogoMark } from './atoms/LogoMark.svelte';
 export { default as Select } from './atoms/fields/Select.svelte';

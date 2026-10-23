@@ -1,6 +1,6 @@
 import { and, eq, isNull, lte, or, gt } from 'drizzle-orm';
 import { platformBillingAccess, runWithBillingAccess } from '../database/billingDatabase.server';
-import { groupContracts, tenantSubscriptions } from '../database/billingTables';
+import { groupContracts, tenantSubscriptions, type InvoicePaymentMethod } from '../database/billingTables';
 import { chargeAndInvoice } from '../invoicing/invoices.server';
 import { describeGroupChargeLines, getGroupBillingOverview } from '../overview/groupBilling.server';
 import { computeCurrentPeriodEnd } from '../subscriptions/subscriptionPeriod';
@@ -26,9 +26,18 @@ export async function runDueBilling(now = new Date()): Promise<DueBillingReport>
 	return report;
 }
 
-/** Facture tout de suite un contrat dont la période est due (activation, première période d'un contrat sur facture). */
-export async function billDueGroupContract(groupId: string, now = new Date()): Promise<number> {
+/**
+ * Facture tout de suite un contrat dont la période est due (activation, première
+ * période d'un contrat sur facture). Un contrat par carte activé par la Platform
+ * sans paiement n'a pas de carte : sa première facture se règle par virement.
+ */
+export async function billDueGroupContract(
+	groupId: string,
+	now = new Date(),
+	firstInvoicePaymentMethod?: InvoicePaymentMethod
+): Promise<number> {
 	let invoicedPeriodCount = 0;
+	let isFirstPeriod = true;
 	let billedUntil = await readGroupBilledUntil(groupId);
 	while (billedUntil && billedUntil <= now) {
 		const overview = await getGroupBillingOverview(platformBillingAccess, groupId);
@@ -40,8 +49,11 @@ export async function billDueGroupContract(groupId: string, now = new Date()): P
 			description: 'Contrat de groupement Crystal Pharm',
 			periodStart: billedUntil,
 			periodEnd,
-			paymentMethod: overview.contract.paymentMethod === 'card' ? 'card' : 'transfer'
+			paymentMethod:
+				(isFirstPeriod ? firstInvoicePaymentMethod : undefined) ??
+				(overview.contract.paymentMethod === 'card' ? 'card' : 'transfer')
 		});
+		isFirstPeriod = false;
 		if (invoice) invoicedPeriodCount += 1;
 		await runWithBillingAccess(platformBillingAccess, (transaction) =>
 			transaction.update(groupContracts).set({ billedUntil: periodEnd }).where(eq(groupContracts.groupId, groupId))

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { formatEuros } from '@crystal-pharm/billing-db/domain';
 	import { Button, DataTable, EmptyState, PageHeader, ProgressBar, Tag } from '@crystal-pharm/ui';
-	import { contractStatusLabels, paymentMethodLabels } from '$lib/contractLabels';
+	import { billingModeLabels, contractStatusLabels, paymentMethodLabels } from '$lib/contractLabels';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -31,7 +31,7 @@
 			<th>Groupement</th>
 			<th>Pharmacies</th>
 			<th>Contrat</th>
-			<th class="text-right">Coût mensuel</th>
+			<th class="text-right">Coût mensuel HT</th>
 		{/snippet}
 		{#each data.groups as group (group.groupId)}
 			<tr>
@@ -54,7 +54,7 @@
 				<td>
 					{#if group.contract}
 						<span class="flex flex-wrap items-center gap-1.5 text-small text-ink-muted">
-							{paymentMethodLabels[group.contract.paymentMethod]}
+							{billingModeLabels[group.contract.billingMode]} · {paymentMethodLabels[group.contract.paymentMethod].toLowerCase()}
 							<Tag tone={contractStatusLabels[group.contract.status].tone}>{contractStatusLabels[group.contract.status].label}</Tag>
 						</span>
 					{:else}

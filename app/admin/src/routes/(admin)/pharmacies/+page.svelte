@@ -23,8 +23,8 @@
 			<th>Pharmacie</th>
 			<th>Situation</th>
 			<th>Modules actifs</th>
-			<th class="text-right">Payé par la pharmacie</th>
-			<th class="text-right">Payé par le groupement</th>
+			<th class="text-right">Payé par la pharmacie (HT / mois)</th>
+			<th class="text-right">Payé par le groupement (HT / mois)</th>
 		{/snippet}
 		{#each data.pharmacies as pharmacy (pharmacy.tenantId)}
 			<tr>

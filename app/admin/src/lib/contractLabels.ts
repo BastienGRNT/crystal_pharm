@@ -1,10 +1,15 @@
 import type { TenantBillingStatus } from '@crystal-pharm/billing-db';
-import type { GroupContractStatus, GroupPaymentMethod } from '@crystal-pharm/billing-db/domain';
+import type { GroupBillingMode, GroupContractStatus, GroupPaymentMethod } from '@crystal-pharm/billing-db/domain';
 import type { TagTone } from '@crystal-pharm/ui';
 
 export const paymentMethodLabels: Record<GroupPaymentMethod, string> = {
 	invoice: 'Sur facture',
 	card: 'Par carte'
+};
+
+export const billingModeLabels: Record<GroupBillingMode, string> = {
+	usage: 'À l’usage',
+	flat_rate: 'Forfait'
 };
 
 export const contractStatusLabels: Record<GroupContractStatus, { label: string; tone: TagTone }> = {

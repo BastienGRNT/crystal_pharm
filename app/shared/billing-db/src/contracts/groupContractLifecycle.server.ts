@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm';
 import type { SaveResult } from '@crystal-pharm/pharmacy-db/domain';
 import { platformBillingAccess, runWithBillingAccess } from '../database/billingDatabase.server';
+import { groupContracts } from '../database/billingTables';
 import type { GroupContractStatus } from '../database/billingTables';
 import { billDueGroupContract } from '../renewal/dueBilling.server';
 import {
@@ -24,6 +26,15 @@ export async function saveGroupContract(
 
 /** La Platform suspend un contrat (impayé…) ou le (ré)active ; un contrat suspendu ne prend plus rien en charge. */
 export async function setGroupContractStatus(groupId: string, status: GroupContractStatus): Promise<void> {
-	await runWithBillingAccess(platformBillingAccess, (transaction) => writeGroupContractStatus(transaction, groupId, status));
-	if (status === 'active') await billDueGroupContract(groupId);
+	const previousStatus = await runWithBillingAccess(platformBillingAccess, async (transaction) => {
+		const [contract] = await transaction
+			.select({ status: groupContracts.status })
+			.from(groupContracts)
+			.where(eq(groupContracts.groupId, groupId));
+		await writeGroupContractStatus(transaction, groupId, status);
+		return contract?.status;
+	});
+	if (status === 'active') {
+		await billDueGroupContract(groupId, new Date(), previousStatus === 'awaiting_payment' ? 'transfer' : undefined);
+	}
 }

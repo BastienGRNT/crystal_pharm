@@ -20,10 +20,19 @@
 	{/snippet}
 </PageHeader>
 
-<div class="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-	<StatCard label="Revenu mensuel" icon="receipt" value={formatEuros(monthlyRevenueCents)}>
+<div class="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-5">
+	<StatCard label="Revenu mensuel HT" icon="receipt" value={formatEuros(monthlyRevenueCents)}>
 		{#snippet detail()}
 			{formatEuros(data.pharmacyMonthlyRevenueCents)} des pharmacies · {formatEuros(data.groupMonthlyRevenueCents)} des groupements
+		{/snippet}
+	</StatCard>
+	<StatCard label="Factures à encaisser" icon="file-text" value={formatEuros(data.dueInvoiceTotalCents)}>
+		{#snippet detail()}
+			{#if data.dueInvoiceCount === 0}
+				Tous les virements sont arrivés.
+			{:else}
+				<a href="/factures?a-regler" class="text-accent-text underline">{data.dueInvoiceCount} facture(s) à régler, TTC</a>
+			{/if}
 		{/snippet}
 	</StatCard>
 	<StatCard label="Pharmacies" icon="storefront" value={String(data.pharmacyCount)}>
