@@ -1,7 +1,9 @@
 <script lang="ts">
 	import {
 		computeOverageUnitPrice,
-		describeInclusion,
+		findIncludedToolKeys,
+		findOfferLabel,
+		findTool,
 		formatEuros,
 		parseEurosToCents,
 		priceForPeriod,
@@ -22,7 +24,6 @@
 	const flatRateOfferInputs = $state(untrack(() => structuredClone(failedOffers?.flatRateOfferInputs ?? data.flatRateOfferInputs)));
 
 	const sellableTools = tools.filter((tool) => sellableToolKeys.includes(tool.toolKey));
-	const includedTools = tools.filter((tool) => !sellableToolKeys.includes(tool.toolKey));
 
 	const paidTotalCents = $derived(
 		sellableTools.reduce((total, tool) => total + (parseEurosToCents(values.toolPriceInputs[tool.toolKey] ?? '') ?? 0), 0)
@@ -68,6 +69,16 @@
 					<div class="min-w-0">
 						<p class="body-strong text-ink">{tool.label}</p>
 						<p class="text-small text-ink-muted">{tool.pitch}</p>
+						{#if findOfferLabel(tool.toolKey) !== tool.label}
+							<p class="mt-1 text-small text-ink-subtle">Vendu aux pharmacies sous le nom « {findOfferLabel(tool.toolKey)} ».</p>
+						{/if}
+						{#if findIncludedToolKeys(tool.toolKey).length > 0}
+							<p class="mt-1.5 flex flex-wrap gap-1.5">
+								{#each findIncludedToolKeys(tool.toolKey) as includedToolKey (includedToolKey)}
+									<Tag tone="success">{findTool(includedToolKey).label} compris</Tag>
+								{/each}
+							</p>
+						{/if}
 					</div>
 					<Field label="Prix de {tool.label}" errorMessage={failedPrices?.fieldErrors[tool.toolKey]}>
 						{#snippet control(controlAttributes)}
@@ -81,15 +92,6 @@
 							/>
 						{/snippet}
 					</Field>
-				</div>
-			{/each}
-			{#each includedTools as tool (tool.toolKey)}
-				<div class="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft py-4">
-					<div class="min-w-0">
-						<p class="body-strong text-ink">{tool.label}</p>
-						<p class="text-small text-ink-muted">{tool.pitch}</p>
-					</div>
-					<Tag tone="success">{describeInclusion(tool.toolKey)}</Tag>
 				</div>
 			{/each}
 		</div>

@@ -2,7 +2,7 @@
 	import {
 		describeGroupContractInWords,
 		describeGroupContractTerms,
-		findTool,
+		describeIncludedTools,
 		formatEuros,
 		type GroupBillingTerms,
 		type ToolCatalog,
@@ -55,6 +55,9 @@
 						<td class="py-1.5">
 							{toolTerms.label}
 							<span class="text-ink-subtle">· {formatEuros(toolTerms.listPriceCents)}</span>
+							{#if describeIncludedTools(toolTerms.toolKey)}
+								<span class="block text-ink-muted">{describeIncludedTools(toolTerms.toolKey)}</span>
+							{/if}
 						</td>
 						<td class="py-1.5 text-right tabular-nums">
 							{toolTerms.payer === 'group' ? 'Rien' : formatEuros(toolTerms.pharmacyPriceCents)}
@@ -62,11 +65,6 @@
 						{#if isUsage}<td class="py-1.5 text-right tabular-nums">{formatEuros(toolTerms.groupPriceCents)}</td>{/if}
 					</tr>
 				{/each}
-				<tr class="border-t border-line-soft text-ink-muted">
-					<td class="py-1.5" colspan={isUsage ? 3 : 2}>
-						{terms.includedToolKeys.map((toolKey) => findTool(toolKey).label).join(' et ')} : compris avec un module
-					</td>
-				</tr>
 			</tbody>
 		</table>
 	</section>

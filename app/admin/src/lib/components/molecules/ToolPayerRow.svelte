@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatEuros, type Tool } from '@crystal-pharm/billing-db/domain';
+	import { describeIncludedTools, formatEuros, type Tool } from '@crystal-pharm/billing-db/domain';
 	import { ChoiceGroup, Field, UnitInput } from '@crystal-pharm/ui';
 	import type { ToolTermsFormValue } from '$lib/groupForm/groupFormValues';
 
@@ -26,6 +26,7 @@
 		<p class="text-small text-ink-muted">
 			{listPriceCents === undefined ? 'Pas encore en vente' : `${formatEuros(listPriceCents)} HT / mois`}
 		</p>
+		{#if describeIncludedTools(tool.toolKey)}<p class="text-small text-ink-muted">{describeIncludedTools(tool.toolKey)}</p>{/if}
 	</div>
 	<div class="grid gap-2">
 		<ChoiceGroup name="choice-payer-{tool.toolKey}" legend="Qui paie {tool.label} ?" options={payerOptions} bind:value={toolTerms.payer} />

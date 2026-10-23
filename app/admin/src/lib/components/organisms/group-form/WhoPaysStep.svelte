@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { findTool, sellableToolKeys, tools, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
+	import { findIncludedToolKeys, findTool, joinToolLabels, sellableToolKeys, tools, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
 	import { ChoiceGroup, Field, UnitInput } from '@crystal-pharm/ui';
 	import ToolPayerRow from '$lib/components/molecules/ToolPayerRow.svelte';
 	import type { GroupFormErrors, GroupFormValues } from '$lib/groupForm/groupFormValues';
@@ -12,8 +12,14 @@
 
 	let { values = $bindable(), catalog, fieldErrors }: WhoPaysStepProps = $props();
 
-	const sellableLabels = sellableToolKeys.map((toolKey) => findTool(toolKey).label).join(' et ');
-	const includedTools = tools.filter((tool) => !sellableToolKeys.includes(tool.toolKey));
+	const sellableLabels = joinToolLabels(sellableToolKeys.map((toolKey) => findTool(toolKey).label));
+	// « Rendez-vous et Ordonnances ne se vendent pas seuls : ils sont compris avec Site internet. »
+	const inclusionSentences = sellableToolKeys
+		.filter((toolKey) => findIncludedToolKeys(toolKey).length > 0)
+		.map(
+			(toolKey) =>
+				`${joinToolLabels(findIncludedToolKeys(toolKey).map((includedToolKey) => findTool(includedToolKey).label))} ne se vendent pas seuls : ils sont compris avec ${findTool(toolKey).label}.`
+		);
 	const whoPaysOptions = [
 		{
 			value: 'group',
@@ -50,10 +56,9 @@
 <div class="grid gap-5">
 	<div class="grid gap-1">
 		<h2 class="title-2 text-ink">Qui paie les modules de ses pharmacies ?</h2>
-		<p class="text-small text-ink-muted">
-			{includedTools.map((tool) => tool.label).join(' et ')} ne se vendent pas seuls : ils viennent avec
-			{sellableToolKeys.map((toolKey) => findTool(toolKey).label).join(' ou ')}.
-		</p>
+		{#each inclusionSentences as inclusionSentence (inclusionSentence)}
+			<p class="text-small text-ink-muted">{inclusionSentence}</p>
+		{/each}
 	</div>
 
 	<ChoiceGroup name="choice-whoPays" legend="Qui paie les modules" layout="cards" options={whoPaysOptions} bind:value={values.whoPays} />
