@@ -1,5 +1,8 @@
 export { default as Avatar } from './atoms/Avatar.svelte';
 export { default as Button } from './atoms/actions/Button.svelte';
+export { default as Checkbox } from './atoms/fields/Checkbox.svelte';
+export { default as CheckList } from './molecules/CheckList.svelte';
+export type { CheckListItem } from './molecules/checkList';
 export { default as ChoiceGroup } from './molecules/fields/ChoiceGroup.svelte';
 export type { ChoiceGroupOption } from './molecules/fields/choiceGroup';
 export { default as ConfirmButton } from './molecules/ConfirmButton.svelte';
