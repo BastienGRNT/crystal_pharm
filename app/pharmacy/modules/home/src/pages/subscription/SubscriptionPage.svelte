@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { findTool, formatEuros, isToolKey } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, ConfirmButton, DataTable, PageHeader, Tag } from '@crystal-pharm/ui';
+	import { Alert, Button, Card, ConfirmButton, InvoiceTable, PageHeader } from '@crystal-pharm/ui';
 	import ToolSubscriptionForm from '../../components/organisms/ToolSubscriptionForm.svelte';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
 	import type { SubscriptionActionFailure, SubscriptionPageData } from './subscriptionPageData';
@@ -15,9 +15,6 @@
 
 	const requestedToolKey = $derived(searchParams.get('module') ?? undefined);
 	const requestedToolLabel = $derived(requestedToolKey && isToolKey(requestedToolKey) ? findTool(requestedToolKey).label : undefined);
-	const paidAmountCents = $derived(
-		data.payments.filter((payment) => payment.status === 'paid').reduce((total, payment) => total + payment.amountCents, 0)
-	);
 	const cancellationEnd = $derived(searchParams.get('jusquau'));
 </script>
 
@@ -76,7 +73,13 @@
 					{#if data.subscription.endsAt}
 						Résilié : il s’arrête le {formatLastDayBefore(data.subscription.endsAt)} au soir.
 					{:else}
-						Prochaine échéance le {formatDay(data.subscription.currentPeriodEndsAt)}.
+						{#if data.upcomingCharge}
+							Prochain prélèvement le <span class="body-strong text-ink">{formatDay(data.upcomingCharge.dueOn)}</span> :
+							<span class="body-strong tabular-nums text-ink">{formatEuros(data.upcomingCharge.totalCents)} TTC</span>
+							({formatEuros(data.upcomingCharge.subtotalCents)} HT + {formatEuros(data.upcomingCharge.vatCents)} de TVA), sur votre carte.
+						{:else}
+							Prochaine échéance le {formatDay(data.subscription.currentPeriodEndsAt)} : rien à payer.
+						{/if}
 						{#if data.subscription.isMoneyBackGuaranteed}
 							Satisfait ou remboursé jusqu’au {formatDay(data.subscription.moneyBackGuaranteeEndsAt)}.
 						{/if}
@@ -92,7 +95,7 @@
 							label="Résilier et être remboursé"
 							variant="ghost"
 							title="Résilier et être remboursé ?"
-							description="Vos modules payants s’arrêtent tout de suite et {formatEuros(paidAmountCents)} vous sont remboursés. Les modules offerts par votre groupement restent actifs."
+							description="Vos modules payants s’arrêtent tout de suite et {formatEuros(data.refundableAmountCents)} vous sont remboursés (un avoir annule chaque facture). Les modules offerts par votre groupement restent actifs."
 							confirmLabel="Résilier et être remboursé"
 							isDestructive
 						/>
@@ -112,21 +115,10 @@
 	</Card>
 {/if}
 
-{#if data.payments.length > 0}
-	<section aria-labelledby="paiements-titre" class="grid gap-2">
-		<h2 id="paiements-titre" class="title-2 text-ink">Paiements</h2>
-		<DataTable caption="Vos paiements">
-			{#snippet head()}<th>Date</th><th>Libellé</th><th class="text-right">Montant</th>{/snippet}
-			{#each data.payments as payment (payment.paymentId)}
-				<tr>
-					<td class="text-ink-muted">{formatDay(payment.paidAt)}</td>
-					<td>
-						{payment.description}
-						{#if payment.status === 'refunded'}<Tag tone="neutral">Remboursé</Tag>{/if}
-					</td>
-					<td class="text-right tabular-nums">{formatEuros(payment.amountCents)}</td>
-				</tr>
-			{/each}
-		</DataTable>
+{#if data.invoices.length > 0}
+	<section aria-labelledby="factures-titre" class="grid gap-2">
+		<h2 id="factures-titre" class="title-2 text-ink">Factures</h2>
+		<InvoiceTable caption="Vos factures" invoices={data.invoices} />
+		<p class="text-small text-ink-muted">Une facture à chaque paiement, à télécharger en PDF pour votre comptabilité.</p>
 	</section>
 {/if}

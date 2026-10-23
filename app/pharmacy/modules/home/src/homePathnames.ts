@@ -10,6 +10,10 @@ export const homePathnames = {
 	groupInvitation: '/groupement/invitation'
 } as const;
 
+export function invoicePdfPathname(invoiceId: string): string {
+	return `${homePathnames.subscription}/factures/${invoiceId}/pdf`;
+}
+
 export function subscriptionPathnameHighlighting(toolKey: string): string {
 	return `${homePathnames.subscription}?module=${toolKey}#modules`;
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		addVat,
 		formatEuros,
 		quoteTools,
 		toolKeys,
@@ -43,6 +44,7 @@
 	const amountDueTodayCents = $derived(
 		addedToolKeys.length > 0 ? Math.max(0, selectionQuote.pharmacyMonthlyTotalCents - currentQuote.pharmacyMonthlyTotalCents) : 0
 	);
+	const amountDueToday = $derived(addVat(amountDueTodayCents));
 	const isPackWorthShowing = $derived(everyToolQuote.isPackApplied && !selectionQuote.isPackApplied);
 	const selectableToolCards = $derived(toolCards.filter((toolCard) => toolCard.status !== 'included' && toolCard.status !== 'unavailable'));
 
@@ -61,7 +63,7 @@
 			<p class="flex items-center gap-2 text-body text-ink">
 				<Icon name="package" size={20} class="text-accent-text" />
 				<span>
-					<strong class="font-semibold">Tous les modules : {formatEuros(everyToolQuote.pharmacyMonthlyTotalCents)} / mois</strong>
+					<strong class="font-semibold">Tous les modules : {formatEuros(everyToolQuote.pharmacyMonthlyTotalCents)} HT / mois</strong>
 					au lieu de {formatEuros(everyToolQuote.listMonthlyTotalCents)} pris un par un.
 				</span>
 			</p>
@@ -92,7 +94,7 @@
 					{#snippet aside()}
 						<PriceLabel
 							amountLabel={formatEuros(toolQuote?.pharmacyPriceCents ?? 0)}
-							periodLabel="/ mois"
+							periodLabel="HT / mois"
 							previousAmountLabel={toolQuote && toolQuote.pharmacyPriceCents < toolQuote.listPriceCents
 								? formatEuros(toolQuote.listPriceCents)
 								: undefined}
@@ -120,14 +122,15 @@
 			<div class="grid gap-0.5">
 				<p class="flex flex-wrap items-center gap-2">
 					<span class="title-1 tabular-nums text-ink">{formatEuros(selectionQuote.pharmacyMonthlyTotalCents)}</span>
-					<span class="text-body text-ink-muted">par mois</span>
+					<span class="text-body text-ink-muted">HT par mois</span>
 					{#if selectionQuote.isPackApplied}<Tag tone="accent">Prix du pack</Tag>{/if}
 				</p>
 				<p class="text-small text-ink-muted">
 					{#if !isChanged}
 						Cochez les modules que vous voulez activer.
 					{:else if amountDueTodayCents > 0}
-						À payer aujourd’hui : {formatEuros(amountDueTodayCents)}. Satisfait ou remboursé pendant 30 jours.
+						À payer aujourd’hui : {formatEuros(amountDueToday.totalCents)} TTC ({formatEuros(amountDueToday.subtotalCents)} HT + TVA).
+						Satisfait ou remboursé pendant 30 jours.
 					{:else if removedToolKeys.length > 0}
 						Aucun paiement aujourd’hui. Un module retiré reste actif jusqu’à la fin du mois payé.
 					{:else}
@@ -136,7 +139,7 @@
 				</p>
 			</div>
 			<Button type="submit" icon={amountDueTodayCents > 0 ? 'credit-card' : 'check'} disabled={!isChanged}>
-				{amountDueTodayCents > 0 ? `Payer ${formatEuros(amountDueTodayCents)} et activer` : 'Enregistrer mon choix'}
+				{amountDueTodayCents > 0 ? `Payer ${formatEuros(amountDueToday.totalCents)} TTC et activer` : 'Enregistrer mon choix'}
 			</Button>
 		</div>
 	</div>

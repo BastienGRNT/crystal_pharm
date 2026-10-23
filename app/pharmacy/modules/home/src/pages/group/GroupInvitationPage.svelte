@@ -80,11 +80,11 @@
 									{:else if offerRow.coverageSummary}
 										<PriceLabel
 											amountLabel={formatEuros(offerRow.pharmacyPriceCents)}
-											periodLabel="/ mois"
+											periodLabel="HT / mois"
 											previousAmountLabel={formatEuros(offerRow.listPriceCents)}
 										/>
 									{:else}
-										<span class="text-small text-ink-muted">Prix normal, {formatEuros(offerRow.listPriceCents)} / mois</span>
+										<span class="text-small text-ink-muted">Prix normal, {formatEuros(offerRow.listPriceCents)} HT / mois</span>
 									{/if}
 								</td>
 							</tr>
@@ -93,9 +93,9 @@
 				</table>
 				{#if data.currentMonthlyTotalCents > 0}
 					<div class="flex flex-wrap items-center gap-2 rounded-md bg-success-soft px-3 py-2.5 text-body">
-						<span>Vous payez aujourd’hui <strong class="tabular-nums">{formatEuros(data.currentMonthlyTotalCents)}</strong> par mois</span>
+						<span>Vous payez aujourd’hui <strong class="tabular-nums">{formatEuros(data.currentMonthlyTotalCents)}</strong> HT par mois</span>
 						<Icon name="arrow-right" size={16} />
-						<span>avec {data.groupName} : <strong class="tabular-nums">{formatEuros(data.joinedMonthlyTotalCents)}</strong></span>
+						<span>avec {data.groupName} : <strong class="tabular-nums">{formatEuros(data.joinedMonthlyTotalCents)}</strong> HT</span>
 					</div>
 				{/if}
 				{#if data.toolKeysNoLongerPaid.length > 0}

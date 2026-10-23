@@ -2,14 +2,14 @@ import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import {
 	cancelSubscription,
 	getToolAccessOfTenant,
-	listPayments,
+	listInvoices,
 	requestToolSelection,
 	resumeSubscription
 } from '@crystal-pharm/billing-db';
-import { isToolKey } from '@crystal-pharm/billing-db/domain';
+import { isToolKey, toInvoiceRow } from '@crystal-pharm/billing-db/domain';
 import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import { describeToolCards } from '../../domain/toolCards';
-import { homePathnames } from '../../homePathnames';
+import { homePathnames, invoicePdfPathname } from '../../homePathnames';
 import type { SubscriptionActionFailure, SubscriptionPageData } from '../../pages/subscription/subscriptionPageData';
 import { requireActiveTenantId } from '../activeTenant.server';
 
@@ -19,8 +19,11 @@ export async function loadSubscriptionPage({
 	locals: { user: AuthenticatedUser | null };
 }): Promise<SubscriptionPageData> {
 	const tenantId = await requireActiveTenantId(locals.user);
-	const [toolAccess, payments] = await Promise.all([getToolAccessOfTenant(tenantId), listPayments({ tenantId })]);
+	const [toolAccess, invoices] = await Promise.all([getToolAccessOfTenant(tenantId), listInvoices({ tenantId })]);
 	const subscription = toolAccess.subscription;
+	const refundableInvoices = invoices.filter(
+		(invoice) => subscription && invoice.kind === 'invoice' && invoice.status === 'paid' && invoice.issuedAt >= subscription.startedAt
+	);
 	return {
 		catalog: toolAccess.catalog,
 		coverages: toolAccess.coveringGroup?.coverages ?? [],
@@ -37,7 +40,9 @@ export async function loadSubscriptionPage({
 			moneyBackGuaranteeEndsAt: subscription.moneyBackGuaranteeEndsAt,
 			isMoneyBackGuaranteed: subscription.isMoneyBackGuaranteed
 		},
-		payments
+		upcomingCharge: toolAccess.upcomingCharge,
+		refundableAmountCents: refundableInvoices.reduce((total, invoice) => total + invoice.totalCents, 0),
+		invoices: invoices.map((invoice) => toInvoiceRow(invoice, invoicePdfPathname(invoice.invoiceId)))
 	};
 }
 

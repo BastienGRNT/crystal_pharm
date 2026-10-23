@@ -54,7 +54,7 @@
 	{:else if toolCard.status === 'available'}
 		<span class="flex flex-wrap items-center justify-between gap-2">
 			<span class="text-small text-ink-muted">
-				{formatEuros(toolCard.pharmacyPriceCents)} / mois{toolCard.coverageSummary ? ` · ${toolCard.coverageSummary}` : ''}
+				{formatEuros(toolCard.pharmacyPriceCents)} HT / mois{toolCard.coverageSummary ? ` · ${toolCard.coverageSummary}` : ''}
 			</span>
 			<span class="inline-flex items-center gap-1 text-[13px] font-semibold text-accent-text">
 				Activer <Icon name="arrow-right" size={14} />
