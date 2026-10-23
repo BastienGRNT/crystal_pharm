@@ -23,7 +23,8 @@
 	>
 		{#snippet detail()}
 			{#if data.upcomingCharge}
-				Le {formatDay(data.upcomingCharge.dueOn)} ({formatDaysUntil(data.upcomingCharge.dueOn)}) ·
+				{data.upcomingCharge.billingPeriod === 'yearly' ? 'Pour un an' : 'Pour un mois'}, le {formatDay(data.upcomingCharge.dueOn)}
+				({formatDaysUntil(data.upcomingCharge.dueOn)}) ·
 				{formatEuros(data.upcomingCharge.subtotalCents)} HT + {formatEuros(data.upcomingCharge.vatCents)} de TVA,
 				{isPaidByCard ? 'prélevés sur votre carte' : 'à régler par virement à réception'}.
 			{:else}

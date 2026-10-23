@@ -1,19 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { describeGroupBillingMode, formatEuros, vatRatePercent } from '@crystal-pharm/billing-db/domain';
 	import {
-		Alert,
-		Button,
-		Card,
-		EmptyState,
-		InvoiceTable,
-		PageHeader,
-		ProgressBar,
-		StatCard,
-		Tag,
-		TextLink,
-		type TagTone
-	} from '@crystal-pharm/ui';
+		describeGroupContractInWords,
+		describeGroupContractTerms,
+		formatEuros,
+		priceForPeriod
+	} from '@crystal-pharm/billing-db/domain';
+	import { Alert, Button, Card, EmptyState, Icon, InvoiceTable, PageHeader, StatCard, TextLink, type TagTone } from '@crystal-pharm/ui';
 	import ContractToolTable from '$lib/components/organisms/ContractToolTable.svelte';
 	import { formatDay, formatDaysUntil } from '$lib/dateFormats';
 	import { groupPathnames } from '$lib/groupPathnames';
@@ -27,19 +20,31 @@
 		awaiting_payment: { label: 'À activer', tone: 'warning' },
 		suspended: { label: 'Suspendu', tone: 'danger' }
 	};
-	const groupBilling = $derived({
-		billingMode: data.contract?.billingMode ?? 'usage',
-		flatRateMonthlyPriceCents: data.contract?.flatRateMonthlyPriceCents,
-		pharmacyQuota: data.pharmacyQuota
-	});
-	const isPaidByCard = $derived(data.contract?.paymentMethod === 'card');
+	const contract = $derived(data.contract);
+	const isPaidByCard = $derived(contract?.paymentMethod === 'card');
+	const isYearly = $derived(contract?.billingPeriod === 'yearly');
+	const words = $derived(
+		contract &&
+			describeGroupContractInWords(
+				describeGroupContractTerms(data.catalog, contract.coverages),
+				{
+					billingMode: contract.billingMode,
+					flatRateMonthlyPriceCents: contract.flatRateMonthlyPriceCents,
+					pharmacyQuota: data.pharmacyQuota,
+					billingPeriod: contract.billingPeriod,
+					paymentMethod: contract.paymentMethod,
+					annualFreeMonths: data.catalog.annualFreeMonths
+				},
+				{ groupName: data.groupName, isAddressedToGroup: true }
+			)
+	);
 </script>
 
 <svelte:head>
 	<title>Contrat · {data.groupName}</title>
 </svelte:head>
 
-<PageHeader icon="receipt" title="Contrat" context="Ce que vous prenez en charge pour vos pharmacies, et ce que cela vous coûte." />
+<PageHeader icon="receipt" title="Contrat" context="Ce que vous offrez à vos pharmacies, et ce que cela vous coûte." />
 
 {#if paymentOutcome === 'reussi'}
 	<Alert tone="success" title="Contrat activé">Vos pharmacies membres profitent dès maintenant de votre prise en charge.</Alert>
@@ -48,20 +53,21 @@
 {/if}
 {#if form?.failureMessage}<Alert tone="danger">{form.failureMessage}</Alert>{/if}
 
-{#if !data.contract}
+{#if !contract || !words}
 	<EmptyState icon="receipt" title="Pas encore de contrat" description="Crystal Pharm prépare votre contrat. Vous le retrouverez ici." />
 {:else}
-	{#if data.contract.status === 'awaiting_payment'}
+	{#if contract.status === 'awaiting_payment'}
 		<Card>
 			<form method="POST" action="?/payByCard" class="flex flex-wrap items-center justify-between gap-4">
 				<div class="grid min-w-0 gap-1">
-					<h2 class="title-2 text-ink">Activez votre contrat par carte</h2>
+					<h2 class="title-2 text-ink">Activez votre contrat</h2>
 					<p class="text-body text-ink-muted">
 						{#if data.firstPayment.totalCents > 0}
-							Vous réglez aujourd’hui le premier mois : {formatEuros(data.firstPayment.subtotalCents)} HT
-							+ {formatEuros(data.firstPayment.vatCents)} de TVA. Ensuite, votre carte est prélevée chaque mois, à la même date.
+							Vous réglez aujourd’hui {isYearly ? 'votre première année' : 'votre premier mois'} :
+							{formatEuros(data.firstPayment.subtotalCents)} HT + {formatEuros(data.firstPayment.vatCents)} de TVA.
+							Ensuite, votre carte est prélevée {isYearly ? 'chaque année' : 'chaque mois'}, à la même date.
 						{:else}
-							Rien à payer aujourd’hui : vous n’avez pas encore de pharmacie qui utilise un module pris en charge.
+							Rien à payer aujourd’hui : aucune de vos pharmacies n’utilise encore un module que vous prenez en charge.
 						{/if}
 					</p>
 				</div>
@@ -70,25 +76,26 @@
 				</Button>
 			</form>
 		</Card>
-	{:else if data.contract.status === 'suspended'}
+	{:else if contract.status === 'suspended'}
 		<Alert tone="danger" title="Contrat suspendu">Vos pharmacies ne profitent plus de votre prise en charge. Contactez Crystal Pharm.</Alert>
 	{/if}
 
 	<div class="grid gap-3.5 sm:grid-cols-3">
-		<StatCard label="Statut" icon="seal-check" value={contractStatusTags[data.contract.status]?.label ?? ''}>
+		<StatCard label="Statut" icon="seal-check" value={contractStatusTags[contract.status]?.label ?? ''}>
 			{#snippet detail()}
-				{isPaidByCard ? 'Payé par carte' : 'Sur facture, par virement'}
-				{#if data.contract?.activatedAt} · depuis le {formatDay(data.contract.activatedAt)}{/if}
+				{isPaidByCard ? 'Par carte' : 'Par virement'}, {isYearly ? 'à l’année' : 'chaque mois'}
+				{#if contract?.activatedAt} · depuis le {formatDay(contract.activatedAt)}{/if}
 			{/snippet}
 		</StatCard>
-		<StatCard label="Votre coût mensuel" icon="receipt" value="{formatEuros(data.charge.monthlyTotalCents)} HT">
+		<StatCard label="Votre coût" icon="receipt" value="{formatEuros(data.charge.monthlyTotalCents)} HT / mois">
 			{#snippet detail()}
-				{#if data.contract?.billingMode === 'flat_rate'}
-					Votre forfait{data.charge.overagePharmacyCount > 0
-						? `, plus ${data.charge.overagePharmacyCount} pharmacie(s) au-delà`
-						: ''}.
+				{#if isYearly}
+					Soit {formatEuros(priceForPeriod(data.charge.monthlyTotalCents, 'yearly', data.catalog.annualFreeMonths))} HT par an,
+					{data.catalog.annualFreeMonths} mois offerts.
+				{:else if contract?.billingMode === 'flat_rate'}
+					Votre forfait{data.charge.overagePharmacyCount > 0 ? `, plus ${data.charge.overagePharmacyCount} pharmacie(s) au-delà` : ''}.
 				{:else}
-					Pour {data.memberPharmacyCount} pharmacie(s), d’après leurs modules actifs.
+					Pour vos {data.memberPharmacyCount} pharmacie(s), d’après ce qu’elles utilisent.
 				{/if}
 			{/snippet}
 		</StatCard>
@@ -101,8 +108,10 @@
 				{#if data.upcomingCharge}
 					{formatEuros(data.upcomingCharge.totalCents)} TTC, {formatDaysUntil(data.upcomingCharge.dueOn)} ·
 					<a href={groupPathnames.invoices} class="text-accent-text underline">vos factures</a>
-				{:else if data.contract?.status === 'awaiting_payment'}
+				{:else if contract?.status === 'awaiting_payment'}
 					Dès l’activation de votre contrat.
+				{:else if data.charge.monthlyTotalCents === 0}
+					Rien à payer pour l’instant.
 				{:else}
 					Aucune tant que le contrat est suspendu.
 				{/if}
@@ -111,51 +120,27 @@
 	</div>
 
 	<Card>
-		<div class="grid gap-3">
-			<h2 class="title-2 text-ink">Comment vous êtes facturé</h2>
-			<p class="body-strong text-ink">{describeGroupBillingMode(groupBilling)}.</p>
-			{#if data.contract.billingMode === 'flat_rate'}
-				<div class="grid gap-1.5">
-					<ProgressBar label="Pharmacies dans votre forfait" value={data.memberPharmacyCount} maximum={data.pharmacyQuota} />
-					<p class="text-small text-ink-muted">
-						{data.memberPharmacyCount} pharmacie(s) membre(s) sur {data.pharmacyQuota} comprises. Au-delà, chaque pharmacie
-						ajoute {formatEuros(data.charge.overageUnitPriceCents)} HT par mois : le prix du forfait divisé par {data.pharmacyQuota}.
-					</p>
-				</div>
-				<p class="text-body text-ink-muted">
-					Votre forfait couvre votre part de chaque module, quel que soit l’usage de vos pharmacies. Elles ne paient que ce qui
-					reste à leur charge, dans la dernière colonne ci-dessous.
-				</p>
-			{:else}
-				<p class="text-body text-ink-muted">
-					Chaque mois, vous payez votre part des modules réellement actifs dans chacune de vos pharmacies (colonne « Vous payez »
-					ci-dessous). Une pharmacie qui n’utilise rien ne vous coûte rien.
-				</p>
-			{/if}
-			<p class="text-small text-ink-subtle">
-				Prix hors taxes ; la TVA ({vatRatePercent} %) s’ajoute sur la facture.
-				{isPaidByCard ? 'Votre carte est prélevée chaque mois, à la date anniversaire de l’activation.' : 'Une facture vous est envoyée chaque mois, à régler par virement.'}
-			</p>
+		<div class="grid gap-5 md:grid-cols-2">
+			<section class="grid content-start gap-2">
+				<h2 class="flex items-center gap-2 title-2 text-ink"><Icon name="storefront" size={20} class="text-accent-text" />Pour vos pharmacies</h2>
+				<ul class="grid gap-1.5 text-body text-ink">
+					{#each words.forPharmacies as sentence (sentence)}<li>{sentence}</li>{/each}
+				</ul>
+			</section>
+			<section class="grid content-start gap-2">
+				<h2 class="flex items-center gap-2 title-2 text-ink"><Icon name="receipt" size={20} class="text-accent-text" />Pour vous</h2>
+				<ul class="grid gap-1.5 text-body text-ink">
+					{#each words.forGroup as sentence (sentence)}<li>{sentence}</li>{/each}
+				</ul>
+				<p class="text-small text-ink-subtle">Prix hors taxes, TVA en plus sur la facture.</p>
+			</section>
 		</div>
 	</Card>
 
-	<section aria-labelledby="prise-en-charge-titre" class="grid gap-2">
-		<div class="flex flex-wrap items-center gap-2">
-			<h2 id="prise-en-charge-titre" class="title-2 text-ink">Votre prise en charge, par pharmacie</h2>
-			<Tag tone={contractStatusTags[data.contract.status]?.tone ?? 'neutral'}>{contractStatusTags[data.contract.status]?.label}</Tag>
-		</div>
-		<ContractToolTable catalog={data.catalog} coverages={data.contract.coverages} billingMode={data.contract.billingMode} />
-		<div class="grid gap-1 text-small text-ink-muted">
-			<p>
-				<span class="body-strong text-ink">Comment se calcule un prix :</span> on part du prix catalogue, on retire votre remise ; sur
-				ce prix remisé, votre part est pour vous, le reste pour la pharmacie.
-			</p>
-			<p>
-				Une pharmacie qui prend tous les modules paie le pack, moins cher : votre prise en charge s’applique alors au prix du pack.
-				Un module « actif d’office » est ouvert à chaque pharmacie dès son arrivée ; les autres, elle les active elle-même.
-			</p>
-			<p>Pour changer votre contrat ou votre quota, contactez Crystal Pharm.</p>
-		</div>
+	<section aria-labelledby="par-pharmacie-titre" class="grid gap-2">
+		<h2 id="par-pharmacie-titre" class="title-2 text-ink">Le détail, pour une pharmacie membre</h2>
+		<ContractToolTable catalog={data.catalog} coverages={contract.coverages} billingMode={contract.billingMode} />
+		<p class="text-small text-ink-muted">Pour changer votre contrat ou votre nombre de pharmacies, contactez Crystal Pharm.</p>
 	</section>
 
 	{#if data.latestInvoices.length > 0}

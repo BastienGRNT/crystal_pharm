@@ -7,7 +7,7 @@ import {
 	type InvoiceRow,
 	type UpcomingCharge
 } from '@crystal-pharm/billing-db';
-import { addVat, type AmountsWithVat, type GroupCharge, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
+import { addVat, priceForPeriod, type AmountsWithVat, type GroupCharge, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
 import { getPharmacyGroup } from '@crystal-pharm/group-db';
 import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import { groupPathnames, invoicePdfPathname } from '$lib/groupPathnames';
@@ -21,7 +21,7 @@ export type ContractPageData = {
 	catalog: ToolCatalog;
 	/** Ce que le groupement paie chaque mois, HT. */
 	charge: GroupCharge;
-	/** Le premier paiement d'un contrat par carte : un mois, TVA comprise. */
+	/** Le premier paiement d'un contrat par carte : un mois ou un an, TVA comprise. */
 	firstPayment: AmountsWithVat;
 	upcomingCharge: UpcomingCharge | undefined;
 	latestInvoices: InvoiceRow[];
@@ -43,7 +43,9 @@ export async function loadContractPage({ locals }: { locals: App.Locals }): Prom
 		contract: billing.contract,
 		catalog: billing.catalog,
 		charge: billing.charge,
-		firstPayment: addVat(billing.charge.monthlyTotalCents),
+		firstPayment: addVat(
+			priceForPeriod(billing.charge.monthlyTotalCents, billing.contract?.billingPeriod ?? 'monthly', billing.catalog.annualFreeMonths)
+		),
 		upcomingCharge: billing.upcomingCharge,
 		latestInvoices: invoices
 			.slice(0, latestInvoiceCount)
