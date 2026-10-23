@@ -14,4 +14,23 @@ export {
 	type Weekday,
 	type WeeklyOpeningSchedule
 } from './opening-hours/weeklyOpeningSchedule';
+export {
+	EmployeeIdentitySchema,
+	employeeIdentityFieldNames,
+	employeePhotoFieldName,
+	formatEmployeeFullName,
+	type EmployeeFieldName,
+	type EmployeeIdentity,
+	type EmployeeIdentityInput,
+	type EmployeePhotoChange
+} from './employees/employeeIdentity';
+export { FirstName, FirstNameSchema } from './employees/identity/FirstName';
+export { JobTitle, JobTitleSchema } from './employees/identity/JobTitle';
+export { LastName, LastNameSchema } from './employees/identity/LastName';
+export {
+	acceptedEmployeePhotoTypes,
+	EmployeePhoto,
+	maximumEmployeePhotoMegabytes,
+	type ImageFormat
+} from './employees/photos/EmployeePhoto';
 export { collectFieldErrors, wholeFormErrorKey, type FieldErrors, type SaveResult } from './fieldErrors';

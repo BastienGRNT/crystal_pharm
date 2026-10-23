@@ -49,6 +49,38 @@ export const tenants = pharmacySchema.table(
 	]
 );
 
+/** Une personne de l'équipe d'un Tenant, avec ou sans compte. */
+export const employees = pharmacySchema.table(
+	'employees',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id')
+			.notNull()
+			.references(() => tenants.id, { onDelete: 'cascade' }),
+		/** Au format de `FirstName.toStorageFormat`. */
+		firstName: text('first_name').notNull(),
+		/** Au format de `LastName.toStorageFormat`. */
+		lastName: text('last_name').notNull(),
+		/** Au format de `JobTitle.toStorageFormat`. */
+		jobTitle: text('job_title').notNull(),
+		/** `null` sans photo ; sinon l'identifiant de son fichier (cf. `employeePhotoFiles`). */
+		photoId: uuid('photo_id'),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow(),
+		updatedAt: timestampWithTimeZone('updated_at')
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date())
+	},
+	(table) => [
+		index('employees_tenant_id_created_at_index').on(table.tenantId, table.createdAt),
+		pgPolicy('employees_of_active_tenant', {
+			for: 'all',
+			using: sql`tenant_id = ${activeTenantId} or ${isPlatform}`,
+			withCheck: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
+		})
+	]
+);
+
 /** Un compte appartient à un ou plusieurs Tenants (un titulaire de plusieurs officines). */
 export const tenantMemberships = pharmacySchema.table(
 	'tenant_memberships',

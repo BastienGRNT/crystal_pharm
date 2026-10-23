@@ -1,6 +1,7 @@
 import { asc, eq, inArray } from 'drizzle-orm';
 import { runAsPlatform, runAsReaderOfTenants, runAsTenant } from '../database/pharmacyDatabase.server';
 import { tenants } from '../database/pharmacyTables';
+import { discardAllEmployeePhotosOfTenant } from '../employees/photos/employeePhotoFiles.server';
 
 /** Ce qu'un groupement ou la Platform voit d'une pharmacie : ce que son site affiche déjà. */
 export type TenantSummary = {
@@ -41,4 +42,5 @@ export function listAllTenantSummaries(): Promise<TenantSummary[]> {
 /** Supprime la pharmacie et tout ce qui la référence (outil de dev, fermeture d'un compte). */
 export async function deleteTenant(tenantId: string): Promise<void> {
 	await runAsTenant(tenantId, (transaction) => transaction.delete(tenants).where(eq(tenants.id, tenantId)));
+	await discardAllEmployeePhotosOfTenant(tenantId);
 }

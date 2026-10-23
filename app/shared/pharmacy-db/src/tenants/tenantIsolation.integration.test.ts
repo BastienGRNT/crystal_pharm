@@ -19,6 +19,10 @@ const probeRoleName = 'pharmacy_isolation_probe';
 const firstPharmacy = { tenantId: '00000000-0000-4000-8000-000000000001', accountId: 'isolation-probe-first-account' };
 const secondPharmacy = { tenantId: '00000000-0000-4000-8000-000000000002', accountId: 'isolation-probe-second-account' };
 
+function employeeIdOf(tenantId: string): string {
+	return tenantId.replace('00000000-0000-4000', '11111111-1111-4111');
+}
+
 class RollbackAfterTest extends Error {}
 
 async function inRolledBackTransaction(test: (transaction: postgres.TransactionSql) => Promise<void>): Promise<void> {
@@ -40,6 +44,8 @@ async function insertTwoPharmacies(transaction: postgres.TransactionSql): Promis
 		await transaction`insert into pharmacy.tenants (id, name, street, postal_code, city, phone_number)
 			values (${tenantId}, ${tenantId}, '1 rue de la Paix', '75002', 'Paris', '0123456789')`;
 		await transaction`insert into pharmacy.tenant_memberships (tenant_id, account_id) values (${tenantId}, ${accountId})`;
+		await transaction`insert into pharmacy.employees (id, tenant_id, first_name, last_name, job_title)
+			values (${employeeIdOf(tenantId)}, ${tenantId}, 'Hélène', 'Dubois', 'Pharmacienne titulaire')`;
 	}
 }
 
@@ -121,6 +127,50 @@ describe('isolation entre pharmacies (Row-Level Security du schéma pharmacy)', 
 			await expect(
 				transaction`insert into pharmacy.tenant_memberships (tenant_id, account_id)
 					values (${secondPharmacy.tenantId}, ${firstPharmacy.accountId})`
+			).rejects.toThrow(/row-level security/);
+		});
+	});
+
+	it('ne montre que l’équipe du Tenant actif', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setActiveTenant(transaction, firstPharmacy.tenantId);
+
+			const visibleEmployees = await transaction`select id from pharmacy.employees`;
+
+			expect(visibleEmployees.map(({ id }) => id)).toEqual([employeeIdOf(firstPharmacy.tenantId)]);
+		});
+	});
+
+	it('ne montre aucune équipe à un compte seul, sans Tenant actif', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setActiveAccount(transaction, firstPharmacy.accountId);
+
+			const visibleEmployees = await transaction`select id from pharmacy.employees`;
+
+			expect(visibleEmployees).toHaveLength(0);
+		});
+	});
+
+	it('ne modifie ni ne retire un Employee d’un autre Tenant', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setActiveTenant(transaction, firstPharmacy.tenantId);
+			const otherEmployeeId = employeeIdOf(secondPharmacy.tenantId);
+
+			const updatedEmployees = await transaction`update pharmacy.employees set first_name = 'Piraté' where id = ${otherEmployeeId}`;
+			const deletedEmployees = await transaction`delete from pharmacy.employees where id = ${otherEmployeeId}`;
+
+			expect(updatedEmployees.count).toBe(0);
+			expect(deletedEmployees.count).toBe(0);
+		});
+	});
+
+	it('refuse d’ajouter un Employee à un autre Tenant que l’actif', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setActiveTenant(transaction, firstPharmacy.tenantId);
+
+			await expect(
+				transaction`insert into pharmacy.employees (id, tenant_id, first_name, last_name, job_title)
+					values ('22222222-2222-4222-8222-222222222222', ${secondPharmacy.tenantId}, 'Léa', 'Petit', 'Préparatrice')`
 			).rejects.toThrow(/row-level security/);
 		});
 	});

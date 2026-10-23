@@ -1,4 +1,12 @@
 export {
+	addEmployee,
+	listEmployees,
+	readEmployeePhoto,
+	removeEmployee,
+	updateEmployee,
+	type Employee
+} from './employees/employees.server';
+export {
 	clearWeeklyOpeningSchedule,
 	getPharmacyProfile,
 	updatePharmacyContactDetails,
