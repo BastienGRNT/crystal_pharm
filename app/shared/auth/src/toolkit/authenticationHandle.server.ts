@@ -18,6 +18,8 @@ export type AuthenticationRedirects = {
 	loginPathname: string;
 	signedInHomePathname: string;
 	anonymousOnlyPathnames: readonly string[];
+	/** Ouverts à tous, connecté ou non : une invitation, l'outil de dev. */
+	publicPathnamePrefixes?: readonly string[];
 };
 
 export function createAuthenticationHandle(
@@ -63,15 +65,28 @@ async function findAuthenticatedUser(
 function redirectByAuthenticationState({
 	loginPathname,
 	signedInHomePathname,
-	anonymousOnlyPathnames
+	anonymousOnlyPathnames,
+	publicPathnamePrefixes = []
 }: AuthenticationRedirects): Handle {
 	return ({ event, resolve }) => {
+		const isPublicPathname = publicPathnamePrefixes.some((pathnamePrefix) =>
+			event.url.pathname.startsWith(pathnamePrefix)
+		);
+		if (isPublicPathname) return resolve(event);
+
 		const isSignedIn = event.locals.user !== null;
 		const isAnonymousOnlyPathname = anonymousOnlyPathnames.includes(event.url.pathname);
 
 		if (isSignedIn && isAnonymousOnlyPathname) redirect(303, signedInHomePathname);
-		if (!isSignedIn && !isAnonymousOnlyPathname) redirect(303, loginPathname);
+		if (!isSignedIn && !isAnonymousOnlyPathname) redirect(303, withReturnPathname(loginPathname, event.url));
 
 		return resolve(event);
 	};
+}
+
+// Après la connexion, on revient sur la page demandée (un lien d'invitation…).
+function withReturnPathname(loginPathname: string, requestedUrl: URL): string {
+	if (requestedUrl.pathname === '/') return loginPathname;
+	const returnPathname = `${requestedUrl.pathname}${requestedUrl.search}`;
+	return `${loginPathname}?${new URLSearchParams({ redirectTo: returnPathname })}`;
 }

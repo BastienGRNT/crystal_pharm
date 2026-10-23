@@ -10,6 +10,10 @@ export const pharmacySchema = pgSchema('pharmacy');
 // vaut '' après la transaction : `nullif` le ramène à NULL, qui ne donne accès à rien.
 const activeTenantId = sql.raw(`nullif(current_setting('app.tenant_id', true), '')::uuid`);
 const activeAccountId = sql.raw(`nullif(current_setting('app.account_id', true), '')`);
+const readableTenantIds = sql.raw(
+	`string_to_array(nullif(current_setting('app.readable_tenant_ids', true), ''), ',')::uuid[]`
+);
+const isPlatform = sql.raw(`current_setting('app.is_platform', true) = 'on'`);
 
 const timestampWithTimeZone = (columnName: string) => timestamp(columnName, { withTimezone: true });
 
@@ -35,8 +39,12 @@ export const tenants = pharmacySchema.table(
 	() => [
 		pgPolicy('tenants_of_active_tenant_or_account', {
 			for: 'all',
-			using: sql`id = ${activeTenantId} or id in (select tenant_id from pharmacy.tenant_memberships where account_id = ${activeAccountId})`,
-			withCheck: sql`id = ${activeTenantId}`
+			using: sql`id = ${activeTenantId} or id in (select tenant_id from pharmacy.tenant_memberships where account_id = ${activeAccountId}) or ${isPlatform}`,
+			withCheck: sql`id = ${activeTenantId} or ${isPlatform}`
+		}),
+		pgPolicy('tenants_readable_by_their_group', {
+			for: 'select',
+			using: sql`id = any(${readableTenantIds})`
 		})
 	]
 );
@@ -58,8 +66,8 @@ export const tenantMemberships = pharmacySchema.table(
 		index('tenant_memberships_account_id_index').on(table.accountId),
 		pgPolicy('tenant_memberships_of_active_tenant_or_account', {
 			for: 'all',
-			using: sql`tenant_id = ${activeTenantId} or account_id = ${activeAccountId}`,
-			withCheck: sql`tenant_id = ${activeTenantId}`
+			using: sql`tenant_id = ${activeTenantId} or account_id = ${activeAccountId} or ${isPlatform}`,
+			withCheck: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
 		})
 	]
 );

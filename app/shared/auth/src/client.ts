@@ -5,3 +5,4 @@ export {
 	type Credentials,
 	type NewAccount
 } from './client/authenticationClient';
+export { readReturnPathname } from './client/returnPathname';

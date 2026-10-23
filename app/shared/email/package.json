@@ -1,0 +1,17 @@
+{
+	"name": "@crystal-pharm/email",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.server.ts"
+	},
+	"scripts": {
+		"check": "tsc --project tsconfig.json",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@types/node": "^24.19.2",
+		"typescript": "^6.0.3",
+		"vitest": "^5.0.5"
+	}
+}

@@ -5,6 +5,16 @@ export {
 	type BetterAuthForHandle
 } from './toolkit/authenticationHandle.server';
 export { defineBetterAuthTables, toBetterAuthDrizzleSchema, type BetterAuthTables } from './toolkit/betterAuthTables';
-export { connectToDatabase } from './toolkit/databaseConnection.server';
+export {
+	applyTransactionSettings,
+	connectToDatabase,
+	type DatabaseTransaction
+} from './toolkit/databaseConnection.server';
+export {
+	deleteAccountsWithEmailEnding,
+	ensureEmailPasswordAccount,
+	findAccountIdByEmail,
+	type EmailPasswordAccount
+} from './toolkit/emailPasswordAccounts.server';
 export { readRequiredEnvironmentVariable } from './toolkit/environment.server';
 export { personNameFields } from './toolkit/personNameFields';
