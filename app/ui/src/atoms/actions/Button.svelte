@@ -12,6 +12,10 @@
 		type?: 'button' | 'submit' | 'reset';
 		disabled?: boolean;
 		isFullWidth?: boolean;
+		/** Envoyés avec le formulaire : l'action visée et la valeur du bouton cliqué. */
+		formaction?: string;
+		name?: string;
+		value?: string;
 		onclick?: () => void;
 	};
 
@@ -23,12 +27,17 @@
 		type = 'button',
 		disabled = false,
 		isFullWidth = false,
+		formaction,
+		name,
+		value,
 		onclick
 	}: ButtonProps = $props();
 
 	const variantClasses: Record<ButtonVariant, string> = {
 		primary: 'bg-accent text-on-accent hover:bg-accent-hover',
-		ghost: 'bg-transparent text-ink-muted hover:bg-surface-muted hover:text-ink'
+		secondary: 'border border-line-strong bg-surface text-ink hover:bg-surface-muted',
+		ghost: 'bg-transparent text-ink-muted hover:bg-surface-muted hover:text-ink',
+		danger: 'bg-danger text-surface hover:opacity-90'
 	};
 
 	const classes = $derived(
@@ -42,7 +51,7 @@
 		{@render children()}
 	</a>
 {:else}
-	<button {type} {disabled} {onclick} class={classes}>
+	<button {type} {disabled} {formaction} {name} {value} {onclick} class={classes}>
 		{#if icon}<Icon name={icon} size={16} />{/if}
 		{@render children()}
 	</button>

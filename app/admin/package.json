@@ -13,10 +13,15 @@
 	},
 	"dependencies": {
 		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/billing-db": "workspace:*",
 		"@crystal-pharm/dev-tools": "workspace:*",
+		"@crystal-pharm/email": "workspace:*",
+		"@crystal-pharm/group-db": "workspace:*",
+		"@crystal-pharm/pharmacy-db": "workspace:*",
 		"@crystal-pharm/ui": "workspace:*",
 		"better-auth": "^1.7.12",
-		"drizzle-orm": "^0.45.4"
+		"drizzle-orm": "^0.45.4",
+		"valibot": "^1.5.0"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.5.4",

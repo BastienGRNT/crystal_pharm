@@ -10,7 +10,9 @@ export {
 	paymentMethodFieldName,
 	saveGroupContract,
 	setGroupContractStatus,
+	validateGroupContractInput,
 	type GroupContract,
+	type GroupContractValidation,
 	type GroupContractFieldName,
 	type GroupContractInput
 } from './contracts/groupContracts.server';

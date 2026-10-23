@@ -62,14 +62,12 @@ export async function readGroupContract(
 	};
 }
 
-/**
- * Crée ou remplace le contrat. Un nouveau contrat payé sur facture est actif
- * tout de suite ; payé par carte, il attend le premier paiement du groupement.
- */
-export async function saveGroupContract(
-	groupId: string,
-	contractInput: GroupContractInput
-): Promise<SaveResult<GroupContractFieldName>> {
+export type GroupContractValidation =
+	| { isValid: true; paymentMethod: GroupPaymentMethod; coverages: ToolCoverage[] }
+	| { isValid: false; fieldErrors: FieldErrors<GroupContractFieldName> };
+
+/** Vérifie un contrat saisi, sans rien écrire (pour tout vérifier avant de créer un groupement). */
+export function validateGroupContractInput(contractInput: GroupContractInput): GroupContractValidation {
 	const fieldErrors: FieldErrors<GroupContractFieldName> = {};
 	const paymentMethod = groupPaymentMethods.find((candidate) => candidate === contractInput.paymentMethod);
 	if (!paymentMethod) fieldErrors[paymentMethodFieldName] = 'Choisissez comment le groupement paie.';
@@ -86,7 +84,21 @@ export async function saveGroupContract(
 		}
 		if (discountPercent > 0 || groupSharePercent > 0) coverages.push({ toolKey, discountPercent, groupSharePercent });
 	}
-	if (!paymentMethod || Object.keys(fieldErrors).length > 0) return { isSaved: false, fieldErrors };
+	if (!paymentMethod || Object.keys(fieldErrors).length > 0) return { isValid: false, fieldErrors };
+	return { isValid: true, paymentMethod, coverages };
+}
+
+/**
+ * Crée ou remplace le contrat. Un nouveau contrat payé sur facture est actif
+ * tout de suite ; payé par carte, il attend le premier paiement du groupement.
+ */
+export async function saveGroupContract(
+	groupId: string,
+	contractInput: GroupContractInput
+): Promise<SaveResult<GroupContractFieldName>> {
+	const validation = validateGroupContractInput(contractInput);
+	if (!validation.isValid) return { isSaved: false, fieldErrors: validation.fieldErrors };
+	const { paymentMethod, coverages } = validation;
 
 	await runWithBillingAccess(platformBillingAccess, async (transaction) => {
 		const existingContract = await readGroupContract(transaction, groupId);

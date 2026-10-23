@@ -12,6 +12,7 @@ export {
 	type ToolsQuote,
 	type ToolsQuoteRequest
 } from './pricing/toolPricing';
+export { summarizeCoverage } from './pricing/coverageWording';
 export { computeCurrentPeriodEnd, computeMoneyBackGuaranteeEnd } from './subscriptions/subscriptionPeriod';
 export { findTool, isToolKey, toolKeys, tools, type Tool, type ToolKey } from './tools/tools';
 export type {

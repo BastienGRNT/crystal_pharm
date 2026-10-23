@@ -1,0 +1,24 @@
+<script lang="ts">
+	type ProgressBarProps = {
+		/** Ce que mesure la barre, lu par un lecteur d'écran (« Places utilisées »). */
+		label: string;
+		value: number;
+		maximum: number;
+	};
+
+	let { label, value, maximum }: ProgressBarProps = $props();
+
+	const filledPercentage = $derived(maximum > 0 ? Math.min(100, Math.round((value / maximum) * 100)) : 0);
+	const fillClass = $derived(filledPercentage >= 100 ? 'bg-danger' : filledPercentage >= 85 ? 'bg-warning' : 'bg-accent');
+</script>
+
+<div
+	role="progressbar"
+	aria-label={label}
+	aria-valuemin={0}
+	aria-valuemax={maximum}
+	aria-valuenow={value}
+	class="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted"
+>
+	<div class="h-full rounded-full transition-[width] duration-300 {fillClass}" style:width="{filledPercentage}%"></div>
+</div>
