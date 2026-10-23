@@ -7,7 +7,7 @@
 		type Weekday,
 		type WeeklyOpeningSchedule
 	} from '@crystal-pharm/pharmacy-db/domain';
-	import { Alert, Button } from '@crystal-pharm/ui';
+	import { Alert, Button, Card } from '@crystal-pharm/ui';
 	import { untrack, type Snippet } from 'svelte';
 	import * as v from 'valibot';
 	import {
@@ -18,6 +18,7 @@
 		weekdayLabels
 	} from '../../domain/openingHoursDraft';
 	import OpeningDayRow from '../molecules/OpeningDayRow.svelte';
+	import VisitorOpeningHoursPreview from '../molecules/VisitorOpeningHoursPreview.svelte';
 
 	type OpeningHoursFormProps = {
 		/** L'action SvelteKit visée (`?/openingHours`), ou rien pour l'action par défaut de la page. */
@@ -28,10 +29,21 @@
 		failureMessage?: string;
 		submitLabel: string;
 		secondaryAction?: Snippet;
+		/** Le titre de l'éditeur, quand la page n'en donne pas déjà un. */
+		heading?: string;
+		/** Montre, à côté de l'éditeur, les horaires tels qu'ils s'afficheront sur le site ; chacun dans sa carte. */
+		showsVisitorPreview?: boolean;
 	};
 
-	let { formAction, initialWeeklyOpeningSchedule, failureMessage, submitLabel, secondaryAction }: OpeningHoursFormProps =
-		$props();
+	let {
+		formAction,
+		initialWeeklyOpeningSchedule,
+		failureMessage,
+		submitLabel,
+		secondaryAction,
+		heading,
+		showsVisitorPreview = false
+	}: OpeningHoursFormProps = $props();
 
 	const isSuggestion = $derived(initialWeeklyOpeningSchedule === undefined);
 	// Le formulaire part des horaires reçus puis vit sa vie : la page est rechargée après chaque envoi.
@@ -49,37 +61,58 @@
 	const hasScheduleErrors = $derived(Object.keys(scheduleErrors).length > 0);
 </script>
 
-<form method="POST" action={formAction} class="grid gap-4">
+{#snippet openingHoursEditor()}
+	<div>
+		<div class="flex flex-wrap items-center gap-x-4 gap-y-2 pb-3 {heading ? 'justify-between' : 'justify-end'}">
+			{#if heading}
+				<h2 class="title-2 text-ink">{heading}</h2>
+			{/if}
+			<Button variant="ghost" icon="calendar-check" onclick={() => (draft = applyMondayToOtherWorkingDays(draft))}>
+				Copier le lundi jusqu’au vendredi
+			</Button>
+		</div>
+
+		{#if isSuggestion}
+			<div class="pb-3">
+				<Alert tone="info">Nous avons prérempli des horaires courants d’officine : ajustez-les aux vôtres.</Alert>
+			</div>
+		{/if}
+
+		<div>
+			{#each weekdays as weekday (weekday)}
+				<OpeningDayRow
+					{weekday}
+					weekdayLabel={weekdayLabels[weekday]}
+					bind:dailyOpening={draft[weekday]}
+					errorMessage={scheduleErrors[weekday]}
+				/>
+			{/each}
+		</div>
+
+		{#if scheduleErrors[wholeFormErrorKey] ?? failureMessage}
+			<div class="pb-3">
+				<Alert tone="danger">{scheduleErrors[wholeFormErrorKey] ?? failureMessage}</Alert>
+			</div>
+		{/if}
+
+		<div class="flex flex-wrap items-center gap-2 border-t border-line-soft pt-4">
+			<Button type="submit" disabled={hasScheduleErrors}>{submitLabel}</Button>
+			{@render secondaryAction?.()}
+		</div>
+	</div>
+{/snippet}
+
+<form method="POST" action={formAction} class="@container">
 	<input type="hidden" name="weeklyOpeningSchedule" value={JSON.stringify(weeklyOpeningSchedule)} />
 
-	{#if isSuggestion}
-		<Alert tone="info">Nous avons prérempli des horaires courants d’officine : ajustez-les aux vôtres.</Alert>
+	{#if showsVisitorPreview}
+		<div class="grid items-start gap-4 @4xl:grid-cols-[minmax(0,1fr)_340px]">
+			<Card>{@render openingHoursEditor()}</Card>
+			<div class="@4xl:sticky @4xl:top-20">
+				<VisitorOpeningHoursPreview weeklyOpeningSchedule={hasScheduleErrors ? undefined : weeklyOpeningSchedule} />
+			</div>
+		</div>
+	{:else}
+		{@render openingHoursEditor()}
 	{/if}
-
-	<div class="flex flex-wrap items-center justify-between gap-2">
-		<p class="text-small text-ink-muted">Ajoutez une coupure pour une fermeture le midi.</p>
-		<Button variant="ghost" icon="calendar-check" onclick={() => (draft = applyMondayToOtherWorkingDays(draft))}>
-			Appliquer le lundi du mardi au vendredi
-		</Button>
-	</div>
-
-	<div>
-		{#each weekdays as weekday (weekday)}
-			<OpeningDayRow
-				{weekday}
-				weekdayLabel={weekdayLabels[weekday]}
-				bind:dailyOpening={draft[weekday]}
-				errorMessage={scheduleErrors[weekday]}
-			/>
-		{/each}
-	</div>
-
-	{#if scheduleErrors[wholeFormErrorKey] ?? failureMessage}
-		<Alert tone="danger">{scheduleErrors[wholeFormErrorKey] ?? failureMessage}</Alert>
-	{/if}
-
-	<div class="mt-1 flex flex-wrap items-center gap-2">
-		<Button type="submit" disabled={hasScheduleErrors}>{submitLabel}</Button>
-		{@render secondaryAction?.()}
-	</div>
 </form>

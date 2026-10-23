@@ -14,6 +14,8 @@
 		firstTime?: string;
 		lastTime?: string;
 		stepMinutes?: number;
+		/** `inline` : sans cadre ni icône, pour vivre dans un champ qui l'encadre (une plage horaire). */
+		appearance?: 'field' | 'inline';
 	};
 
 	let {
@@ -22,7 +24,8 @@
 		value = $bindable(''),
 		firstTime = '06:00',
 		lastTime = '22:00',
-		stepMinutes = 15
+		stepMinutes = 15,
+		appearance = 'field'
 	}: TimePickerProps = $props();
 
 	const listboxId = $derived(`${id}-options`);
@@ -104,8 +107,14 @@
 
 {#if isEnhanced}
 	<div class="relative" use:dismissOnOutsidePointerDown={() => (isOpen = false)}>
-		<div class="{pickerTriggerClasses} cursor-text focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft-value)]">
-			<Icon name="clock" size={16} class="text-ink-muted" />
+		<div
+			class={appearance === 'field'
+				? `${pickerTriggerClasses} cursor-text focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft-value)]`
+				: 'flex cursor-text items-center text-[14px] leading-5 text-ink'}
+		>
+			{#if appearance === 'field'}
+				<Icon name="clock" size={16} class="text-ink-muted" />
+			{/if}
 			<input
 				{id}
 				{name}
@@ -119,7 +128,9 @@
 				aria-expanded={isOpen}
 				aria-controls={listboxId}
 				aria-activedescendant={isOpen ? `${listboxId}-${highlightedIndex}` : undefined}
-				class="w-full min-w-0 flex-1 bg-transparent tabular-nums outline-none placeholder:text-ink-subtle"
+				class="{appearance === 'field'
+					? 'w-full min-w-0 flex-1'
+					: 'w-[5ch] text-center'} bg-transparent tabular-nums outline-none placeholder:text-ink-subtle"
 				onfocus={() => void openList()}
 				oninput={handleInput}
 				onkeydown={handleInputKeydown}
@@ -133,7 +144,7 @@
 				id={listboxId}
 				role="listbox"
 				aria-labelledby={id}
-				class="{pickerPopoverClasses} max-h-56 w-full overflow-auto py-1"
+				class="{pickerPopoverClasses} max-h-56 overflow-auto py-1 {appearance === 'field' ? 'w-full' : 'w-24'}"
 			>
 				{#each timeOptions as time, timeIndex (time)}
 					<!-- Le pointeur ne doit pas retirer le focus du champ avant le choix. -->

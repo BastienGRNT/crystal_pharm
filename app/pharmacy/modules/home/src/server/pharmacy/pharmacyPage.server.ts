@@ -15,18 +15,22 @@ import type {
 	PharmacyPageData,
 	PharmacySectionSaved
 } from '../../pages/pharmacy/pharmacyPageData';
+import { readSelectedPharmacySection } from '../../pages/pharmacy/pharmacySectionTabs';
 import { requireActiveTenantId } from '../activeTenant.server';
 import { openingHoursRefusedMessage } from '../onboarding/openingHoursStep.server';
 import { readContactDetailsInput, readWeeklyOpeningScheduleInput } from './pharmacyFormSubmissions.server';
 
 export async function loadPharmacyPage({
-	locals
+	locals,
+	url
 }: {
 	locals: { user: AuthenticatedUser | null };
+	url: URL;
 }): Promise<PharmacyPageData> {
 	const tenantId = await requireActiveTenantId(locals.user);
 	const [pharmacyProfile, group] = await Promise.all([getPharmacyProfile(tenantId), loadPharmacyGroupSection(tenantId)]);
 	return {
+		selectedSection: readSelectedPharmacySection(url.searchParams, group !== undefined),
 		group,
 		contactDetails: {
 			name: pharmacyProfile.name,

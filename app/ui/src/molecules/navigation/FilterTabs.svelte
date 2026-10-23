@@ -9,12 +9,12 @@
 	let { label, tabs }: FilterTabsProps = $props();
 </script>
 
-<nav aria-label={label} class="flex gap-5 overflow-x-auto border-b border-line">
+<nav aria-label={label} class="flex gap-5 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-line)]">
 	{#each tabs as tab (tab.href)}
 		<a
 			href={tab.href}
 			aria-current={tab.isCurrent ? 'page' : undefined}
-			class="-mb-px inline-flex items-center gap-1.5 border-b-2 border-transparent pt-2 pb-2.5 text-[13.5px] leading-[18px] font-medium whitespace-nowrap text-ink-muted no-underline hover:text-ink aria-[current=page]:border-accent aria-[current=page]:text-ink"
+			class="inline-flex items-center gap-1.5 border-b-2 border-transparent pt-2 pb-2.5 text-[13.5px] leading-[18px] font-medium whitespace-nowrap text-ink-muted no-underline hover:text-ink aria-[current=page]:border-accent aria-[current=page]:text-ink"
 		>
 			{tab.label}
 			{#if tab.count !== undefined}

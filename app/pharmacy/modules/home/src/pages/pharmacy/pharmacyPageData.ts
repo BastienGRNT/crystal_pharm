@@ -31,6 +31,8 @@ export type PharmacyGroupSection = {
 };
 
 export type PharmacyPageData = {
+	/** L'onglet ouvert, lu dans l'URL. */
+	selectedSection: PharmacySection;
 	contactDetails: PharmacyContactDetailsInput;
 	weeklyOpeningSchedule: WeeklyOpeningSchedule | undefined;
 	group: PharmacyGroupSection | undefined;

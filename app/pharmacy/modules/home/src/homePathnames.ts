@@ -4,8 +4,8 @@ export const homePathnames = {
 	contactDetailsStep: '/bienvenue',
 	openingHoursStep: '/bienvenue/horaires',
 	pharmacy: '/pharmacie',
-	pharmacyOpeningHours: '/pharmacie#horaires',
-	pharmacyGroup: '/pharmacie#groupement',
+	pharmacyOpeningHours: '/pharmacie?onglet=horaires',
+	pharmacyGroup: '/pharmacie?onglet=groupement',
 	subscription: '/abonnement',
 	groupInvitation: '/groupement/invitation'
 } as const;

@@ -37,7 +37,7 @@
 	}
 </script>
 
-<form method="POST" action={formAction} class="grid max-w-xl gap-4">
+<form method="POST" action={formAction} class="grid gap-4">
 	<Field label="Nom de la pharmacie" errorMessage={fieldErrors.name}>
 		{#snippet control(controlAttributes)}
 			<Input {...controlAttributes} name="name" autocomplete="organization" required bind:value={contactDetails.name} />
