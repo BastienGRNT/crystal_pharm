@@ -66,7 +66,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 	{
 		personaKey: 'pharmaplus',
 		space: 'group',
-		label: 'Pharma+ · sur facture',
+		label: 'Pharma+ · à l’usage, sur facture',
 		description: 'Contrat actif : 3 pharmacies, une invitation en attente.',
 		email: demoEmail('pharmaplus'),
 		firstName: 'Paul',
@@ -75,8 +75,8 @@ export const demoPersonas: readonly DemoPersona[] = [
 	{
 		personaKey: 'reseau',
 		space: 'group',
-		label: 'Réseau Santé · par carte',
-		description: 'Contrat à activer par carte, aucune pharmacie encore.',
+		label: 'Réseau Santé · forfait, par carte',
+		description: 'Forfait 10 pharmacies à 150 € HT / mois, à activer par carte.',
 		email: demoEmail('reseau'),
 		firstName: 'Sophie',
 		lastName: 'Roux'

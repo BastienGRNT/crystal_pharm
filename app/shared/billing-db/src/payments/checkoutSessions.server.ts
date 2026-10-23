@@ -3,6 +3,7 @@ import type { BillingAccess, BillingTransaction } from '../database/billingDatab
 import { runWithBillingAccess } from '../database/billingDatabase.server';
 import { checkouts, payments, type CheckoutLine, type CheckoutPurpose, type CheckoutStatus } from '../database/billingTables';
 import type { ToolKey } from '../tools/tools';
+import { vatRatePercent } from '../invoicing/vatAmounts';
 import { getPaymentProvider } from './paymentProvider';
 
 /** Qui paie : une pharmacie (son abonnement) ou un groupement (son contrat). */
@@ -69,7 +70,7 @@ export async function getCheckout(payer: Payer, checkoutId: string): Promise<Che
 	return {
 		checkoutId: checkout.id,
 		description: checkout.description,
-		lines: checkout.lines,
+		lines: withVatLine(checkout.lines, checkout.amountCents),
 		amountCents: checkout.amountCents,
 		status: checkout.status,
 		returnPathname: checkout.returnPathname
@@ -96,4 +97,10 @@ export function listPayments(payer: Payer): Promise<Payment[]> {
 
 export function payerCondition(payer: Payer) {
 	return 'tenantId' in payer ? eq(checkouts.tenantId, payer.tenantId) : eq(checkouts.groupId, payer.groupId);
+}
+
+/** Les lignes sont hors taxes ; le montant payé est TTC : la différence est la TVA. */
+function withVatLine(lines: CheckoutLine[], totalCents: number): CheckoutLine[] {
+	const subtotalCents = lines.reduce((total, line) => total + line.amountCents, 0);
+	return [...lines, { label: `TVA (${vatRatePercent} %)`, amountCents: totalCents - subtotalCents }];
 }

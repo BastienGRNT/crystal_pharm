@@ -8,6 +8,27 @@
       "when": 1792741518252,
       "tag": "0000_create_billing_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792744485999,
+      "tag": "0001_add_flat_rates_renewals_and_invoices",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792744494541,
+      "tag": "0002_bill_existing_subscriptions_and_contracts_from_their_start",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792744939234,
+      "tag": "0003_remember_the_invoice_a_credit_note_cancels",
+      "breakpoints": true
     }
   ]
 }

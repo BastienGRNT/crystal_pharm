@@ -1,0 +1,1 @@
+ALTER TABLE "billing"."invoices" ADD COLUMN "credited_invoice_number" text;

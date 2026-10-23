@@ -2,12 +2,14 @@ import { findCoveringGroupOfTenant } from '@crystal-pharm/group-db';
 import { and, desc, eq, gt, gte, isNull, or } from 'drizzle-orm';
 import { readToolCatalog } from '../catalog/toolCatalog.server';
 import { readGroupContract } from '../contracts/groupContracts.server';
-import { runWithBillingAccess, type BillingTransaction } from '../database/billingDatabase.server';
-import { payments, tenantSubscriptions, tenantSubscriptionTools } from '../database/billingTables';
+import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } from '../database/billingDatabase.server';
+import { invoices, tenantSubscriptions, tenantSubscriptionTools } from '../database/billingTables';
+import { creditInvoice } from '../invoicing/invoices.server';
+import { addVat } from '../invoicing/vatAmounts';
+import type { UpcomingCharge } from '../overview/groupBilling.server';
 import type { GroupContractStatus } from '../database/billingTables';
 import { formatEuros } from '../money/euroAmount';
 import { openCheckout } from '../payments/checkoutSessions.server';
-import { getPaymentProvider } from '../payments/paymentProvider';
 import { quoteTools, type ToolCatalog, type ToolCoverage, type ToolsQuote } from '../pricing/toolPricing';
 import { findTool, type ToolKey } from '../tools/tools';
 import { computeCurrentPeriodEnd, computeMoneyBackGuaranteeEnd } from './subscriptionPeriod';
@@ -46,6 +48,8 @@ export type TenantToolAccess = {
 	subscription: TenantSubscription | undefined;
 	quote: ToolsQuote;
 	accessibleToolKeys: ToolKey[];
+	/** Le prochain prélèvement de l'abonnement (TTC), s'il continue. */
+	upcomingCharge: UpcomingCharge | undefined;
 };
 
 export type ToolSelectionRequest =
@@ -81,7 +85,8 @@ export async function readToolAccessOfTenant(
 		coveringGroup,
 		subscription,
 		quote,
-		accessibleToolKeys: quote.toolQuotes.filter((toolQuote) => toolQuote.isActive).map((toolQuote) => toolQuote.toolKey)
+		accessibleToolKeys: quote.toolQuotes.filter((toolQuote) => toolQuote.isActive).map((toolQuote) => toolQuote.toolKey),
+		upcomingCharge: describeUpcomingCharge(catalog, coveringGroup?.coverages ?? [], subscription)
 	};
 }
 
@@ -126,7 +131,7 @@ export async function requestToolSelection(
 				purpose: 'tenant_tools',
 				toolKeys: desiredToolKeys,
 				lines: describeCheckoutLines(desiredQuote, desiredToolKeys, currentQuote),
-				amountCents: amountDueCents,
+				amountCents: addVat(amountDueCents).totalCents,
 				description: `Abonnement Crystal Pharm : ${formatEuros(desiredQuote.pharmacyMonthlyTotalCents)} par mois`,
 				returnPathname
 			}
@@ -173,7 +178,7 @@ export async function cancelSubscription(tenantId: string): Promise<Subscription
 		if (!subscription || subscription.endsAt) return { outcome: 'no-subscription' };
 
 		if (subscription.isMoneyBackGuaranteed) {
-			const refundedAmountCents = await refundPaymentsSince(transaction, tenantId, subscription.startedAt, now);
+			const refundedAmountCents = await creditInvoicesIssuedSince(tenantId, subscription.startedAt);
 			await endSubscription(transaction, subscription.subscriptionId, now, now);
 			return { outcome: 'refunded', refundedAmountCents };
 		}
@@ -279,7 +284,7 @@ async function readCurrentSubscription(
 	return {
 		subscriptionId: subscriptionRow.id,
 		startedAt: subscriptionRow.startedAt,
-		currentPeriodEndsAt: computeCurrentPeriodEnd(subscriptionRow.startedAt, now),
+		currentPeriodEndsAt: subscriptionRow.billedUntil,
 		endsAt: subscriptionRow.endsAt ?? undefined,
 		moneyBackGuaranteeEndsAt,
 		isMoneyBackGuaranteed: now < moneyBackGuaranteeEndsAt,
@@ -289,12 +294,13 @@ async function readCurrentSubscription(
 
 async function startSubscription(transaction: BillingTransaction, tenantId: string, now: Date): Promise<TenantSubscription> {
 	const subscriptionId = crypto.randomUUID();
-	await transaction.insert(tenantSubscriptions).values({ id: subscriptionId, tenantId, startedAt: now });
+	const firstPeriodEnd = computeCurrentPeriodEnd(now, now);
+	await transaction.insert(tenantSubscriptions).values({ id: subscriptionId, tenantId, startedAt: now, billedUntil: firstPeriodEnd });
 	const moneyBackGuaranteeEndsAt = computeMoneyBackGuaranteeEnd(now);
 	return {
 		subscriptionId,
 		startedAt: now,
-		currentPeriodEndsAt: computeCurrentPeriodEnd(now, now),
+		currentPeriodEndsAt: firstPeriodEnd,
 		endsAt: undefined,
 		moneyBackGuaranteeEndsAt,
 		isMoneyBackGuaranteed: true,
@@ -336,19 +342,30 @@ async function resumeSubscriptionRow(transaction: BillingTransaction, subscripti
 		.where(eq(tenantSubscriptions.id, subscriptionId));
 }
 
-async function refundPaymentsSince(
-	transaction: BillingTransaction,
-	tenantId: string,
-	since: Date,
-	now: Date
-): Promise<number> {
-	const paymentsToRefund = await transaction
-		.select()
-		.from(payments)
-		.where(and(eq(payments.tenantId, tenantId), eq(payments.status, 'paid'), gte(payments.paidAt, since)));
-	for (const payment of paymentsToRefund) {
-		await getPaymentProvider().refundPayment(payment.providerPaymentReference, payment.amountCents);
-		await transaction.update(payments).set({ status: 'refunded', refundedAt: now }).where(eq(payments.id, payment.id));
-	}
-	return paymentsToRefund.reduce((total, payment) => total + payment.amountCents, 0);
+// Satisfait ou remboursé : chaque facture payée depuis le début de l'abonnement
+// est annulée par un avoir, et la carte recréditée.
+async function creditInvoicesIssuedSince(tenantId: string, since: Date): Promise<number> {
+	return runWithBillingAccess(platformBillingAccess, async (transaction) => {
+		const paidInvoices = await transaction
+			.select({ id: invoices.id })
+			.from(invoices)
+			.where(
+				and(eq(invoices.tenantId, tenantId), eq(invoices.kind, 'invoice'), eq(invoices.status, 'paid'), gte(invoices.issuedAt, since))
+			);
+		let refundedAmountCents = 0;
+		for (const paidInvoice of paidInvoices) refundedAmountCents += await creditInvoice(transaction, paidInvoice.id);
+		return refundedAmountCents;
+	});
+}
+
+function describeUpcomingCharge(
+	catalog: ToolCatalog,
+	coverages: readonly ToolCoverage[],
+	subscription: TenantSubscription | undefined
+): UpcomingCharge | undefined {
+	if (!subscription || subscription.endsAt) return undefined;
+	const continuingToolKeys = subscription.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey);
+	const nextQuote = quoteTools({ catalog, coverages, selectedToolKeys: continuingToolKeys });
+	if (nextQuote.pharmacyMonthlyTotalCents === 0) return undefined;
+	return { dueOn: subscription.currentPeriodEndsAt, ...addVat(nextQuote.pharmacyMonthlyTotalCents) };
 }

@@ -61,7 +61,26 @@ export const catalogSettings = billingSchema.table(
 	]
 );
 
+/** Une offre de forfait du catalogue : un nombre de places pour un prix mensuel fixe. */
+export const flatRateOffers = billingSchema.table(
+	'flat_rate_offers',
+	{
+		id: uuid('id').primaryKey(),
+		label: text('label').notNull(),
+		pharmacyQuota: integer('pharmacy_quota').notNull(),
+		monthlyPriceCents: integer('monthly_price_cents').notNull(),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	() => [
+		check('flat_rate_offers_are_positive', sql`pharmacy_quota > 0 and monthly_price_cents >= 0`),
+		pgPolicy('flat_rate_offers_readable_by_everyone', { for: 'select', using: sql`true` }),
+		pgPolicy('flat_rate_offers_written_by_platform', { for: 'all', using: isPlatform, withCheck: isPlatform })
+	]
+);
+
 export type GroupPaymentMethod = 'invoice' | 'card';
+/** `usage` : la somme de ce que coûtent ses pharmacies · `flat_rate` : un forfait mensuel pour son quota. */
+export type GroupBillingMode = 'usage' | 'flat_rate';
 /** `awaiting_payment` : un paiement par carte pas encore fait ; rien n'est pris en charge avant. */
 export type GroupContractStatus = 'awaiting_payment' | 'active' | 'suspended';
 
@@ -73,7 +92,13 @@ export const groupContracts = billingSchema.table(
 			.references(() => pharmacyGroups.id, { onDelete: 'cascade' }),
 		paymentMethod: text('payment_method').$type<GroupPaymentMethod>().notNull(),
 		status: text('status').$type<GroupContractStatus>().notNull(),
+		billingMode: text('billing_mode').$type<GroupBillingMode>().notNull().default('usage'),
+		/** Le prix du forfait, pour le quota du groupement ; au-delà, chaque pharmacie coûte forfait ÷ quota. */
+		flatRateMonthlyPriceCents: integer('flat_rate_monthly_price_cents'),
+		flatRateOfferId: uuid('flat_rate_offer_id').references(() => flatRateOffers.id, { onDelete: 'set null' }),
 		activatedAt: timestampWithTimeZone('activated_at'),
+		/** La fin de la période déjà facturée : la prochaine facture tombe à cette date. */
+		billedUntil: timestampWithTimeZone('billed_until'),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow(),
 		updatedAt: timestampWithTimeZone('updated_at')
 			.notNull()
@@ -125,6 +150,10 @@ export const tenantSubscriptions = billingSchema.table(
 		startedAt: timestampWithTimeZone('started_at').notNull().defaultNow(),
 		cancelledAt: timestampWithTimeZone('cancelled_at'),
 		endsAt: timestampWithTimeZone('ends_at'),
+		/** La fin de la période déjà payée : le prochain prélèvement tombe à cette date. */
+		billedUntil: timestampWithTimeZone('billed_until')
+			.notNull()
+			.default(sql`now() + interval '1 month'`),
 		providerSubscriptionReference: text('provider_subscription_reference')
 	},
 	(table) => [
@@ -228,4 +257,62 @@ export const payments = billingSchema.table(
 			withCheck: sql`tenant_id = ${activeTenantId} or group_id = ${activeGroupId} or ${isPlatform}`
 		})
 	]
+);
+
+export type InvoiceKind = 'invoice' | 'credit_note';
+/** `paid` : réglée · `due` : à régler par virement · `credited` : annulée par un avoir (remboursement). */
+export type InvoiceStatus = 'paid' | 'due' | 'credited';
+export type InvoicePaymentMethod = 'card' | 'transfer';
+export type InvoiceLine = { label: string; amountCents: number };
+
+/**
+ * Les factures et avoirs, émis par la Platform seule (numérotation continue) ;
+ * leur destinataire (pharmacie ou groupement) les lit. Montants : HT, TVA, TTC.
+ */
+export const invoices = billingSchema.table(
+	'invoices',
+	{
+		id: uuid('id').primaryKey(),
+		number: text('number').notNull().unique(),
+		kind: text('kind').$type<InvoiceKind>().notNull(),
+		tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }),
+		groupId: uuid('group_id').references(() => pharmacyGroups.id, { onDelete: 'cascade' }),
+		issuedAt: timestampWithTimeZone('issued_at').notNull().defaultNow(),
+		periodStart: timestampWithTimeZone('period_start'),
+		periodEnd: timestampWithTimeZone('period_end'),
+		/** Le nom et l'adresse du client au moment de la facture : une facture ne change plus. */
+		customerName: text('customer_name').notNull(),
+		customerAddressLines: jsonb('customer_address_lines').$type<string[]>().notNull(),
+		lines: jsonb('lines').$type<InvoiceLine[]>().notNull(),
+		subtotalCents: integer('subtotal_cents').notNull(),
+		vatRatePercent: integer('vat_rate_percent').notNull(),
+		vatCents: integer('vat_cents').notNull(),
+		totalCents: integer('total_cents').notNull(),
+		status: text('status').$type<InvoiceStatus>().notNull(),
+		paymentMethod: text('payment_method').$type<InvoicePaymentMethod>().notNull(),
+		paymentId: uuid('payment_id').references(() => payments.id, { onDelete: 'set null' }),
+		/** Pour un avoir : la facture qu'il annule. */
+		creditedInvoiceId: uuid('credited_invoice_id'),
+		creditedInvoiceNumber: text('credited_invoice_number'),
+		paidAt: timestampWithTimeZone('paid_at')
+	},
+	(table) => [
+		index('invoices_tenant_id_index').on(table.tenantId),
+		index('invoices_group_id_index').on(table.groupId),
+		pgPolicy('invoices_readable_by_their_customer', {
+			for: 'select',
+			using: sql`tenant_id = ${activeTenantId} or group_id = ${activeGroupId} or ${isPlatform}`
+		}),
+		pgPolicy('invoices_written_by_platform', { for: 'all', using: isPlatform, withCheck: isPlatform })
+	]
+);
+
+/** Le dernier numéro de facture émis, par année : une numérotation continue, sans trou. */
+export const invoiceSequences = billingSchema.table(
+	'invoice_sequences',
+	{
+		year: integer('year').primaryKey(),
+		lastNumber: integer('last_number').notNull()
+	},
+	() => [pgPolicy('invoice_sequences_of_platform', { for: 'all', using: isPlatform, withCheck: isPlatform })]
 );

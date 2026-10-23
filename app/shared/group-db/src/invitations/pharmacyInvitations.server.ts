@@ -43,6 +43,12 @@ export type PharmacyInvitationAnswer =
 	| { isAnswered: true; groupId: string }
 	| { isAnswered: false; failureMessage: string };
 
+/**
+ * `strict` : le quota ne se dépasse pas · `overage-allowed` : un groupement au
+ * forfait invite au-delà, chaque pharmacie en plus lui étant facturée.
+ */
+export type QuotaPolicy = 'strict' | 'overage-allowed';
+
 /** Comment la pharmacie désigne l'invitation : son lien (le jeton), ou son email de compte. */
 export type InvitationProof = { invitationToken: string } | { invitationId: string; accountEmail: string };
 
@@ -75,11 +81,12 @@ export function listPendingPharmacyInvitations(
 
 /**
  * Invite d'un coup une liste de pharmacies (déjà lue par `parseInvitationList`).
- * Tout ou rien face au quota : si la liste dépasse les places libres, rien ne part.
+ * Quota strict : tout ou rien, si la liste dépasse les places libres, rien ne part.
  */
 export async function invitePharmacies(
 	groupId: string,
-	invitationEntries: readonly InvitationListEntry[]
+	invitationEntries: readonly InvitationListEntry[],
+	quotaPolicy: QuotaPolicy = 'strict'
 ): Promise<PharmacyInvitationsSending> {
 	if (invitationEntries.length === 0) return { isSent: false, failureMessage: 'Indiquez au moins un email.' };
 
@@ -92,7 +99,7 @@ export async function invitePharmacies(
 		);
 
 		const freePlaces = group.pharmacyQuota - (await countUsedPlaces(transaction, groupId));
-		if (entriesToInvite.length > freePlaces) {
+		if (quotaPolicy === 'strict' && entriesToInvite.length > freePlaces) {
 			return {
 				isSent: false,
 				failureMessage: `Il reste ${Math.max(freePlaces, 0)} place(s) dans votre quota de ${group.pharmacyQuota} pharmacies : retirez ${entriesToInvite.length - freePlaces} invitation(s) ou contactez Crystal Pharm pour l’augmenter.`

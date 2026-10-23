@@ -40,6 +40,7 @@ export {
 	type PharmacyInvitationAnswer,
 	type PharmacyInvitationForPharmacy,
 	type PharmacyInvitationsSending,
+	type QuotaPolicy,
 	type SentPharmacyInvitation,
 	type SkippedInvitationEmail
 } from './invitations/pharmacyInvitations.server';
@@ -51,6 +52,7 @@ export {
 	listCoveredTenantIdsOfGroup,
 	listMemberPharmacies,
 	removePharmacyFromGroup,
+	shiftGroupDatesBackOneMonth,
 	type CoveringGroupOfTenant,
 	type CurrentGroupOfTenant,
 	type MemberPharmacy

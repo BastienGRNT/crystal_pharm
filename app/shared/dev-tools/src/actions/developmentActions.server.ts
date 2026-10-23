@@ -1,4 +1,9 @@
-import { backdateSubscriptionsOfTenant, deleteSubscriptionsOfTenant, setGroupContractStatus } from '@crystal-pharm/billing-db';
+import {
+	backdateSubscriptionsOfTenant,
+	deleteSubscriptionsOfTenant,
+	setGroupContractStatus,
+	simulateOneMonthLater
+} from '@crystal-pharm/billing-db';
 import { clearDevelopmentOutbox } from '@crystal-pharm/email';
 import { endCoverageNow, findActiveGroupIdOfAccount, leaveGroup } from '@crystal-pharm/group-db';
 import { clearWeeklyOpeningSchedule, deleteTenant, findActiveTenantIdOfAccount } from '@crystal-pharm/pharmacy-db';
@@ -93,6 +98,17 @@ const developmentActions: readonly DevelopmentAction[] = [
 		run: async ({ accountId, returnPathname }) => {
 			const groupId = accountId ? await findActiveGroupIdOfAccount(accountId) : undefined;
 			if (groupId) await setGroupContractStatus(groupId, 'awaiting_payment');
+			return returnPathname;
+		}
+	},
+	{
+		actionName: 'simulate-next-month',
+		label: 'Passer au mois suivant',
+		description: 'Un mois passe pour toutes les pharmacies et tous les groupements : renouvellements prélevés et facturés, départs de groupement terminés.',
+		space: 'everywhere',
+		needsSignedInAccount: false,
+		run: async ({ returnPathname }) => {
+			await simulateOneMonthLater();
 			return returnPathname;
 		}
 	},

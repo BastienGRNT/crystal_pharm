@@ -6,6 +6,7 @@ import {
 import {
 	completeCheckout,
 	requestToolSelection,
+	saveFlatRateOffers,
 	saveGroupContract,
 	saveToolCatalog,
 	type GroupContractInput
@@ -114,8 +115,8 @@ async function seedDemoData(): Promise<void> {
 	const fillerTenantIds = [];
 	for (const pharmacy of fillerPharmacies()) fillerTenantIds.push(await createDemoPharmacy(pharmacy));
 
-	const pharmaPlusId = await createDemoGroup(pharmaPlusName, 20, 'invoice', pharmaPlusCoverages, 'pharmaplus');
-	const reseauSanteId = await createDemoGroup(reseauSanteName, 10, 'card', reseauSanteCoverages, 'reseau');
+	const pharmaPlusId = await createDemoGroup(pharmaPlusName, 20, { paymentMethod: 'invoice', billingMode: 'usage', flatRatePriceInput: '', flatRateOfferId: '', coverageInputs: pharmaPlusCoverages }, 'pharmaplus');
+	const reseauSanteId = await createDemoGroup(reseauSanteName, 10, { paymentMethod: 'card', billingMode: 'flat_rate', flatRatePriceInput: '150', flatRateOfferId: '', coverageInputs: reseauSanteCoverages }, 'reseau');
 
 	await joinGroup(pharmaPlusId, demoEmail('membre'), requireTenantId(tenantIdsByPersonaKey, 'membre'));
 	for (const [fillerIndex, pharmacy] of fillerPharmacies().entries()) {
@@ -133,6 +134,11 @@ async function seedCatalog(): Promise<void> {
 		toolPriceInputs: { site: '29', booking: '39', prescriptions: '29', planning: '19' },
 		packPriceInput: '99'
 	});
+	await saveFlatRateOffers([
+		{ offerId: '', label: 'Réseau 10', pharmacyQuotaInput: '10', priceInput: '150' },
+		{ offerId: '', label: 'Réseau 200', pharmacyQuotaInput: '200', priceInput: '2000' },
+		{ offerId: '', label: 'Réseau 500', pharmacyQuotaInput: '500', priceInput: '5000' }
+	]);
 }
 
 function personaPharmacies(): Record<string, DemoPharmacy> {
@@ -178,13 +184,12 @@ async function createDemoPharmacy(pharmacy: DemoPharmacy): Promise<string> {
 async function createDemoGroup(
 	name: string,
 	pharmacyQuota: number,
-	paymentMethod: 'invoice' | 'card',
-	coverageInputs: GroupContractInput['coverageInputs'],
+	contractInput: GroupContractInput,
 	memberPersonaKey: string
 ): Promise<string> {
 	const groupCreation = await createPharmacyGroup({ name, contactEmail: '', pharmacyQuota: String(pharmacyQuota) });
 	if (!groupCreation.isSaved) throw new Error(`The demo group ${name} was refused.`);
-	await saveGroupContract(groupCreation.groupId, { paymentMethod, coverageInputs });
+	await saveGroupContract(groupCreation.groupId, contractInput);
 
 	const memberPersona = findDemoPersona(memberPersonaKey);
 	const memberAccountId = memberPersona && (await findCustomerAccountIdByEmail(memberPersona.email));

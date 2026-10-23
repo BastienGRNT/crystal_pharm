@@ -1,5 +1,5 @@
 import { listTenantSummaries, type TenantSummary } from '@crystal-pharm/pharmacy-db';
-import { and, desc, eq, gt, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import { platformAccess, runWithGroupAccess, type GroupAccess } from '../database/groupDatabase.server';
 import { pharmacyGroups, pharmacyMemberships, type MembershipEndedBy } from '../database/groupTables';
 import { computeCoverageEnd } from './coveragePeriod';
@@ -118,6 +118,19 @@ export async function endCoverageNow(tenantId: string): Promise<void> {
 			.set({ coverageEndsAt: new Date() })
 			.where(and(eq(pharmacyMemberships.tenantId, tenantId), gt(pharmacyMemberships.coverageEndsAt, new Date())))
 	);
+}
+
+/** Outil de dev : fait comme si un mois était passé pour les adhésions (avec `billing-db`). */
+export async function shiftGroupDatesBackOneMonth(): Promise<void> {
+	await runWithGroupAccess(platformAccess, async (transaction) => {
+		// Le mois recule sur le calendrier du serveur, comme `computeCoverageEnd`.
+		await transaction.execute(sql`select set_config('timezone', ${Intl.DateTimeFormat().resolvedOptions().timeZone}, true)`);
+		await transaction.execute(
+			sql.raw(
+				`update groups.pharmacy_memberships set joined_at = joined_at - interval '1 month', left_at = left_at - interval '1 month', coverage_ends_at = coverage_ends_at - interval '1 month'`
+			)
+		);
+	});
 }
 
 async function endMembership(

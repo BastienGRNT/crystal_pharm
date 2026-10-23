@@ -67,6 +67,12 @@ async function insertContractsAndSubscriptions(transaction: postgres.Transaction
 			values (gen_random_uuid(), ${tenantId}) returning id`;
 		await transaction`insert into billing.tenant_subscription_tools (tenant_id, subscription_id, tool_key)
 			values (${tenantId}, ${subscription?.id}, 'planning')`;
+		for (const payer of [{ tenantId, groupId: null }, { tenantId: null, groupId }]) {
+			await transaction`insert into billing.invoices (id, number, kind, tenant_id, group_id, customer_name, customer_address_lines, lines,
+				subtotal_cents, vat_rate_percent, vat_cents, total_cents, status, payment_method)
+				values (gen_random_uuid(), ${`TEST-${tenantId}-${payer.groupId ?? 'tenant'}`}, 'invoice', ${payer.tenantId}, ${payer.groupId},
+				'Test', '[]', '[]', 100, 20, 20, 120, 'paid', 'card')`;
+		}
 	}
 }
 
@@ -130,6 +136,32 @@ describe('isolation des abonnements (Row-Level Security du schéma billing)', ()
 			).rejects.toThrow(/row-level security/);
 
 			expect(updatedCoverages.count).toBe(0);
+		});
+	});
+
+	it('ne montre à une pharmacie et à un groupement que leurs propres factures', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+			const tenantInvoices = await transaction`select tenant_id, group_id from billing.invoices`;
+			expect(tenantInvoices).toEqual([{ tenant_id: firstGroup.tenantId, group_id: null }]);
+		});
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.group_id', secondGroup.groupId);
+			const groupInvoices = await transaction`select tenant_id, group_id from billing.invoices`;
+			expect(groupInvoices).toEqual([{ tenant_id: null, group_id: secondGroup.groupId }]);
+		});
+	});
+
+	it('ne laisse émettre ni modifier une facture qu’à la Platform', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+			const updatedInvoices = await transaction`update billing.invoices set status = 'paid'`;
+			expect(updatedInvoices.count).toBe(0);
+			await expect(
+				transaction`insert into billing.invoices (id, number, kind, tenant_id, customer_name, customer_address_lines, lines,
+					subtotal_cents, vat_rate_percent, vat_cents, total_cents, status, payment_method)
+					values (gen_random_uuid(), 'PIRATE', 'credit_note', ${firstGroup.tenantId}, 'X', '[]', '[]', -100, 20, -20, -120, 'paid', 'card')`
+			).rejects.toThrow(/row-level security/);
 		});
 	});
 
