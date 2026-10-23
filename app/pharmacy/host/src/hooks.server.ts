@@ -18,7 +18,8 @@ export const handle = sequence(
 		baseUrlEnvironmentVariable: 'PHARMACY_URL',
 		loginPathname: '/login',
 		signedInHomePathname: '/',
-		anonymousOnlyPathnames: ['/login', '/register']
+		anonymousOnlyPathnames: ['/login', '/register'],
+		publicPathnamePrefixes: ['/__dev/']
 	}),
 	preventCachingOfHealthData
 );

@@ -1,0 +1,22 @@
+{
+	"name": "@crystal-pharm/dev-tools",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.server.ts"
+	},
+	"scripts": {
+		"check": "tsc --project tsconfig.json"
+	},
+	"dependencies": {
+		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/billing-db": "workspace:*",
+		"@crystal-pharm/email": "workspace:*",
+		"@crystal-pharm/group-db": "workspace:*",
+		"@crystal-pharm/pharmacy-db": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^24.19.2",
+		"typescript": "^6.0.3"
+	}
+}

@@ -11,6 +11,7 @@
 	},
 	"dependencies": {
 		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/dev-tools": "workspace:*",
 		"@crystal-pharm/ui": "workspace:*"
 	},
 	"devDependencies": {

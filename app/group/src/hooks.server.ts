@@ -4,5 +4,6 @@ export const handle = createCustomerAuthenticationHandle({
 	baseUrlEnvironmentVariable: 'GROUP_URL',
 	loginPathname: '/login',
 	signedInHomePathname: '/',
-	anonymousOnlyPathnames: ['/login', '/register']
+	anonymousOnlyPathnames: ['/login', '/register'],
+	publicPathnamePrefixes: ['/__dev/']
 });

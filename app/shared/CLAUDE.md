@@ -115,8 +115,9 @@ lui.
   finissent par `@demo.crystal-pharm.test` : une réinitialisation ne touche
   qu'eux.
 - Monté par `pharmacy/host`, `group` et `admin` sous `/__dev/` (404 hors dev),
-  chargé par un `import()` gardé par `dev`, jamais dans un build de prod. Le
-  panneau est `DeveloperToolbar` de `ui`.
+  chargé par un `import()` dans un `if (import.meta.env.DEV)` : remplacé au
+  build, il retire l'outil du build de prod (`dev` de `$app/environment` ne
+  suffit pas). Le panneau est `DeveloperToolbar` de `ui`.
 - Un parcours nouveau ajoute son compte de démo ici, dans la même branche.
 
 ## `api-client` — généré

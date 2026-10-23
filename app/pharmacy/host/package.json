@@ -12,6 +12,7 @@
 	"dependencies": {
 		"@crystal-pharm/auth": "workspace:*",
 		"@crystal-pharm/booking": "workspace:*",
+		"@crystal-pharm/dev-tools": "workspace:*",
 		"@crystal-pharm/home": "workspace:*",
 		"@crystal-pharm/planning": "workspace:*",
 		"@crystal-pharm/prescriptions": "workspace:*",

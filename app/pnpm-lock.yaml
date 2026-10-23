@@ -17,6 +17,9 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../shared/auth
+      '@crystal-pharm/dev-tools':
+        specifier: workspace:*
+        version: link:../shared/dev-tools
       '@crystal-pharm/ui':
         specifier: workspace:*
         version: link:../ui
@@ -127,6 +130,9 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../shared/auth
+      '@crystal-pharm/dev-tools':
+        specifier: workspace:*
+        version: link:../shared/dev-tools
       '@crystal-pharm/ui':
         specifier: workspace:*
         version: link:../ui
@@ -167,6 +173,9 @@ importers:
       '@crystal-pharm/booking':
         specifier: workspace:*
         version: link:../modules/booking
+      '@crystal-pharm/dev-tools':
+        specifier: workspace:*
+        version: link:../../shared/dev-tools
       '@crystal-pharm/home':
         specifier: workspace:*
         version: link:../modules/home
@@ -361,6 +370,31 @@ importers:
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@24.19.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+
+  shared/dev-tools:
+    dependencies:
+      '@crystal-pharm/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@crystal-pharm/billing-db':
+        specifier: workspace:*
+        version: link:../billing-db
+      '@crystal-pharm/email':
+        specifier: workspace:*
+        version: link:../email
+      '@crystal-pharm/group-db':
+        specifier: workspace:*
+        version: link:../group-db
+      '@crystal-pharm/pharmacy-db':
+        specifier: workspace:*
+        version: link:../pharmacy-db
+    devDependencies:
+      '@types/node':
+        specifier: ^24.19.2
+        version: 24.19.2
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
   shared/email:
     devDependencies:

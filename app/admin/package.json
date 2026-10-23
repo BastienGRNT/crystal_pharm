@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/dev-tools": "workspace:*",
 		"@crystal-pharm/ui": "workspace:*",
 		"better-auth": "^1.7.12",
 		"drizzle-orm": "^0.45.4"

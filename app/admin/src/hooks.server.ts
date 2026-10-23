@@ -4,5 +4,6 @@ import { getPlatformBetterAuth } from '$lib/server/authentication/platformBetter
 export const handle = createAuthenticationHandle(getPlatformBetterAuth, {
 	loginPathname: '/login',
 	signedInHomePathname: '/',
-	anonymousOnlyPathnames: ['/login', '/register']
+	anonymousOnlyPathnames: ['/login', '/register'],
+	publicPathnamePrefixes: ['/__dev/']
 });

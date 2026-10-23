@@ -79,3 +79,10 @@ export async function updateWeeklyOpeningSchedule(
 	);
 	return { isSaved: true };
 }
+
+/** Efface les horaires, comme avant leur saisie (outil de dev : rejouer l'étape des horaires). */
+export async function clearWeeklyOpeningSchedule(tenantId: string): Promise<void> {
+	await runAsTenant(tenantId, (transaction) =>
+		transaction.update(tenants).set({ weeklyOpeningSchedule: null }).where(eq(tenants.id, tenantId))
+	);
+}

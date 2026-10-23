@@ -33,6 +33,10 @@ export {
 	type CheckoutOutcome
 } from './payments/checkoutCompletion.server';
 export { getCheckout, listPayments, type Checkout, type Payer, type Payment } from './payments/checkoutSessions.server';
+export {
+	backdateSubscriptionsOfTenant,
+	deleteSubscriptionsOfTenant
+} from './subscriptions/developmentSubscriptions.server';
 export { previewGroupJoining, type GroupJoiningPreview } from './subscriptions/groupJoiningPreview.server';
 export {
 	cancelSubscription,

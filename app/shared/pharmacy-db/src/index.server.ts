@@ -1,4 +1,5 @@
 export {
+	clearWeeklyOpeningSchedule,
 	getPharmacyProfile,
 	updatePharmacyContactDetails,
 	updateWeeklyOpeningSchedule,
