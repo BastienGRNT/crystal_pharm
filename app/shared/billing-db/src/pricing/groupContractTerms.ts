@@ -26,6 +26,11 @@ export type GroupContractTerms = {
 	includedToolKeys: ToolKey[];
 	/** Une pharmacie qui prend tout : le pack s'applique s'il existe. */
 	everyToolForPharmacy: { listPriceCents: number; pharmacyPriceCents: number; groupPriceCents: number; isPackApplied: boolean };
+	/**
+	 * Une pharmacie membre qui prend tout paierait plus qu'une pharmacie seule
+	 * avec le pack : à signaler à la Platform, qui ajustera la remise.
+	 */
+	isPackCheaperForPharmacy: boolean;
 	groupPaysSomething: boolean;
 };
 
@@ -75,6 +80,8 @@ export function describeGroupContractTerms(catalog: ToolCatalog, coverages: read
 			groupPriceCents: everyToolQuote.groupMonthlyTotalCents,
 			isPackApplied: everyToolQuote.isPackApplied
 		},
+		isPackCheaperForPharmacy:
+			catalog.packMonthlyPriceCents !== undefined && everyToolQuote.pharmacyMonthlyTotalCents > catalog.packMonthlyPriceCents,
 		groupPaysSomething: toolTerms.some((terms) => terms.payer !== 'pharmacy')
 	};
 }

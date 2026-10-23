@@ -97,14 +97,18 @@ describe('quoteTools', () => {
 		expect(quoteTools({ catalog: catalogWithPack, coverages: [], selectedToolKeys: ['site'] }).isPackApplied).toBe(false);
 	});
 
-	it('compte un Tool payé par le groupement pour atteindre le pack', () => {
+	it('garde les prix catalogue avec un groupement : le pack est l’offre des pharmacies seules', () => {
 		const catalogWithPack: ToolCatalog = { ...catalog, packMonthlyPriceCents: 3900 };
-		const coverages: ToolCoverage[] = [{ toolKey: 'site', discountPercent: 0, groupSharePercent: 100 }];
+		const coverages: ToolCoverage[] = [
+			{ toolKey: 'site', discountPercent: 0, groupSharePercent: 100 },
+			{ toolKey: 'planning', discountPercent: 20, groupSharePercent: 0 }
+		];
 
 		const quote = quoteTools({ catalog: catalogWithPack, coverages, selectedToolKeys: ['planning'] });
 
-		expect(quote.isPackApplied).toBe(true);
-		expect(quote.pharmacyMonthlyTotalCents + quote.groupMonthlyTotalCents).toBe(3900);
+		expect(quote.isPackApplied).toBe(false);
+		expect(quote.groupMonthlyTotalCents).toBe(2900);
+		expect(quote.pharmacyMonthlyTotalCents).toBe(1520);
 	});
 
 	it('rend gratuit pour tous un Tool à 0 €, et ignore un Tool hors catalogue', () => {

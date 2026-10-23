@@ -55,7 +55,9 @@ const hundredPercent = 100;
  * La seule règle de prix, utilisée par le serveur et par l'aperçu du navigateur :
  * part de la pharmacie = prix × (1 − remise) × (1 − part du groupement).
  * Quand tous les Tools payants sont actifs, le pack remplace la somme de leurs
- * prix, réparti au prorata : la remise et la part du groupement s'y appliquent.
+ * prix (réparti au prorata). Le pack est l'offre des pharmacies sans groupement :
+ * avec une prise en charge, chaque Tool garde son prix catalogue et le contrat
+ * s'y applique, pour des prix qui se lisent.
  */
 export function quoteTools({ catalog, coverages, selectedToolKeys }: ToolsQuoteRequest): ToolsQuote {
 	const toolPricesOnSale = sortInToolOrder(catalog.toolPrices.filter((toolPrice) => !isIncludedTool(toolPrice.toolKey)));
@@ -66,7 +68,12 @@ export function quoteTools({ catalog, coverages, selectedToolKeys }: ToolsQuoteR
 				selectedToolKeys.includes(toolPrice.toolKey)
 		)
 		.map((toolPrice) => toolPrice.toolKey);
-	const packAdjustedPrices = applyPackWhenEveryPaidToolIsActive(toolPricesOnSale, activeToolKeys, catalog.packMonthlyPriceCents);
+	const hasGroupCoverage = coverages.some((coverage) => describeCoverage(coverage) !== 'none');
+	const packAdjustedPrices = applyPackWhenEveryPaidToolIsActive(
+		toolPricesOnSale,
+		activeToolKeys,
+		hasGroupCoverage ? undefined : catalog.packMonthlyPriceCents
+	);
 
 	const toolQuotes = toolPricesOnSale.map((toolPrice): ToolQuote => {
 		const coverage = findCoverage(coverages, toolPrice.toolKey);
