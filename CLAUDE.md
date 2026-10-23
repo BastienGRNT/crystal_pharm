@@ -24,7 +24,10 @@ connecté à `admin`) · `Platform` (nous, l'opérateur du SaaS) ·
 `Visitor` (la personne sur le site public, sans compte pour l'instant) ·
 `TenantSite` (les données d'un site, validées par `engine/schema`) · `Layout`
 (un dossier de `engine/layouts`, son nom est l'identifiant) · `Module` (un bloc
-activable d'un site).
+activable d'un site) · `Tool` (un outil payant de `pharmacy` qu'un Tenant
+active : site, rendez-vous…, `toolKey` ; « module » dans l'interface) ·
+`Subscription` (l'abonnement d'un Tenant à des Tools) · `GroupContract` (ce
+qu'un PharmacyGroup prend en charge, Tool par Tool, et comment il paie).
 
 ## La carte
 
@@ -45,7 +48,8 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
    ├─ ui/                   le design system Svelte, commun aux trois apps Svelte
    ├─ engine/               LE MOTEUR (Solid) : schema · renderer · layouts
    └─ shared/               TS sans interface, partagé entre apps :
-                            auth · pharmacy-db · group-db · content-db · api-client
+                            auth · pharmacy-db · group-db · billing-db ·
+                            content-db · api-client · email · dev-tools
 ```
 
 ## Qui fait quoi
@@ -61,6 +65,9 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 - **`group`** : un PharmacyGroup voit ses pharmacies membres et les invite.
   **`admin`** : la Platform gère les abonnements, les prix, les groupements et
   leurs quotas. Deux apps SvelteKit simples, sans modules.
+- **Les abonnements** : `shared/billing-db` calcule ce qu'un Tenant a le droit
+  d'utiliser et ce que chacun paie. Le paiement passe par un
+  `PaymentProvider` (faux en dev, Stripe plus tard), jamais appelé ailleurs.
 - **SolidStart** (`app/site`) : rend les sites. Lit `content` et
   `shared/pharmacy-db` directement, jamais via le C#.
 - **L'app mobile du planning** (créée avec son premier besoin) : consomme
@@ -68,7 +75,8 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 - Un envoi du Visitor appartient au module qui le traite : un rendez-vous →
   `Booking`, une ordonnance → `Prescriptions`. Un nouveau type d'envoi sans
   module évident : on en parle avant.
-- Les emails partent par Resend, derrière une interface (rien en dev).
+- Les emails partent par Resend, derrière l'interface de `shared/email` (en
+  dev, rien ne part : ils arrivent dans la boîte de l'outil de dev).
 
 ## Les déployables
 
@@ -131,11 +139,11 @@ Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
 
 | Depuis | Peut importer |
 |---|---|
-| `pharmacy/host` | la partie publique des `pharmacy/modules/*`, `ui`, `shared/auth` |
+| `pharmacy/host` | la partie publique des `pharmacy/modules/*`, `ui`, `shared/auth`, `shared/dev-tools` (en dev) |
 | un module de `pharmacy` | `ui`, `shared/*`, `engine/schema` |
 | `pharmacy/modules/site-manager` | en plus : l'export sans Solid de `layouts` (`/manifest`) |
 | `group` | `ui`, `shared/*` |
-| `admin` | `ui`, `shared/*` — de `shared/auth`, seulement `/toolkit`, `/tables` et `/client` |
+| `admin` | `ui`, `shared/*` — de `shared/auth`, seulement `/toolkit`, `/tables` et `/client` (sauf par `shared/dev-tools`, en dev) |
 | `app/site` | `engine/*`, `shared/content-db`, `shared/pharmacy-db`, `shared/api-client` |
 | `ui` | rien d'autre que Svelte |
 | `shared/*` | voir `app/shared/CLAUDE.md` |
@@ -207,7 +215,8 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
 
 - Un schéma = un seul outil de migration **et un seul propriétaire**. Drizzle :
   `auth` → `shared/auth`, `pharmacy` → `shared/pharmacy-db`, `groups` →
-  `shared/group-db`, `content` → `shared/content-db`, `planning` →
+  `shared/group-db`, `billing` → `shared/billing-db`, `content` →
+  `shared/content-db`, `planning` →
   `pharmacy/modules/planning`, `platform_auth` → `admin`. EF Core : `booking`,
   `prescriptions` → le C#.
 - Table de suivi Drizzle dans le schéma du propriétaire : drizzle-kit le crée
@@ -257,7 +266,8 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
 
 - Un lot = une session = une branche, dans **une** zone (un module, une app,
   `app/api` ou le moteur), plus `shared/`, `ui` et le branchement dans
-  `pharmacy/host` si la tâche l'exige. Jamais un autre module ni une autre app.
+  `pharmacy/host` si la tâche l'exige. Jamais un autre module ni une autre app,
+  sauf l'outil de dev, monté dans les trois apps Svelte.
 - Vérification, une seule fois, à la fin :
   - le typecheck de la zone (`pnpm --filter <package> check` — le script
     s'appelle `check` partout — ou `dotnet build app/api`) ;
@@ -272,6 +282,11 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
 
 Quand tu t'arrêtes, toujours ce format :
 `Arrêt — zone : … · bloqué par : … · proposition : …`
+
+## L'outil de dev
+
+Seulement en dev, dans les trois apps Svelte : cf. `app/shared/CLAUDE.md`,
+« `dev-tools` ».
 
 ## Commandes
 
@@ -293,7 +308,8 @@ Quand tu t'arrêtes, toujours ce format :
   - scope : le dossier de la zone (`host`, `home`, `site-manager`, `planning`,
     `booking`, `prescriptions`, `group`, `admin`, `site`, `api`, `ui`,
     `renderer`, `schema`, `layouts`, `auth`, `pharmacy-db`, `group-db`,
-    `content-db`, `api-client`), ou `repo` pour la racine ;
+    `billing-db`, `content-db`, `api-client`, `email`, `dev-tools`), ou
+    `repo` pour la racine ;
   - sujet : en kebab-case, ce que ça change pour le produit.
 - Commit : `<type>(<scope>): <sujet>`, en français, mêmes types et scopes. Le
   corps dit pourquoi, sauf pour un changement trivial.

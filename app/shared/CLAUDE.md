@@ -9,15 +9,17 @@ Modifiable. Un changement ici touche plusieurs zones : garde la compatibilité
 (ajouter plutôt que renommer ou supprimer). Tu ne modifies pas les zones qui
 l'utilisent dans la même session : tu lances leur typecheck et tu signales.
 
-`pharmacy-db`, `group-db`, `content-db` et `api-client` sont créés avec leur
-premier besoin réel, selon les règles ci-dessous.
+`content-db` et `api-client` sont créés avec leur premier besoin réel, selon
+les règles ci-dessous.
 
 ## Dépendances entre packages partagés
 
-`auth` et `api-client` ne dépendent d'aucun autre package partagé.
+`auth`, `email` et `api-client` ne dépendent d'aucun autre package partagé.
 `pharmacy-db` dépend seulement de `auth` (un compte appartient à des
-Tenants). `group-db` dépend de `auth` et de `pharmacy-db`. `content-db`
-dépend seulement de `engine/schema`.
+Tenants). `group-db` dépend de `auth` et de `pharmacy-db`. `billing-db`
+dépend de `auth`, `pharmacy-db` et `group-db`. `content-db` dépend seulement
+de `engine/schema`. `dev-tools` peut dépendre de tous, et aucun ne dépend de
+lui.
 
 ## `auth` — les comptes clients (Better Auth)
 
@@ -63,16 +65,59 @@ dépend seulement de `engine/schema`.
 ## `group-db` — les groupements
 
 - Le schéma `groups` : les PharmacyGroups et leur quota de pharmacies, leurs
-  GroupMembers, l'appartenance des pharmacies, les invitations.
+  GroupMembers, l'appartenance des pharmacies, les invitations (des
+  pharmacies et des GroupMembers).
+- Un PharmacyGroup est créé par la Platform, jamais par une inscription : son
+  premier GroupMember arrive par une invitation envoyée depuis `admin`.
 - Une pharmacie appartient à un groupement au plus à la fois. L'appartenance
   garde son historique (`joined_at`, `left_at`), jamais supprimée.
 - Ses fonctions sont le seul moyen d'écrire. Le quota s'y vérifie : pharmacies
   membres + invitations en attente ≤ quota.
 - Une invitation est nominative (un email), à usage unique, expire, et se
-  révoque. La pharmacie accepte explicitement que le groupement voie ses
-  données ; chacun des deux peut y mettre fin.
+  révoque. Seule l'empreinte de son jeton est stockée. La pharmacie accepte
+  explicitement que le groupement voie ses données ; chacun des deux peut y
+  mettre fin. La prise en charge court jusqu'à la fin du mois du départ
+  (`coverage_ends_at`).
 - Lu par `group` (seulement ses pharmacies, RLS sur le `groupId`), `admin`
   et `pharmacy` (savoir à quel groupement on appartient).
+
+## `billing-db` — les abonnements
+
+- Le schéma `billing` : le prix mensuel de chaque Tool et du pack « tous les
+  Tools », les GroupContracts (prise en charge Tool par Tool, mode de
+  paiement), les Subscriptions des Tenants, les paiements.
+- Les Tools sont une liste écrite **une seule fois** (`src/tools/`) ; tout le
+  reste (prix, contrats, accès, menu) se déduit de leur `toolKey`. Ajouter un
+  Tool = l'ajouter à cette liste, puis lui donner un prix dans `admin`. Un
+  Tool sans prix n'est pas encore en vente ; un prix à 0 le rend gratuit pour
+  tous.
+- Une règle de prix, une seule fonction pure (`src/pricing/`, testée), utilisée
+  par le serveur et par le navigateur (l'aperçu en direct) : part de la
+  pharmacie = prix × (1 − remise) × (1 − part du groupement). Un Tool est
+  accessible si cette part vaut 0 ou si le Tenant y est abonné.
+- Le paiement passe par l'interface `PaymentProvider` : le faux prestataire en
+  dev (une page de paiement de test), Stripe plus tard, sans autre changement.
+- Satisfait ou remboursé : une Subscription résiliée dans ses 30 premiers
+  jours est remboursée.
+
+## `email` — les emails
+
+- `sendEmail` : par Resend quand `RESEND_API_KEY` existe ; sinon, l'email est
+  rangé dans la boîte de dev (un fichier hors du dépôt), lue par l'outil de dev.
+- Jamais de donnée de santé dans un email.
+
+## `dev-tools` — l'outil de dev
+
+- Les comptes de démo (un par parcours à tester), leur création par les
+  fonctions des propriétaires (jamais d'`insert` direct dans un schéma qui
+  n'est pas à lui), leur réinitialisation, et la lecture de la boîte de dev.
+- Mot de passe commun des comptes de démo : `demo-crystal-pharm`. Leurs emails
+  finissent par `@demo.crystal-pharm.test` : une réinitialisation ne touche
+  qu'eux.
+- Monté par `pharmacy/host`, `group` et `admin` sous `/__dev/` (404 hors dev),
+  chargé par un `import()` gardé par `dev`, jamais dans un build de prod. Le
+  panneau est `DeveloperToolbar` de `ui`.
+- Un parcours nouveau ajoute son compte de démo ici, dans la même branche.
 
 ## `api-client` — généré
 
