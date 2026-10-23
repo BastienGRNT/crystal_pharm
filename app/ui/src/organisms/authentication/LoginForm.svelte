@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Button from '../../atoms/actions/Button.svelte';
 	import Input from '../../atoms/fields/Input.svelte';
 	import Alert from '../../molecules/Alert.svelte';
@@ -7,11 +8,14 @@
 
 	type LoginFormProps = {
 		onSubmit: AuthenticationSubmission<LoginCredentials>;
+		/** L'email déjà connu (une invitation) ; verrouillé, il ne peut plus être changé. */
+		initialEmail?: string;
+		isEmailLocked?: boolean;
 	};
 
-	let { onSubmit }: LoginFormProps = $props();
+	let { onSubmit, initialEmail = '', isEmailLocked = false }: LoginFormProps = $props();
 
-	let email = $state('');
+	let email = $state(untrack(() => initialEmail));
 	let password = $state('');
 	let failureMessage = $state<string | undefined>();
 	let isSubmitting = $state(false);
@@ -27,7 +31,7 @@
 <form class="grid gap-3" onsubmit={submitCredentials}>
 	<Field label="Email">
 		{#snippet control(controlAttributes)}
-			<Input {...controlAttributes} type="email" name="email" autocomplete="email" required bind:value={email} />
+			<Input {...controlAttributes} type="email" name="email" autocomplete="email" required readonly={isEmailLocked} bind:value={email} />
 		{/snippet}
 	</Field>
 	<Field label="Mot de passe">

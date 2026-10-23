@@ -13,7 +13,8 @@
 	navigationLinks={groupNavigationLinks}
 	currentPathname={page.url.pathname}
 	signedInUser={data.signedInGroupMember}
-	spaceLabel="Espace groupement"
+	spaceLabel={data.groupName}
+	hrefsNeedingAttention={data.hrefsNeedingAttention}
 	onSignOut={() => signOutAndOpen('/login')}
 >
 	{@render children()}

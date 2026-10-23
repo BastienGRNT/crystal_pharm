@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Button from '../../atoms/actions/Button.svelte';
 	import Input from '../../atoms/fields/Input.svelte';
 	import Alert from '../../molecules/Alert.svelte';
@@ -7,13 +8,16 @@
 
 	type RegisterFormProps = {
 		onSubmit: AuthenticationSubmission<RegistrationDetails>;
+		/** L'email déjà connu (une invitation) ; verrouillé, il ne peut plus être changé. */
+		initialEmail?: string;
+		isEmailLocked?: boolean;
 	};
 
-	let { onSubmit }: RegisterFormProps = $props();
+	let { onSubmit, initialEmail = '', isEmailLocked = false }: RegisterFormProps = $props();
 
 	let firstName = $state('');
 	let lastName = $state('');
-	let email = $state('');
+	let email = $state(untrack(() => initialEmail));
 	let password = $state('');
 	let failureMessage = $state<string | undefined>();
 	let isSubmitting = $state(false);
@@ -41,7 +45,7 @@
 	</div>
 	<Field label="Email">
 		{#snippet control(controlAttributes)}
-			<Input {...controlAttributes} type="email" name="email" autocomplete="email" required bind:value={email} />
+			<Input {...controlAttributes} type="email" name="email" autocomplete="email" required readonly={isEmailLocked} bind:value={email} />
 		{/snippet}
 	</Field>
 	<Field label="Mot de passe" hint="8 caractères minimum.">
