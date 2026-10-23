@@ -1,18 +1,20 @@
 <script lang="ts">
 	import { Icon } from '@crystal-pharm/ui';
 	import ShiftChip from '../atoms/ShiftChip.svelte';
+	import type { ShiftChipTone } from '../atoms/shiftChip';
 
 	type ShiftSlotProps = {
 		slotId: string;
 		label: string;
+		tone: ShiftChipTone;
 		/** Action du formulaire de suppression ; reçoit le champ `slotId`. Sans elle, pas de bouton. */
 		deleteSlotFormAction?: string;
 	};
 
-	let { slotId, label, deleteSlotFormAction }: ShiftSlotProps = $props();
+	let { slotId, label, tone, deleteSlotFormAction }: ShiftSlotProps = $props();
 </script>
 
-<ShiftChip {label}>
+<ShiftChip {label} {tone}>
 	{#if deleteSlotFormAction}
 		<form method="POST" action={deleteSlotFormAction} class="contents">
 			<input type="hidden" name="slotId" value={slotId} />

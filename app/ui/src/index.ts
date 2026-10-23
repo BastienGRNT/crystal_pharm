@@ -35,6 +35,8 @@ export type { SegmentedControlOption } from './molecules/navigation/segmentedCon
 export { default as SelectMenu } from './molecules/fields/pickers/SelectMenu.svelte';
 export type { SelectMenuOption } from './molecules/fields/pickers/selectMenu';
 export { default as StatCard } from './molecules/StatCard.svelte';
+export { default as StatusBadge } from './atoms/StatusBadge.svelte';
+export type { StatusBadgeTone } from './atoms/statusBadge';
 export { default as SetupScreen } from './organisms/SetupScreen.svelte';
 export { default as ThemeToggle } from './molecules/ThemeToggle.svelte';
 export { default as TimePicker } from './molecules/fields/pickers/TimePicker.svelte';

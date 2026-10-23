@@ -1,3 +1,4 @@
+import type { OpeningHours } from './coverage';
 import { toMinutesSinceMidnight, type Shift } from './planning';
 
 export type TimelineRange = {
@@ -13,10 +14,14 @@ export type TimelineBarPosition = {
 const minutesPerHour = 60;
 const defaultTimelineRange: TimelineRange = { startMinutes: 8 * minutesPerHour, endMinutes: 20 * minutesPerHour };
 
-/** De 8:00 à 20:00, élargi à l'heure pleine si un créneau commence plus tôt ou finit plus tard. */
-export function computeTimelineRange(shifts: Shift[]): TimelineRange {
+/** De 8:00 à 20:00, élargi à l'heure pleine si un créneau ou l'ouverture commence plus tôt ou finit plus tard. */
+export function computeTimelineRange(shifts: Shift[], openingHours?: OpeningHours): TimelineRange {
 	const shiftStarts = shifts.map((shift) => toMinutesSinceMidnight(shift.startTime));
 	const shiftEnds = shifts.map((shift) => toMinutesSinceMidnight(shift.endTime));
+	if (openingHours) {
+		shiftStarts.push(toMinutesSinceMidnight(openingHours.opensAt));
+		shiftEnds.push(toMinutesSinceMidnight(openingHours.closesAt));
+	}
 	const earliestStart = Math.min(defaultTimelineRange.startMinutes, ...shiftStarts);
 	const latestEnd = Math.max(defaultTimelineRange.endMinutes, ...shiftEnds);
 	return {

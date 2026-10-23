@@ -1,7 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { SegmentedControlOption } from '@crystal-pharm/ui';
-import type { PlanningTimelineRow } from '../components/organisms/day/planningTimeline';
-import type { PlanningGridRow } from '../components/organisms/week/planningGrid';
+import type { PlanningTimelineCoverage, PlanningTimelineRow } from '../components/organisms/day/planningTimeline';
+import type { PlanningGridRow, PlanningGridSummary } from '../components/organisms/week/planningGrid';
+import { formatMinuteRange, listCoverageGaps, type CoverageSegment, type OpeningHours } from '../domain/coverage';
 import {
 	buildPlanningRows,
 	formatDuration,
@@ -11,7 +12,13 @@ import {
 	type PlanningRow,
 	type WeekPlanning
 } from '../domain/planning';
-import { computeTimelineRange, listTimelineHours, toTimelineBarPosition, toTimelinePercent } from '../domain/timeline';
+import {
+	computeTimelineRange,
+	listTimelineHours,
+	toTimelineBarPosition,
+	toTimelinePercent,
+	type TimelineRange
+} from '../domain/timeline';
 import {
 	addDays,
 	formatDayName,
@@ -34,7 +41,8 @@ import type {
 	PlanningPageData,
 	WeekViewData
 } from '../pages/teamPlanningPageData';
-import { addShift, deleteShift, getWeekPlanning } from './repositories/planningRepository';
+import { addShift, deleteShift, getOpeningHours, getWeekPlanning } from './repositories/planningRepository';
+import { computePharmacistCoverage } from './services/pharmacistCoverageService';
 
 const shiftFieldNames = ['employeeId', 'date', 'startTime', 'endTime'] as const;
 
@@ -111,6 +119,7 @@ async function loadWeekView(
 	const weekPlanning = await getWeekPlanning(weekDates[0] ?? '', weekDates[6] ?? '');
 	const planningRows = buildPlanningRows(weekPlanning, weekDates);
 	const todayIsInWeek = weekDates.includes(toIsoDate(today));
+	const openingHoursByDay = await Promise.all(weekDates.map(getOpeningHours));
 
 	return {
 		view: 'week',
@@ -121,9 +130,11 @@ async function loadWeekView(
 			nextHref: weekHref(addDays(monday, 7)),
 			navigationLabel: 'Semaine affichée',
 			previousLabel: 'Semaine précédente',
-			nextLabel: 'Semaine suivante'
+			nextLabel: 'Semaine suivante',
+			todayHref: todayIsInWeek ? undefined : weekHref(getMondayOfWeek(today))
 		},
-		context: `${formatWeekRange(monday)} · ${formatDuration(sumPlannedMinutes(weekPlanning.shifts))} planifiées`,
+		title: formatWeekRange(monday),
+		context: `${formatDuration(sumPlannedMinutes(weekPlanning.shifts))} planifiées`,
 		defaultShiftDate: toIsoDate(monday),
 		employees: weekPlanning.employees,
 		days: weekDays.map((day, dayIndex) => ({
@@ -134,7 +145,8 @@ async function loadWeekView(
 			detail: formatStaffCount(countPresentEmployees(planningRows, dayIndex)),
 			href: dayHref(day)
 		})),
-		rows: planningRows.map((planningRow) => toPlanningGridRow(planningRow, weekPlanning))
+		rows: planningRows.map((planningRow) => toPlanningGridRow(planningRow, weekPlanning)),
+		pharmacistCoverage: buildWeekPharmacistCoverage(planningRows, weekDates, openingHoursByDay)
 	};
 }
 
@@ -146,7 +158,8 @@ async function loadDayView(
 	const date = toIsoDate(day);
 	const dayPlanning = await getWeekPlanning(date, date);
 	const planningRows = buildPlanningRows(dayPlanning, [date]);
-	const timelineRange = computeTimelineRange(dayPlanning.shifts);
+	const openingHours = await getOpeningHours(date);
+	const timelineRange = computeTimelineRange(dayPlanning.shifts, openingHours);
 	const isToday = date === toIsoDate(today);
 	const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 	const presentEmployeeCount = countPresentEmployees(planningRows, 0);
@@ -160,9 +173,11 @@ async function loadDayView(
 			nextHref: dayHref(addDays(day, 1)),
 			navigationLabel: 'Journée affichée',
 			previousLabel: 'Jour précédent',
-			nextLabel: 'Jour suivant'
+			nextLabel: 'Jour suivant',
+			todayHref: isToday ? undefined : dayHref(today)
 		},
-		context: `${formatDayTitle(day)} · ${formatStaffCount(presentEmployeeCount)} · ${formatDuration(sumPlannedMinutes(dayPlanning.shifts))} planifiées`,
+		title: formatDayTitle(day),
+		context: `${formatStaffCount(presentEmployeeCount)} · ${formatDuration(sumPlannedMinutes(dayPlanning.shifts))} planifiées`,
 		defaultShiftDate: date,
 		employees: dayPlanning.employees,
 		hours: listTimelineHours(timelineRange).map((hour) => ({
@@ -174,18 +189,28 @@ async function loadDayView(
 			return {
 				key: employee.id,
 				personName: employee.fullName,
-				personDetail: `${employee.jobTitle} · ${formatDuration(sumPlannedMinutes(cell?.shifts ?? []))}`,
+				personDetail: employee.jobTitle,
+				personHours: formatDuration(sumPlannedMinutes(cell?.shifts ?? [])),
 				personTag: employee.isPharmacist ? 'Ph' : undefined,
 				absence: cell?.absenceKind ? { label: 'Absent', detail: cell.absenceKind } : undefined,
 				bars: (cell?.shifts ?? []).map((shift) => ({
 					id: shift.id,
 					label: formatShiftHours(shift),
+					tone: employee.isPharmacist ? 'strong' : 'soft',
 					...toTimelineBarPosition(shift, timelineRange)
 				}))
 			};
 		}),
-		nowPercent: isToday ? toTimelinePercent(toMinutesSinceMidnight(currentTime), timelineRange) : undefined,
-		nowLabel: isToday ? `Il est ${currentTime}.` : undefined
+		opening: openingHours && {
+			startPercent: toTimelinePercent(toMinutesSinceMidnight(openingHours.opensAt), timelineRange),
+			endPercent: toTimelinePercent(toMinutesSinceMidnight(openingHours.closesAt), timelineRange)
+		},
+		pharmacistCoverage:
+			openingHours &&
+			buildDayPharmacistCoverage(computePharmacistCoverage(planningRows, 0, openingHours), timelineRange),
+		now: isToday
+			? { percent: toTimelinePercent(toMinutesSinceMidnight(currentTime), timelineRange), label: currentTime }
+			: undefined
 	};
 }
 
@@ -194,13 +219,60 @@ function toPlanningGridRow({ employee, cells }: PlanningRow, weekPlanning: WeekP
 	return {
 		key: employee.id,
 		personName: employee.fullName,
-		personDetail: `${employee.jobTitle} · ${formatDuration(sumPlannedMinutes(employeeShifts))}`,
+		personDetail: employee.jobTitle,
+		personHours: formatDuration(sumPlannedMinutes(employeeShifts)),
 		personTag: employee.isPharmacist ? 'Ph' : undefined,
 		cells: cells.map((cell) => ({
 			key: cell.date,
 			absence: cell.absenceKind ? { label: 'Absent', detail: cell.absenceKind } : undefined,
-			slots: cell.shifts.map((shift) => ({ id: shift.id, label: formatShiftHours(shift) }))
+			slots: cell.shifts.map((shift) => ({
+				id: shift.id,
+				label: formatShiftHours(shift),
+				tone: employee.isPharmacist ? 'strong' : 'soft'
+			}))
 		}))
+	};
+}
+
+const pharmacistCoverageLabel = 'Pharmacien présent';
+
+function buildWeekPharmacistCoverage(
+	planningRows: PlanningRow[],
+	weekDates: string[],
+	openingHoursByDay: (OpeningHours | undefined)[]
+): PlanningGridSummary {
+	return {
+		label: pharmacistCoverageLabel,
+		cells: weekDates.map((date, dayIndex) => {
+			const openingHours = openingHoursByDay[dayIndex];
+			if (!openingHours) return { key: date, tone: 'neutral', text: 'Fermé' };
+			const gaps = listCoverageGaps(computePharmacistCoverage(planningRows, dayIndex, openingHours));
+			const [firstGap] = gaps;
+			if (!firstGap) return { key: date, tone: 'success', text: 'Toute la journée' };
+			const otherGapsCount = gaps.length - 1;
+			const otherGapsText = otherGapsCount > 0 ? ` +${otherGapsCount}` : '';
+			return { key: date, tone: 'danger', text: `Manque ${formatMinuteRange(firstGap)}${otherGapsText}` };
+		})
+	};
+}
+
+function buildDayPharmacistCoverage(
+	coverageSegments: CoverageSegment[],
+	timelineRange: TimelineRange
+): PlanningTimelineCoverage {
+	return {
+		label: pharmacistCoverageLabel,
+		uncoveredLabel: 'Aucun pharmacien',
+		segments: coverageSegments.map((segment) => {
+			const startPercent = toTimelinePercent(segment.startMinutes, timelineRange);
+			return {
+				key: String(segment.startMinutes),
+				startPercent,
+				widthPercent: toTimelinePercent(segment.endMinutes, timelineRange) - startPercent,
+				isCovered: segment.isCovered,
+				label: segment.isCovered ? 'Présent' : formatMinuteRange(segment)
+			};
+		})
 	};
 }
 

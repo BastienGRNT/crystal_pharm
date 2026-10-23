@@ -1,18 +1,21 @@
 <script lang="ts">
+	import { StatusBadge } from '@crystal-pharm/ui';
 	import AbsenceBlock from '../../atoms/AbsenceBlock.svelte';
 	import DayHeading from '../../molecules/DayHeading.svelte';
 	import EmployeeIdentity from '../../molecules/EmployeeIdentity.svelte';
 	import ShiftSlot from '../../molecules/ShiftSlot.svelte';
-	import type { PlanningGridDay, PlanningGridRow } from './planningGrid';
+	import type { PlanningGridDay, PlanningGridRow, PlanningGridSummary } from './planningGrid';
 
 	type PlanningGridProps = {
 		days: PlanningGridDay[];
 		rows: PlanningGridRow[];
+		/** Une ligne de synthèse sous la grille (la présence d'un pharmacien, jour par jour). */
+		summary?: PlanningGridSummary;
 		/** Action du formulaire de suppression ; reçoit le champ `slotId`. Sans elle, pas de bouton. */
 		deleteSlotFormAction?: string;
 	};
 
-	let { days, rows, deleteSlotFormAction }: PlanningGridProps = $props();
+	let { days, rows, summary, deleteSlotFormAction }: PlanningGridProps = $props();
 
 	const dayCellClasses = 'border-l border-line';
 	const rowSeparatorClasses = '[tr:not(:last-child)>&]:border-b [tr:not(:last-child)>&]:border-line-soft';
@@ -44,7 +47,7 @@
 			{#each rows as row (row.key)}
 				<tr>
 					<th scope="row" class="{rowSeparatorClasses} px-4 py-2 text-left align-middle font-normal">
-						<EmployeeIdentity name={row.personName} detail={row.personDetail} tag={row.personTag} />
+						<EmployeeIdentity name={row.personName} detail={row.personDetail} tag={row.personTag} hours={row.personHours} />
 					</th>
 					{#each row.cells as cell (cell.key)}
 						{#if cell.absence}
@@ -57,7 +60,7 @@
 						{:else}
 							<td class="{dayCellClasses} {rowSeparatorClasses} p-[5px] align-top">
 								{#each cell.slots as slot (slot.id)}
-									<ShiftSlot slotId={slot.id} label={slot.label} {deleteSlotFormAction} />
+									<ShiftSlot slotId={slot.id} label={slot.label} tone={slot.tone} {deleteSlotFormAction} />
 								{/each}
 							</td>
 						{/if}
@@ -65,5 +68,19 @@
 				</tr>
 			{/each}
 		</tbody>
+		{#if summary}
+			<tfoot>
+				<tr class="bg-surface-subtle">
+					<th scope="row" class="border-t border-line px-4 py-2 text-left text-[12.5px] leading-[17px] font-semibold text-ink-muted">
+						{summary.label}
+					</th>
+					{#each summary.cells as cell (cell.key)}
+						<td class="{dayCellClasses} border-t px-2 py-1.5 align-middle">
+							<StatusBadge tone={cell.tone}>{cell.text}</StatusBadge>
+						</td>
+					{/each}
+				</tr>
+			</tfoot>
+		{/if}
 	</table>
 </div>

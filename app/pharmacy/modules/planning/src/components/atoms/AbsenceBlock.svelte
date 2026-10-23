@@ -17,7 +17,7 @@
 		{detail}
 	</td>
 {:else}
-	<div class="absolute inset-y-1.5 right-0 left-0 rounded-xs bg-absence px-2 py-1 text-[12.5px] text-on-absence">
+	<div class="absolute inset-y-1.5 right-0 left-0 z-10 rounded-xs bg-absence px-2 py-1 text-[12.5px] text-on-absence">
 		<b>{label}</b> · {detail}
 	</div>
 {/if}

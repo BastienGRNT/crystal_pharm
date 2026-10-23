@@ -31,7 +31,7 @@
 			href={navigationLink.href}
 			data-module={navigationLink.module}
 			aria-current={navigationLink.href === currentNavigationHref ? 'page' : undefined}
-			class="text-rail relative grid w-[62px] justify-items-center gap-[3px] rounded-md pt-[7px] pb-1.5 text-center text-rail-ink no-underline hover:bg-rail-raised aria-[current=page]:bg-rail-raised aria-[current=page]:text-on-rail aria-[current=page]:before:absolute aria-[current=page]:before:inset-y-2.5 aria-[current=page]:before:-left-[5px] aria-[current=page]:before:w-[3px] aria-[current=page]:before:rounded-[3px] aria-[current=page]:before:bg-accent-on-rail aria-[current=page]:before:content-['']"
+			class="text-rail relative grid w-[calc(var(--spacing-rail)-10px)] justify-items-center gap-[3px] rounded-md pt-[7px] pb-1.5 text-center text-rail-ink no-underline hover:bg-rail-raised aria-[current=page]:bg-rail-raised aria-[current=page]:text-on-rail aria-[current=page]:before:absolute aria-[current=page]:before:inset-y-2.5 aria-[current=page]:before:-left-[5px] aria-[current=page]:before:w-[3px] aria-[current=page]:before:rounded-[3px] aria-[current=page]:before:bg-accent-on-rail aria-[current=page]:before:content-['']"
 		>
 			{#if navigationLink.icon}
 				<Icon name={navigationLink.icon} size={22} class="text-accent-on-rail" />
