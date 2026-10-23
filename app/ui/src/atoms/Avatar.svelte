@@ -1,10 +1,12 @@
 <script lang="ts">
 	type AvatarProps = {
 		name: string;
+		/** Une photo à la place des initiales. */
+		imageUrl?: string;
 		surface?: 'page' | 'rail';
 	};
 
-	let { name, surface = 'page' }: AvatarProps = $props();
+	let { name, imageUrl, surface = 'page' }: AvatarProps = $props();
 
 	const initials = $derived(
 		name
@@ -21,10 +23,14 @@
 	};
 </script>
 
-<span
-	class="inline-grid size-avatar flex-none place-items-center rounded-full text-label {surfaceClasses[surface]}"
-	title={name}
-	aria-hidden="true"
->
-	{initials}
-</span>
+{#if imageUrl}
+	<img src={imageUrl} alt="" title={name} class="size-avatar flex-none rounded-full object-cover {surfaceClasses[surface]}" />
+{:else}
+	<span
+		class="inline-grid size-avatar flex-none place-items-center rounded-full text-label {surfaceClasses[surface]}"
+		title={name}
+		aria-hidden="true"
+	>
+		{initials}
+	</span>
+{/if}

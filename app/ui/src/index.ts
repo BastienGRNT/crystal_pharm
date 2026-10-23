@@ -11,6 +11,7 @@ export { default as Card } from './atoms/Card.svelte';
 export { default as Icon } from './atoms/icons/Icon.svelte';
 export type { IconName } from './atoms/icons/icons';
 export { default as IconButton } from './atoms/actions/IconButton.svelte';
+export { default as ImagePicker } from './molecules/fields/ImagePicker.svelte';
 export { default as InvoiceTable } from './organisms/billing/InvoiceTable.svelte';
 export type { InvoiceTableRow } from './organisms/billing/invoiceTable';
 export { default as Input } from './atoms/fields/Input.svelte';

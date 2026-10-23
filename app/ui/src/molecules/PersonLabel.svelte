@@ -4,13 +4,15 @@
 	type PersonLabelProps = {
 		name: string;
 		detail?: string;
+		/** Une photo à la place des initiales. */
+		imageUrl?: string;
 	};
 
-	let { name, detail }: PersonLabelProps = $props();
+	let { name, detail, imageUrl }: PersonLabelProps = $props();
 </script>
 
 <span class="flex min-w-0 items-center gap-3">
-	<Avatar {name} />
+	<Avatar {name} {imageUrl} />
 	<span class="min-w-0">
 		<b class="block font-semibold whitespace-nowrap text-ink">{name}</b>
 		{#if detail}
