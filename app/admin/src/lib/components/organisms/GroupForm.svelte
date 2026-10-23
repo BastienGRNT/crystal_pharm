@@ -1,8 +1,10 @@
 <script lang="ts">
+	import type { FlatRateOffer } from '@crystal-pharm/billing-db';
 	import { tools, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, ChoiceGroup, Field, Input, UnitInput } from '@crystal-pharm/ui';
+	import { Alert, Button, Card, Field, Input, UnitInput } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 	import ToolCoverageRow from '$lib/components/molecules/ToolCoverageRow.svelte';
+	import GroupBillingFields from '$lib/components/organisms/GroupBillingFields.svelte';
 	import GroupContractPreview from '$lib/components/organisms/GroupContractPreview.svelte';
 	import {
 		coverageModeOptions,
@@ -15,32 +17,18 @@
 	type GroupFormProps = {
 		initialValues: GroupFormValues;
 		catalog: ToolCatalog;
+		flatRateOffers: FlatRateOffer[];
 		fieldErrors?: GroupFormErrors;
 		isCreation: boolean;
 		submitLabel: string;
 		cancelHref: string;
 	};
 
-	let { initialValues, catalog, fieldErrors = {}, isCreation, submitLabel, cancelHref }: GroupFormProps = $props();
+	let { initialValues, catalog, flatRateOffers, fieldErrors = {}, isCreation, submitLabel, cancelHref }: GroupFormProps = $props();
 
 	// Le formulaire part des valeurs reçues puis vit sa vie : la page est rechargée après chaque envoi.
-	const values = $state(untrack(() => structuredClone(initialValues)));
+	let values = $state(untrack(() => structuredClone(initialValues)));
 	const previewCoverages = $derived(toPreviewCoverages(values.coverages));
-
-	const paymentMethodOptions = [
-		{
-			value: 'invoice',
-			label: 'Sur facture',
-			icon: 'receipt' as const,
-			description: 'Actif dès la création. Crystal Pharm facture le groupement chaque mois.'
-		},
-		{
-			value: 'card',
-			label: 'Par carte',
-			icon: 'credit-card' as const,
-			description: 'Le groupement active son contrat en payant depuis son espace.'
-		}
-	];
 
 	function applyModeToEveryTool(mode: CoverageMode): void {
 		for (const coverage of Object.values(values.coverages)) coverage.mode = mode;
@@ -84,23 +72,17 @@
 		</Card>
 
 		<Card>
+			<GroupBillingFields bind:values {flatRateOffers} {fieldErrors} />
+		</Card>
+
+		<Card>
 			<div class="grid gap-4">
 				<div class="grid gap-1">
-					<h2 class="title-2 text-ink">Le contrat</h2>
+					<h2 class="title-2 text-ink">Ce que le groupement prend en charge</h2>
 					<p class="text-small text-ink-muted">
 						Module par module : offert (payé par le groupement), remisé, ou partagé entre le groupement et la pharmacie.
 					</p>
 				</div>
-				<ChoiceGroup
-					name="paymentMethod"
-					legend="Comment le groupement paie"
-					isLegendVisible
-					layout="cards"
-					options={paymentMethodOptions}
-					bind:value={values.paymentMethod}
-				/>
-				{#if fieldErrors.paymentMethod}<p class="text-small font-medium text-danger">{fieldErrors.paymentMethod}</p>{/if}
-
 				<div class="flex flex-wrap items-center gap-2 rounded-md bg-surface-subtle px-3 py-2">
 					<span class="text-small text-ink-muted">Pour tous les modules :</span>
 					{#each coverageModeOptions as option (option.value)}
@@ -161,7 +143,13 @@
 
 	<aside class="lg:sticky lg:top-[72px]">
 		<Card>
-			<GroupContractPreview {catalog} coverages={previewCoverages} />
+			<GroupContractPreview
+				{catalog}
+				coverages={previewCoverages}
+				billingMode={values.billingMode}
+				flatRatePrice={values.flatRatePrice}
+				pharmacyQuota={values.pharmacyQuota}
+			/>
 		</Card>
 	</aside>
 </form>

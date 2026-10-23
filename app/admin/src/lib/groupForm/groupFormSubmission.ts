@@ -11,6 +11,9 @@ export function readGroupFormValues(formData: FormData): GroupFormValues {
 		contactEmail: readText(formData, 'contactEmail'),
 		pharmacyQuota: readText(formData, 'pharmacyQuota'),
 		paymentMethod: readText(formData, 'paymentMethod') === 'card' ? 'card' : ('invoice' satisfies GroupPaymentMethod),
+		billingMode: readText(formData, 'billingMode') === 'flat_rate' ? 'flat_rate' : 'usage',
+		flatRatePrice: readText(formData, 'flatRatePrice'),
+		flatRateOfferId: readText(formData, 'flatRateOfferId'),
 		coverages: Object.fromEntries(
 			toolKeys.map((toolKey) => [toolKey, readCoverage(formData, toolKey, emptyValues.coverages[toolKey])])
 		) as Record<ToolKey, ToolCoverageFormValue>,

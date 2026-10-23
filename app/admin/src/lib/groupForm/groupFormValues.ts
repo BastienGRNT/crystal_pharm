@@ -1,4 +1,12 @@
-import { describeCoverage, toolKeys, type CoverageKind, type GroupPaymentMethod, type ToolCoverage, type ToolKey } from '@crystal-pharm/billing-db/domain';
+import {
+	describeCoverage,
+	toolKeys,
+	type CoverageKind,
+	type GroupBillingMode,
+	type GroupPaymentMethod,
+	type ToolCoverage,
+	type ToolKey
+} from '@crystal-pharm/billing-db/domain';
 
 /** Comment le groupement prend en charge un module, tel que la Platform le choisit. */
 export type CoverageMode = CoverageKind;
@@ -10,6 +18,11 @@ export type GroupFormValues = {
 	contactEmail: string;
 	pharmacyQuota: string;
 	paymentMethod: GroupPaymentMethod;
+	billingMode: GroupBillingMode;
+	/** Au forfait : son prix en euros HT par mois, saisi ou repris d'une offre du catalogue. */
+	flatRatePrice: string;
+	/** L'offre du catalogue choisie ; vide pour un forfait sur mesure. */
+	flatRateOfferId: string;
 	coverages: Record<ToolKey, ToolCoverageFormValue>;
 	/** Seulement à la création : le premier responsable, invité par email. */
 	firstGroupMemberEmail: string;
@@ -20,6 +33,7 @@ export type GroupFormFieldName =
 	| 'contactEmail'
 	| 'pharmacyQuota'
 	| 'paymentMethod'
+	| 'flatRatePrice'
 	| 'firstGroupMemberEmail'
 	| 'form'
 	| ToolKey;
@@ -74,6 +88,9 @@ export function createEmptyGroupFormValues(): GroupFormValues {
 		contactEmail: '',
 		pharmacyQuota: '20',
 		paymentMethod: 'invoice',
+		billingMode: 'usage',
+		flatRatePrice: '',
+		flatRateOfferId: '',
 		coverages: Object.fromEntries(toolKeys.map((toolKey) => [toolKey, toCoverageFormValue(undefined)])) as Record<
 			ToolKey,
 			ToolCoverageFormValue

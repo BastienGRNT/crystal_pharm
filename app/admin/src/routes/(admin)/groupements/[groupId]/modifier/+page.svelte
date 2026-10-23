@@ -20,6 +20,7 @@
 <GroupForm
 	initialValues={form?.values ?? data.values}
 	catalog={data.catalog}
+	flatRateOffers={data.flatRateOffers}
 	fieldErrors={form?.fieldErrors}
 	isCreation={false}
 	submitLabel="Enregistrer"

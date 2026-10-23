@@ -1,5 +1,14 @@
-import { getGroupContract, getToolCatalog, platformBillingAccess, saveGroupContract, validateGroupContractInput, type GroupContractInput } from '@crystal-pharm/billing-db';
-import { toolKeys, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
+import {
+	getGroupContract,
+	getToolCatalog,
+	listFlatRateOffers,
+	platformBillingAccess,
+	saveGroupContract,
+	validateGroupContractInput,
+	type FlatRateOffer,
+	type GroupContractInput
+} from '@crystal-pharm/billing-db';
+import { formatCentsForInput, toolKeys, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
 import { createPharmacyGroup, getPharmacyGroupForPlatform, updatePharmacyGroup } from '@crystal-pharm/group-db';
 import { PharmacyGroupDetailsSchema } from '@crystal-pharm/group-db/domain';
 import { collectFieldErrors } from '@crystal-pharm/pharmacy-db/domain';
@@ -14,14 +23,14 @@ import {
 } from '$lib/groupForm/groupFormValues';
 import { sendGroupMemberInvitation } from './groupMemberInvitationSending.server';
 
-export type GroupFormPageData = { values: GroupFormValues; catalog: ToolCatalog };
+export type GroupFormPageData = { values: GroupFormValues; catalog: ToolCatalog; flatRateOffers: FlatRateOffer[] };
 
 export type GroupFormFailure = { values: GroupFormValues; fieldErrors: GroupFormErrors };
 
 const OptionalEmailSchema = v.union([v.literal(''), v.pipe(v.string(), v.email())]);
 
 export async function loadGroupCreationForm(): Promise<GroupFormPageData> {
-	return { values: createEmptyGroupFormValues(), catalog: await getToolCatalog() };
+	return { values: createEmptyGroupFormValues(), catalog: await getToolCatalog(), flatRateOffers: await listFlatRateOffers() };
 }
 
 export async function loadGroupEditionForm(groupId: string): Promise<(GroupFormPageData & { groupName: string }) | undefined> {
@@ -32,12 +41,16 @@ export async function loadGroupEditionForm(groupId: string): Promise<(GroupFormP
 	return {
 		groupName: group.name,
 		catalog: await getToolCatalog(),
+		flatRateOffers: await listFlatRateOffers(),
 		values: {
 			...emptyValues,
 			name: group.name,
 			contactEmail: group.contactEmail ?? '',
 			pharmacyQuota: String(group.pharmacyQuota),
 			paymentMethod: contract?.paymentMethod ?? 'invoice',
+			billingMode: contract?.billingMode ?? 'usage',
+			flatRatePrice: formatCentsForInput(contract?.flatRateMonthlyPriceCents),
+			flatRateOfferId: contract?.flatRateOfferId ?? '',
 			coverages: Object.fromEntries(
 				toolKeys.map((toolKey) => [
 					toolKey,
@@ -100,6 +113,9 @@ function toGroupDetailsInput(values: GroupFormValues) {
 function toContractInput(values: GroupFormValues): GroupContractInput {
 	return {
 		paymentMethod: values.paymentMethod,
+		billingMode: values.billingMode,
+		flatRatePriceInput: values.flatRatePrice,
+		flatRateOfferId: values.flatRateOfferId,
 		coverageInputs: Object.fromEntries(toolKeys.map((toolKey) => [toolKey, toCoverageInput(values.coverages[toolKey])]))
 	};
 }

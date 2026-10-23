@@ -1,16 +1,27 @@
-import { getToolCatalog, packPriceFieldName, saveToolCatalog, type ToolCatalogFieldName } from '@crystal-pharm/billing-db';
+import {
+	getToolCatalog,
+	listFlatRateOffers,
+	packPriceFieldName,
+	saveFlatRateOffers,
+	saveToolCatalog,
+	type FlatRateOfferInput,
+	type ToolCatalogFieldName
+} from '@crystal-pharm/billing-db';
 import { formatCentsForInput, toolKeys, type ToolCatalog, type ToolKey } from '@crystal-pharm/billing-db/domain';
 import type { FieldErrors } from '@crystal-pharm/pharmacy-db/domain';
 import { fail, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 
 export type CatalogFormValues = { toolPriceInputs: Record<ToolKey, string>; packPriceInput: string };
 
-export type CatalogPageData = { catalog: ToolCatalog; values: CatalogFormValues };
+export type CatalogPageData = { catalog: ToolCatalog; values: CatalogFormValues; flatRateOfferInputs: FlatRateOfferInput[] };
 
-export type CatalogSaveResult = { isSaved: true } | { isSaved: false; values: CatalogFormValues; fieldErrors: FieldErrors<ToolCatalogFieldName> };
+export type CatalogActionResult =
+	| { savedSection: 'prices' | 'flatRateOffers' }
+	| { failedSection: 'prices'; values: CatalogFormValues; fieldErrors: FieldErrors<ToolCatalogFieldName> }
+	| { failedSection: 'flatRateOffers'; flatRateOfferInputs: FlatRateOfferInput[]; failureMessage: string };
 
 export async function loadCatalogPage(): Promise<CatalogPageData> {
-	const catalog = await getToolCatalog();
+	const [catalog, flatRateOffers] = await Promise.all([getToolCatalog(), listFlatRateOffers()]);
 	return {
 		catalog,
 		values: {
@@ -21,12 +32,18 @@ export async function loadCatalogPage(): Promise<CatalogPageData> {
 				])
 			) as Record<ToolKey, string>,
 			packPriceInput: formatCentsForInput(catalog.packMonthlyPriceCents)
-		}
+		},
+		flatRateOfferInputs: flatRateOffers.map((offer) => ({
+			offerId: offer.offerId,
+			label: offer.label,
+			pharmacyQuotaInput: String(offer.pharmacyQuota),
+			priceInput: formatCentsForInput(offer.monthlyPriceCents)
+		}))
 	};
 }
 
 export const catalogPageActions = {
-	default: async ({ request }: RequestEvent): Promise<CatalogSaveResult | ActionFailure<CatalogSaveResult>> => {
+	savePrices: async ({ request }: RequestEvent): Promise<CatalogActionResult | ActionFailure<CatalogActionResult>> => {
 		const formData = await request.formData();
 		const values: CatalogFormValues = {
 			toolPriceInputs: Object.fromEntries(toolKeys.map((toolKey) => [toolKey, String(formData.get(toolKey) ?? '')])) as Record<
@@ -36,7 +53,28 @@ export const catalogPageActions = {
 			packPriceInput: String(formData.get(packPriceFieldName) ?? '')
 		};
 		const catalogSave = await saveToolCatalog(values);
-		if (!catalogSave.isSaved) return fail(400, { isSaved: false, values, fieldErrors: catalogSave.fieldErrors });
-		return { isSaved: true };
+		if (!catalogSave.isSaved) return fail(400, { failedSection: 'prices', values, fieldErrors: catalogSave.fieldErrors });
+		return { savedSection: 'prices' };
+	},
+
+	saveFlatRateOffers: async ({ request }: RequestEvent): Promise<CatalogActionResult | ActionFailure<CatalogActionResult>> => {
+		const formData = await request.formData();
+		const readColumn = (fieldName: string) => formData.getAll(fieldName).map(String);
+		const labels = readColumn('offerLabel');
+		const flatRateOfferInputs = labels.map((label, offerIndex) => ({
+			offerId: readColumn('offerId')[offerIndex] ?? '',
+			label,
+			pharmacyQuotaInput: readColumn('offerQuota')[offerIndex] ?? '',
+			priceInput: readColumn('offerPrice')[offerIndex] ?? ''
+		}));
+		const offersSave = await saveFlatRateOffers(flatRateOfferInputs);
+		if (!offersSave.isSaved) {
+			return fail(400, {
+				failedSection: 'flatRateOffers',
+				flatRateOfferInputs,
+				failureMessage: Object.values(offersSave.fieldErrors)[0] ?? 'Ces offres n’ont pas pu être enregistrées.'
+			});
+		}
+		return { savedSection: 'flatRateOffers' };
 	}
 };

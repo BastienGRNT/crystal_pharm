@@ -1,10 +1,29 @@
 <script lang="ts">
-	import { findTool, formatEuros, quoteTools, toolKeys, type ToolCatalog, type ToolCoverage } from '@crystal-pharm/billing-db/domain';
+	import {
+		computeOverageUnitPrice,
+		findTool,
+		formatEuros,
+		parseEurosToCents,
+		quoteTools,
+		toolKeys,
+		type GroupBillingMode,
+		type ToolCatalog,
+		type ToolCoverage
+	} from '@crystal-pharm/billing-db/domain';
 	import { Icon, Tag } from '@crystal-pharm/ui';
 
-	type GroupContractPreviewProps = { catalog: ToolCatalog; coverages: ToolCoverage[] };
+	type GroupContractPreviewProps = {
+		catalog: ToolCatalog;
+		coverages: ToolCoverage[];
+		billingMode: GroupBillingMode;
+		flatRatePrice: string;
+		pharmacyQuota: string;
+	};
 
-	let { catalog, coverages }: GroupContractPreviewProps = $props();
+	let { catalog, coverages, billingMode, flatRatePrice, pharmacyQuota }: GroupContractPreviewProps = $props();
+
+	const flatRatePriceCents = $derived(parseEurosToCents(flatRatePrice));
+	const quota = $derived(Number(pharmacyQuota));
 
 	// Le cas qui coûte le plus : une pharmacie membre qui prend tous les modules.
 	const everyToolQuote = $derived(quoteTools({ catalog, coverages, selectedToolKeys: toolKeys }));
@@ -14,6 +33,19 @@
 </script>
 
 <div class="grid gap-4">
+	{#if billingMode === 'flat_rate'}
+		<div class="grid gap-1 rounded-md bg-accent-soft p-3">
+			<p class="text-label text-ink-muted">Le groupement paie</p>
+			{#if flatRatePriceCents !== undefined && quota > 0}
+				<p class="body-strong text-ink">{formatEuros(flatRatePriceCents)} HT / mois pour {quota} pharmacies</p>
+				<p class="text-small text-ink-muted">
+					Soit {formatEuros(computeOverageUnitPrice(flatRatePriceCents, quota))} HT par pharmacie, et autant par pharmacie au-delà.
+				</p>
+			{:else}
+				<p class="text-small text-ink-muted">Indiquez le prix du forfait et le quota.</p>
+			{/if}
+		</div>
+	{/if}
 	<div class="grid gap-1">
 		<h2 class="title-2 text-ink">Aperçu, par pharmacie</h2>
 		<p class="text-small text-ink-muted">Pour une pharmacie membre qui prend tous les modules, par mois.</p>
