@@ -9,11 +9,13 @@
 	type SideNavProps = {
 		navigationLinks: readonly NavigationLink[];
 		currentNavigationHref: string | undefined;
+		hrefsNeedingAttention: readonly string[];
 		signedInUser: SignedInUserSummary;
 		onSignOut: () => void;
 	};
 
-	let { navigationLinks, currentNavigationHref, signedInUser, onSignOut }: SideNavProps = $props();
+	let { navigationLinks, currentNavigationHref, hrefsNeedingAttention, signedInUser, onSignOut }: SideNavProps =
+		$props();
 </script>
 
 <nav
@@ -35,6 +37,10 @@
 				<Icon name={navigationLink.icon} size={22} class="text-accent-on-rail" />
 			{/if}
 			{navigationLink.label}
+			{#if hrefsNeedingAttention.includes(navigationLink.href)}
+				<span aria-hidden="true" class="absolute top-1.5 right-3.5 size-2 rounded-full bg-notify ring-2 ring-rail"></span>
+				<span class="sr-only">, à compléter</span>
+			{/if}
 		</a>
 	{/each}
 

@@ -18,6 +18,7 @@ export { default as SegmentedControl } from './molecules/navigation/SegmentedCon
 export type { SegmentedControlOption } from './molecules/navigation/segmentedControl';
 export { default as SelectMenu } from './molecules/fields/pickers/SelectMenu.svelte';
 export type { SelectMenuOption } from './molecules/fields/pickers/selectMenu';
+export { default as SetupScreen } from './organisms/SetupScreen.svelte';
 export { default as ThemeToggle } from './molecules/ThemeToggle.svelte';
 export { default as TimePicker } from './molecules/fields/pickers/TimePicker.svelte';
 export { default as WeekNav } from './molecules/navigation/WeekNav.svelte';
@@ -32,5 +33,9 @@ export type {
 export { default as LoginForm } from './organisms/authentication/LoginForm.svelte';
 export { default as RegisterForm } from './organisms/authentication/RegisterForm.svelte';
 export { default as SidePanel } from './organisms/SidePanel.svelte';
+export { default as StepIndicator } from './molecules/navigation/StepIndicator.svelte';
+export { default as SuggestionInput } from './molecules/fields/pickers/SuggestionInput.svelte';
+export type { SuggestionInputOption } from './molecules/fields/pickers/suggestionInput';
+export { default as Switch } from './atoms/fields/Switch.svelte';
 export type { ModuleKey } from './modules';
 export type { NavigationLink, SignedInUserSummary } from './organisms/shell/navigation';
