@@ -6,6 +6,8 @@
 
 	type AppShellProps = {
 		navigationLinks: readonly NavigationLink[];
+		/** Les pages du compte (réglages, abonnement…) : en accès direct au-dessus de l'avatar, à part des modules. */
+		accountLinks?: readonly NavigationLink[];
 		currentPathname: string;
 		signedInUser: SignedInUserSummary;
 		spaceLabel?: string;
@@ -17,6 +19,7 @@
 
 	let {
 		navigationLinks,
+		accountLinks = [],
 		currentPathname,
 		signedInUser,
 		spaceLabel,
@@ -25,12 +28,13 @@
 		children
 	}: AppShellProps = $props();
 
-	const currentNavigationLink = $derived(findCurrentNavigationLink(navigationLinks, currentPathname));
+	const currentNavigationLink = $derived(findCurrentNavigationLink([...navigationLinks, ...accountLinks], currentPathname));
 </script>
 
 <div class="flex min-h-screen bg-app font-sans text-ink">
 	<SideNav
 		{navigationLinks}
+		{accountLinks}
 		currentNavigationHref={currentNavigationLink?.href}
 		{hrefsNeedingAttention}
 		{signedInUser}

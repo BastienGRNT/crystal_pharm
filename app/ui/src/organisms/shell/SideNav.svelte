@@ -1,26 +1,31 @@
 <script lang="ts">
-	import Avatar from '../../atoms/Avatar.svelte';
 	import Icon from '../../atoms/icons/Icon.svelte';
-	import IconButton from '../../atoms/actions/IconButton.svelte';
 	import LogoMark from '../../atoms/LogoMark.svelte';
-	import ThemeToggle from '../../molecules/ThemeToggle.svelte';
+	import AccountMenu from './AccountMenu.svelte';
 	import type { NavigationLink, SignedInUserSummary } from './navigation';
 
 	type SideNavProps = {
 		navigationLinks: readonly NavigationLink[];
+		accountLinks: readonly NavigationLink[];
 		currentNavigationHref: string | undefined;
 		hrefsNeedingAttention: readonly string[];
 		signedInUser: SignedInUserSummary;
 		onSignOut: () => void;
 	};
 
-	let { navigationLinks, currentNavigationHref, hrefsNeedingAttention, signedInUser, onSignOut }: SideNavProps =
-		$props();
+	let {
+		navigationLinks,
+		accountLinks,
+		currentNavigationHref,
+		hrefsNeedingAttention,
+		signedInUser,
+		onSignOut
+	}: SideNavProps = $props();
 </script>
 
 <nav
 	aria-label="Navigation principale"
-	class="sticky top-0 flex h-screen w-rail flex-none flex-col items-center gap-1 bg-rail py-3"
+	class="sticky top-0 z-30 flex h-screen w-rail flex-none flex-col items-center gap-1 bg-rail py-3"
 >
 	<a href="/" aria-label="Crystal Pharm, accueil" class="mt-0.5 mb-3">
 		<LogoMark />
@@ -46,9 +51,29 @@
 
 	<span class="flex-1"></span>
 
-	<ThemeToggle surface="rail" />
-	<IconButton icon="sign-out" label="Se déconnecter" surface="rail" onclick={onSignOut} />
-	<span class="mt-2" title="{signedInUser.name} · {signedInUser.detail}">
-		<Avatar name={signedInUser.name} surface="rail" />
-	</span>
+	{#if accountLinks.length > 0}
+		<ul class="mb-1 grid justify-items-center gap-1 border-t border-rail-raised px-1.5 pt-2.5">
+			{#each accountLinks as accountLink (accountLink.href)}
+				<li>
+					<a
+						href={accountLink.href}
+						aria-label={accountLink.label}
+						title={accountLink.label}
+						aria-current={accountLink.href === currentNavigationHref ? 'page' : undefined}
+						class="relative grid size-control place-items-center rounded-md text-rail-ink hover:bg-rail-raised hover:text-on-rail aria-[current=page]:bg-rail-raised aria-[current=page]:text-on-rail"
+					>
+						{#if accountLink.icon}
+							<Icon name={accountLink.icon} size={20} />
+						{/if}
+						{#if hrefsNeedingAttention.includes(accountLink.href)}
+							<span aria-hidden="true" class="absolute top-1 right-1 size-2 rounded-full bg-notify ring-2 ring-rail"></span>
+							<span class="sr-only">, à compléter</span>
+						{/if}
+					</a>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+
+	<AccountMenu {signedInUser} {onSignOut} />
 </nav>
