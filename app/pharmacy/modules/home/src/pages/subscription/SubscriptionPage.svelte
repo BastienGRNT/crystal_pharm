@@ -58,6 +58,7 @@
 	coverages={data.coverages}
 	toolCards={data.toolCards}
 	paidToolKeys={data.paidToolKeys}
+	subscription={data.subscription}
 	groupName={data.groupName}
 	highlightedToolKey={requestedToolKey}
 	failureMessage={form?.failureMessage}
@@ -69,13 +70,14 @@
 			<div class="grid gap-1">
 				<h2 class="title-2 text-ink">Votre abonnement</h2>
 				<p class="text-body text-ink-muted">
-					Depuis le {formatDay(data.subscription.startedAt)}.
+					Depuis le {formatDay(data.subscription.startedAt)}, payé {data.subscription.billingPeriod === 'yearly' ? 'à l’année' : 'chaque mois'}.
 					{#if data.subscription.endsAt}
 						Résilié : il s’arrête le {formatLastDayBefore(data.subscription.endsAt)} au soir.
 					{:else}
 						{#if data.upcomingCharge}
 							Prochain prélèvement le <span class="body-strong text-ink">{formatDay(data.upcomingCharge.dueOn)}</span> :
 							<span class="body-strong tabular-nums text-ink">{formatEuros(data.upcomingCharge.totalCents)} TTC</span>
+							pour {data.upcomingCharge.billingPeriod === 'yearly' ? 'un an' : 'un mois'}
 							({formatEuros(data.upcomingCharge.subtotalCents)} HT + {formatEuros(data.upcomingCharge.vatCents)} de TVA), sur votre carte.
 						{:else}
 							Prochaine échéance le {formatDay(data.subscription.currentPeriodEndsAt)} : rien à payer.

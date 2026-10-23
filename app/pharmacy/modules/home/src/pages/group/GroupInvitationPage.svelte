@@ -89,6 +89,13 @@
 								</td>
 							</tr>
 						{/each}
+						{#if data.includedToolLabels.length > 0}
+							<tr class="border-t border-line-soft">
+								<td class="py-2.5 text-ink-muted" colspan="3">
+									{data.includedToolLabels.join(' et ')} : compris dès que vous avez un module.
+								</td>
+							</tr>
+						{/if}
 					</tbody>
 				</table>
 				{#if data.currentMonthlyTotalCents > 0}

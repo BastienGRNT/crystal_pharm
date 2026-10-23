@@ -2,6 +2,7 @@
 	import { findTool, type ToolKey } from '@crystal-pharm/billing-db/domain';
 	import { Alert, Button, Card, Icon, PageHeader } from '@crystal-pharm/ui';
 	import ToolTile from '../../components/molecules/ToolTile.svelte';
+	import { activeToolCardStatuses } from '../../domain/toolCards';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
 	import { groupInvitationPathname, homePathnames } from '../../homePathnames';
 	import type { ToolNavigationLink } from '../../toolNavigation';
@@ -16,7 +17,7 @@
 
 	let { data, toolLinks, searchParams }: ToolsHomePageProps = $props();
 
-	const hasActiveTool = $derived(data.toolCards.some((toolCard) => ['included', 'subscribed', 'ending'].includes(toolCard.status)));
+	const hasActiveTool = $derived(data.toolCards.some((toolCard) => activeToolCardStatuses.includes(toolCard.status)));
 	const toolLabels = (toolKeys: readonly ToolKey[]) => toolKeys.map((toolKey) => findTool(toolKey).label).join(', ');
 	const findToolLink = (toolKey: string) => toolLinks.find((toolLink) => toolLink.toolKey === toolKey);
 	const coveringGroupName = $derived(data.coveringGroup?.isContractActive ? data.coveringGroup.groupName : undefined);

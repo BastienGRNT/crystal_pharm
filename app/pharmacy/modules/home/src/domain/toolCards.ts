@@ -1,11 +1,14 @@
 import type { TenantToolAccess } from '@crystal-pharm/billing-db';
-import { findTool, summarizeCoverage, tools, type ToolKey } from '@crystal-pharm/billing-db/domain';
+import { describeInclusion, findTool, summarizeCoverage, tools, type ToolKey } from '@crystal-pharm/billing-db/domain';
 
 /**
  * `included` : offert (groupement ou gratuit) · `subscribed` : dans l'abonnement ·
- * `ending` : retiré, actif jusqu'à `endsAt` · `available` : à activer · `unavailable` : pas encore en vente.
+ * `ending` : retiré, actif jusqu'à `endsAt` · `available` : à activer · `unavailable` : pas encore en vente ·
+ * `comes-with` : compris avec un autre module actif · `needs-another` : vient avec un module pas encore actif.
  */
-export type ToolCardStatus = 'included' | 'subscribed' | 'ending' | 'available' | 'unavailable';
+export type ToolCardStatus = 'included' | 'subscribed' | 'ending' | 'available' | 'unavailable' | 'comes-with' | 'needs-another';
+
+export const activeToolCardStatuses: readonly ToolCardStatus[] = ['included', 'subscribed', 'ending', 'comes-with'];
 
 export type ToolCard = {
 	toolKey: ToolKey;
@@ -17,6 +20,8 @@ export type ToolCard = {
 	listPriceCents: number;
 	/** « Offert », « −20 % »… : ce que prévoit le contrat du groupement. */
 	coverageSummary: string | undefined;
+	/** Pour un module qui vient avec un autre : « Compris avec Site internet ou Planning ». */
+	inclusionWording: string | undefined;
 	endsAt: Date | undefined;
 };
 
@@ -34,6 +39,7 @@ export function describeToolCards(toolAccess: TenantToolAccess): ToolCard[] {
 			pharmacyPriceCents: toolQuote?.pharmacyPriceCents ?? 0,
 			listPriceCents: toolQuote?.listPriceCents ?? 0,
 			coverageSummary: summarizeCoverage(coverage),
+			inclusionWording: toolQuote?.isIncludedWithAnotherTool ? describeInclusion(tool.toolKey) : undefined,
 			endsAt: subscribedTool?.endsAt ?? toolAccess.subscription?.endsAt
 		};
 	});
@@ -45,6 +51,7 @@ function describeStatus(
 	subscriptionEndsAt: Date | undefined
 ): ToolCardStatus {
 	if (!toolQuote) return 'unavailable';
+	if (toolQuote.isIncludedWithAnotherTool) return toolQuote.isActive ? 'comes-with' : 'needs-another';
 	if (toolQuote.isIncluded) return 'included';
 	if (!subscribedTool) return 'available';
 	return subscribedTool.endsAt || subscriptionEndsAt ? 'ending' : 'subscribed';

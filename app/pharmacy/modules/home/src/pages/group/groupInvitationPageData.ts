@@ -25,6 +25,8 @@ export type GroupInvitationPageData = {
 	/** Le lien a été ouvert par un compte d'un autre email que celui invité. */
 	isAddressedToAnotherEmail: boolean;
 	offerRows: GroupOfferRow[];
+	/** Rendez-vous, Ordonnances : compris dès qu'un module est actif. */
+	includedToolLabels: string[];
 	currentMonthlyTotalCents: number;
 	joinedMonthlyTotalCents: number;
 	toolKeysNoLongerPaid: ToolKey[];

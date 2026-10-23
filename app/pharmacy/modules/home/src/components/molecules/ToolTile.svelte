@@ -2,8 +2,8 @@
 	import { formatEuros } from '@crystal-pharm/billing-db/domain';
 	import { Icon, Tag, type IconName, type ModuleKey } from '@crystal-pharm/ui';
 	import { formatLastDayBefore } from '../../dateFormats';
-	import type { ToolCard } from '../../domain/toolCards';
-	import { subscriptionPathnameHighlighting } from '../../homePathnames';
+	import { activeToolCardStatuses, type ToolCard } from '../../domain/toolCards';
+	import { homePathnames, subscriptionPathnameHighlighting } from '../../homePathnames';
 
 	type ToolTileProps = {
 		toolCard: ToolCard;
@@ -15,8 +15,16 @@
 
 	let { toolCard, href, icon, module, groupName }: ToolTileProps = $props();
 
-	const isActive = $derived(toolCard.status === 'included' || toolCard.status === 'subscribed' || toolCard.status === 'ending');
-	const tileHref = $derived(isActive ? href : toolCard.status === 'available' ? subscriptionPathnameHighlighting(toolCard.toolKey) : undefined);
+	const isActive = $derived(activeToolCardStatuses.includes(toolCard.status));
+	const tileHref = $derived(
+		isActive
+			? href
+			: toolCard.status === 'available'
+				? subscriptionPathnameHighlighting(toolCard.toolKey)
+				: toolCard.status === 'needs-another'
+					? `${homePathnames.subscription}#modules`
+					: undefined
+	);
 </script>
 
 <svelte:element
@@ -37,6 +45,8 @@
 			<Tag tone="success">{groupName ? `Offert par ${groupName}` : 'Inclus'}</Tag>
 		{:else if toolCard.status === 'subscribed'}
 			<Tag tone="success">Actif</Tag>
+		{:else if toolCard.status === 'comes-with'}
+			<Tag tone="success">Compris</Tag>
 		{:else if toolCard.status === 'ending' && toolCard.endsAt}
 			<Tag tone="warning">Jusqu’au {formatLastDayBefore(toolCard.endsAt)}</Tag>
 		{:else if toolCard.status === 'unavailable'}
@@ -50,6 +60,13 @@
 	{#if isActive}
 		<span class="inline-flex items-center gap-1 text-[13px] font-semibold text-accent-text">
 			Ouvrir <Icon name="arrow-right" size={14} />
+		</span>
+	{:else if toolCard.status === 'needs-another'}
+		<span class="flex flex-wrap items-center justify-between gap-2">
+			<span class="text-small text-ink-muted">{toolCard.inclusionWording}</span>
+			<span class="inline-flex items-center gap-1 text-[13px] font-semibold text-accent-text">
+				Voir <Icon name="arrow-right" size={14} />
+			</span>
 		</span>
 	{:else if toolCard.status === 'available'}
 		<span class="flex flex-wrap items-center justify-between gap-2">

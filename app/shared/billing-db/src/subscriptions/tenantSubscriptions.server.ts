@@ -10,7 +10,7 @@ import type { UpcomingCharge } from '../overview/groupBilling.server';
 import type { BillingPeriod, GroupContractStatus, InvoiceLine } from '../database/billingTables';
 import { formatEuros } from '../money/euroAmount';
 import { openCheckout } from '../payments/checkoutSessions.server';
-import { priceForPeriod, spreadLinesOverPeriod } from '../pricing/billingPeriodPricing';
+import { computeAmountDueToday, priceForPeriod, spreadLinesOverPeriod } from '../pricing/billingPeriodPricing';
 import { quoteTools, type ToolCatalog, type ToolCoverage, type ToolsQuote } from '../pricing/toolPricing';
 import { findTool, type ToolKey } from '../tools/tools';
 import { computeMoneyBackGuaranteeEnd, computePeriodEnd, computePeriodStart } from './subscriptionPeriod';
@@ -281,18 +281,30 @@ function describeAmountDueLines(request: AmountDueRequest): InvoiceLine[] {
 				: [];
 		return [...describeMonthlyToolLines(desiredQuote, request.desiredToolKeys), ...alreadyPaidLines];
 	}
-	// Payé à l'année : l'ajout se paie au prorata des jours qui restent.
-	const monthlyDifferenceCents = Math.max(0, desiredQuote.pharmacyMonthlyTotalCents - currentQuote.pharmacyMonthlyTotalCents);
-	const periodLength = subscription.currentPeriodEndsAt.getTime() - subscription.currentPeriodStartedAt.getTime();
-	const remainingLength = Math.max(0, subscription.currentPeriodEndsAt.getTime() - request.now.getTime());
-	const amountCents = Math.round(
-		(priceForPeriod(monthlyDifferenceCents, 'yearly', request.annualFreeMonths) * remainingLength) / periodLength
-	);
+	const amountCents = computeAmountDueToday({
+		currentPeriod: {
+			billingPeriod: subscription.billingPeriod,
+			startedAt: subscription.currentPeriodStartedAt,
+			endsAt: subscription.currentPeriodEndsAt
+		},
+		requestedBillingPeriod: request.requestedBillingPeriod,
+		currentMonthlyCents: currentQuote.pharmacyMonthlyTotalCents,
+		desiredMonthlyCents: desiredQuote.pharmacyMonthlyTotalCents,
+		annualFreeMonths: request.annualFreeMonths,
+		now: request.now
+	});
 	const addedLabels = request.addedToolKeys.map((toolKey) => findTool(toolKey).label).join(', ');
 	return [{ label: `Ajout de ${addedLabels}, au prorata jusqu’à la fin de votre année`, amountCents }];
 }
 
+/** Un mois, module par module ; au prix du pack, une seule ligne (jamais de prix répartis sur une facture). */
 export function describeMonthlyToolLines(quote: ToolsQuote, toolKeys: readonly ToolKey[]): InvoiceLine[] {
+	if (quote.isPackApplied) {
+		const packLabels = quote.toolQuotes
+			.filter((toolQuote) => !toolQuote.isIncludedWithAnotherTool && toolQuote.listPriceCents > 0)
+			.map((toolQuote) => findTool(toolQuote.toolKey).label);
+		return [{ label: `Pack ${packLabels.join(' + ')}`, amountCents: quote.pharmacyMonthlyTotalCents }];
+	}
 	return quote.toolQuotes
 		.filter((toolQuote) => toolKeys.includes(toolQuote.toolKey) && toolQuote.pharmacyPriceCents > 0)
 		.map((toolQuote) => ({ label: `Module ${findTool(toolQuote.toolKey).label}`, amountCents: toolQuote.pharmacyPriceCents }));

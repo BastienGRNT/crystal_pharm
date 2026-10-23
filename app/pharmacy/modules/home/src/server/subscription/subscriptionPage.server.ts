@@ -35,6 +35,9 @@ export async function loadSubscriptionPage({
 			: (subscription?.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey) ?? []),
 		subscription: subscription && {
 			startedAt: subscription.startedAt,
+			billingPeriod: subscription.billingPeriod,
+			nextBillingPeriod: subscription.nextBillingPeriod,
+			currentPeriodStartedAt: subscription.currentPeriodStartedAt,
 			currentPeriodEndsAt: subscription.currentPeriodEndsAt,
 			endsAt: subscription.endsAt,
 			moneyBackGuaranteeEndsAt: subscription.moneyBackGuaranteeEndsAt,
@@ -49,11 +52,10 @@ export async function loadSubscriptionPage({
 export const subscriptionPageActions = {
 	selectTools: async ({ locals, request }: RequestEvent): Promise<ActionFailure<SubscriptionActionFailure>> => {
 		const tenantId = await requireActiveTenantId(locals.user);
-		const requestedToolKeys = (await request.formData())
-			.getAll('toolKeys')
-			.map(String)
-			.filter(isToolKey);
-		const selection = await requestToolSelection(tenantId, requestedToolKeys, homePathnames.subscription);
+		const formData = await request.formData();
+		const requestedToolKeys = formData.getAll('toolKeys').map(String).filter(isToolKey);
+		const requestedBillingPeriod = formData.get('billingPeriod') === 'yearly' ? 'yearly' : 'monthly';
+		const selection = await requestToolSelection(tenantId, requestedToolKeys, homePathnames.subscription, requestedBillingPeriod);
 		if (selection.outcome === 'refused') return fail(400, { failureMessage: selection.failureMessage });
 		if (selection.outcome === 'checkout') redirect(303, selection.checkoutLocation);
 		redirect(303, `${homePathnames.subscription}?modifie=1`);

@@ -68,16 +68,21 @@ export async function loadGroupInvitationPage({ locals, url }: InvitationEvent &
 		status: invitation.status,
 		expiresAt: invitation.expiresAt,
 		isAddressedToAnotherEmail: invitation.email !== locals.user?.email.toLowerCase(),
-		offerRows: preview.joinedQuote.toolQuotes.map((toolQuote) => ({
-			toolKey: toolQuote.toolKey,
-			label: findTool(toolQuote.toolKey).label,
-			isActiveToday: toolAccess.accessibleToolKeys.includes(toolQuote.toolKey),
-			listPriceCents: toolQuote.listPriceCents,
-			pharmacyPriceCents: toolQuote.pharmacyPriceCents,
-			isIncludedWithGroup: toolQuote.isIncluded,
-			coverageKind: toolQuote.coverageKind,
-			coverageSummary: describeOfferCoverage(toolQuote)
-		})),
+		offerRows: preview.joinedQuote.toolQuotes
+			.filter((toolQuote) => !toolQuote.isIncludedWithAnotherTool)
+			.map((toolQuote) => ({
+				toolKey: toolQuote.toolKey,
+				label: findTool(toolQuote.toolKey).label,
+				isActiveToday: toolAccess.accessibleToolKeys.includes(toolQuote.toolKey),
+				listPriceCents: toolQuote.listPriceCents,
+				pharmacyPriceCents: toolQuote.pharmacyPriceCents,
+				isIncludedWithGroup: toolQuote.isIncluded,
+				coverageKind: toolQuote.coverageKind,
+				coverageSummary: describeOfferCoverage(toolQuote)
+			})),
+		includedToolLabels: preview.joinedQuote.toolQuotes
+			.filter((toolQuote) => toolQuote.isIncludedWithAnotherTool)
+			.map((toolQuote) => findTool(toolQuote.toolKey).label),
 		currentMonthlyTotalCents: preview.currentPharmacyMonthlyTotalCents,
 		joinedMonthlyTotalCents: preview.joinedQuote.pharmacyMonthlyTotalCents,
 		toolKeysNoLongerPaid: preview.toolKeysNoLongerPaid,

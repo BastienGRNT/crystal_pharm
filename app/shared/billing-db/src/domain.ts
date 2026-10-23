@@ -28,10 +28,12 @@ export {
 	type ToolPayer
 } from './pricing/groupContractTerms';
 export {
+	computeAmountDueToday,
 	countBilledMonths,
 	monthlyEquivalentOfYearlyPrice,
 	priceForPeriod,
-	spreadLinesOverPeriod
+	spreadLinesOverPeriod,
+	type CurrentPeriod
 } from './pricing/billingPeriodPricing';
 export {
 	computeCurrentPeriodEnd,

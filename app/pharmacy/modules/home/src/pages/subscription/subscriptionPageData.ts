@@ -1,9 +1,13 @@
 import type { UpcomingCharge } from '@crystal-pharm/billing-db';
-import type { InvoiceRow, ToolCatalog, ToolCoverage, ToolKey } from '@crystal-pharm/billing-db/domain';
+import type { BillingPeriod, InvoiceRow, ToolCatalog, ToolCoverage, ToolKey } from '@crystal-pharm/billing-db/domain';
 import type { ToolCard } from '../../domain/toolCards';
 
 export type SubscriptionSummary = {
 	startedAt: Date;
+	billingPeriod: BillingPeriod;
+	/** Un changement de période demandé, appliqué au prochain renouvellement. */
+	nextBillingPeriod: BillingPeriod | undefined;
+	currentPeriodStartedAt: Date;
 	currentPeriodEndsAt: Date;
 	/** Résilié : il s'arrête à cette date. */
 	endsAt: Date | undefined;

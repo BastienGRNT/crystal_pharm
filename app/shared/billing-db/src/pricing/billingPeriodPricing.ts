@@ -36,3 +36,28 @@ export function spreadLinesOverPeriod(
 		{ label: `Paiement à l’année : ${annualFreeMonths} mois offerts`, amountCents: -monthlyTotalCents * annualFreeMonths }
 	];
 }
+
+/** La période en cours d'un abonnement, ce qu'il faut pour savoir ce qu'un ajout coûte aujourd'hui. */
+export type CurrentPeriod = { billingPeriod: BillingPeriod; startedAt: Date; endsAt: Date };
+
+/**
+ * Ce que coûte aujourd'hui (HT) le passage d'un total mensuel à un autre : la
+ * première période d'un nouvel abonnement, la différence du mois en cours, ou
+ * celle de l'année en cours au prorata des jours qui restent.
+ */
+export function computeAmountDueToday(request: {
+	currentPeriod: CurrentPeriod | undefined;
+	requestedBillingPeriod: BillingPeriod;
+	currentMonthlyCents: number;
+	desiredMonthlyCents: number;
+	annualFreeMonths: number;
+	now: Date;
+}): number {
+	const { currentPeriod } = request;
+	if (!currentPeriod) return priceForPeriod(request.desiredMonthlyCents, request.requestedBillingPeriod, request.annualFreeMonths);
+	const monthlyDifferenceCents = Math.max(0, request.desiredMonthlyCents - request.currentMonthlyCents);
+	if (currentPeriod.billingPeriod === 'monthly') return monthlyDifferenceCents;
+	const periodLength = currentPeriod.endsAt.getTime() - currentPeriod.startedAt.getTime();
+	const remainingLength = Math.max(0, currentPeriod.endsAt.getTime() - request.now.getTime());
+	return Math.round((priceForPeriod(monthlyDifferenceCents, 'yearly', request.annualFreeMonths) * remainingLength) / periodLength);
+}
