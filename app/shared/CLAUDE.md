@@ -84,8 +84,12 @@ lui.
 ## `billing-db` — les abonnements
 
 - Le schéma `billing` : le prix mensuel de chaque Tool et du pack « tous les
-  Tools », les GroupContracts (prise en charge Tool par Tool, mode de
-  paiement), les Subscriptions des Tenants, les paiements.
+  Tools », la grille des forfaits de groupement, les GroupContracts (prise en
+  charge Tool par Tool, mode de paiement, facturation), les Subscriptions des
+  Tenants, les paiements et les factures.
+- Tous les prix sont **hors taxes** (vente entre professionnels) : la TVA
+  s'ajoute sur la facture et sur le paiement (`addVat`). Une interface écrit
+  toujours « HT » ou « TTC » à côté d'un montant.
 - Les Tools sont une liste écrite **une seule fois** (`src/tools/`) ; tout le
   reste (prix, contrats, accès, menu) se déduit de leur `toolKey`. Ajouter un
   Tool = l'ajouter à cette liste, puis lui donner un prix dans `admin`. Un
@@ -95,8 +99,21 @@ lui.
   par le serveur et par le navigateur (l'aperçu en direct) : part de la
   pharmacie = prix × (1 − remise) × (1 − part du groupement). Un Tool est
   accessible si cette part vaut 0 ou si le Tenant y est abonné.
+- Un PharmacyGroup paie à l'usage (la somme de ses parts, pharmacie par
+  pharmacie) ou au forfait (une offre de la grille, ou sur mesure) : au-delà
+  du quota, chaque pharmacie coûte forfait ÷ quota. Une seule fonction pure
+  (`computeGroupMonthlyCharge`).
 - Le paiement passe par l'interface `PaymentProvider` : le faux prestataire en
   dev (une page de paiement de test), Stripe plus tard, sans autre changement.
+- Chaque paiement et chaque renouvellement émet une facture : numérotation
+  continue par année, sans trou (`CP-2026-00017`, avoirs compris), client figé
+  au moment de l'émission, jamais modifiée ensuite — seul son statut change
+  (payée, à régler, remboursée). Un remboursement émet un avoir qui l'annule.
+  Les mentions de l'émetteur viennent de l'environnement (`INVOICE_ISSUER_*`).
+- Renouvellement : chaque Subscription et chaque GroupContract garde la date
+  jusqu'où il est facturé (`billed_until`) ; `runDueBilling` facture ce qui
+  est échu (prélevé par carte, ou « à régler » par virement). En dev, l'outil
+  de dev le lance (« Passer au mois suivant ») ; en prod, une tâche planifiée.
 - Satisfait ou remboursé : une Subscription résiliée dans ses 30 premiers
   jours est remboursée.
 
