@@ -11,7 +11,7 @@ import {
 	saveToolCatalog,
 	type GroupContractInput
 } from '@crystal-pharm/billing-db';
-import type { ToolKey } from '@crystal-pharm/billing-db/domain';
+import type { BillingPeriod, ToolKey } from '@crystal-pharm/billing-db/domain';
 import { clearDevelopmentOutbox, composeGroupMemberInvitationEmail, composePharmacyInvitationEmail, sendEmail } from '@crystal-pharm/email';
 import {
 	acceptGroupMemberInvitation,
@@ -58,17 +58,30 @@ function demoPharmacyOf(personaKey: string, contactDetails: Omit<PharmacyContact
 	};
 }
 
-const pharmaPlusCoverages: GroupContractInput['coverageInputs'] = {
-	site: { discountPercent: '0', groupSharePercent: '100' },
-	planning: { discountPercent: '0', groupSharePercent: '100' },
-	booking: { discountPercent: '20', groupSharePercent: '0' }
+// Pharma+ : le site offert, le planning à −20 % pour ses pharmacies ; facturé à l'usage, chaque mois, sur facture.
+const pharmaPlusContract: GroupContractInput = {
+	paymentMethod: 'invoice',
+	billingMode: 'usage',
+	flatRatePriceInput: '',
+	flatRateOfferId: '',
+	billingPeriod: 'monthly',
+	coverageInputs: {
+		site: { discountPercent: '0', groupSharePercent: '100' },
+		planning: { discountPercent: '20', groupSharePercent: '0' }
+	}
 };
 
-const reseauSanteCoverages: GroupContractInput['coverageInputs'] = {
-	site: { discountPercent: '15', groupSharePercent: '0' },
-	booking: { discountPercent: '15', groupSharePercent: '0' },
-	prescriptions: { discountPercent: '15', groupSharePercent: '0' },
-	planning: { discountPercent: '0', groupSharePercent: '50' }
+// Réseau Santé : tout offert, au forfait de 10 pharmacies, payé à l'année par carte (pas encore activé).
+const reseauSanteContract: GroupContractInput = {
+	paymentMethod: 'card',
+	billingMode: 'flat_rate',
+	flatRatePriceInput: '150',
+	flatRateOfferId: '',
+	billingPeriod: 'yearly',
+	coverageInputs: {
+		site: { discountPercent: '0', groupSharePercent: '100' },
+		planning: { discountPercent: '0', groupSharePercent: '100' }
+	}
 };
 
 /** Crée les démos si elles n'existent pas encore (au premier clic sur un compte de démo). */
@@ -115,8 +128,8 @@ async function seedDemoData(): Promise<void> {
 	const fillerTenantIds = [];
 	for (const pharmacy of fillerPharmacies()) fillerTenantIds.push(await createDemoPharmacy(pharmacy));
 
-	const pharmaPlusId = await createDemoGroup(pharmaPlusName, 20, { paymentMethod: 'invoice', billingMode: 'usage', flatRatePriceInput: '', flatRateOfferId: '', coverageInputs: pharmaPlusCoverages }, 'pharmaplus');
-	const reseauSanteId = await createDemoGroup(reseauSanteName, 10, { paymentMethod: 'card', billingMode: 'flat_rate', flatRatePriceInput: '150', flatRateOfferId: '', coverageInputs: reseauSanteCoverages }, 'reseau');
+	const pharmaPlusId = await createDemoGroup(pharmaPlusName, 20, pharmaPlusContract, 'pharmaplus');
+	const reseauSanteId = await createDemoGroup(reseauSanteName, 10, reseauSanteContract, 'reseau');
 
 	await joinGroup(pharmaPlusId, demoEmail('membre'), requireTenantId(tenantIdsByPersonaKey, 'membre'));
 	for (const [fillerIndex, pharmacy] of fillerPharmacies().entries()) {
@@ -125,14 +138,15 @@ async function seedDemoData(): Promise<void> {
 	await invitePharmacyByEmail(pharmaPlusId, demoEmail('invitee'), 'Pharmacie des Tilleuls');
 	await inviteGroupMemberByEmail(reseauSanteId, demoEmail('responsable'));
 
-	await subscribe(requireTenantId(tenantIdsByPersonaKey, 'abonnee'), ['site', 'booking']);
-	await subscribe(requireTenantId(tenantIdsByPersonaKey, 'membre'), ['booking']);
+	await subscribe(requireTenantId(tenantIdsByPersonaKey, 'abonnee'), ['site'], 'yearly');
+	await subscribe(requireTenantId(tenantIdsByPersonaKey, 'membre'), ['planning'], 'monthly');
 }
 
 async function seedCatalog(): Promise<void> {
 	await saveToolCatalog({
-		toolPriceInputs: { site: '29', booking: '39', prescriptions: '29', planning: '19' },
-		packPriceInput: '99'
+		toolPriceInputs: { site: '29', planning: '19' },
+		packPriceInput: '39',
+		annualFreeMonthsInput: '2'
 	});
 	await saveFlatRateOffers([
 		{ offerId: '', label: 'Réseau 10', pharmacyQuotaInput: '10', priceInput: '150' },
@@ -233,8 +247,8 @@ async function inviteGroupMemberByEmail(groupId: string, email: string): Promise
 	);
 }
 
-async function subscribe(tenantId: string, toolKeys: ToolKey[]): Promise<void> {
-	const selection = await requestToolSelection(tenantId, toolKeys, '/abonnement');
+async function subscribe(tenantId: string, toolKeys: ToolKey[], billingPeriod: BillingPeriod): Promise<void> {
+	const selection = await requestToolSelection(tenantId, toolKeys, '/abonnement', billingPeriod);
 	if (selection.outcome !== 'checkout') return;
 	const checkoutId = selection.checkoutLocation.split('/').at(-1) ?? '';
 	await completeCheckout({ tenantId }, checkoutId, 'paid');

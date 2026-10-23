@@ -40,7 +40,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		personaKey: 'abonnee',
 		space: 'pharmacy',
 		label: 'Pharmacie de la Gare · abonnée',
-		description: 'Abonnée seule à Site et Rendez-vous, dans ses 30 jours.',
+		description: 'Abonnée seule au site, payé à l’année, dans ses 30 jours.',
 		email: demoEmail('abonnee'),
 		firstName: 'Antoine',
 		lastName: 'Bonnet'
@@ -49,7 +49,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		personaKey: 'membre',
 		space: 'pharmacy',
 		label: 'Pharmacie du Port · Pharma+',
-		description: 'Membre de Pharma+ : Site et Planning offerts, Rendez-vous à −20 %.',
+		description: 'Membre de Pharma+ : site offert, planning à −20 %.',
 		email: demoEmail('membre'),
 		firstName: 'Marie',
 		lastName: 'Lefèvre'
@@ -76,7 +76,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		personaKey: 'reseau',
 		space: 'group',
 		label: 'Réseau Santé · forfait, par carte',
-		description: 'Forfait 10 pharmacies à 150 € HT / mois, à activer par carte.',
+		description: 'Tout offert, forfait 10 pharmacies à 150 € HT / mois, payé à l’année par carte, à activer.',
 		email: demoEmail('reseau'),
 		firstName: 'Sophie',
 		lastName: 'Roux'
