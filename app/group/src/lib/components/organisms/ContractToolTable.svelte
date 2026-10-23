@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {
 		describeGroupContractTerms,
-		findTool,
+		describeIncludedTools,
 		formatEuros,
 		type GroupBillingMode,
 		type ToolCatalog,
@@ -26,7 +26,12 @@
 	{/snippet}
 	{#each terms.toolTerms as toolTerms (toolTerms.toolKey)}
 		<tr>
-			<td class="body-strong">{toolTerms.label}</td>
+			<td>
+				<span class="body-strong">{toolTerms.label}</span>
+				{#if describeIncludedTools(toolTerms.toolKey)}
+					<br /><span class="text-small text-ink-muted">{describeIncludedTools(toolTerms.toolKey)}</span>
+				{/if}
+			</td>
 			<td class="text-right tabular-nums text-ink-muted">{formatEuros(toolTerms.listPriceCents)}</td>
 			<td class="text-right">
 				{#if toolTerms.payer === 'group'}
@@ -43,9 +48,4 @@
 			{#if showsGroupPrice}<td class="text-right tabular-nums">{formatEuros(toolTerms.groupPriceCents)}</td>{/if}
 		</tr>
 	{/each}
-	<tr>
-		<td class="text-ink-muted" colspan={showsGroupPrice ? 4 : 3}>
-			{terms.includedToolKeys.map((toolKey) => findTool(toolKey).label).join(' et ')} : compris dès qu’une pharmacie a un module.
-		</td>
-	</tr>
 </DataTable>
