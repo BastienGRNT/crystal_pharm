@@ -135,6 +135,10 @@ importers:
         version: 6.0.3
 
   tools/modules/home:
+    dependencies:
+      '@crystal-pharm/ui':
+        specifier: workspace:*
+        version: link:../../ui
     devDependencies:
       svelte:
         specifier: ^5.56.1

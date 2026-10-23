@@ -7,6 +7,7 @@ export { default as TimePicker } from './molecules/TimePicker.svelte';
 export { default as PageHeader } from './molecules/PageHeader.svelte';
 export { default as SegmentedControl } from './molecules/SegmentedControl.svelte';
 export type { SegmentedControlOption } from './molecules/segmentedControl';
+export { default as ToolCard } from './molecules/ToolCard.svelte';
 export { default as WeekNav } from './molecules/WeekNav.svelte';
 export { default as AppShell } from './organisms/AppShell.svelte';
 export { default as PlanningGrid } from './organisms/PlanningGrid.svelte';
