@@ -43,6 +43,13 @@
       "when": 1792759272279,
       "tag": "0005_stop_selling_tools_included_with_another",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792797610848,
+      "tag": "0006_record_who_accepted_the_terms",
+      "breakpoints": true
     }
   ]
 }

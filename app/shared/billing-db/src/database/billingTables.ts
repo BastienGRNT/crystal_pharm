@@ -329,3 +329,31 @@ export const invoiceSequences = billingSchema.table(
 	},
 	() => [pgPolicy('invoice_sequences_of_platform', { for: 'all', using: isPlatform, withCheck: isPlatform })]
 );
+
+/** La preuve qu'une pharmacie a accepté les conditions (de vente, de traitement des données) : qui, quand, quelle version. Jamais modifiée. */
+export const termsAcceptances = billingSchema.table(
+	'terms_acceptances',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id')
+			.notNull()
+			.references(() => tenants.id, { onDelete: 'cascade' }),
+		termsVersion: text('terms_version').notNull(),
+		/** Le compte, et son nom et son email au moment d'accepter : la preuve survit à leur changement. */
+		acceptedByUserId: text('accepted_by_user_id').notNull(),
+		acceptedByName: text('accepted_by_name').notNull(),
+		acceptedByEmail: text('accepted_by_email').notNull(),
+		acceptedAt: timestampWithTimeZone('accepted_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('terms_acceptances_tenant_id_index').on(table.tenantId, table.termsVersion),
+		pgPolicy('terms_acceptances_readable_by_active_tenant', {
+			for: 'select',
+			using: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
+		}),
+		pgPolicy('terms_acceptances_recorded_by_active_tenant', {
+			for: 'insert',
+			withCheck: sql`tenant_id = ${activeTenantId}`
+		})
+	]
+);

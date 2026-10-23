@@ -1,3 +1,4 @@
+import type { AuthenticatedUser } from '@crystal-pharm/auth/toolkit';
 import { findCoveringGroupOfTenant } from '@crystal-pharm/group-db';
 import { and, desc, eq, gt, gte, isNull, or } from 'drizzle-orm';
 import { readToolCatalog } from '../catalog/toolCatalog.server';
@@ -13,6 +14,7 @@ import { openCheckout } from '../payments/checkoutSessions.server';
 import { computeAmountDueToday, priceForPeriod, spreadLinesOverPeriod } from '../pricing/billingPeriodPricing';
 import { quoteTools, type ToolCatalog, type ToolCoverage, type ToolsQuote } from '../pricing/toolPricing';
 import { findTool, type ToolKey } from '../tools/tools';
+import { readCurrentTermsAcceptance, recordCurrentTermsAcceptance } from '../terms/termsAcceptances.server';
 import { computeMoneyBackGuaranteeEnd, computePeriodEnd, computePeriodStart } from './subscriptionPeriod';
 
 export type SubscribedTool = {
@@ -107,12 +109,16 @@ export async function canTenantUseTool(tenantId: string, toolKey: ToolKey): Prom
  * période en cours (le mois entier, ou l'année au prorata des jours) ; un Tool
  * retiré reste actif jusqu'à la fin de la période payée ; un changement de
  * période s'applique au prochain renouvellement.
+ *
+ * Ajouter un Tool exige que la pharmacie ait accepté la version en vigueur des
+ * conditions : déjà, ou maintenant (`termsAcceptedBy`, la personne qui coche).
  */
 export async function requestToolSelection(
 	tenantId: string,
 	requestedToolKeys: readonly ToolKey[],
 	returnPathname: string,
-	requestedBillingPeriod: BillingPeriod = 'monthly'
+	requestedBillingPeriod: BillingPeriod = 'monthly',
+	termsAcceptedBy?: AuthenticatedUser
 ): Promise<ToolSelectionRequest> {
 	return runWithBillingAccess({ tenantId }, async (transaction) => {
 		const now = new Date();
@@ -120,6 +126,13 @@ export async function requestToolSelection(
 		const desiredToolKeys = keepToolsToPayFor(toolAccess, requestedToolKeys);
 		const subscribedToolKeys = toolAccess.subscription?.tools.map((subscribedTool) => subscribedTool.toolKey) ?? [];
 		const addedToolKeys = desiredToolKeys.filter((toolKey) => !subscribedToolKeys.includes(toolKey));
+
+		if (addedToolKeys.length > 0 && !(await readCurrentTermsAcceptance(transaction, tenantId))) {
+			if (!termsAcceptedBy) {
+				return { outcome: 'refused', failureMessage: 'Acceptez les conditions générales de vente pour activer vos modules.' };
+			}
+			await recordCurrentTermsAcceptance(transaction, tenantId, termsAcceptedBy, now);
+		}
 
 		const coverages = toolAccess.coveringGroup?.coverages ?? [];
 		const desiredQuote = quoteTools({ catalog: toolAccess.catalog, coverages, selectedToolKeys: desiredToolKeys });

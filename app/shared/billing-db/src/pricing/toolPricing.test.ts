@@ -36,10 +36,11 @@ describe('quoteTools', () => {
 		expect(quote.pharmacyMonthlyTotalCents).toBe(2900);
 	});
 
-	it('donne aussi Rendez-vous et Ordonnances avec le planning seul', () => {
+	it('ne donne pas Rendez-vous et Ordonnances avec le planning seul : les patients passent par le site', () => {
 		const quote = quoteTools({ catalog, coverages: [], selectedToolKeys: ['planning'] });
 
-		expect(quoteOf('booking', quote)?.isActive).toBe(true);
+		expect(quoteOf('booking', quote)?.isActive).toBe(false);
+		expect(quoteOf('prescriptions', quote)?.isActive).toBe(false);
 	});
 
 	it('ne vend jamais seuls Rendez-vous et Ordonnances, même choisis ou avec un prix', () => {

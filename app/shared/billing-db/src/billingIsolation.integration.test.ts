@@ -67,6 +67,8 @@ async function insertContractsAndSubscriptions(transaction: postgres.Transaction
 			values (gen_random_uuid(), ${tenantId}) returning id`;
 		await transaction`insert into billing.tenant_subscription_tools (tenant_id, subscription_id, tool_key)
 			values (${tenantId}, ${subscription?.id}, 'planning')`;
+		await transaction`insert into billing.terms_acceptances (id, tenant_id, terms_version, accepted_by_user_id, accepted_by_name, accepted_by_email)
+			values (gen_random_uuid(), ${tenantId}, '2026-10-24', 'probe-account', 'Probe', 'probe@example.test')`;
 		for (const payer of [{ tenantId, groupId: null }, { tenantId: null, groupId }]) {
 			await transaction`insert into billing.invoices (id, number, kind, tenant_id, group_id, customer_name, customer_address_lines, lines,
 				subtotal_cents, vat_rate_percent, vat_cents, total_cents, status, payment_method)
@@ -161,6 +163,31 @@ describe('isolation des abonnements (Row-Level Security du schéma billing)', ()
 				transaction`insert into billing.invoices (id, number, kind, tenant_id, customer_name, customer_address_lines, lines,
 					subtotal_cents, vat_rate_percent, vat_cents, total_cents, status, payment_method)
 					values (gen_random_uuid(), 'PIRATE', 'credit_note', ${firstGroup.tenantId}, 'X', '[]', '[]', -100, 20, -20, -120, 'paid', 'card')`
+			).rejects.toThrow(/row-level security/);
+		});
+	});
+
+	it('ne montre à une pharmacie que ses propres acceptations des conditions, sans pouvoir les modifier', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+
+			const acceptances = await transaction`select tenant_id from billing.terms_acceptances`;
+			const updatedAcceptances = await transaction`update billing.terms_acceptances set accepted_at = now()`;
+			const deletedAcceptances = await transaction`delete from billing.terms_acceptances`;
+
+			expect(acceptances.map(({ tenant_id }) => tenant_id)).toEqual([firstGroup.tenantId]);
+			expect(updatedAcceptances.count).toBe(0);
+			expect(deletedAcceptances.count).toBe(0);
+		});
+	});
+
+	it('ne laisse pas une pharmacie accepter les conditions au nom d’une autre', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+
+			await expect(
+				transaction`insert into billing.terms_acceptances (id, tenant_id, terms_version, accepted_by_user_id, accepted_by_name, accepted_by_email)
+					values (gen_random_uuid(), ${secondGroup.tenantId}, '2026-10-24', 'x', 'X', 'x@example.test')`
 			).rejects.toThrow(/row-level security/);
 		});
 	});

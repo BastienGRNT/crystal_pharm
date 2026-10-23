@@ -61,6 +61,7 @@ export {
 } from './subscriptions/developmentSubscriptions.server';
 export { simulateOneMonthLater } from './renewal/developmentClock.server';
 export { runDueBilling, type DueBillingReport } from './renewal/dueBilling.server';
+export { hasTenantAcceptedCurrentTerms } from './terms/termsAcceptances.server';
 export { previewGroupJoining, type GroupJoiningPreview } from './subscriptions/groupJoiningPreview.server';
 export {
 	cancelSubscription,

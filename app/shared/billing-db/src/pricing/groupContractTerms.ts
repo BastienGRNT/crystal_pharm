@@ -3,7 +3,7 @@ import { formatEuros } from '../money/euroAmount';
 import { priceForPeriod } from './billingPeriodPricing';
 import { computeOverageUnitPrice } from './groupCharge';
 import { quoteTools, type ToolCatalog, type ToolCoverage } from './toolPricing';
-import { findIncludingToolKeys, findTool, isIncludedTool, sellableToolKeys, toolKeys, type ToolKey } from '../tools/tools';
+import { findIncludingToolKeys, findTool, isIncludedTool, joinToolLabels, sellableToolKeys, toolKeys, type ToolKey } from '../tools/tools';
 
 /** `group` : le groupement paie tout · `shared` : chacun sa part · `pharmacy` : la pharmacie paie (avec une remise, peut-être). */
 export type ToolPayer = 'group' | 'shared' | 'pharmacy';
@@ -22,7 +22,7 @@ export type ContractToolTerms = {
 
 export type GroupContractTerms = {
 	toolTerms: ContractToolTerms[];
-	/** Les modules compris avec un autre (Rendez-vous, Ordonnances). */
+	/** Les modules compris avec un autre (Rendez-vous et Ordonnances, avec le site). */
 	includedToolKeys: ToolKey[];
 	/** Une pharmacie qui prend tout : le pack s'applique s'il existe. */
 	everyToolForPharmacy: { listPriceCents: number; pharmacyPriceCents: number; groupPriceCents: number; isPackApplied: boolean };
@@ -108,8 +108,8 @@ function describeWhatPharmaciesGet(terms: GroupContractTerms, voice: ContractVoi
 	const sentences: string[] = [];
 	if (offeredTerms.length > 0) {
 		sentences.push(
-			`${words.subject} ${words.offer} à ${words.possessive} pharmacies : ${joinLabels(offeredTerms.map((toolTerms) => toolTerms.label))}` +
-				(includedLabels.length > 0 ? `, avec ${joinLabels(includedLabels)} compris.` : '.')
+			`${words.subject} ${words.offer} à ${words.possessive} pharmacies : ${joinToolLabels(offeredTerms.map((toolTerms) => toolTerms.label))}` +
+				(includedLabels.length > 0 ? `, avec ${joinToolLabels(includedLabels)} compris.` : '.')
 		);
 	}
 	for (const toolTerms of terms.toolTerms.filter((candidate) => candidate.payer === 'shared')) {
@@ -128,7 +128,7 @@ function describeWhatPharmaciesGet(terms: GroupContractTerms, voice: ContractVoi
 	if (sentences.length === 0) {
 		sentences.push(`${words.subject} ne ${words.take} rien en charge : ${words.possessive} pharmacies paient le prix normal.`);
 	} else if (fullPriceLabels.length > 0) {
-		sentences.push(`${joinLabels(fullPriceLabels)} : au prix normal, si la pharmacie le veut.`);
+		sentences.push(`${joinToolLabels(fullPriceLabels)} : au prix normal, si la pharmacie le veut.`);
 	}
 	return sentences;
 }
@@ -167,10 +167,4 @@ function conjugate(voice: ContractVoice) {
 	return voice.isAddressedToGroup
 		? { subject: 'Vous', subjectLowercase: 'vous', offer: 'offrez', pay: 'payez', take: 'prenez', possessive: 'vos' }
 		: { subject: voice.groupName, subjectLowercase: voice.groupName, offer: 'offre', pay: 'paie', take: 'prend', possessive: 'ses' };
-}
-
-/** « Site internet, Planning et Rendez-vous » */
-function joinLabels(labels: readonly string[]): string {
-	if (labels.length <= 1) return labels.join('');
-	return `${labels.slice(0, -1).join(', ')} et ${labels.at(-1)}`;
 }

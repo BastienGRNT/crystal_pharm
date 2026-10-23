@@ -138,8 +138,8 @@ async function seedDemoData(): Promise<void> {
 	await invitePharmacyByEmail(pharmaPlusId, demoEmail('invitee'), 'Pharmacie des Tilleuls');
 	await inviteGroupMemberByEmail(reseauSanteId, demoEmail('responsable'));
 
-	await subscribe(requireTenantId(tenantIdsByPersonaKey, 'abonnee'), ['site'], 'yearly');
-	await subscribe(requireTenantId(tenantIdsByPersonaKey, 'membre'), ['planning'], 'monthly');
+	await subscribe('abonnee', requireTenantId(tenantIdsByPersonaKey, 'abonnee'), ['site'], 'yearly');
+	await subscribe('membre', requireTenantId(tenantIdsByPersonaKey, 'membre'), ['planning'], 'monthly');
 }
 
 async function seedCatalog(): Promise<void> {
@@ -247,8 +247,13 @@ async function inviteGroupMemberByEmail(groupId: string, email: string): Promise
 	);
 }
 
-async function subscribe(tenantId: string, toolKeys: ToolKey[], billingPeriod: BillingPeriod): Promise<void> {
-	const selection = await requestToolSelection(tenantId, toolKeys, '/abonnement', billingPeriod);
+/** La personne de la démo coche les conditions, comme à l'écran. */
+async function subscribe(personaKey: string, tenantId: string, toolKeys: ToolKey[], billingPeriod: BillingPeriod): Promise<void> {
+	const persona = findDemoPersona(personaKey);
+	const accountId = persona && (await findCustomerAccountIdByEmail(persona.email));
+	if (!persona || !accountId) throw new Error(`The demo account ${personaKey} does not exist.`);
+	const termsAcceptedBy = { userId: accountId, name: `${persona.firstName} ${persona.lastName}`, email: persona.email };
+	const selection = await requestToolSelection(tenantId, toolKeys, '/abonnement', billingPeriod, termsAcceptedBy);
 	if (selection.outcome !== 'checkout') return;
 	const checkoutId = selection.checkoutLocation.split('/').at(-1) ?? '';
 	await completeCheckout({ tenantId }, checkoutId, 'paid');

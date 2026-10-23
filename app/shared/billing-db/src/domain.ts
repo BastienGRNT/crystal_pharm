@@ -41,17 +41,22 @@ export {
 	computePeriodEnd
 } from './subscriptions/subscriptionPeriod';
 export {
+	describeIncludedTools,
 	describeInclusion,
+	findIncludedToolKeys,
 	findIncludingToolKeys,
+	findOfferLabel,
 	findTool,
 	isIncludedTool,
 	isToolKey,
+	joinToolLabels,
 	sellableToolKeys,
 	toolKeys,
 	tools,
 	type Tool,
 	type ToolKey
 } from './tools/tools';
+export { currentTermsVersion } from './terms/termsVersion';
 export type {
 	BillingPeriod,
 	CheckoutLine,
