@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Alert, Card, PageHeader } from '@crystal-pharm/ui';
-	import OpeningHoursForm from '../components/organisms/OpeningHoursForm.svelte';
-	import PharmacyContactDetailsForm from '../components/organisms/PharmacyContactDetailsForm.svelte';
+	import { Alert, Card, ConfirmButton, PageHeader } from '@crystal-pharm/ui';
+	import { formatDay, formatLastDayBefore } from '../../dateFormats';
+	import OpeningHoursForm from '../../components/organisms/OpeningHoursForm.svelte';
+	import PharmacyContactDetailsForm from '../../components/organisms/PharmacyContactDetailsForm.svelte';
 	import type { PharmacyPageData, PharmacyPageFormResult, PharmacySection } from './pharmacyPageData';
 
 	type PharmacyPageProps = {
@@ -13,7 +14,8 @@
 
 	const savedMessages: Record<PharmacySection, string> = {
 		contactDetails: 'Vos coordonnées sont enregistrées.',
-		openingHours: 'Vos horaires d’ouverture sont enregistrés.'
+		openingHours: 'Vos horaires d’ouverture sont enregistrés.',
+		group: 'Vous avez quitté le groupement.'
 	};
 	const contactDetailsFailure = $derived(form && 'failedSection' in form && form.failedSection === 'contactDetails' ? form : undefined);
 	const openingHoursFailure = $derived(form && 'failedSection' in form && form.failedSection === 'openingHours' ? form : undefined);
@@ -63,6 +65,50 @@
 					failureMessage={openingHoursFailure?.failureMessage}
 					submitLabel="Enregistrer les horaires"
 				/>
+			</div>
+		</Card>
+	</section>
+
+	<section id="groupement" aria-labelledby="groupement-titre" class="scroll-mt-20" data-module="grp">
+		<Card>
+			<div class="grid gap-4">
+				<h2 id="groupement-titre" class="title-2 text-ink">Groupement</h2>
+				{#if savedSection === 'group'}
+					<Alert tone="success">{savedMessages.group}</Alert>
+				{/if}
+				{#if !data.group}
+					<p class="text-body text-ink-muted">
+						Votre pharmacie n’appartient à aucun groupement. Si le vôtre est sur Crystal Pharm, il vous invite par email : l’invitation
+						apparaîtra sur l’accueil.
+					</p>
+				{:else if data.group.coverageEndsAt}
+					<Alert tone="warning" title="Vous avez quitté {data.group.groupName}">
+						Sa prise en charge court jusqu’au {formatLastDayBefore(data.group.coverageEndsAt)}. Ensuite, vos modules passent au prix normal.
+					</Alert>
+				{:else}
+					<div class="grid gap-1">
+						<p class="text-body">
+							<span class="body-strong">{data.group.groupName}</span>
+							{#if data.group.joinedAt}<span class="text-ink-muted"> · membre depuis le {formatDay(data.group.joinedAt)}</span>{/if}
+						</p>
+						{#if data.group.coverageLines.length > 0}
+							<ul class="text-small text-ink-muted">
+								{#each data.group.coverageLines as coverageLine (coverageLine)}<li>{coverageLine}</li>{/each}
+							</ul>
+						{/if}
+						<p class="text-small text-ink-muted">Il voit le nom et la ville de votre pharmacie, et les modules que vous utilisez.</p>
+					</div>
+					<form method="POST" action="?/leaveGroup">
+						<ConfirmButton
+							label="Quitter le groupement"
+							icon="sign-out"
+							title="Quitter {data.group.groupName} ?"
+							description="Le groupement ne verra plus votre pharmacie. Sa prise en charge court jusqu’à la fin du mois ; ensuite, vos modules passent au prix normal."
+							confirmLabel="Quitter le groupement"
+							isDestructive
+						/>
+					</form>
+				{/if}
 			</div>
 		</Card>
 	</section>

@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { signOutAndOpen } from '@crystal-pharm/auth/client';
+	import { keepAccessibleLinks } from '@crystal-pharm/home';
 	import { AppShell } from '@crystal-pharm/ui';
 	import { toolLinks } from '$lib/toolLinks';
 	import type { LayoutData } from './$types';
@@ -10,7 +11,7 @@
 </script>
 
 <AppShell
-	navigationLinks={toolLinks}
+	navigationLinks={keepAccessibleLinks(toolLinks, data.accessibleToolKeys)}
 	currentPathname={page.url.pathname}
 	signedInUser={data.signedInManager}
 	spaceLabel={data.pharmacyName}

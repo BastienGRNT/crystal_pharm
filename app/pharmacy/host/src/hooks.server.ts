@@ -1,6 +1,8 @@
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { createCustomerAuthenticationHandle } from '@crystal-pharm/auth';
+import { createToolAccessHandle } from '@crystal-pharm/home/server';
+import { protectedTools } from '$lib/toolLinks';
 
 const healthDataPathnamePrefixes = ['/booking', '/prescriptions'];
 
@@ -19,7 +21,8 @@ export const handle = sequence(
 		loginPathname: '/login',
 		signedInHomePathname: '/',
 		anonymousOnlyPathnames: ['/login', '/register'],
-		publicPathnamePrefixes: ['/__dev/']
+		publicPathnamePrefixes: ['/__dev/', '/invitation/']
 	}),
+	createToolAccessHandle(protectedTools),
 	preventCachingOfHealthData
 );

@@ -2,9 +2,9 @@ import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import { getPharmacyProfile, updateWeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db';
 import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import { homePathnames } from '../../homePathnames';
-import type { OpeningHoursFailure } from '../../pages/pharmacyPageData';
+import type { OpeningHoursFailure } from '../../pages/pharmacy/pharmacyPageData';
 import { requireActiveTenantId } from '../activeTenant.server';
-import { readWeeklyOpeningScheduleInput } from '../pharmacyFormSubmissions.server';
+import { readWeeklyOpeningScheduleInput } from '../pharmacy/pharmacyFormSubmissions.server';
 
 export const openingHoursRefusedMessage = 'Ces horaires n’ont pas pu être enregistrés : vérifiez-les puis réessayez.';
 

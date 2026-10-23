@@ -1,7 +1,7 @@
 <script lang="ts">
 	import OnboardingScreen from '../../components/organisms/OnboardingScreen.svelte';
 	import PharmacyContactDetailsForm from '../../components/organisms/PharmacyContactDetailsForm.svelte';
-	import { emptyContactDetails, type ContactDetailsFailure } from '../pharmacyPageData';
+	import { emptyContactDetails, type ContactDetailsFailure } from '../pharmacy/pharmacyPageData';
 
 	let { form }: { form: ContactDetailsFailure | null | undefined } = $props();
 </script>

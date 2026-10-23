@@ -3,7 +3,7 @@
 	import OnboardingScreen from '../../components/organisms/OnboardingScreen.svelte';
 	import OpeningHoursForm from '../../components/organisms/OpeningHoursForm.svelte';
 	import { homePathnames } from '../../homePathnames';
-	import type { OpeningHoursFailure } from '../pharmacyPageData';
+	import type { OpeningHoursFailure } from '../pharmacy/pharmacyPageData';
 
 	let { form }: { form: OpeningHoursFailure | null | undefined } = $props();
 </script>

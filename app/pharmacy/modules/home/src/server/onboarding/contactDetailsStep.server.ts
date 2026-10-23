@@ -2,9 +2,9 @@ import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import { createTenantForAccount, findActiveTenantIdOfAccount } from '@crystal-pharm/pharmacy-db';
 import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import { homePathnames } from '../../homePathnames';
-import type { ContactDetailsFailure } from '../../pages/pharmacyPageData';
+import type { ContactDetailsFailure } from '../../pages/pharmacy/pharmacyPageData';
 import { requireSignedInAccountId } from '../activeTenant.server';
-import { readContactDetailsInput } from '../pharmacyFormSubmissions.server';
+import { readContactDetailsInput } from '../pharmacy/pharmacyFormSubmissions.server';
 
 async function continueIfPharmacyAlreadyCreated(accountId: string): Promise<void> {
 	if (await findActiveTenantIdOfAccount(accountId)) redirect(303, homePathnames.openingHoursStep);

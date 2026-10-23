@@ -1,0 +1,72 @@
+import type { AuthenticatedUser } from '@crystal-pharm/auth';
+import {
+	cancelSubscription,
+	getToolAccessOfTenant,
+	listPayments,
+	requestToolSelection,
+	resumeSubscription
+} from '@crystal-pharm/billing-db';
+import { isToolKey } from '@crystal-pharm/billing-db/domain';
+import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
+import { describeToolCards } from '../../domain/toolCards';
+import { homePathnames } from '../../homePathnames';
+import type { SubscriptionActionFailure, SubscriptionPageData } from '../../pages/subscription/subscriptionPageData';
+import { requireActiveTenantId } from '../activeTenant.server';
+
+export async function loadSubscriptionPage({
+	locals
+}: {
+	locals: { user: AuthenticatedUser | null };
+}): Promise<SubscriptionPageData> {
+	const tenantId = await requireActiveTenantId(locals.user);
+	const [toolAccess, payments] = await Promise.all([getToolAccessOfTenant(tenantId), listPayments({ tenantId })]);
+	const subscription = toolAccess.subscription;
+	return {
+		catalog: toolAccess.catalog,
+		coverages: toolAccess.coveringGroup?.coverages ?? [],
+		groupName: toolAccess.coveringGroup?.groupName,
+		coverageEndsAt: toolAccess.coveringGroup?.coverageEndsAt,
+		toolCards: describeToolCards(toolAccess),
+		paidToolKeys: subscription?.endsAt
+			? []
+			: (subscription?.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey) ?? []),
+		subscription: subscription && {
+			startedAt: subscription.startedAt,
+			currentPeriodEndsAt: subscription.currentPeriodEndsAt,
+			endsAt: subscription.endsAt,
+			moneyBackGuaranteeEndsAt: subscription.moneyBackGuaranteeEndsAt,
+			isMoneyBackGuaranteed: subscription.isMoneyBackGuaranteed
+		},
+		payments
+	};
+}
+
+export const subscriptionPageActions = {
+	selectTools: async ({ locals, request }: RequestEvent): Promise<ActionFailure<SubscriptionActionFailure>> => {
+		const tenantId = await requireActiveTenantId(locals.user);
+		const requestedToolKeys = (await request.formData())
+			.getAll('toolKeys')
+			.map(String)
+			.filter(isToolKey);
+		const selection = await requestToolSelection(tenantId, requestedToolKeys, homePathnames.subscription);
+		if (selection.outcome === 'refused') return fail(400, { failureMessage: selection.failureMessage });
+		if (selection.outcome === 'checkout') redirect(303, selection.checkoutLocation);
+		redirect(303, `${homePathnames.subscription}?modifie=1`);
+	},
+
+	cancel: async ({ locals }: RequestEvent): Promise<never> => {
+		const cancellation = await cancelSubscription(await requireActiveTenantId(locals.user));
+		const outcome: Record<string, string> =
+			cancellation.outcome === 'refunded'
+				? { resiliation: 'rembourse', montant: String(cancellation.refundedAmountCents) }
+				: cancellation.outcome === 'ends-at-period-end'
+					? { resiliation: 'fin', jusquau: cancellation.endsAt.toISOString() }
+					: {};
+		redirect(303, `${homePathnames.subscription}?${new URLSearchParams(outcome)}`);
+	},
+
+	resume: async ({ locals }: RequestEvent): Promise<never> => {
+		await resumeSubscription(await requireActiveTenantId(locals.user));
+		redirect(303, `${homePathnames.subscription}?repris=1`);
+	}
+};

@@ -264,6 +264,12 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../../../shared/auth
+      '@crystal-pharm/billing-db':
+        specifier: workspace:*
+        version: link:../../../shared/billing-db
+      '@crystal-pharm/group-db':
+        specifier: workspace:*
+        version: link:../../../shared/group-db
       '@crystal-pharm/pharmacy-db':
         specifier: workspace:*
         version: link:../../../shared/pharmacy-db

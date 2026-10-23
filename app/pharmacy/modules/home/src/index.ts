@@ -1,6 +1,11 @@
-export { default as LoginPage } from './pages/LoginPage.svelte';
+export { default as LoginPage } from './pages/authentication/LoginPage.svelte';
+export { default as RegisterPage } from './pages/authentication/RegisterPage.svelte';
+export { default as GroupInvitationPage } from './pages/group/GroupInvitationPage.svelte';
+export { default as PublicInvitationPage } from './pages/group/PublicInvitationPage.svelte';
 export { default as ContactDetailsStepPage } from './pages/onboarding/ContactDetailsStepPage.svelte';
 export { default as OpeningHoursStepPage } from './pages/onboarding/OpeningHoursStepPage.svelte';
-export { default as PharmacyPage } from './pages/PharmacyPage.svelte';
-export { default as RegisterPage } from './pages/RegisterPage.svelte';
-export { default as ToolsHomePage } from './pages/ToolsHomePage.svelte';
+export { default as PharmacyPage } from './pages/pharmacy/PharmacyPage.svelte';
+export { default as CheckoutPage } from './pages/subscription/CheckoutPage.svelte';
+export { default as SubscriptionPage } from './pages/subscription/SubscriptionPage.svelte';
+export { default as ToolsHomePage } from './pages/tools-home/ToolsHomePage.svelte';
+export { keepAccessibleLinks, type ToolNavigationLink } from './toolNavigation';
