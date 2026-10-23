@@ -30,6 +30,8 @@ export type SubscriptionPageData = {
 	/** Ce que rembourserait une résiliation dans les 30 jours (TTC). */
 	refundableAmountCents: number;
 	invoices: InvoiceRow[];
+	/** La version en vigueur des conditions n'est pas encore acceptée : la case s'affiche dès qu'on ajoute un module. */
+	mustAcceptTerms: boolean;
 };
 
 export type SubscriptionActionFailure = { failureMessage: string };

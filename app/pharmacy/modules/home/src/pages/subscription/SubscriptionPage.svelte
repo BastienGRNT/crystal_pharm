@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { findTool, formatEuros, isToolKey } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, ConfirmButton, InvoiceTable, PageHeader } from '@crystal-pharm/ui';
+	import { findIncludingToolKeys, findOfferLabel, findTool, formatEuros, isToolKey } from '@crystal-pharm/billing-db/domain';
+	import { Alert, Button, Card, ConfirmButton, Icon, InvoiceTable, PageHeader, type IconName } from '@crystal-pharm/ui';
 	import ToolSubscriptionForm from '../../components/organisms/ToolSubscriptionForm.svelte';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
 	import type { SubscriptionActionFailure, SubscriptionPageData } from './subscriptionPageData';
@@ -15,7 +15,16 @@
 
 	const requestedToolKey = $derived(searchParams.get('module') ?? undefined);
 	const requestedToolLabel = $derived(requestedToolKey && isToolKey(requestedToolKey) ? findTool(requestedToolKey).label : undefined);
+	const requestedToolOfferLabels = $derived(
+		requestedToolKey && isToolKey(requestedToolKey) ? findIncludingToolKeys(requestedToolKey).map(findOfferLabel) : []
+	);
 	const cancellationEnd = $derived(searchParams.get('jusquau'));
+
+	const commitments: { icon: IconName; label: string }[] = [
+		{ icon: 'seal-check', label: 'Sans engagement' },
+		{ icon: 'arrow-counter-clockwise', label: 'Satisfait ou remboursé pendant 30 jours' },
+		{ icon: 'lock-simple', label: 'Données de santé chez un hébergeur agréé HDS' }
+	];
 </script>
 
 <svelte:head>
@@ -25,8 +34,17 @@
 <PageHeader
 	icon="credit-card"
 	title="Abonnement"
-	context="Choisissez vos modules, sans engagement. Satisfait ou remboursé pendant 30 jours."
+	context="Vos patients vous envoient leurs ordonnances et réservent en ligne : moins d’attente au comptoir, plus de temps pour conseiller."
 />
+
+<ul class="flex flex-wrap gap-x-5 gap-y-1.5">
+	{#each commitments as commitment (commitment.label)}
+		<li class="flex items-center gap-1.5 text-small text-ink-muted">
+			<Icon name={commitment.icon} size={16} class="text-success" />
+			{commitment.label}
+		</li>
+	{/each}
+</ul>
 
 {#if searchParams.get('paiement') === 'reussi'}
 	<Alert tone="success" title="Paiement accepté">Vos modules sont actifs : ils sont dans le menu.</Alert>
@@ -43,7 +61,13 @@
 {:else if searchParams.has('repris')}
 	<Alert tone="success">Votre abonnement continue, comme avant.</Alert>
 {:else if requestedToolLabel}
-	<Alert tone="info" title="Le module {requestedToolLabel} n’est pas activé">Activez-le ci-dessous pour l’utiliser.</Alert>
+	<Alert tone="info" title="Le module {requestedToolLabel} n’est pas activé">
+		{#if requestedToolOfferLabels.length > 0}
+			Il est compris dans {requestedToolOfferLabels.join(' ou ')} : activez-la ci-dessous pour l’utiliser.
+		{:else}
+			Activez-le ci-dessous pour l’utiliser.
+		{/if}
+	</Alert>
 {/if}
 
 {#if data.groupName && data.coverages.length > 0}
@@ -61,6 +85,7 @@
 	subscription={data.subscription}
 	groupName={data.groupName}
 	highlightedToolKey={requestedToolKey}
+	mustAcceptTerms={data.mustAcceptTerms}
 	failureMessage={form?.failureMessage}
 />
 

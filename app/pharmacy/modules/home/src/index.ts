@@ -4,6 +4,8 @@ export { default as GroupInvitationPage } from './pages/group/GroupInvitationPag
 export { default as PublicInvitationPage } from './pages/group/PublicInvitationPage.svelte';
 export { default as ContactDetailsStepPage } from './pages/onboarding/ContactDetailsStepPage.svelte';
 export { default as OpeningHoursStepPage } from './pages/onboarding/OpeningHoursStepPage.svelte';
+export { default as DataProcessingAgreementPage } from './pages/legal/DataProcessingAgreementPage.svelte';
+export { default as TermsOfSalePage } from './pages/legal/TermsOfSalePage.svelte';
 export { default as PharmacyPage } from './pages/pharmacy/PharmacyPage.svelte';
 export { default as CheckoutPage } from './pages/subscription/CheckoutPage.svelte';
 export { default as SubscriptionPage } from './pages/subscription/SubscriptionPage.svelte';

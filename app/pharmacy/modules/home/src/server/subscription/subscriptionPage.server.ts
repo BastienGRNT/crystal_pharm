@@ -2,6 +2,7 @@ import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import {
 	cancelSubscription,
 	getToolAccessOfTenant,
+	hasTenantAcceptedCurrentTerms,
 	listInvoices,
 	requestToolSelection,
 	resumeSubscription
@@ -19,7 +20,11 @@ export async function loadSubscriptionPage({
 	locals: { user: AuthenticatedUser | null };
 }): Promise<SubscriptionPageData> {
 	const tenantId = await requireActiveTenantId(locals.user);
-	const [toolAccess, invoices] = await Promise.all([getToolAccessOfTenant(tenantId), listInvoices({ tenantId })]);
+	const [toolAccess, invoices, hasAcceptedCurrentTerms] = await Promise.all([
+		getToolAccessOfTenant(tenantId),
+		listInvoices({ tenantId }),
+		hasTenantAcceptedCurrentTerms(tenantId)
+	]);
 	const subscription = toolAccess.subscription;
 	const refundableInvoices = invoices.filter(
 		(invoice) => subscription && invoice.kind === 'invoice' && invoice.status === 'paid' && invoice.issuedAt >= subscription.startedAt
@@ -45,7 +50,8 @@ export async function loadSubscriptionPage({
 		},
 		upcomingCharge: toolAccess.upcomingCharge,
 		refundableAmountCents: refundableInvoices.reduce((total, invoice) => total + invoice.totalCents, 0),
-		invoices: invoices.map((invoice) => toInvoiceRow(invoice, invoicePdfPathname(invoice.invoiceId)))
+		invoices: invoices.map((invoice) => toInvoiceRow(invoice, invoicePdfPathname(invoice.invoiceId))),
+		mustAcceptTerms: !hasAcceptedCurrentTerms
 	};
 }
 
@@ -55,7 +61,14 @@ export const subscriptionPageActions = {
 		const formData = await request.formData();
 		const requestedToolKeys = formData.getAll('toolKeys').map(String).filter(isToolKey);
 		const requestedBillingPeriod = formData.get('billingPeriod') === 'yearly' ? 'yearly' : 'monthly';
-		const selection = await requestToolSelection(tenantId, requestedToolKeys, homePathnames.subscription, requestedBillingPeriod);
+		const termsAcceptedBy = formData.get('termsAccepted') === 'on' ? (locals.user ?? undefined) : undefined;
+		const selection = await requestToolSelection(
+			tenantId,
+			requestedToolKeys,
+			homePathnames.subscription,
+			requestedBillingPeriod,
+			termsAcceptedBy
+		);
 		if (selection.outcome === 'refused') return fail(400, { failureMessage: selection.failureMessage });
 		if (selection.outcome === 'checkout') redirect(303, selection.checkoutLocation);
 		redirect(303, `${homePathnames.subscription}?modifie=1`);

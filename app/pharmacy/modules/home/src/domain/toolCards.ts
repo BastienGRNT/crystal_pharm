@@ -1,5 +1,13 @@
 import type { TenantToolAccess } from '@crystal-pharm/billing-db';
-import { describeInclusion, findTool, summarizeCoverage, tools, type ToolKey } from '@crystal-pharm/billing-db/domain';
+import {
+	describeInclusion,
+	findIncludedToolKeys,
+	findOfferLabel,
+	findTool,
+	summarizeCoverage,
+	tools,
+	type ToolKey
+} from '@crystal-pharm/billing-db/domain';
 
 /**
  * `included` : offert (groupement ou gratuit) · `subscribed` : dans l'abonnement ·
@@ -13,14 +21,18 @@ export const activeToolCardStatuses: readonly ToolCardStatus[] = ['included', 's
 export type ToolCard = {
 	toolKey: ToolKey;
 	label: string;
+	/** Le nom sous lequel il se vend : « Votre pharmacie en ligne » pour le site. */
+	offerLabel: string;
 	pitch: string;
+	/** Ce qui vient avec lui sans rien payer de plus (les ordonnances et les rendez-vous avec le site). */
+	includedToolKeys: readonly ToolKey[];
 	status: ToolCardStatus;
 	/** Ce que la pharmacie paie (ou paierait) chaque mois. */
 	pharmacyPriceCents: number;
 	listPriceCents: number;
 	/** « Offert », « −20 % »… : ce que prévoit le contrat du groupement. */
 	coverageSummary: string | undefined;
-	/** Pour un module qui vient avec un autre : « Compris avec Site internet ou Planning ». */
+	/** Pour un module qui vient avec un autre : « Compris avec Site internet ». */
 	inclusionWording: string | undefined;
 	endsAt: Date | undefined;
 };
@@ -34,7 +46,9 @@ export function describeToolCards(toolAccess: TenantToolAccess): ToolCard[] {
 		return {
 			toolKey: tool.toolKey,
 			label: findTool(tool.toolKey).label,
+			offerLabel: findOfferLabel(tool.toolKey),
 			pitch: tool.pitch,
+			includedToolKeys: findIncludedToolKeys(tool.toolKey),
 			status: describeStatus(toolQuote, subscribedTool, toolAccess.subscription?.endsAt),
 			pharmacyPriceCents: toolQuote?.pharmacyPriceCents ?? 0,
 			listPriceCents: toolQuote?.listPriceCents ?? 0,

@@ -1,6 +1,6 @@
 import { findCustomerAccountIdByEmail, type AuthenticatedUser } from '@crystal-pharm/auth';
 import { getToolAccessOfTenant, previewGroupJoining, stopPayingForIncludedTools } from '@crystal-pharm/billing-db';
-import { findTool, type ToolQuote } from '@crystal-pharm/billing-db/domain';
+import { describeIncludedTools, findOfferLabel, type ToolQuote } from '@crystal-pharm/billing-db/domain';
 import {
 	acceptPharmacyInvitation,
 	declinePharmacyInvitation,
@@ -72,7 +72,8 @@ export async function loadGroupInvitationPage({ locals, url }: InvitationEvent &
 			.filter((toolQuote) => !toolQuote.isIncludedWithAnotherTool)
 			.map((toolQuote) => ({
 				toolKey: toolQuote.toolKey,
-				label: findTool(toolQuote.toolKey).label,
+				label: findOfferLabel(toolQuote.toolKey),
+				includedToolsWording: describeIncludedTools(toolQuote.toolKey),
 				isActiveToday: toolAccess.accessibleToolKeys.includes(toolQuote.toolKey),
 				listPriceCents: toolQuote.listPriceCents,
 				pharmacyPriceCents: toolQuote.pharmacyPriceCents,
@@ -80,9 +81,6 @@ export async function loadGroupInvitationPage({ locals, url }: InvitationEvent &
 				coverageKind: toolQuote.coverageKind,
 				coverageSummary: describeOfferCoverage(toolQuote)
 			})),
-		includedToolLabels: preview.joinedQuote.toolQuotes
-			.filter((toolQuote) => toolQuote.isIncludedWithAnotherTool)
-			.map((toolQuote) => findTool(toolQuote.toolKey).label),
 		currentMonthlyTotalCents: preview.currentPharmacyMonthlyTotalCents,
 		joinedMonthlyTotalCents: preview.joinedQuote.pharmacyMonthlyTotalCents,
 		toolKeysNoLongerPaid: preview.toolKeysNoLongerPaid,

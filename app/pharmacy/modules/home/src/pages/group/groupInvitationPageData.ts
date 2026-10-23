@@ -7,7 +7,10 @@ export type InvitationReference = { invitationToken: string } | { invitationId: 
 /** Un module, aujourd'hui et une fois membre du groupement. */
 export type GroupOfferRow = {
 	toolKey: ToolKey;
+	/** Le nom sous lequel il se vend : « Votre pharmacie en ligne » pour le site. */
 	label: string;
+	/** « avec Rendez-vous et Ordonnances compris » */
+	includedToolsWording: string | undefined;
 	isActiveToday: boolean;
 	listPriceCents: number;
 	pharmacyPriceCents: number;
@@ -25,8 +28,6 @@ export type GroupInvitationPageData = {
 	/** Le lien a été ouvert par un compte d'un autre email que celui invité. */
 	isAddressedToAnotherEmail: boolean;
 	offerRows: GroupOfferRow[];
-	/** Rendez-vous, Ordonnances : compris dès qu'un module est actif. */
-	includedToolLabels: string[];
 	currentMonthlyTotalCents: number;
 	joinedMonthlyTotalCents: number;
 	toolKeysNoLongerPaid: ToolKey[];

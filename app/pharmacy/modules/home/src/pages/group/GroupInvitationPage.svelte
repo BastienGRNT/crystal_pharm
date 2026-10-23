@@ -72,7 +72,12 @@
 					<tbody>
 						{#each data.offerRows as offerRow (offerRow.toolKey)}
 							<tr class="border-t border-line-soft">
-								<td class="py-2.5 body-strong">{offerRow.label}</td>
+								<td class="py-2.5">
+									<span class="body-strong">{offerRow.label}</span>
+									{#if offerRow.includedToolsWording}
+										<span class="block text-small text-ink-muted">{offerRow.includedToolsWording}</span>
+									{/if}
+								</td>
 								<td class="py-2.5 text-ink-muted">{offerRow.isActiveToday ? 'Actif' : 'Non activé'}</td>
 								<td class="py-2.5">
 									{#if offerRow.isIncludedWithGroup}
@@ -89,13 +94,6 @@
 								</td>
 							</tr>
 						{/each}
-						{#if data.includedToolLabels.length > 0}
-							<tr class="border-t border-line-soft">
-								<td class="py-2.5 text-ink-muted" colspan="3">
-									{data.includedToolLabels.join(' et ')} : compris dès que vous avez un module.
-								</td>
-							</tr>
-						{/if}
 					</tbody>
 				</table>
 				{#if data.currentMonthlyTotalCents > 0}

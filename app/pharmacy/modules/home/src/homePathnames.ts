@@ -7,7 +7,9 @@ export const homePathnames = {
 	pharmacyOpeningHours: '/pharmacie?onglet=horaires',
 	pharmacyGroup: '/pharmacie?onglet=groupement',
 	subscription: '/abonnement',
-	groupInvitation: '/groupement/invitation'
+	groupInvitation: '/groupement/invitation',
+	termsOfSale: '/conditions/generales-de-vente',
+	dataProcessingAgreement: '/conditions/traitement-des-donnees'
 } as const;
 
 export function invoicePdfPathname(invoiceId: string): string {

@@ -12,10 +12,11 @@
 		type ToolCoverage,
 		type ToolKey
 	} from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, ChoiceGroup, Icon, PriceLabel, Tag, ToggleCard } from '@crystal-pharm/ui';
+	import { Alert, Button, Checkbox, CheckList, ChoiceGroup, Icon, PriceLabel, Tag, TextLink, ToggleCard, type CheckListItem } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
 	import type { ToolCard } from '../../domain/toolCards';
+	import { homePathnames } from '../../homePathnames';
 	import type { SubscriptionSummary } from '../../pages/subscription/subscriptionPageData';
 
 	type ToolSubscriptionFormProps = {
@@ -26,11 +27,22 @@
 		subscription: SubscriptionSummary | undefined;
 		groupName: string | undefined;
 		highlightedToolKey: string | undefined;
+		/** La pharmacie n'a pas encore accepté la version en vigueur des conditions. */
+		mustAcceptTerms: boolean;
 		failureMessage: string | undefined;
 	};
 
-	let { catalog, coverages, toolCards, paidToolKeys, subscription, groupName, highlightedToolKey, failureMessage }: ToolSubscriptionFormProps =
-		$props();
+	let {
+		catalog,
+		coverages,
+		toolCards,
+		paidToolKeys,
+		subscription,
+		groupName,
+		highlightedToolKey,
+		mustAcceptTerms,
+		failureMessage
+	}: ToolSubscriptionFormProps = $props();
 
 	// Le choix part de ce qui est payé aujourd'hui, puis vit sa vie : la page est rechargée après chaque envoi.
 	const selection = $state<Record<ToolKey, boolean>>(
@@ -49,7 +61,7 @@
 	const singleToolQuote = $derived(quoteTools({ catalog: { ...catalog, packMonthlyPriceCents: undefined }, coverages, selectedToolKeys: [] }));
 
 	const sellableToolCards = $derived(toolCards.filter((toolCard) => sellableToolKeys.includes(toolCard.toolKey)));
-	const includedToolCards = $derived(toolCards.filter((toolCard) => !sellableToolKeys.includes(toolCard.toolKey)));
+	const packOfferLabels = $derived(sellableToolCards.filter((toolCard) => toolCard.status !== 'unavailable').map((toolCard) => toolCard.offerLabel));
 	const selectableToolCards = $derived(sellableToolCards.filter((toolCard) => toolCard.status !== 'included' && toolCard.status !== 'unavailable'));
 
 	const addedToolKeys = $derived(selectedToolKeys.filter((toolKey) => !paidToolKeys.includes(toolKey)));
@@ -74,7 +86,8 @@
 	);
 	const amountDueToday = $derived(addVat(amountDueTodayCents));
 	const isPackWorthShowing = $derived(everyToolQuote.isPackApplied && !selectionQuote.isPackApplied);
-	const comesWithSelection = $derived(selectionQuote.toolQuotes.some((toolQuote) => toolQuote.isIncludedWithAnotherTool && toolQuote.isActive));
+	const packSavingsMonthlyCents = $derived(everyToolQuote.listMonthlyTotalCents - everyToolQuote.pharmacyMonthlyTotalCents);
+	const isTermsCheckboxShown = $derived(mustAcceptTerms && addedToolKeys.length > 0);
 
 	const billingPeriodOptions = $derived([
 		{ value: 'monthly', label: 'Chaque mois' },
@@ -93,7 +106,29 @@
 	function formatPeriodPrice(monthlyCents: number): string {
 		return formatEuros(priceForPeriod(monthlyCents, billingPeriod, freeMonths));
 	}
+
+	// Ramené au jour, le prix se compare à un café plutôt qu'à un autre abonnement.
+	function formatDailyPrice(monthlyCents: number): string {
+		const yearlyCents = isYearly ? priceForPeriod(monthlyCents, 'yearly', freeMonths) : monthlyCents * 12;
+		return formatEuros(Math.round(yearlyCents / 365));
+	}
+
+	function listIncludedFeatures(toolCard: ToolCard): CheckListItem[] {
+		return toolCard.includedToolKeys
+			.map((includedToolKey) => toolCards.find((candidate) => candidate.toolKey === includedToolKey))
+			.filter((includedToolCard) => includedToolCard !== undefined)
+			.map((includedToolCard) => ({ title: `${includedToolCard.label} en ligne`, description: includedToolCard.pitch }));
+	}
 </script>
+
+{#snippet includedFeatureList(includedFeatures: CheckListItem[])}
+	{#if includedFeatures.length > 0}
+		<span class="mt-2 grid gap-2 border-t border-line-soft pt-3">
+			<span class="text-label text-ink-subtle">Compris, sans rien payer de plus</span>
+			<CheckList items={includedFeatures} />
+		</span>
+	{/if}
+{/snippet}
 
 <form method="POST" action="?/selectTools" class="grid gap-4">
 	<input type="hidden" name="billingPeriod" value={billingPeriod} />
@@ -107,11 +142,18 @@
 
 	{#if isPackWorthShowing}
 		<div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent bg-accent-soft px-4 py-3">
-			<p class="flex items-center gap-2 text-body text-ink">
-				<Icon name="package" size={20} class="text-accent-text" />
-				<span>
-					<strong class="font-semibold">Tous les modules : {formatPeriodPrice(everyToolQuote.pharmacyMonthlyTotalCents)} HT {isYearly ? 'par an' : 'par mois'}</strong>
-					au lieu de {formatPeriodPrice(everyToolQuote.listMonthlyTotalCents)}.
+			<p class="flex items-start gap-2 text-body text-ink">
+				<Icon name="package" size={20} class="mt-0.5 flex-none text-accent-text" />
+				<span class="grid gap-0.5">
+					<span class="flex flex-wrap items-center gap-2">
+						<strong class="font-semibold">{packOfferLabels.join(' + ')}</strong>
+						<Tag tone="accent">Recommandé</Tag>
+					</span>
+					<span>
+						<strong class="font-semibold tabular-nums">{formatPeriodPrice(everyToolQuote.pharmacyMonthlyTotalCents)} HT {isYearly ? 'par an' : 'par mois'}</strong>
+						au lieu de <s class="tabular-nums">{formatPeriodPrice(everyToolQuote.listMonthlyTotalCents)}</s> : vous économisez
+						{formatPeriodPrice(packSavingsMonthlyCents)} HT {isYearly ? 'par an' : 'par mois'}.
+					</span>
 				</span>
 			</p>
 			<Button variant="secondary" icon="check" onclick={selectEveryTool}>Tout prendre</Button>
@@ -123,21 +165,28 @@
 		<div class="grid gap-3 lg:grid-cols-2">
 			{#each sellableToolCards as toolCard (toolCard.toolKey)}
 				{@const toolPrice = findSingleToolPrice(toolCard.toolKey)}
+				{@const includedFeatures = listIncludedFeatures(toolCard)}
 				{#if toolCard.status === 'included'}
-					<ToggleCard name="includedTools" value={toolCard.toolKey} checked disabled title={toolCard.label} description={toolCard.pitch}>
+					<ToggleCard name="includedTools" value={toolCard.toolKey} checked disabled title={toolCard.offerLabel} description={toolCard.pitch}>
 						{#snippet aside()}<Tag tone="success">{groupName ? `Offert par ${groupName}` : 'Inclus'}</Tag>{/snippet}
+						{#snippet footer()}
+							{@render includedFeatureList(includedFeatures)}
+						{/snippet}
 					</ToggleCard>
 				{:else if toolCard.status === 'unavailable'}
-					<ToggleCard name="unavailableTools" value={toolCard.toolKey} disabled title={toolCard.label} description={toolCard.pitch}>
+					<ToggleCard name="unavailableTools" value={toolCard.toolKey} disabled title={toolCard.offerLabel} description={toolCard.pitch}>
 						{#snippet aside()}<Tag>Bientôt disponible</Tag>{/snippet}
+						{#snippet footer()}
+							{@render includedFeatureList(includedFeatures)}
+						{/snippet}
 					</ToggleCard>
 				{:else}
 					<ToggleCard
 						name="toolKeys"
 						value={toolCard.toolKey}
 						bind:checked={selection[toolCard.toolKey]}
-						isHighlighted={highlightedToolKey === toolCard.toolKey}
-						title={toolCard.label}
+						isHighlighted={highlightedToolKey === toolCard.toolKey || toolCard.includedToolKeys.some((toolKey) => toolKey === highlightedToolKey)}
+						title={toolCard.offerLabel}
 						description={toolCard.pitch}
 					>
 						{#snippet aside()}
@@ -148,10 +197,12 @@
 							/>
 						{/snippet}
 						{#snippet footer()}
-							<span class="flex flex-wrap gap-1.5">
-								{#if isYearly}
+							{@render includedFeatureList(includedFeatures)}
+							<span class="mt-1 flex flex-wrap items-center gap-1.5">
+								{#if toolPrice.pharmacyPriceCents > 0}
 									<span class="text-small text-ink-subtle">
-										soit {formatEuros(monthlyEquivalentOfYearlyPrice(toolPrice.pharmacyPriceCents, freeMonths))} par mois
+										soit {#if isYearly}{formatEuros(monthlyEquivalentOfYearlyPrice(toolPrice.pharmacyPriceCents, freeMonths))} HT par mois,{/if}
+										{formatDailyPrice(toolPrice.pharmacyPriceCents)} HT par jour
 									</span>
 								{/if}
 								{#if toolCard.coverageSummary && groupName}<Tag tone="accent">{toolCard.coverageSummary} avec {groupName}</Tag>{/if}
@@ -168,32 +219,15 @@
 		</div>
 	</section>
 
-	{#if includedToolCards.length > 0}
-		<section aria-labelledby="compris-titre" class="grid gap-2">
-			<div class="grid gap-0.5">
-				<h2 id="compris-titre" class="title-2 text-ink">Compris avec vos modules</h2>
-				<p class="text-small text-ink-muted">Sans rien payer de plus, dès que vous avez un module, même si vous gardez votre propre site.</p>
-			</div>
-			<ul class="grid gap-3 lg:grid-cols-2">
-				{#each includedToolCards as toolCard (toolCard.toolKey)}
-					<li class="flex gap-3 rounded-lg border p-4 {comesWithSelection ? 'border-line bg-surface' : 'border-dashed border-line-strong bg-surface-subtle'}">
-						<Icon name={comesWithSelection ? 'check-circle' : 'lock-simple'} size={20} class={comesWithSelection ? 'text-success' : 'text-ink-subtle'} />
-						<span class="grid min-w-0 flex-1 gap-1">
-							<span class="flex flex-wrap items-start justify-between gap-2">
-								<span class="body-strong text-ink">{toolCard.label}</span>
-								<Tag tone={comesWithSelection ? 'success' : 'neutral'}>{comesWithSelection ? 'Compris' : 'Avec un module'}</Tag>
-							</span>
-							<span class="text-small text-ink-muted">{toolCard.pitch}</span>
-						</span>
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/if}
-
 	{#if failureMessage}<Alert tone="danger">{failureMessage}</Alert>{/if}
 
-	<div class="sticky bottom-3 z-1 rounded-lg border border-line bg-surface p-4 shadow-float">
+	<div class="sticky bottom-3 z-1 grid gap-3 rounded-lg border border-line bg-surface p-4 shadow-float">
+		{#if isTermsCheckboxShown}
+			<Checkbox name="termsAccepted" required>
+				J’accepte les <TextLink href={homePathnames.termsOfSale} opensInNewTab>conditions générales de vente</TextLink> et
+				l’<TextLink href={homePathnames.dataProcessingAgreement} opensInNewTab>accord de traitement des données</TextLink> de Crystal Pharm.
+			</Checkbox>
+		{/if}
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<div class="grid gap-0.5">
 				<p class="flex flex-wrap items-center gap-2">
