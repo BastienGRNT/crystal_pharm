@@ -15,7 +15,9 @@ navigation sombre).
   - `atoms/` : `actions/` (boutons, liens), `fields/` (saisie), `icons/` ;
   - `molecules/` : `fields/` (`Field`, et `pickers/` pour date, heure, liste),
     `navigation/` (choix de vue, semaine) ;
-  - `organisms/` : `shell/` (le cadre et son menu), `authentication/`.
+  - `organisms/` : `shell/` (le cadre et son menu), `authentication/`,
+    `payment/` (la page de paiement de test), `billing/` (les factures),
+    `developer/` (le panneau de l'outil de dev).
 - Seul le générique vit ici : aucun vocabulaire métier dans un nom ou une
   prop (cf. racine, « Svelte »). La grille du planning, qui parle d'employés
   et de créneaux, vit dans son module.

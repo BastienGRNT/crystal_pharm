@@ -2,7 +2,7 @@
 
 Règles du monorepo, valables partout. Chaque zone a son `CLAUDE.md`, lu
 automatiquement quand tu y travailles : il précise celui-ci sans le contredire
-ni le répéter. Ce fichier reste sous ~300 lignes : au-delà, on en reparle.
+ni le répéter. Ce fichier reste sous ~350 lignes : au-delà, on en reparle.
 
 Une règle dit comment coder une zone **le jour où on la code**. Elle ne
 justifie jamais de créer du code, des fichiers ou de l'outillage en avance.
