@@ -1,33 +1,53 @@
-import { getGroupBillingOverview, listPayments, requestGroupContractPayment, type GroupContract, type Payment } from '@crystal-pharm/billing-db';
-import type { ToolCatalog } from '@crystal-pharm/billing-db/domain';
+import {
+	getGroupBillingOverview,
+	listInvoices,
+	requestGroupContractPayment,
+	toInvoiceRow,
+	type GroupContract,
+	type InvoiceRow,
+	type UpcomingCharge
+} from '@crystal-pharm/billing-db';
+import { addVat, type AmountsWithVat, type GroupCharge, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
 import { getPharmacyGroup } from '@crystal-pharm/group-db';
 import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
-import { groupPathnames } from '$lib/groupPathnames';
+import { groupPathnames, invoicePdfPathname } from '$lib/groupPathnames';
 import { requireActiveGroupId } from '$lib/server/activeGroup.server';
 
 export type ContractPageData = {
 	groupName: string;
 	memberPharmacyCount: number;
+	pharmacyQuota: number;
 	contract: GroupContract | undefined;
 	catalog: ToolCatalog;
-	groupMonthlyCostCents: number;
-	payments: Payment[];
+	/** Ce que le groupement paie chaque mois, HT. */
+	charge: GroupCharge;
+	/** Le premier paiement d'un contrat par carte : un mois, TVA comprise. */
+	firstPayment: AmountsWithVat;
+	upcomingCharge: UpcomingCharge | undefined;
+	latestInvoices: InvoiceRow[];
 };
+
+const latestInvoiceCount = 3;
 
 export async function loadContractPage({ locals }: { locals: App.Locals }): Promise<ContractPageData> {
 	const groupId = await requireActiveGroupId(locals.user);
-	const [group, billing, payments] = await Promise.all([
+	const [group, billing, invoices] = await Promise.all([
 		getPharmacyGroup(groupId),
 		getGroupBillingOverview({ groupId }, groupId),
-		listPayments({ groupId })
+		listInvoices({ groupId })
 	]);
 	return {
 		groupName: group.name,
 		memberPharmacyCount: group.memberPharmacyCount,
+		pharmacyQuota: group.pharmacyQuota,
 		contract: billing.contract,
 		catalog: billing.catalog,
-		groupMonthlyCostCents: billing.groupMonthlyCostCents,
-		payments
+		charge: billing.charge,
+		firstPayment: addVat(billing.charge.monthlyTotalCents),
+		upcomingCharge: billing.upcomingCharge,
+		latestInvoices: invoices
+			.slice(0, latestInvoiceCount)
+			.map((invoice) => toInvoiceRow(invoice, invoicePdfPathname(invoice.invoiceId)))
 	};
 }
 
@@ -36,6 +56,9 @@ export const contractPageActions = {
 		const groupId = await requireActiveGroupId(locals.user);
 		const paymentRequest = await requestGroupContractPayment(groupId, groupPathnames.contract);
 		if (paymentRequest.outcome === 'refused') return fail(400, { failureMessage: paymentRequest.failureMessage });
-		redirect(303, paymentRequest.checkoutLocation);
+		redirect(
+			303,
+			paymentRequest.outcome === 'checkout' ? paymentRequest.checkoutLocation : `${groupPathnames.contract}?paiement=reussi`
+		);
 	}
 };

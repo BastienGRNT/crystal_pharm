@@ -10,6 +10,8 @@
 	let { data, form }: PageProps = $props();
 
 	const usedPlaces = $derived(data.group.memberPharmacyCount + data.group.pendingInvitationCount);
+	const isFlatRate = $derived(data.overageUnitPriceCents !== undefined);
+	const overageMemberCount = $derived(Math.max(data.group.memberPharmacyCount - data.group.pharmacyQuota, 0));
 	const invitationFailure = $derived(form && 'failedAction' in form ? form : undefined);
 	const isInvitationPanelOpen = $derived(page.url.searchParams.get('panneau') === 'inviter' || invitationFailure !== undefined);
 	const sentInvitationCount = $derived(Number(page.url.searchParams.get('invitations') ?? 0));
@@ -53,6 +55,15 @@
 			<p class="text-small text-ink-muted">
 				{data.group.memberPharmacyCount} membres · {data.group.pendingInvitationCount} invitations en attente · {Math.max(data.group.pharmacyQuota - usedPlaces, 0)} places libres
 			</p>
+			{#if data.overageUnitPriceCents !== undefined}
+				<p class="text-small text-ink-muted">
+					{#if overageMemberCount > 0}
+						{overageMemberCount} pharmacie(s) au-delà de votre forfait : + {formatEuros(overageMemberCount * data.overageUnitPriceCents)} HT par mois.
+					{:else}
+						Au-delà de {data.group.pharmacyQuota}, chaque pharmacie ajoute {formatEuros(data.overageUnitPriceCents)} HT par mois à votre forfait.
+					{/if}
+				</p>
+			{/if}
 		</div>
 	</div>
 </Card>
@@ -73,7 +84,7 @@
 				<th>Pharmacie</th>
 				<th>Membre depuis</th>
 				<th>Modules actifs</th>
-				<th class="text-right">Votre coût / mois</th>
+				{#if !isFlatRate}<th class="text-right">Votre coût HT / mois</th>{/if}
 				<th><span class="sr-only">Actions</span></th>
 			{/snippet}
 			{#each data.memberPharmacies as memberPharmacy (memberPharmacy.membershipId)}
@@ -84,7 +95,7 @@
 					</td>
 					<td class="text-ink-muted">{formatDay(memberPharmacy.joinedAt)}</td>
 					<td><TagList labels={memberPharmacy.activeToolKeys.map((toolKey) => findTool(toolKey).label)} emptyLabel="Aucun" /></td>
-					<td class="text-right tabular-nums">{formatEuros(memberPharmacy.groupMonthlyCostCents)}</td>
+					{#if !isFlatRate}<td class="text-right tabular-nums">{formatEuros(memberPharmacy.groupMonthlyCostCents)}</td>{/if}
 					<td class="text-right">
 						<form method="POST" action="?/removePharmacy">
 							<input type="hidden" name="membershipId" value={memberPharmacy.membershipId} />
@@ -134,6 +145,7 @@
 		closeHref={groupPathnames.pharmacies}
 		freePlaces={Math.max(data.group.pharmacyQuota - usedPlaces, 0)}
 		pharmacyQuota={data.group.pharmacyQuota}
+		overageUnitPriceCents={data.overageUnitPriceCents}
 		initialList={invitationFailure?.submittedList}
 		failureMessage={invitationFailure?.failureMessage}
 	/>

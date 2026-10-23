@@ -57,8 +57,16 @@
 	<StatCard label="Invitations en attente" icon="envelope-simple" value={String(data.group.pendingInvitationCount)}>
 		{#snippet detail()}<a href={groupPathnames.pharmacies} class="text-accent-text underline">Les suivre</a>{/snippet}
 	</StatCard>
-	<StatCard label="Votre coût ce mois-ci" icon="receipt" value={formatEuros(data.groupMonthlyCostCents)}>
-		{#snippet detail()}D’après les modules actifs de vos pharmacies.{/snippet}
+	<StatCard label="Votre coût mensuel" icon="receipt" value="{formatEuros(data.groupMonthlyCostCents)} HT">
+		{#snippet detail()}
+			{#if data.upcomingCharge}
+				{data.contract?.paymentMethod === 'card' ? 'Prochain prélèvement' : 'Prochaine facture'} le {formatDay(data.upcomingCharge.dueOn)} :
+				{formatEuros(data.upcomingCharge.totalCents)} TTC ·
+			{:else}
+				{data.contract?.billingMode === 'flat_rate' ? 'Votre forfait' : 'D’après les modules actifs de vos pharmacies'} ·
+			{/if}
+			<a href={groupPathnames.invoices} class="text-accent-text underline">vos factures</a>
+		{/snippet}
 	</StatCard>
 </div>
 

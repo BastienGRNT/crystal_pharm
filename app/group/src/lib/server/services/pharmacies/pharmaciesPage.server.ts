@@ -1,5 +1,5 @@
-import { getGroupBillingOverview } from '@crystal-pharm/billing-db';
-import type { ToolKey } from '@crystal-pharm/billing-db/domain';
+import { getGroupBillingOverview, getGroupContract } from '@crystal-pharm/billing-db';
+import { computeOverageUnitPrice, type ToolKey } from '@crystal-pharm/billing-db/domain';
 import {
 	getPharmacyGroup,
 	invitePharmacies,
@@ -32,6 +32,8 @@ export type PharmaciesPageData = {
 	group: PharmacyGroupSummary;
 	memberPharmacies: MemberPharmacyRow[];
 	pendingInvitations: PendingPharmacyInvitation[];
+	/** Au forfait : ce que coûte chaque pharmacie au-delà du quota (HT par mois). À l'usage, le quota est une limite. */
+	overageUnitPriceCents: number | undefined;
 };
 
 export type PharmaciesActionResult =
@@ -54,6 +56,10 @@ export async function loadPharmaciesPage({ locals }: { locals: App.Locals }): Pr
 	return {
 		group,
 		pendingInvitations,
+		overageUnitPriceCents:
+			billing.contract?.billingMode === 'flat_rate'
+				? computeOverageUnitPrice(billing.contract.flatRateMonthlyPriceCents ?? 0, group.pharmacyQuota)
+				: undefined,
 		memberPharmacies: memberPharmacies.map((memberPharmacy) => {
 			const pharmacyBilling = billing.coveredPharmacies.find((covered) => covered.tenantId === memberPharmacy.tenantId);
 			return {
@@ -83,7 +89,8 @@ export const pharmaciesPageActions = {
 			});
 		}
 
-		const sending = await invitePharmacies(groupId, entries);
+		const contract = await getGroupContract({ groupId }, groupId);
+		const sending = await invitePharmacies(groupId, entries, contract?.billingMode === 'flat_rate' ? 'overage-allowed' : 'strict');
 		if (!sending.isSent) return fail(400, { failedAction: 'invitePharmacies', submittedList, failureMessage: sending.failureMessage });
 		for (const sentInvitation of sending.sentInvitations) await emailPharmacyInvitation(sentInvitation);
 		redirect(303, `/pharmacies?${describeSending(sending.sentInvitations.length, sending.skippedEmails)}`);

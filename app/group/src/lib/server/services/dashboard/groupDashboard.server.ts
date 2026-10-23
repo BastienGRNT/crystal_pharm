@@ -1,4 +1,4 @@
-import { getGroupBillingOverview, type GroupContract } from '@crystal-pharm/billing-db';
+import { getGroupBillingOverview, type GroupContract, type UpcomingCharge } from '@crystal-pharm/billing-db';
 import type { ToolCatalog, ToolKey } from '@crystal-pharm/billing-db/domain';
 import { getPharmacyGroup, listMemberPharmacies, type MemberPharmacy, type PharmacyGroupSummary } from '@crystal-pharm/group-db';
 import { requireActiveGroupId } from '$lib/server/activeGroup.server';
@@ -8,6 +8,7 @@ export type GroupDashboardData = {
 	contract: GroupContract | undefined;
 	catalog: ToolCatalog;
 	groupMonthlyCostCents: number;
+	upcomingCharge: UpcomingCharge | undefined;
 	activePharmacyCountByToolKey: Partial<Record<ToolKey, number>>;
 	latestMemberPharmacies: MemberPharmacy[];
 };
@@ -24,6 +25,7 @@ export async function loadGroupDashboard({ locals }: { locals: App.Locals }): Pr
 		contract: billing.contract,
 		catalog: billing.catalog,
 		groupMonthlyCostCents: billing.groupMonthlyCostCents,
+		upcomingCharge: billing.upcomingCharge,
 		activePharmacyCountByToolKey: billing.activePharmacyCountByToolKey,
 		latestMemberPharmacies: memberPharmacies.toSorted((first, second) => second.joinedAt.getTime() - first.joinedAt.getTime()).slice(0, 5)
 	};

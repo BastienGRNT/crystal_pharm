@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatEuros } from '@crystal-pharm/billing-db/domain';
 	import { parseInvitationList } from '@crystal-pharm/group-db/domain';
 	import { Alert, Button, Field, Icon, ProgressBar, SidePanel, Textarea } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
@@ -7,16 +8,20 @@
 		closeHref: string;
 		freePlaces: number;
 		pharmacyQuota: number;
+		/** Au forfait, une pharmacie de plus que le quota est permise, à ce prix (HT par mois). */
+		overageUnitPriceCents?: number;
 		initialList?: string;
 		failureMessage?: string;
 	};
 
-	let { closeHref, freePlaces, pharmacyQuota, initialList = '', failureMessage }: PharmacyInvitationPanelProps = $props();
+	let { closeHref, freePlaces, pharmacyQuota, overageUnitPriceCents, initialList = '', failureMessage }: PharmacyInvitationPanelProps =
+		$props();
 
 	let invitationList = $state(untrack(() => initialList));
 	const parsedList = $derived(parseInvitationList(invitationList));
 	const invitationCount = $derived(parsedList.entries.length);
-	const isOverQuota = $derived(invitationCount > freePlaces);
+	const overQuotaCount = $derived(Math.max(invitationCount - freePlaces, 0));
+	const isOverageAllowed = $derived(overageUnitPriceCents !== undefined);
 
 	async function appendImportedFile(event: Event & { currentTarget: HTMLInputElement }): Promise<void> {
 		const importedFile = event.currentTarget.files?.[0];
@@ -76,14 +81,20 @@
 		{#if parsedList.unreadableLines.length > 0}
 			<Alert tone="warning" title="Lignes sans email valide">{parsedList.unreadableLines.join(' · ')}</Alert>
 		{/if}
-		{#if isOverQuota}
+		{#if overQuotaCount > 0 && overageUnitPriceCents !== undefined}
+			<Alert tone="info" title="Au-delà de votre forfait">
+				{overQuotaCount} pharmacie(s) de plus que votre forfait de {pharmacyQuota}. Chacune ajoute
+				{formatEuros(overageUnitPriceCents)} HT par mois à votre facture, seulement si elle accepte, soit au plus
+				{formatEuros(overQuotaCount * overageUnitPriceCents)} HT par mois.
+			</Alert>
+		{:else if overQuotaCount > 0}
 			<Alert tone="warning">
-				Vous dépassez votre quota de {invitationCount - freePlaces} pharmacie(s). Retirez des lignes, ou contactez Crystal Pharm pour l’augmenter.
+				Vous dépassez votre quota de {overQuotaCount} pharmacie(s). Retirez des lignes, ou contactez Crystal Pharm pour l’augmenter.
 			</Alert>
 		{/if}
 		{#if failureMessage}<Alert tone="danger">{failureMessage}</Alert>{/if}
 
-		<Button type="submit" icon="paper-plane-tilt" isFullWidth disabled={invitationCount === 0 || isOverQuota || parsedList.unreadableLines.length > 0}>
+		<Button type="submit" icon="paper-plane-tilt" isFullWidth disabled={invitationCount === 0 || (overQuotaCount > 0 && !isOverageAllowed) || parsedList.unreadableLines.length > 0}>
 			{invitationCount > 1 ? `Envoyer ${invitationCount} invitations` : 'Envoyer l’invitation'}
 		</Button>
 	</form>
