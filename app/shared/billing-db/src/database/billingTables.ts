@@ -13,6 +13,9 @@ import type { ToolKey } from '../tools/tools';
 
 export const billingSchema = pgSchema('billing');
 
+/** `monthly` : chaque mois · `yearly` : douze mois d'un coup, avec des mois offerts (réglés dans le catalogue). */
+export type BillingPeriod = 'monthly' | 'yearly';
+
 const timestampWithTimeZone = (columnName: string) => timestamp(columnName, { withTimezone: true });
 
 /** Les membres (et les partis du mois, encore pris en charge) du groupement actif. */
@@ -49,6 +52,8 @@ export const catalogSettings = billingSchema.table(
 	{
 		id: integer('id').primaryKey().default(1),
 		packMonthlyPriceCents: integer('pack_monthly_price_cents'),
+		/** Payé à l'année : ces mois-là ne sont pas facturés (2 : « 2 mois offerts »). */
+		annualFreeMonths: integer('annual_free_months').notNull().default(2),
 		updatedAt: timestampWithTimeZone('updated_at')
 			.notNull()
 			.defaultNow()
@@ -56,6 +61,7 @@ export const catalogSettings = billingSchema.table(
 	},
 	() => [
 		check('catalog_settings_is_a_single_row', sql`id = 1`),
+		check('catalog_settings_free_months_fit_in_a_year', sql`annual_free_months between 0 and 11`),
 		pgPolicy('catalog_settings_readable_by_everyone', { for: 'select', using: sql`true` }),
 		pgPolicy('catalog_settings_written_by_platform', { for: 'all', using: isPlatform, withCheck: isPlatform })
 	]
@@ -96,6 +102,7 @@ export const groupContracts = billingSchema.table(
 		/** Le prix du forfait, pour le quota du groupement ; au-delà, chaque pharmacie coûte forfait ÷ quota. */
 		flatRateMonthlyPriceCents: integer('flat_rate_monthly_price_cents'),
 		flatRateOfferId: uuid('flat_rate_offer_id').references(() => flatRateOffers.id, { onDelete: 'set null' }),
+		billingPeriod: text('billing_period').$type<BillingPeriod>().notNull().default('monthly'),
 		activatedAt: timestampWithTimeZone('activated_at'),
 		/** La fin de la période déjà facturée : la prochaine facture tombe à cette date. */
 		billedUntil: timestampWithTimeZone('billed_until'),
@@ -154,6 +161,10 @@ export const tenantSubscriptions = billingSchema.table(
 		billedUntil: timestampWithTimeZone('billed_until')
 			.notNull()
 			.default(sql`now() + interval '1 month'`),
+		/** La période en cours (mensuelle ou annuelle). */
+		billingPeriod: text('billing_period').$type<BillingPeriod>().notNull().default('monthly'),
+		/** Un changement de période demandé : il s'applique au prochain renouvellement. */
+		nextBillingPeriod: text('next_billing_period').$type<BillingPeriod>(),
 		providerSubscriptionReference: text('provider_subscription_reference')
 	},
 	(table) => [
@@ -213,6 +224,8 @@ export const checkouts = billingSchema.table(
 		purpose: text('purpose').$type<CheckoutPurpose>().notNull(),
 		/** Pour `tenant_tools` : tous les Tools voulus une fois le paiement fait. */
 		toolKeys: jsonb('tool_keys').$type<ToolKey[]>().notNull().default([]),
+		/** Pour `tenant_tools` : la période d'un nouvel abonnement. */
+		billingPeriod: text('billing_period').$type<BillingPeriod>().notNull().default('monthly'),
 		lines: jsonb('lines').$type<CheckoutLine[]>().notNull(),
 		amountCents: integer('amount_cents').notNull(),
 		description: text('description').notNull(),

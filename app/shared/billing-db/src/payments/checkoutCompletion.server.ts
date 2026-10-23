@@ -51,7 +51,9 @@ async function applyWhatWasPaid(checkout: typeof checkouts.$inferSelect, now: Da
 	if (checkout.purpose === 'group_contract' && checkout.groupId) return activateGroupContractForOnePeriod(checkout.groupId);
 	if (checkout.purpose === 'tenant_tools' && checkout.tenantId) {
 		const tenantId = checkout.tenantId;
-		await runWithBillingAccess({ tenantId }, (transaction) => applyToolSelection(transaction, tenantId, checkout.toolKeys, now));
+		await runWithBillingAccess({ tenantId }, (transaction) =>
+			applyToolSelection(transaction, tenantId, checkout.toolKeys, now, checkout.billingPeriod)
+		);
 		return (await getToolAccessOfTenant(tenantId)).subscription?.currentPeriodEndsAt;
 	}
 	return undefined;

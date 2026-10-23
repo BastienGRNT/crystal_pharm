@@ -1,4 +1,4 @@
-import { toolKeys, type ToolKey } from '../tools/tools';
+import { findIncludingToolKeys, isIncludedTool, toolKeys, type ToolKey } from '../tools/tools';
 
 /** Un Tool en vente et son prix catalogue. Un Tool absent du catalogue n'est pas en vente. */
 export type ToolPrice = { toolKey: ToolKey; monthlyPriceCents: number };
@@ -7,6 +7,8 @@ export type ToolCatalog = {
 	toolPrices: readonly ToolPrice[];
 	/** Le prix de tous les Tools payants pris ensemble ; `undefined` s'il n'y a pas de pack. */
 	packMonthlyPriceCents: number | undefined;
+	/** Payé à l'année : le nombre de mois offerts. */
+	annualFreeMonths: number;
 };
 
 /** Ce qu'un GroupContract prévoit pour un Tool : une remise, puis la part payée par le groupement. */
@@ -25,6 +27,8 @@ export type ToolQuote = {
 	coverageKind: CoverageKind;
 	/** Accessible sans abonnement : gratuit, ou entièrement payé par le groupement. */
 	isIncluded: boolean;
+	/** Jamais vendu seul : compris dès qu'un des Tools qui le donnent est actif. */
+	isIncludedWithAnotherTool: boolean;
 	isActive: boolean;
 };
 
@@ -54,7 +58,7 @@ const hundredPercent = 100;
  * prix, réparti au prorata : la remise et la part du groupement s'y appliquent.
  */
 export function quoteTools({ catalog, coverages, selectedToolKeys }: ToolsQuoteRequest): ToolsQuote {
-	const toolPricesOnSale = sortInToolOrder(catalog.toolPrices);
+	const toolPricesOnSale = sortInToolOrder(catalog.toolPrices.filter((toolPrice) => !isIncludedTool(toolPrice.toolKey)));
 	const activeToolKeys = toolPricesOnSale
 		.filter(
 			(toolPrice) =>
@@ -64,7 +68,7 @@ export function quoteTools({ catalog, coverages, selectedToolKeys }: ToolsQuoteR
 		.map((toolPrice) => toolPrice.toolKey);
 	const packAdjustedPrices = applyPackWhenEveryPaidToolIsActive(toolPricesOnSale, activeToolKeys, catalog.packMonthlyPriceCents);
 
-	const toolQuotes = toolPricesOnSale.map((toolPrice) => {
+	const toolQuotes = toolPricesOnSale.map((toolPrice): ToolQuote => {
 		const coverage = findCoverage(coverages, toolPrice.toolKey);
 		const basePriceCents = packAdjustedPrices.pricesByToolKey.get(toolPrice.toolKey) ?? toolPrice.monthlyPriceCents;
 		const { pharmacyPriceCents, groupPriceCents } = splitPrice(basePriceCents, coverage);
@@ -75,9 +79,25 @@ export function quoteTools({ catalog, coverages, selectedToolKeys }: ToolsQuoteR
 			groupPriceCents,
 			coverageKind: describeCoverage(coverage),
 			isIncluded: isIncludedWithoutSubscription(toolPrice, coverage),
+			isIncludedWithAnotherTool: false,
 			isActive: activeToolKeys.includes(toolPrice.toolKey)
 		};
 	});
+	const sellableToolKeysOnSale = toolPricesOnSale.map((toolPrice) => toolPrice.toolKey);
+	const includedToolQuotes = toolKeys
+		.filter((toolKey) => findIncludingToolKeys(toolKey).some((includingToolKey) => sellableToolKeysOnSale.includes(includingToolKey)))
+		.map((toolKey): ToolQuote => ({
+			toolKey,
+			listPriceCents: 0,
+			pharmacyPriceCents: 0,
+			groupPriceCents: 0,
+			coverageKind: 'none',
+			isIncluded: false,
+			isIncludedWithAnotherTool: true,
+			isActive: findIncludingToolKeys(toolKey).some((includingToolKey) => activeToolKeys.includes(includingToolKey))
+		}));
+	toolQuotes.push(...includedToolQuotes);
+	toolQuotes.sort((first, second) => toolKeys.indexOf(first.toolKey) - toolKeys.indexOf(second.toolKey));
 
 	const activeToolQuotes = toolQuotes.filter((toolQuote) => toolQuote.isActive);
 	return {
@@ -91,7 +111,7 @@ export function quoteTools({ catalog, coverages, selectedToolKeys }: ToolsQuoteR
 
 /** Les Tools payants : ceux qu'il faut tous prendre pour avoir le pack. */
 export function listPaidToolKeys(catalog: ToolCatalog): ToolKey[] {
-	return sortInToolOrder(catalog.toolPrices)
+	return sortInToolOrder(catalog.toolPrices.filter((toolPrice) => !isIncludedTool(toolPrice.toolKey)))
 		.filter((toolPrice) => toolPrice.monthlyPriceCents > 0)
 		.map((toolPrice) => toolPrice.toolKey);
 }

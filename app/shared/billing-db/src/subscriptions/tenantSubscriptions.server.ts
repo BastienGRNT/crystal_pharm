@@ -7,12 +7,13 @@ import { invoices, tenantSubscriptions, tenantSubscriptionTools } from '../datab
 import { creditInvoice } from '../invoicing/invoices.server';
 import { addVat } from '../invoicing/vatAmounts';
 import type { UpcomingCharge } from '../overview/groupBilling.server';
-import type { GroupContractStatus } from '../database/billingTables';
+import type { BillingPeriod, GroupContractStatus, InvoiceLine } from '../database/billingTables';
 import { formatEuros } from '../money/euroAmount';
 import { openCheckout } from '../payments/checkoutSessions.server';
+import { priceForPeriod, spreadLinesOverPeriod } from '../pricing/billingPeriodPricing';
 import { quoteTools, type ToolCatalog, type ToolCoverage, type ToolsQuote } from '../pricing/toolPricing';
 import { findTool, type ToolKey } from '../tools/tools';
-import { computeCurrentPeriodEnd, computeMoneyBackGuaranteeEnd } from './subscriptionPeriod';
+import { computeMoneyBackGuaranteeEnd, computePeriodEnd, computePeriodStart } from './subscriptionPeriod';
 
 export type SubscribedTool = {
 	toolKey: ToolKey;
@@ -23,6 +24,10 @@ export type SubscribedTool = {
 export type TenantSubscription = {
 	subscriptionId: string;
 	startedAt: Date;
+	billingPeriod: BillingPeriod;
+	/** Un changement demandé, qui s'appliquera au prochain renouvellement. */
+	nextBillingPeriod: BillingPeriod | undefined;
+	currentPeriodStartedAt: Date;
 	currentPeriodEndsAt: Date;
 	/** Résilié : la date où il s'arrête. */
 	endsAt: Date | undefined;
@@ -96,14 +101,18 @@ export async function canTenantUseTool(tenantId: string, toolKey: ToolKey): Prom
 }
 
 /**
- * La pharmacie choisit ses Tools (ceux du groupement déjà inclus mis à part).
- * Un Tool ajouté passe par le paiement ; un Tool retiré reste actif jusqu'à la
- * fin de la période déjà payée ; un retrait annulé ne coûte rien.
+ * La pharmacie choisit ses Tools (ceux du groupement déjà inclus mis à part) et
+ * sa période. Un nouvel abonnement paie sa première période (un mois, ou un an
+ * avec ses mois offerts). Ensuite, un Tool ajouté se paie pour le reste de la
+ * période en cours (le mois entier, ou l'année au prorata des jours) ; un Tool
+ * retiré reste actif jusqu'à la fin de la période payée ; un changement de
+ * période s'applique au prochain renouvellement.
  */
 export async function requestToolSelection(
 	tenantId: string,
 	requestedToolKeys: readonly ToolKey[],
-	returnPathname: string
+	returnPathname: string,
+	requestedBillingPeriod: BillingPeriod = 'monthly'
 ): Promise<ToolSelectionRequest> {
 	return runWithBillingAccess({ tenantId }, async (transaction) => {
 		const now = new Date();
@@ -117,10 +126,20 @@ export async function requestToolSelection(
 		const currentlyPaidToolKeys =
 			toolAccess.subscription?.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey) ?? [];
 		const currentQuote = quoteTools({ catalog: toolAccess.catalog, coverages, selectedToolKeys: currentlyPaidToolKeys });
-		const amountDueCents = Math.max(0, desiredQuote.pharmacyMonthlyTotalCents - currentQuote.pharmacyMonthlyTotalCents);
+		const lines = describeAmountDueLines({
+			subscription: toolAccess.subscription,
+			annualFreeMonths: toolAccess.catalog.annualFreeMonths,
+			requestedBillingPeriod,
+			desiredQuote,
+			desiredToolKeys,
+			addedToolKeys,
+			currentQuote,
+			now
+		});
+		const amountDueCents = Math.max(0, lines.reduce((total, line) => total + line.amountCents, 0));
 
 		if (addedToolKeys.length === 0 || amountDueCents === 0) {
-			await applyToolSelection(transaction, tenantId, desiredToolKeys, now);
+			await applyToolSelection(transaction, tenantId, desiredToolKeys, now, requestedBillingPeriod);
 			return { outcome: 'applied' };
 		}
 
@@ -130,9 +149,10 @@ export async function requestToolSelection(
 			{
 				purpose: 'tenant_tools',
 				toolKeys: desiredToolKeys,
-				lines: describeCheckoutLines(desiredQuote, desiredToolKeys, currentQuote),
+				billingPeriod: requestedBillingPeriod,
+				lines,
 				amountCents: addVat(amountDueCents).totalCents,
-				description: `Abonnement Crystal Pharm : ${formatEuros(desiredQuote.pharmacyMonthlyTotalCents)} par mois`,
+				description: `Abonnement Crystal Pharm : ${formatEuros(desiredQuote.pharmacyMonthlyTotalCents)} HT par mois`,
 				returnPathname
 			}
 		);
@@ -140,16 +160,22 @@ export async function requestToolSelection(
 	});
 }
 
-/** Le paiement est fait (ou rien n'était dû) : l'abonnement prend exactement ces Tools. */
+/** Le paiement est fait (ou rien n'était dû) : l'abonnement prend exactement ces Tools, et cette période. */
 export async function applyToolSelection(
 	transaction: BillingTransaction,
 	tenantId: string,
 	desiredToolKeys: readonly ToolKey[],
-	now: Date
+	now: Date,
+	requestedBillingPeriod: BillingPeriod
 ): Promise<void> {
 	const subscription =
-		(await readCurrentSubscription(transaction, tenantId, now)) ?? (await startSubscription(transaction, tenantId, now));
+		(await readCurrentSubscription(transaction, tenantId, now)) ??
+		(await startSubscription(transaction, tenantId, now, requestedBillingPeriod));
 	if (subscription.endsAt) await resumeSubscriptionRow(transaction, subscription.subscriptionId);
+	await transaction
+		.update(tenantSubscriptions)
+		.set({ nextBillingPeriod: requestedBillingPeriod === subscription.billingPeriod ? null : requestedBillingPeriod })
+		.where(eq(tenantSubscriptions.id, subscription.subscriptionId));
 
 	for (const toolKey of desiredToolKeys) {
 		await transaction
@@ -227,15 +253,49 @@ function keepToolsToPayFor(toolAccess: TenantToolAccess, requestedToolKeys: read
 		.map((toolQuote) => toolQuote.toolKey);
 }
 
-function describeCheckoutLines(desiredQuote: ToolsQuote, desiredToolKeys: readonly ToolKey[], currentQuote: ToolsQuote) {
-	const toolLines = desiredQuote.toolQuotes
-		.filter((toolQuote) => desiredToolKeys.includes(toolQuote.toolKey))
+type AmountDueRequest = {
+	subscription: TenantSubscription | undefined;
+	annualFreeMonths: number;
+	requestedBillingPeriod: BillingPeriod;
+	desiredQuote: ToolsQuote;
+	desiredToolKeys: readonly ToolKey[];
+	addedToolKeys: readonly ToolKey[];
+	currentQuote: ToolsQuote;
+	now: Date;
+};
+
+/** Ce qu'il faut payer aujourd'hui, ligne à ligne (HT). */
+function describeAmountDueLines(request: AmountDueRequest): InvoiceLine[] {
+	const { subscription, desiredQuote, currentQuote } = request;
+	if (!subscription) {
+		return spreadLinesOverPeriod(
+			describeMonthlyToolLines(desiredQuote, request.desiredToolKeys),
+			request.requestedBillingPeriod,
+			request.annualFreeMonths
+		);
+	}
+	if (subscription.billingPeriod === 'monthly') {
+		const alreadyPaidLines =
+			currentQuote.pharmacyMonthlyTotalCents > 0
+				? [{ label: 'Déjà payé pour le mois en cours', amountCents: -currentQuote.pharmacyMonthlyTotalCents }]
+				: [];
+		return [...describeMonthlyToolLines(desiredQuote, request.desiredToolKeys), ...alreadyPaidLines];
+	}
+	// Payé à l'année : l'ajout se paie au prorata des jours qui restent.
+	const monthlyDifferenceCents = Math.max(0, desiredQuote.pharmacyMonthlyTotalCents - currentQuote.pharmacyMonthlyTotalCents);
+	const periodLength = subscription.currentPeriodEndsAt.getTime() - subscription.currentPeriodStartedAt.getTime();
+	const remainingLength = Math.max(0, subscription.currentPeriodEndsAt.getTime() - request.now.getTime());
+	const amountCents = Math.round(
+		(priceForPeriod(monthlyDifferenceCents, 'yearly', request.annualFreeMonths) * remainingLength) / periodLength
+	);
+	const addedLabels = request.addedToolKeys.map((toolKey) => findTool(toolKey).label).join(', ');
+	return [{ label: `Ajout de ${addedLabels}, au prorata jusqu’à la fin de votre année`, amountCents }];
+}
+
+export function describeMonthlyToolLines(quote: ToolsQuote, toolKeys: readonly ToolKey[]): InvoiceLine[] {
+	return quote.toolQuotes
+		.filter((toolQuote) => toolKeys.includes(toolQuote.toolKey) && toolQuote.pharmacyPriceCents > 0)
 		.map((toolQuote) => ({ label: `Module ${findTool(toolQuote.toolKey).label}`, amountCents: toolQuote.pharmacyPriceCents }));
-	const alreadyPaidLines =
-		currentQuote.pharmacyMonthlyTotalCents > 0
-			? [{ label: 'Déjà payé pour le mois en cours', amountCents: -currentQuote.pharmacyMonthlyTotalCents }]
-			: [];
-	return [...toolLines, ...alreadyPaidLines];
 }
 
 async function readCoveringGroup(
@@ -284,6 +344,9 @@ async function readCurrentSubscription(
 	return {
 		subscriptionId: subscriptionRow.id,
 		startedAt: subscriptionRow.startedAt,
+		billingPeriod: subscriptionRow.billingPeriod,
+		nextBillingPeriod: subscriptionRow.nextBillingPeriod ?? undefined,
+		currentPeriodStartedAt: computePeriodStart(subscriptionRow.billedUntil, subscriptionRow.billingPeriod),
 		currentPeriodEndsAt: subscriptionRow.billedUntil,
 		endsAt: subscriptionRow.endsAt ?? undefined,
 		moneyBackGuaranteeEndsAt,
@@ -292,14 +355,24 @@ async function readCurrentSubscription(
 	};
 }
 
-async function startSubscription(transaction: BillingTransaction, tenantId: string, now: Date): Promise<TenantSubscription> {
+async function startSubscription(
+	transaction: BillingTransaction,
+	tenantId: string,
+	now: Date,
+	billingPeriod: BillingPeriod
+): Promise<TenantSubscription> {
 	const subscriptionId = crypto.randomUUID();
-	const firstPeriodEnd = computeCurrentPeriodEnd(now, now);
-	await transaction.insert(tenantSubscriptions).values({ id: subscriptionId, tenantId, startedAt: now, billedUntil: firstPeriodEnd });
+	const firstPeriodEnd = computePeriodEnd(now, billingPeriod);
+	await transaction
+		.insert(tenantSubscriptions)
+		.values({ id: subscriptionId, tenantId, startedAt: now, billedUntil: firstPeriodEnd, billingPeriod });
 	const moneyBackGuaranteeEndsAt = computeMoneyBackGuaranteeEnd(now);
 	return {
 		subscriptionId,
 		startedAt: now,
+		billingPeriod,
+		nextBillingPeriod: undefined,
+		currentPeriodStartedAt: now,
 		currentPeriodEndsAt: firstPeriodEnd,
 		endsAt: undefined,
 		moneyBackGuaranteeEndsAt,
@@ -367,5 +440,10 @@ function describeUpcomingCharge(
 	const continuingToolKeys = subscription.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey);
 	const nextQuote = quoteTools({ catalog, coverages, selectedToolKeys: continuingToolKeys });
 	if (nextQuote.pharmacyMonthlyTotalCents === 0) return undefined;
-	return { dueOn: subscription.currentPeriodEndsAt, ...addVat(nextQuote.pharmacyMonthlyTotalCents) };
+	const billingPeriod = subscription.nextBillingPeriod ?? subscription.billingPeriod;
+	return {
+		dueOn: subscription.currentPeriodEndsAt,
+		billingPeriod,
+		...addVat(priceForPeriod(nextQuote.pharmacyMonthlyTotalCents, billingPeriod, catalog.annualFreeMonths))
+	};
 }

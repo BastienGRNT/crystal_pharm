@@ -1,7 +1,14 @@
 import { and, desc, eq } from 'drizzle-orm';
 import type { BillingAccess, BillingTransaction } from '../database/billingDatabase.server';
 import { runWithBillingAccess } from '../database/billingDatabase.server';
-import { checkouts, payments, type CheckoutLine, type CheckoutPurpose, type CheckoutStatus } from '../database/billingTables';
+import {
+	checkouts,
+	payments,
+	type BillingPeriod,
+	type CheckoutLine,
+	type CheckoutPurpose,
+	type CheckoutStatus
+} from '../database/billingTables';
 import type { ToolKey } from '../tools/tools';
 import { vatRatePercent } from '../invoicing/vatAmounts';
 import { getPaymentProvider } from './paymentProvider';
@@ -12,6 +19,8 @@ export type Payer = { tenantId: string } | { groupId: string };
 export type CheckoutOpening = {
 	purpose: CheckoutPurpose;
 	toolKeys?: readonly ToolKey[];
+	/** La période d'un nouvel abonnement (ou celle demandée pour le prochain renouvellement). */
+	billingPeriod?: BillingPeriod;
 	lines: readonly CheckoutLine[];
 	amountCents: number;
 	description: string;
@@ -54,6 +63,7 @@ export async function openCheckout(
 		groupId: 'groupId' in payer ? payer.groupId : null,
 		purpose: checkoutOpening.purpose,
 		toolKeys: [...(checkoutOpening.toolKeys ?? [])],
+		billingPeriod: checkoutOpening.billingPeriod ?? 'monthly',
 		lines: [...checkoutOpening.lines],
 		amountCents: checkoutOpening.amountCents,
 		description: checkoutOpening.description,

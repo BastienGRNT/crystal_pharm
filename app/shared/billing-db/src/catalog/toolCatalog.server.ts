@@ -4,17 +4,24 @@ import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } 
 import { catalogSettings, toolPrices } from '../database/billingTables';
 import { parseEurosToCents } from '../money/euroAmount';
 import type { ToolCatalog, ToolPrice } from '../pricing/toolPricing';
-import { isToolKey, toolKeys, type ToolKey } from '../tools/tools';
+import { isIncludedTool, isToolKey, sellableToolKeys, type ToolKey } from '../tools/tools';
 
 export const packPriceFieldName = 'pack';
+export const annualFreeMonthsFieldName = 'annualFreeMonths';
 
-export type ToolCatalogFieldName = ToolKey | typeof packPriceFieldName;
+export type ToolCatalogFieldName = ToolKey | typeof packPriceFieldName | typeof annualFreeMonthsFieldName;
 
-/** Ce que la Platform saisit : un prix en euros par Tool (vide : pas en vente) et le prix du pack. */
+/**
+ * Ce que la Platform saisit : un prix en euros par Tool vendu (vide : pas en
+ * vente), le prix du pack, et les mois offerts quand on paie à l'année.
+ */
 export type ToolCatalogInput = {
 	toolPriceInputs: Partial<Record<ToolKey, string>>;
 	packPriceInput: string;
+	annualFreeMonthsInput: string;
 };
+
+const defaultAnnualFreeMonths = 2;
 
 export function getToolCatalog(): Promise<ToolCatalog> {
 	return runWithBillingAccess({}, readToolCatalog);
@@ -25,16 +32,17 @@ export async function readToolCatalog(transaction: BillingTransaction): Promise<
 	const [settings] = await transaction.select().from(catalogSettings);
 	return {
 		toolPrices: priceRows
-			.filter((priceRow) => isToolKey(priceRow.toolKey))
+			.filter((priceRow) => isToolKey(priceRow.toolKey) && !isIncludedTool(priceRow.toolKey))
 			.map((priceRow): ToolPrice => ({ toolKey: priceRow.toolKey, monthlyPriceCents: priceRow.monthlyPriceCents })),
-		packMonthlyPriceCents: settings?.packMonthlyPriceCents ?? undefined
+		packMonthlyPriceCents: settings?.packMonthlyPriceCents ?? undefined,
+		annualFreeMonths: settings?.annualFreeMonths ?? defaultAnnualFreeMonths
 	};
 }
 
 export async function saveToolCatalog(catalogInput: ToolCatalogInput): Promise<SaveResult<ToolCatalogFieldName>> {
 	const fieldErrors: FieldErrors<ToolCatalogFieldName> = {};
 	const pricesOnSale: ToolPrice[] = [];
-	for (const toolKey of toolKeys) {
+	for (const toolKey of sellableToolKeys) {
 		const priceInput = catalogInput.toolPriceInputs[toolKey]?.trim() ?? '';
 		if (priceInput === '') continue;
 		const monthlyPriceCents = parseEurosToCents(priceInput);
@@ -51,6 +59,10 @@ export async function saveToolCatalog(catalogInput: ToolCatalogInput): Promise<S
 	if (packMonthlyPriceCents !== undefined && packMonthlyPriceCents >= paidTotalCents) {
 		fieldErrors[packPriceFieldName] = 'Le pack doit coûter moins cher que tous les modules pris un par un.';
 	}
+	const annualFreeMonths = Number(catalogInput.annualFreeMonthsInput.trim() || defaultAnnualFreeMonths);
+	if (!Number.isInteger(annualFreeMonths) || annualFreeMonths < 0 || annualFreeMonths > 11) {
+		fieldErrors[annualFreeMonthsFieldName] = 'Indiquez un nombre de mois entre 0 et 11.';
+	}
 	if (Object.keys(fieldErrors).length > 0) return { isSaved: false, fieldErrors };
 
 	await runWithBillingAccess(platformBillingAccess, async (transaction) => {
@@ -66,8 +78,11 @@ export async function saveToolCatalog(catalogInput: ToolCatalogInput): Promise<S
 		}
 		await transaction
 			.insert(catalogSettings)
-			.values({ id: 1, packMonthlyPriceCents: packMonthlyPriceCents ?? null })
-			.onConflictDoUpdate({ target: catalogSettings.id, set: { packMonthlyPriceCents: packMonthlyPriceCents ?? null } });
+			.values({ id: 1, packMonthlyPriceCents: packMonthlyPriceCents ?? null, annualFreeMonths })
+			.onConflictDoUpdate({
+				target: catalogSettings.id,
+				set: { packMonthlyPriceCents: packMonthlyPriceCents ?? null, annualFreeMonths }
+			});
 	});
 	return { isSaved: true };
 }

@@ -3,9 +3,9 @@ import { platformBillingAccess, runWithBillingAccess } from '../database/billing
 import { groupContracts, tenantSubscriptions, type InvoicePaymentMethod } from '../database/billingTables';
 import { chargeAndInvoice } from '../invoicing/invoices.server';
 import { describeGroupChargeLines, getGroupBillingOverview } from '../overview/groupBilling.server';
-import { computeCurrentPeriodEnd } from '../subscriptions/subscriptionPeriod';
-import { getToolAccessOfTenant } from '../subscriptions/tenantSubscriptions.server';
-import { findTool } from '../tools/tools';
+import { spreadLinesOverPeriod } from '../pricing/billingPeriodPricing';
+import { computePeriodEnd } from '../subscriptions/subscriptionPeriod';
+import { describeMonthlyToolLines, getToolAccessOfTenant } from '../subscriptions/tenantSubscriptions.server';
 
 export type DueBillingReport = { invoicedTenantCount: number; invoicedGroupCount: number };
 
@@ -42,7 +42,7 @@ export async function billDueGroupContract(
 	while (billedUntil && billedUntil <= now) {
 		const overview = await getGroupBillingOverview(platformBillingAccess, groupId);
 		if (overview.contract?.status !== 'active') break;
-		const periodEnd = computeCurrentPeriodEnd(billedUntil, billedUntil);
+		const periodEnd = computePeriodEnd(billedUntil, overview.contract.billingPeriod);
 		const invoice = await chargeAndInvoice({
 			payer: { groupId },
 			lines: describeGroupChargeLines(overview),
@@ -67,17 +67,20 @@ async function billDueSubscription(subscriptionId: string, tenantId: string, now
 	let invoicedPeriodCount = 0;
 	let toolAccess = await getToolAccessOfTenant(tenantId, now);
 	while (toolAccess.subscription?.subscriptionId === subscriptionId && toolAccess.subscription.currentPeriodEndsAt <= now) {
-		const periodStart = toolAccess.subscription.currentPeriodEndsAt;
-		const periodEnd = computeCurrentPeriodEnd(periodStart, periodStart);
-		const paidToolQuotes = toolAccess.quote.toolQuotes.filter(
-			(toolQuote) =>
-				toolQuote.isActive &&
-				toolQuote.pharmacyPriceCents > 0 &&
-				toolAccess.subscription?.tools.some((subscribedTool) => subscribedTool.toolKey === toolQuote.toolKey && !subscribedTool.endsAt)
-		);
+		const subscription = toolAccess.subscription;
+		const periodStart = subscription.currentPeriodEndsAt;
+		const billingPeriod = subscription.nextBillingPeriod ?? subscription.billingPeriod;
+		const periodEnd = computePeriodEnd(periodStart, billingPeriod);
+		const continuingToolKeys = subscription.tools
+			.filter((subscribedTool) => !subscribedTool.endsAt)
+			.map((subscribedTool) => subscribedTool.toolKey);
 		const invoice = await chargeAndInvoice({
 			payer: { tenantId },
-			lines: paidToolQuotes.map((toolQuote) => ({ label: `Module ${findTool(toolQuote.toolKey).label}`, amountCents: toolQuote.pharmacyPriceCents })),
+			lines: spreadLinesOverPeriod(
+				describeMonthlyToolLines(toolAccess.quote, continuingToolKeys),
+				billingPeriod,
+				toolAccess.catalog.annualFreeMonths
+			),
 			description: 'Abonnement Crystal Pharm',
 			periodStart,
 			periodEnd,
@@ -85,7 +88,10 @@ async function billDueSubscription(subscriptionId: string, tenantId: string, now
 		});
 		if (invoice) invoicedPeriodCount += 1;
 		await runWithBillingAccess(platformBillingAccess, (transaction) =>
-			transaction.update(tenantSubscriptions).set({ billedUntil: periodEnd }).where(eq(tenantSubscriptions.id, subscriptionId))
+			transaction
+				.update(tenantSubscriptions)
+				.set({ billedUntil: periodEnd, billingPeriod, nextBillingPeriod: null })
+				.where(eq(tenantSubscriptions.id, subscriptionId))
 		);
 		toolAccess = await getToolAccessOfTenant(tenantId, now);
 	}

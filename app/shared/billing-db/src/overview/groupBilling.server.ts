@@ -8,14 +8,21 @@ import {
 	type BillingAccess,
 	type BillingTransaction
 } from '../database/billingDatabase.server';
-import { groupContracts, tenantSubscriptions, tenantSubscriptionTools, type InvoiceLine } from '../database/billingTables';
+import {
+	groupContracts,
+	tenantSubscriptions,
+	tenantSubscriptionTools,
+	type BillingPeriod,
+	type InvoiceLine
+} from '../database/billingTables';
 import { addVat } from '../invoicing/vatAmounts';
 import { formatEuros } from '../money/euroAmount';
 import { openCheckout } from '../payments/checkoutSessions.server';
+import { priceForPeriod, spreadLinesOverPeriod } from '../pricing/billingPeriodPricing';
 import { computeGroupMonthlyCharge, type GroupCharge } from '../pricing/groupCharge';
 import { quoteTools, type ToolCatalog } from '../pricing/toolPricing';
 import { findTool, toolKeys, type ToolKey } from '../tools/tools';
-import { computeCurrentPeriodEnd } from '../subscriptions/subscriptionPeriod';
+import { computePeriodEnd } from '../subscriptions/subscriptionPeriod';
 
 /** Ce que coûte une pharmacie au groupement, et ce qu'elle utilise. */
 export type CoveredPharmacyBilling = {
@@ -27,7 +34,14 @@ export type CoveredPharmacyBilling = {
 };
 
 /** Le prochain prélèvement (carte) ou la prochaine facture (virement), TVA comprise. */
-export type UpcomingCharge = { dueOn: Date; subtotalCents: number; vatCents: number; totalCents: number };
+export type UpcomingCharge = {
+	dueOn: Date;
+	/** Ce que couvre ce paiement : un mois, ou un an. */
+	billingPeriod: BillingPeriod;
+	subtotalCents: number;
+	vatCents: number;
+	totalCents: number;
+};
 
 export type GroupBillingOverview = {
 	catalog: ToolCatalog;
@@ -92,7 +106,11 @@ export async function getGroupBillingOverview(access: BillingAccess, groupId: st
 			groupMonthlyCostCents: charge.monthlyTotalCents,
 			upcomingCharge:
 				contract?.status === 'active' && contract.billedUntil
-					? { dueOn: contract.billedUntil, ...addVat(charge.monthlyTotalCents) }
+					? {
+							dueOn: contract.billedUntil,
+							billingPeriod: contract.billingPeriod,
+							...addVat(priceForPeriod(charge.monthlyTotalCents, contract.billingPeriod, catalog.annualFreeMonths))
+						}
 					: undefined,
 			coveredPharmacies,
 			activePharmacyCountByToolKey
@@ -100,8 +118,17 @@ export async function getGroupBillingOverview(access: BillingAccess, groupId: st
 	});
 }
 
-/** Les lignes d'une facture du groupement : son forfait et ses dépassements, ou ses pharmacies module par module. */
+/** Les lignes d'une facture du groupement pour sa période (un mois, ou un an avec ses mois offerts). */
 export function describeGroupChargeLines(overview: GroupBillingOverview): InvoiceLine[] {
+	return spreadLinesOverPeriod(
+		describeMonthlyGroupChargeLines(overview),
+		overview.contract?.billingPeriod ?? 'monthly',
+		overview.catalog.annualFreeMonths
+	);
+}
+
+/** Un mois du groupement : son forfait et ses dépassements, ou ses pharmacies module par module. */
+function describeMonthlyGroupChargeLines(overview: GroupBillingOverview): InvoiceLine[] {
 	const { charge } = overview;
 	if (overview.contract?.billingMode === 'flat_rate') {
 		return [
@@ -134,6 +161,7 @@ export async function requestGroupContractPayment(groupId: string, returnPathnam
 	if (overview.contract?.paymentMethod !== 'card' || overview.contract.status !== 'awaiting_payment') {
 		return { outcome: 'refused', failureMessage: 'Ce contrat n’attend aucun paiement par carte.' };
 	}
+	const periodWording = overview.contract.billingPeriod === 'yearly' ? 'pour un an' : 'pour un mois';
 	const lines = describeGroupChargeLines(overview);
 	const subtotalCents = lines.reduce((total, line) => total + line.amountCents, 0);
 	if (subtotalCents === 0) {
@@ -148,7 +176,7 @@ export async function requestGroupContractPayment(groupId: string, returnPathnam
 				purpose: 'group_contract',
 				lines,
 				amountCents: addVat(subtotalCents).totalCents,
-				description: `Contrat de groupement Crystal Pharm : ${formatEuros(subtotalCents)} HT par mois`,
+				description: `Contrat de groupement Crystal Pharm : ${formatEuros(subtotalCents)} HT ${periodWording}`,
 				returnPathname
 			}
 		);
@@ -156,10 +184,11 @@ export async function requestGroupContractPayment(groupId: string, returnPathnam
 	});
 }
 
-/** Le premier mois est réglé (ou rien n'était dû) : la prochaine facture tombe dans un mois. */
+/** La première période est réglée (ou rien n'était dû) : la prochaine facture tombe un mois, ou un an, plus tard. */
 export async function activateGroupContractForOnePeriod(groupId: string): Promise<Date> {
 	const now = new Date();
-	const nextBillingDate = computeCurrentPeriodEnd(now, now);
+	const contract = await runWithBillingAccess(platformBillingAccess, (transaction) => readGroupContract(transaction, groupId));
+	const nextBillingDate = computePeriodEnd(now, contract?.billingPeriod ?? 'monthly');
 	await runWithBillingAccess(platformBillingAccess, async (transaction) => {
 		await writeGroupContractStatus(transaction, groupId, 'active');
 		await transaction.update(groupContracts).set({ billedUntil: nextBillingDate }).where(eq(groupContracts.groupId, groupId));

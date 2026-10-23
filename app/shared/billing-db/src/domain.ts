@@ -17,9 +17,41 @@ export { addVat, vatRatePercent, type AmountsWithVat } from './invoicing/vatAmou
 export { computeGroupMonthlyCharge, computeOverageUnitPrice, type GroupCharge } from './pricing/groupCharge';
 export { summarizeCoverage } from './pricing/coverageWording';
 export { describeGroupBillingMode, describeOveragePrice } from './pricing/groupChargeWording';
-export { computeCurrentPeriodEnd, computeMoneyBackGuaranteeEnd } from './subscriptions/subscriptionPeriod';
-export { findTool, isToolKey, toolKeys, tools, type Tool, type ToolKey } from './tools/tools';
+export {
+	describeGroupContractInWords,
+	describeGroupContractTerms,
+	type ContractToolTerms,
+	type ContractVoice,
+	type GroupBillingTerms,
+	type GroupContractTerms,
+	type GroupContractWords,
+	type ToolPayer
+} from './pricing/groupContractTerms';
+export {
+	countBilledMonths,
+	monthlyEquivalentOfYearlyPrice,
+	priceForPeriod,
+	spreadLinesOverPeriod
+} from './pricing/billingPeriodPricing';
+export {
+	computeCurrentPeriodEnd,
+	computeMoneyBackGuaranteeEnd,
+	computePeriodEnd
+} from './subscriptions/subscriptionPeriod';
+export {
+	describeInclusion,
+	findIncludingToolKeys,
+	findTool,
+	isIncludedTool,
+	isToolKey,
+	sellableToolKeys,
+	toolKeys,
+	tools,
+	type Tool,
+	type ToolKey
+} from './tools/tools';
 export type {
+	BillingPeriod,
 	CheckoutLine,
 	CheckoutStatus,
 	GroupBillingMode,

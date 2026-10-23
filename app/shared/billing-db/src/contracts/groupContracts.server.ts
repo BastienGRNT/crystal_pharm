@@ -9,13 +9,14 @@ import {
 import {
 	groupContracts,
 	groupToolCoverages,
+	type BillingPeriod,
 	type GroupBillingMode,
 	type GroupContractStatus,
 	type GroupPaymentMethod
 } from '../database/billingTables';
 import { parseEurosToCents } from '../money/euroAmount';
 import type { ToolCoverage } from '../pricing/toolPricing';
-import { isToolKey, toolKeys, type ToolKey } from '../tools/tools';
+import { isIncludedTool, isToolKey, sellableToolKeys, type ToolKey } from '../tools/tools';
 
 export type GroupContract = {
 	groupId: string;
@@ -25,6 +26,8 @@ export type GroupContract = {
 	/** Seulement au forfait. */
 	flatRateMonthlyPriceCents: number | undefined;
 	flatRateOfferId: string | undefined;
+	/** À l'année : seulement au forfait. */
+	billingPeriod: BillingPeriod;
 	activatedAt: Date | undefined;
 	/** La prochaine facture tombe à cette date ; `undefined` tant que le contrat n'a jamais été actif. */
 	billedUntil: Date | undefined;
@@ -42,13 +45,19 @@ export type GroupContractInput = {
 	billingMode: string;
 	flatRatePriceInput: string;
 	flatRateOfferId: string;
+	billingPeriod: string;
 	coverageInputs: Partial<Record<ToolKey, { discountPercent: string; groupSharePercent: string }>>;
 };
 
 export const paymentMethodFieldName = 'paymentMethod';
 export const flatRatePriceFieldName = 'flatRatePrice';
+export const billingPeriodFieldName = 'billingPeriod';
 
-export type GroupContractFieldName = ToolKey | typeof paymentMethodFieldName | typeof flatRatePriceFieldName;
+export type GroupContractFieldName =
+	| ToolKey
+	| typeof paymentMethodFieldName
+	| typeof flatRatePriceFieldName
+	| typeof billingPeriodFieldName;
 
 export type GroupContractValidation =
 	| {
@@ -57,6 +66,7 @@ export type GroupContractValidation =
 			billingMode: GroupBillingMode;
 			flatRateMonthlyPriceCents: number | undefined;
 			flatRateOfferId: string | undefined;
+			billingPeriod: BillingPeriod;
 			coverages: ToolCoverage[];
 	  }
 	| { isValid: false; fieldErrors: FieldErrors<GroupContractFieldName> };
@@ -81,10 +91,11 @@ export async function readGroupContract(
 		billingMode: contract.billingMode,
 		flatRateMonthlyPriceCents: contract.billingMode === 'flat_rate' ? (contract.flatRateMonthlyPriceCents ?? 0) : undefined,
 		flatRateOfferId: contract.flatRateOfferId ?? undefined,
+		billingPeriod: contract.billingPeriod,
 		activatedAt: contract.activatedAt ?? undefined,
 		billedUntil: contract.billedUntil ?? undefined,
 		coverages: coverageRows
-			.filter((coverageRow) => isToolKey(coverageRow.toolKey))
+			.filter((coverageRow) => isToolKey(coverageRow.toolKey) && !isIncludedTool(coverageRow.toolKey))
 			.map((coverageRow) => ({
 				toolKey: coverageRow.toolKey,
 				discountPercent: coverageRow.discountPercent,
@@ -105,8 +116,13 @@ export function validateGroupContractInput(contractInput: GroupContractInput): G
 		fieldErrors[flatRatePriceFieldName] = 'Indiquez le prix du forfait en euros HT, par exemple 2000.';
 	}
 
+	const billingPeriod: BillingPeriod = contractInput.billingPeriod === 'yearly' ? 'yearly' : 'monthly';
+	if (billingPeriod === 'yearly' && billingMode !== 'flat_rate') {
+		fieldErrors[billingPeriodFieldName] = 'Le paiement à l’année est réservé au forfait : à l’usage, la facture suit les pharmacies chaque mois.';
+	}
+
 	const coverages: ToolCoverage[] = [];
-	for (const toolKey of toolKeys) {
+	for (const toolKey of sellableToolKeys) {
 		const coverageInput = contractInput.coverageInputs[toolKey];
 		if (!coverageInput) continue;
 		const discountPercent = parsePercentage(coverageInput.discountPercent);
@@ -124,6 +140,7 @@ export function validateGroupContractInput(contractInput: GroupContractInput): G
 		billingMode,
 		flatRateMonthlyPriceCents,
 		flatRateOfferId: billingMode === 'flat_rate' && contractInput.flatRateOfferId ? contractInput.flatRateOfferId : undefined,
+		billingPeriod,
 		coverages
 	};
 }
@@ -145,7 +162,8 @@ export async function writeGroupContract(
 			paymentMethod: contract.paymentMethod,
 			billingMode: contract.billingMode,
 			flatRateMonthlyPriceCents: contract.flatRateMonthlyPriceCents ?? null,
-			flatRateOfferId: contract.flatRateOfferId ?? null
+			flatRateOfferId: contract.flatRateOfferId ?? null,
+			billingPeriod: contract.billingPeriod
 		};
 		await transaction
 			.insert(groupContracts)
