@@ -13,6 +13,8 @@
 	navigationLinks={toolLinks}
 	currentPathname={page.url.pathname}
 	signedInUser={data.signedInManager}
+	spaceLabel={data.pharmacyName}
+	hrefsNeedingAttention={data.hrefsNeedingAttention}
 	onSignOut={() => signOutAndOpen('/login')}
 >
 	{@render children()}
