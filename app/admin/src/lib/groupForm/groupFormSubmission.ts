@@ -1,7 +1,9 @@
-import { toolKeys, type GroupPaymentMethod, type ToolKey } from '@crystal-pharm/billing-db/domain';
-import { createEmptyGroupFormValues, type CoverageMode, type GroupFormValues, type ToolCoverageFormValue } from './groupFormValues';
+import { sellableToolKeys, type ToolKey, type ToolPayer } from '@crystal-pharm/billing-db/domain';
+import { createEmptyGroupFormValues, type DiscountScope, type GroupFormValues, type ToolTermsFormValue, type WhoPays } from './groupFormValues';
 
-const coverageModes: readonly CoverageMode[] = ['none', 'discount', 'shared', 'full'];
+const whoPaysAnswers: readonly WhoPays[] = ['group', 'depends', 'pharmacies'];
+const discountScopes: readonly DiscountScope[] = ['none', 'same', 'per-tool'];
+const toolPayers: readonly ToolPayer[] = ['group', 'shared', 'pharmacy'];
 
 /** Relit le formulaire envoyé, tel qu'il a été saisi (pour le réafficher en cas d'erreur). */
 export function readGroupFormValues(formData: FormData): GroupFormValues {
@@ -10,24 +12,32 @@ export function readGroupFormValues(formData: FormData): GroupFormValues {
 		name: readText(formData, 'name'),
 		contactEmail: readText(formData, 'contactEmail'),
 		pharmacyQuota: readText(formData, 'pharmacyQuota'),
-		paymentMethod: readText(formData, 'paymentMethod') === 'card' ? 'card' : ('invoice' satisfies GroupPaymentMethod),
-		billingMode: readText(formData, 'billingMode') === 'flat_rate' ? 'flat_rate' : 'usage',
+		firstGroupMemberEmail: readText(formData, 'firstGroupMemberEmail'),
+		whoPays: readChoice(formData, 'whoPays', whoPaysAnswers, emptyValues.whoPays),
+		toolTerms: Object.fromEntries(
+			sellableToolKeys.map((toolKey) => [toolKey, readToolTerms(formData, toolKey, emptyValues.toolTerms[toolKey])])
+		) as Record<ToolKey, ToolTermsFormValue>,
+		discountScope: readChoice(formData, 'discountScope', discountScopes, emptyValues.discountScope),
+		discountPercent: readText(formData, 'discountPercent'),
+		billingMode: readText(formData, 'billingMode') === 'usage' ? 'usage' : 'flat_rate',
 		flatRatePrice: readText(formData, 'flatRatePrice'),
 		flatRateOfferId: readText(formData, 'flatRateOfferId'),
-		coverages: Object.fromEntries(
-			toolKeys.map((toolKey) => [toolKey, readCoverage(formData, toolKey, emptyValues.coverages[toolKey])])
-		) as Record<ToolKey, ToolCoverageFormValue>,
-		firstGroupMemberEmail: readText(formData, 'firstGroupMemberEmail')
+		paymentMethod: readText(formData, 'paymentMethod') === 'card' ? 'card' : 'invoice',
+		billingPeriod: readText(formData, 'billingPeriod') === 'yearly' ? 'yearly' : 'monthly'
 	};
 }
 
-function readCoverage(formData: FormData, toolKey: ToolKey, fallback: ToolCoverageFormValue): ToolCoverageFormValue {
-	const mode = readText(formData, `coverage.${toolKey}.mode`);
+function readToolTerms(formData: FormData, toolKey: ToolKey, fallback: ToolTermsFormValue): ToolTermsFormValue {
 	return {
-		mode: coverageModes.find((candidate) => candidate === mode) ?? fallback.mode,
-		discountPercent: readText(formData, `coverage.${toolKey}.discountPercent`),
-		groupSharePercent: readText(formData, `coverage.${toolKey}.groupSharePercent`)
+		payer: readChoice(formData, `toolTerms.${toolKey}.payer`, toolPayers, fallback.payer),
+		groupSharePercent: readText(formData, `toolTerms.${toolKey}.groupSharePercent`),
+		discountPercent: readText(formData, `toolTerms.${toolKey}.discountPercent`)
 	};
+}
+
+function readChoice<Choice extends string>(formData: FormData, fieldName: string, choices: readonly Choice[], fallback: Choice): Choice {
+	const value = readText(formData, fieldName);
+	return choices.find((choice) => choice === value) ?? fallback;
 }
 
 function readText(formData: FormData, fieldName: string): string {

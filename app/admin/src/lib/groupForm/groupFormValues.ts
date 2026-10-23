@@ -1,85 +1,92 @@
+import type { GroupContract } from '@crystal-pharm/billing-db';
 import {
-	describeCoverage,
-	toolKeys,
-	type CoverageKind,
+	sellableToolKeys,
+	type BillingPeriod,
 	type GroupBillingMode,
 	type GroupPaymentMethod,
 	type ToolCoverage,
-	type ToolKey
+	type ToolKey,
+	type ToolPayer
 } from '@crystal-pharm/billing-db/domain';
 
-/** Comment le groupement prend en charge un module, tel que la Platform le choisit. */
-export type CoverageMode = CoverageKind;
+/** La première question du contrat : qui paie les modules des pharmacies membres ? */
+export type WhoPays = 'group' | 'depends' | 'pharmacies';
 
-export type ToolCoverageFormValue = { mode: CoverageMode; discountPercent: string; groupSharePercent: string };
+/** Une remise négociée : aucune, la même partout, ou module par module. */
+export type DiscountScope = 'none' | 'same' | 'per-tool';
+
+export type ToolTermsFormValue = { payer: ToolPayer; groupSharePercent: string; discountPercent: string };
 
 export type GroupFormValues = {
 	name: string;
 	contactEmail: string;
 	pharmacyQuota: string;
-	paymentMethod: GroupPaymentMethod;
+	/** Seulement à la création : le premier responsable, invité par email. */
+	firstGroupMemberEmail: string;
+	whoPays: WhoPays;
+	/** Quand « ça dépend du module » : qui paie chacun ; et la remise module par module. */
+	toolTerms: Record<ToolKey, ToolTermsFormValue>;
+	discountScope: DiscountScope;
+	discountPercent: string;
 	billingMode: GroupBillingMode;
 	/** Au forfait : son prix en euros HT par mois, saisi ou repris d'une offre du catalogue. */
 	flatRatePrice: string;
 	/** L'offre du catalogue choisie ; vide pour un forfait sur mesure. */
 	flatRateOfferId: string;
-	coverages: Record<ToolKey, ToolCoverageFormValue>;
-	/** Seulement à la création : le premier responsable, invité par email. */
-	firstGroupMemberEmail: string;
+	paymentMethod: GroupPaymentMethod;
+	billingPeriod: BillingPeriod;
 };
 
 export type GroupFormFieldName =
 	| 'name'
 	| 'contactEmail'
 	| 'pharmacyQuota'
+	| 'firstGroupMemberEmail'
 	| 'paymentMethod'
 	| 'flatRatePrice'
-	| 'firstGroupMemberEmail'
+	| 'billingPeriod'
 	| 'form'
 	| ToolKey;
 
 export type GroupFormErrors = Partial<Record<GroupFormFieldName, string>>;
 
-export const coverageModeOptions: { value: CoverageMode; label: string }[] = [
-	{ value: 'none', label: 'Prix normal' },
-	{ value: 'discount', label: 'Remise' },
-	{ value: 'shared', label: 'Partagé' },
-	{ value: 'full', label: 'Offert' }
-];
+export const groupFormSteps = ['Le groupement', 'Qui paie', 'Facturation', 'Paiement', 'Vérification'] as const;
 
-export function toCoverageFormValue(coverage: ToolCoverage | undefined): ToolCoverageFormValue {
-	return {
-		mode: describeCoverage(coverage),
-		discountPercent: coverage?.discountPercent ? String(coverage.discountPercent) : '',
-		groupSharePercent:
-			coverage && coverage.groupSharePercent > 0 && coverage.groupSharePercent < 100 ? String(coverage.groupSharePercent) : '50'
-	};
+/** L'étape où se corrige chaque champ refusé par le serveur. */
+export function findStepOfField(fieldName: GroupFormFieldName): number {
+	if (fieldName === 'flatRatePrice') return 2;
+	if (fieldName === 'paymentMethod' || fieldName === 'billingPeriod') return 3;
+	if (fieldName === 'form') return 4;
+	if (['name', 'contactEmail', 'pharmacyQuota', 'firstGroupMemberEmail'].includes(fieldName)) return 0;
+	return 1;
 }
 
-/** Ce que le mode choisi veut dire en chiffres : une remise, puis la part du groupement. */
-export function toCoverageInput(formValue: ToolCoverageFormValue): { discountPercent: string; groupSharePercent: string } {
-	switch (formValue.mode) {
-		case 'none':
-			return { discountPercent: '0', groupSharePercent: '0' };
-		case 'discount':
-			return { discountPercent: formValue.discountPercent || '0', groupSharePercent: '0' };
-		case 'shared':
-			return { discountPercent: formValue.discountPercent || '0', groupSharePercent: formValue.groupSharePercent || '0' };
-		case 'full':
-			return { discountPercent: formValue.discountPercent || '0', groupSharePercent: '100' };
-	}
+/** Les réponses du formulaire, traduites en prises en charge (une saisie invalide compte pour 0 dans l'aperçu). */
+export function toCoverageInputs(values: GroupFormValues): Partial<Record<ToolKey, { discountPercent: string; groupSharePercent: string }>> {
+	return Object.fromEntries(
+		sellableToolKeys.map((toolKey) => {
+			const toolTerms = values.toolTerms[toolKey];
+			const payer: ToolPayer = values.whoPays === 'group' ? 'group' : values.whoPays === 'pharmacies' ? 'pharmacy' : toolTerms.payer;
+			const groupSharePercent = payer === 'group' ? '100' : payer === 'shared' ? toolTerms.groupSharePercent || '0' : '0';
+			const discountPercent =
+				values.discountScope === 'none' ? '0' : values.discountScope === 'same' ? values.discountPercent || '0' : toolTerms.discountPercent || '0';
+			return [toolKey, { discountPercent, groupSharePercent }];
+		})
+	);
 }
 
-/** Les prises en charge lisibles de la saisie en cours, pour l'aperçu des prix (une saisie invalide compte pour 0). */
-export function toPreviewCoverages(coverages: Record<ToolKey, ToolCoverageFormValue>): ToolCoverage[] {
-	return toolKeys.map((toolKey) => {
-		const coverageInput = toCoverageInput(coverages[toolKey]);
-		return {
-			toolKey,
-			discountPercent: readPercentage(coverageInput.discountPercent),
-			groupSharePercent: readPercentage(coverageInput.groupSharePercent)
-		};
-	});
+export function toPreviewCoverages(values: GroupFormValues): ToolCoverage[] {
+	return Object.entries(toCoverageInputs(values)).flatMap(([toolKey, coverageInput]) =>
+		coverageInput && sellableToolKeys.includes(toolKey as ToolKey)
+			? [
+					{
+						toolKey: toolKey as ToolKey,
+						discountPercent: readPercentage(coverageInput.discountPercent),
+						groupSharePercent: readPercentage(coverageInput.groupSharePercent)
+					}
+				]
+			: []
+	);
 }
 
 export function createEmptyGroupFormValues(): GroupFormValues {
@@ -87,15 +94,49 @@ export function createEmptyGroupFormValues(): GroupFormValues {
 		name: '',
 		contactEmail: '',
 		pharmacyQuota: '20',
-		paymentMethod: 'invoice',
-		billingMode: 'usage',
+		firstGroupMemberEmail: '',
+		whoPays: 'group',
+		toolTerms: Object.fromEntries(
+			sellableToolKeys.map((toolKey) => [toolKey, { payer: 'group', groupSharePercent: '50', discountPercent: '' }])
+		) as Record<ToolKey, ToolTermsFormValue>,
+		discountScope: 'none',
+		discountPercent: '',
+		billingMode: 'flat_rate',
 		flatRatePrice: '',
 		flatRateOfferId: '',
-		coverages: Object.fromEntries(toolKeys.map((toolKey) => [toolKey, toCoverageFormValue(undefined)])) as Record<
-			ToolKey,
-			ToolCoverageFormValue
-		>,
-		firstGroupMemberEmail: ''
+		paymentMethod: 'invoice',
+		billingPeriod: 'monthly'
+	};
+}
+
+/** Retrouve les réponses du formulaire à partir d'un contrat enregistré. */
+export function toContractFormValues(contract: GroupContract | undefined): Pick<
+	GroupFormValues,
+	'whoPays' | 'toolTerms' | 'discountScope' | 'discountPercent'
+> {
+	const emptyValues = createEmptyGroupFormValues();
+	const coverageOf = (toolKey: ToolKey) => contract?.coverages.find((coverage) => coverage.toolKey === toolKey);
+	const groupShares = sellableToolKeys.map((toolKey) => coverageOf(toolKey)?.groupSharePercent ?? 0);
+	const discounts = sellableToolKeys.map((toolKey) => coverageOf(toolKey)?.discountPercent ?? 0);
+	const isSameDiscountEverywhere = discounts.every((discount) => discount === discounts[0]);
+	return {
+		whoPays: groupShares.every((share) => share >= 100) ? 'group' : groupShares.every((share) => share === 0) ? 'pharmacies' : 'depends',
+		toolTerms: Object.fromEntries(
+			sellableToolKeys.map((toolKey) => {
+				const coverage = coverageOf(toolKey);
+				const groupSharePercent = coverage?.groupSharePercent ?? 0;
+				return [
+					toolKey,
+					{
+						payer: groupSharePercent >= 100 ? 'group' : groupSharePercent > 0 ? 'shared' : 'pharmacy',
+						groupSharePercent: groupSharePercent > 0 && groupSharePercent < 100 ? String(groupSharePercent) : '50',
+						discountPercent: coverage?.discountPercent ? String(coverage.discountPercent) : ''
+					}
+				];
+			})
+		) as Record<ToolKey, ToolTermsFormValue>,
+		discountScope: discounts.every((discount) => discount === 0) ? 'none' : isSameDiscountEverywhere ? 'same' : 'per-tool',
+		discountPercent: isSameDiscountEverywhere && discounts[0] ? String(discounts[0]) : emptyValues.discountPercent
 	};
 }
 

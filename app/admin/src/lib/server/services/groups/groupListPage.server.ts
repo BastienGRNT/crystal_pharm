@@ -2,7 +2,7 @@ import { getGroupBillingOverview, platformBillingAccess, type GroupContract } fr
 import { listPharmacyGroupsForPlatform, type PharmacyGroupSummary } from '@crystal-pharm/group-db';
 
 export type GroupListItem = PharmacyGroupSummary & {
-	contract: Pick<GroupContract, 'paymentMethod' | 'status' | 'billingMode'> | undefined;
+	contract: Pick<GroupContract, 'paymentMethod' | 'status' | 'billingMode' | 'billingPeriod'> | undefined;
 	groupMonthlyCostCents: number;
 };
 
@@ -16,7 +16,8 @@ export async function loadGroupList(): Promise<GroupListItem[]> {
 				contract: billingOverview.contract && {
 					paymentMethod: billingOverview.contract.paymentMethod,
 					status: billingOverview.contract.status,
-					billingMode: billingOverview.contract.billingMode
+					billingMode: billingOverview.contract.billingMode,
+					billingPeriod: billingOverview.contract.billingPeriod
 				},
 				groupMonthlyCostCents: billingOverview.groupMonthlyCostCents
 			};

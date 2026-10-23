@@ -8,7 +8,7 @@ import {
 	type FlatRateOffer,
 	type GroupContractInput
 } from '@crystal-pharm/billing-db';
-import { formatCentsForInput, toolKeys, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
+import { formatCentsForInput, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
 import { createPharmacyGroup, getPharmacyGroupForPlatform, updatePharmacyGroup } from '@crystal-pharm/group-db';
 import { PharmacyGroupDetailsSchema } from '@crystal-pharm/group-db/domain';
 import { collectFieldErrors } from '@crystal-pharm/pharmacy-db/domain';
@@ -16,8 +16,8 @@ import * as v from 'valibot';
 import { readGroupFormValues } from '$lib/groupForm/groupFormSubmission';
 import {
 	createEmptyGroupFormValues,
-	toCoverageFormValue,
-	toCoverageInput,
+	toContractFormValues,
+	toCoverageInputs,
 	type GroupFormErrors,
 	type GroupFormValues
 } from '$lib/groupForm/groupFormValues';
@@ -44,19 +44,15 @@ export async function loadGroupEditionForm(groupId: string): Promise<(GroupFormP
 		flatRateOffers: await listFlatRateOffers(),
 		values: {
 			...emptyValues,
+			...toContractFormValues(contract),
 			name: group.name,
 			contactEmail: group.contactEmail ?? '',
 			pharmacyQuota: String(group.pharmacyQuota),
-			paymentMethod: contract?.paymentMethod ?? 'invoice',
+			paymentMethod: contract?.paymentMethod ?? emptyValues.paymentMethod,
 			billingMode: contract?.billingMode ?? 'usage',
+			billingPeriod: contract?.billingPeriod ?? emptyValues.billingPeriod,
 			flatRatePrice: formatCentsForInput(contract?.flatRateMonthlyPriceCents),
-			flatRateOfferId: contract?.flatRateOfferId ?? '',
-			coverages: Object.fromEntries(
-				toolKeys.map((toolKey) => [
-					toolKey,
-					toCoverageFormValue(contract?.coverages.find((coverage) => coverage.toolKey === toolKey))
-				])
-			) as GroupFormValues['coverages']
+			flatRateOfferId: contract?.flatRateOfferId ?? ''
 		}
 	};
 }
@@ -110,12 +106,15 @@ function toGroupDetailsInput(values: GroupFormValues) {
 	return { name: values.name, contactEmail: values.contactEmail, pharmacyQuota: values.pharmacyQuota };
 }
 
+// Un groupement qui ne paie rien n'a rien à facturer : ni forfait, ni rythme.
 function toContractInput(values: GroupFormValues): GroupContractInput {
+	const groupPaysNothing = values.whoPays === 'pharmacies';
 	return {
 		paymentMethod: values.paymentMethod,
-		billingMode: values.billingMode,
+		billingMode: groupPaysNothing ? 'usage' : values.billingMode,
 		flatRatePriceInput: values.flatRatePrice,
 		flatRateOfferId: values.flatRateOfferId,
-		coverageInputs: Object.fromEntries(toolKeys.map((toolKey) => [toolKey, toCoverageInput(values.coverages[toolKey])]))
+		billingPeriod: groupPaysNothing || values.billingMode === 'usage' ? 'monthly' : values.billingPeriod,
+		coverageInputs: toCoverageInputs(values)
 	};
 }

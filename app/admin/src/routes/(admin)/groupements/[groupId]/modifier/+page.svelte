@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { PageHeader } from '@crystal-pharm/ui';
-	import GroupForm from '$lib/components/organisms/GroupForm.svelte';
+	import GroupForm from '$lib/components/organisms/group-form/GroupForm.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();

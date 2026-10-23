@@ -1,12 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import {
-		describeGroupBillingMode,
-		describeOveragePrice,
-		formatEuros,
-		summarizeCoverage,
-		tools
-	} from '@crystal-pharm/billing-db/domain';
+	import { formatEuros } from '@crystal-pharm/billing-db/domain';
 	import {
 		Alert,
 		Button,
@@ -23,6 +17,7 @@
 		Tag
 	} from '@crystal-pharm/ui';
 	import ToolTags from '$lib/components/molecules/ToolTags.svelte';
+	import GroupContractSummary from '$lib/components/organisms/GroupContractSummary.svelte';
 	import { contractStatusLabels, paymentMethodLabels } from '$lib/contractLabels';
 	import { formatDay } from '$lib/dateFormats';
 	import type { PageProps } from './$types';
@@ -32,12 +27,6 @@
 	const contract = $derived(data.billing.contract);
 	const charge = $derived(data.billing.charge);
 	const upcomingCharge = $derived(data.billing.upcomingCharge);
-	const groupBilling = $derived({
-		billingMode: contract?.billingMode ?? 'usage',
-		flatRateMonthlyPriceCents: contract?.flatRateMonthlyPriceCents,
-		pharmacyQuota: data.group.pharmacyQuota
-	});
-	const overagePriceWording = $derived(describeOveragePrice(groupBilling));
 	const usedPlaces = $derived(data.group.memberPharmacyCount + data.group.pendingInvitationCount);
 	const invitationFailure = $derived(form && 'failedAction' in form ? form : undefined);
 	const invitedEmail = $derived(
@@ -45,11 +34,6 @@
 			? form.invitedEmail
 			: page.url.searchParams.get('invite')
 	);
-
-	function describeToolCoverage(toolKey: string): string {
-		const coverage = contract?.coverages.find((candidate) => candidate.toolKey === toolKey);
-		return summarizeCoverage(coverage) ?? 'Prix normal';
-	}
 </script>
 
 <svelte:head>
@@ -141,41 +125,46 @@
 				</form>
 			{/if}
 		</div>
-		<dl class="grid gap-3 sm:grid-cols-2">
-			<div class="grid gap-0.5">
-				<dt class="text-label text-ink-muted">Facturation</dt>
-				<dd class="text-body text-ink">
-					{describeGroupBillingMode(groupBilling)}
-					{#if overagePriceWording}<br /><span class="text-small text-ink-muted">{overagePriceWording}</span>{/if}
-				</dd>
+		<div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+			{#if contract}
+				<GroupContractSummary
+					catalog={data.billing.catalog}
+					coverages={contract.coverages}
+					billing={{
+						billingMode: contract.billingMode,
+						flatRateMonthlyPriceCents: contract.flatRateMonthlyPriceCents,
+						pharmacyQuota: data.group.pharmacyQuota,
+						billingPeriod: contract.billingPeriod,
+						paymentMethod: contract.paymentMethod,
+						annualFreeMonths: data.billing.catalog.annualFreeMonths
+					}}
+					groupName={data.group.name}
+				/>
+			{:else}
+				<p class="text-body text-ink-muted">Pas encore de contrat : modifiez le groupement pour en créer un.</p>
+			{/if}
+			<div class="grid gap-1 rounded-md bg-surface-subtle p-3">
+				<p class="text-label text-ink-muted">Prochaine échéance</p>
+				{#if upcomingCharge}
+					<p class="body-strong text-ink">{formatDay(upcomingCharge.dueOn)}</p>
+					<p class="text-body tabular-nums text-ink">
+						{formatEuros(upcomingCharge.totalCents)} TTC
+						<span class="text-small text-ink-muted">{upcomingCharge.billingPeriod === 'yearly' ? 'pour un an' : 'pour un mois'}</span>
+					</p>
+					<p class="text-small text-ink-muted">
+						{contract?.paymentMethod === 'card' ? 'Prélevée sur la carte du groupement.' : 'Facture envoyée, à régler par virement.'}
+					</p>
+				{:else if contract?.status === 'awaiting_payment'}
+					<p class="text-body text-ink">Au premier paiement par carte du groupement.</p>
+				{:else if contract && !data.billing.charge.monthlyTotalCents}
+					<p class="text-body text-ink">Aucune : le groupement ne paie rien.</p>
+				{:else if contract}
+					<p class="text-body text-ink">Aucune tant que le contrat est suspendu.</p>
+				{:else}
+					<p class="text-body text-ink">Aucune.</p>
+				{/if}
 			</div>
-			<div class="grid gap-0.5">
-				<dt class="text-label text-ink-muted">Prochaine échéance</dt>
-				<dd class="text-body text-ink">
-					{#if upcomingCharge}
-						Le {formatDay(upcomingCharge.dueOn)} :
-						<span class="body-strong tabular-nums">{formatEuros(upcomingCharge.totalCents)} TTC</span>
-						<br /><span class="text-small text-ink-muted">
-							{contract?.paymentMethod === 'card' ? 'Prélevée sur la carte du groupement' : 'Facture envoyée, à régler par virement'}
-						</span>
-					{:else if contract?.status === 'awaiting_payment'}
-						Au premier paiement par carte du groupement
-					{:else if contract}
-						Aucune tant que le contrat est suspendu
-					{:else}
-						Aucune : pas encore de contrat
-					{/if}
-				</dd>
-			</div>
-		</dl>
-		<ul class="grid gap-2 sm:grid-cols-2">
-			{#each tools as tool (tool.toolKey)}
-				<li class="flex items-center justify-between gap-3 rounded-md bg-surface-subtle px-3 py-2">
-					<span class="body-strong text-ink">{tool.label}</span>
-					<span class="text-small text-ink-muted">{describeToolCoverage(tool.toolKey)}</span>
-				</li>
-			{/each}
-		</ul>
+		</div>
 	</div>
 </Card>
 

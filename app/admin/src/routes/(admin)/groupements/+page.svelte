@@ -54,7 +54,9 @@
 				<td>
 					{#if group.contract}
 						<span class="flex flex-wrap items-center gap-1.5 text-small text-ink-muted">
-							{billingModeLabels[group.contract.billingMode]} · {paymentMethodLabels[group.contract.paymentMethod].toLowerCase()}
+							{billingModeLabels[group.contract.billingMode]}{group.contract.billingPeriod === 'yearly' ? ' à l’année' : ''} · {paymentMethodLabels[
+								group.contract.paymentMethod
+							].toLowerCase()}
 							<Tag tone={contractStatusLabels[group.contract.status].tone}>{contractStatusLabels[group.contract.status].label}</Tag>
 						</span>
 					{:else}

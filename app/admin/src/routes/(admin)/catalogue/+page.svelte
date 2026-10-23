@@ -1,6 +1,14 @@
 <script lang="ts">
-	import { computeOverageUnitPrice, formatEuros, parseEurosToCents, tools } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, EmptyState, Field, IconButton, Input, PageHeader, UnitInput } from '@crystal-pharm/ui';
+	import {
+		computeOverageUnitPrice,
+		describeInclusion,
+		formatEuros,
+		parseEurosToCents,
+		priceForPeriod,
+		sellableToolKeys,
+		tools
+	} from '@crystal-pharm/billing-db/domain';
+	import { Alert, Button, Card, EmptyState, Field, IconButton, Input, PageHeader, Tag, UnitInput } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 	import type { PageProps } from './$types';
 
@@ -13,13 +21,18 @@
 	const values = $state(untrack(() => structuredClone(failedPrices?.values ?? data.values)));
 	const flatRateOfferInputs = $state(untrack(() => structuredClone(failedOffers?.flatRateOfferInputs ?? data.flatRateOfferInputs)));
 
+	const sellableTools = tools.filter((tool) => sellableToolKeys.includes(tool.toolKey));
+	const includedTools = tools.filter((tool) => !sellableToolKeys.includes(tool.toolKey));
+
 	const paidTotalCents = $derived(
-		tools.reduce((total, tool) => total + (parseEurosToCents(values.toolPriceInputs[tool.toolKey]) ?? 0), 0)
+		sellableTools.reduce((total, tool) => total + (parseEurosToCents(values.toolPriceInputs[tool.toolKey] ?? '') ?? 0), 0)
 	);
 	const packPriceCents = $derived(parseEurosToCents(values.packPriceInput));
 	const packSavingPercent = $derived(
 		packPriceCents !== undefined && paidTotalCents > 0 ? Math.round((1 - packPriceCents / paidTotalCents) * 100) : undefined
 	);
+	const annualFreeMonths = $derived(Number(values.annualFreeMonthsInput) || 0);
+	const exampleMonthlyCents = $derived(packPriceCents ?? paidTotalCents);
 
 	function addFlatRateOffer(): void {
 		flatRateOfferInputs.push({ offerId: '', label: '', pharmacyQuotaInput: '', priceInput: '' });
@@ -37,7 +50,7 @@
 	<title>Catalogue · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader icon="package" title="Catalogue" context="Les prix des modules et du pack, et les forfaits proposés aux groupements. Tous les prix sont HT." />
+<PageHeader icon="package" title="Catalogue" context="Les prix des modules, du pack et du paiement à l’année, et les forfaits des groupements. Tous les prix sont HT." />
 
 <form method="POST" action="?/savePrices" class="grid max-w-[760px] gap-3.5">
 	{#if savedSection === 'prices'}
@@ -46,11 +59,11 @@
 
 	<Card>
 		<div class="grid gap-1">
-			<h2 class="title-2 text-ink">Les modules</h2>
+			<h2 class="title-2 text-ink">Les modules vendus</h2>
 			<p class="text-small text-ink-muted">Laissez vide un module qui n’est pas encore en vente ; à 0 €, il est gratuit pour toutes les pharmacies.</p>
 		</div>
 		<div class="mt-2">
-			{#each tools as tool (tool.toolKey)}
+			{#each sellableTools as tool (tool.toolKey)}
 				<div class="grid gap-3 border-t border-line-soft py-4 sm:grid-cols-[minmax(0,1fr)_190px] sm:items-center">
 					<div class="min-w-0">
 						<p class="body-strong text-ink">{tool.label}</p>
@@ -70,6 +83,15 @@
 					</Field>
 				</div>
 			{/each}
+			{#each includedTools as tool (tool.toolKey)}
+				<div class="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft py-4">
+					<div class="min-w-0">
+						<p class="body-strong text-ink">{tool.label}</p>
+						<p class="text-small text-ink-muted">{tool.pitch}</p>
+					</div>
+					<Tag tone="success">{describeInclusion(tool.toolKey)}</Tag>
+				</div>
+			{/each}
 		</div>
 	</Card>
 
@@ -78,10 +100,8 @@
 			<div class="min-w-0">
 				<h2 class="title-2 text-ink">Le pack « tous les modules »</h2>
 				<p class="text-small text-ink-muted">
-					Appliqué dès qu’une pharmacie a tous les modules payants. Pris un par un : {formatEuros(paidTotalCents)} HT / mois.
-					{#if packSavingPercent !== undefined && packSavingPercent > 0}
-						Le pack fait économiser {packSavingPercent} %.
-					{/if}
+					Pour une pharmacie sans groupement qui prend tous les modules vendus. Pris un par un : {formatEuros(paidTotalCents)} HT / mois.
+					{#if packSavingPercent !== undefined && packSavingPercent > 0}Le pack fait économiser {packSavingPercent} %.{/if}
 				</p>
 				<p class="mt-1 text-small text-ink-subtle">Pensez à le revoir quand un module est ajouté au catalogue.</p>
 			</div>
@@ -95,6 +115,25 @@
 						placeholder="Pas de pack"
 						bind:value={values.packPriceInput}
 					/>
+				{/snippet}
+			</Field>
+		</div>
+	</Card>
+
+	<Card>
+		<div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_190px] sm:items-center">
+			<div class="min-w-0">
+				<h2 class="title-2 text-ink">Le paiement à l’année</h2>
+				<p class="text-small text-ink-muted">
+					Payé d’un coup pour douze mois, ces mois-là sont offerts, pour les pharmacies comme pour les forfaits des groupements.
+					{#if exampleMonthlyCents > 0 && annualFreeMonths > 0}
+						Par exemple, {formatEuros(exampleMonthlyCents)} par mois devient {formatEuros(priceForPeriod(exampleMonthlyCents, 'yearly', annualFreeMonths))} par an.
+					{/if}
+				</p>
+			</div>
+			<Field label="Mois offerts" errorMessage={failedPrices?.fieldErrors.annualFreeMonths}>
+				{#snippet control(controlAttributes)}
+					<UnitInput {...controlAttributes} name="annualFreeMonths" unit="mois" inputmode="numeric" bind:value={values.annualFreeMonthsInput} />
 				{/snippet}
 			</Field>
 		</div>

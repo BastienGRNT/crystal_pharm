@@ -3,7 +3,7 @@ import type { GroupBillingMode, GroupContractStatus, GroupPaymentMethod } from '
 import type { TagTone } from '@crystal-pharm/ui';
 
 export const paymentMethodLabels: Record<GroupPaymentMethod, string> = {
-	invoice: 'Sur facture',
+	invoice: 'Par virement',
 	card: 'Par carte'
 };
 

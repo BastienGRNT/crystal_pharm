@@ -1,4 +1,5 @@
 import {
+	annualFreeMonthsFieldName,
 	getToolCatalog,
 	listFlatRateOffers,
 	packPriceFieldName,
@@ -7,11 +8,11 @@ import {
 	type FlatRateOfferInput,
 	type ToolCatalogFieldName
 } from '@crystal-pharm/billing-db';
-import { formatCentsForInput, toolKeys, type ToolCatalog, type ToolKey } from '@crystal-pharm/billing-db/domain';
+import { formatCentsForInput, sellableToolKeys, type ToolCatalog, type ToolKey } from '@crystal-pharm/billing-db/domain';
 import type { FieldErrors } from '@crystal-pharm/pharmacy-db/domain';
 import { fail, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 
-export type CatalogFormValues = { toolPriceInputs: Record<ToolKey, string>; packPriceInput: string };
+export type CatalogFormValues = { toolPriceInputs: Partial<Record<ToolKey, string>>; packPriceInput: string; annualFreeMonthsInput: string };
 
 export type CatalogPageData = { catalog: ToolCatalog; values: CatalogFormValues; flatRateOfferInputs: FlatRateOfferInput[] };
 
@@ -26,12 +27,13 @@ export async function loadCatalogPage(): Promise<CatalogPageData> {
 		catalog,
 		values: {
 			toolPriceInputs: Object.fromEntries(
-				toolKeys.map((toolKey) => [
+				sellableToolKeys.map((toolKey) => [
 					toolKey,
 					formatCentsForInput(catalog.toolPrices.find((toolPrice) => toolPrice.toolKey === toolKey)?.monthlyPriceCents)
 				])
-			) as Record<ToolKey, string>,
-			packPriceInput: formatCentsForInput(catalog.packMonthlyPriceCents)
+			),
+			packPriceInput: formatCentsForInput(catalog.packMonthlyPriceCents),
+			annualFreeMonthsInput: String(catalog.annualFreeMonths)
 		},
 		flatRateOfferInputs: flatRateOffers.map((offer) => ({
 			offerId: offer.offerId,
@@ -46,11 +48,9 @@ export const catalogPageActions = {
 	savePrices: async ({ request }: RequestEvent): Promise<CatalogActionResult | ActionFailure<CatalogActionResult>> => {
 		const formData = await request.formData();
 		const values: CatalogFormValues = {
-			toolPriceInputs: Object.fromEntries(toolKeys.map((toolKey) => [toolKey, String(formData.get(toolKey) ?? '')])) as Record<
-				ToolKey,
-				string
-			>,
-			packPriceInput: String(formData.get(packPriceFieldName) ?? '')
+			toolPriceInputs: Object.fromEntries(sellableToolKeys.map((toolKey) => [toolKey, String(formData.get(toolKey) ?? '')])),
+			packPriceInput: String(formData.get(packPriceFieldName) ?? ''),
+			annualFreeMonthsInput: String(formData.get(annualFreeMonthsFieldName) ?? '')
 		};
 		const catalogSave = await saveToolCatalog(values);
 		if (!catalogSave.isSaved) return fail(400, { failedSection: 'prices', values, fieldErrors: catalogSave.fieldErrors });
