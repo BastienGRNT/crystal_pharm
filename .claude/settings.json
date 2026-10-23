@@ -9,7 +9,14 @@
     ],
     "deny": [
       "Read(.env)",
-      "Edit(/app/shared/api-client/**)"
+      "Edit(/app/shared/api-client/**)",
+      "Read(**/node_modules/**)",
+      "Read(**/pnpm-lock.yaml)",
+      "Read(**/.svelte-kit/**)",
+      "Read(**/build/**)",
+      "Read(**/dist/**)",
+      "Read(**/bin/**)",
+      "Read(**/obj/**)"
     ]
   }
 }
