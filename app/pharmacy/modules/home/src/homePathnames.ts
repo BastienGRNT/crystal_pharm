@@ -5,12 +5,22 @@ export const homePathnames = {
 	openingHoursStep: '/bienvenue/horaires',
 	pharmacy: '/pharmacie',
 	pharmacyOpeningHours: '/pharmacie?onglet=horaires',
+	pharmacyTeam: '/pharmacie?onglet=equipe',
 	pharmacyGroup: '/pharmacie?onglet=groupement',
 	subscription: '/abonnement',
 	groupInvitation: '/groupement/invitation',
 	termsOfSale: '/conditions/generales-de-vente',
 	dataProcessingAgreement: '/conditions/traitement-des-donnees'
 } as const;
+
+/** Le panneau d'un membre de l'équipe : `undefined` pour en ajouter un. */
+export function employeePanelPathname(employeeId: string | undefined): string {
+	return `${homePathnames.pharmacyTeam}&membre=${employeeId ?? 'nouveau'}`;
+}
+
+export function employeePhotoPathname(photoId: string): string {
+	return `${homePathnames.pharmacy}/equipe/photos/${photoId}`;
+}
 
 export function invoicePdfPathname(invoiceId: string): string {
 	return `${homePathnames.subscription}/factures/${invoiceId}/pdf`;

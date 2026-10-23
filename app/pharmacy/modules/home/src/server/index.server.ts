@@ -5,6 +5,7 @@ export {
 } from './group/groupInvitationPage.server';
 export { contactDetailsStepActions, loadContactDetailsStep } from './onboarding/contactDetailsStep.server';
 export { loadOpeningHoursStep, openingHoursStepActions } from './onboarding/openingHoursStep.server';
+export { downloadEmployeePhoto } from './pharmacy/employeePhotoDownload.server';
 export { loadPharmacyPage, pharmacyPageActions } from './pharmacy/pharmacyPage.server';
 export { checkoutPageActions, loadCheckoutPage } from './subscription/checkoutPage.server';
 export { downloadInvoicePdf } from './subscription/invoicePdfDownload.server';

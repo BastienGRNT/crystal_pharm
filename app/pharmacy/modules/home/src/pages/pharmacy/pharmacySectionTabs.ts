@@ -7,10 +7,11 @@ export const pharmacySectionQueryParameter = 'onglet';
 const pharmacySectionTabs: ReadonlyArray<{ section: PharmacySection; label: string; href: string }> = [
 	{ section: 'contactDetails', label: 'Coordonnées', href: homePathnames.pharmacy },
 	{ section: 'openingHours', label: 'Horaires', href: homePathnames.pharmacyOpeningHours },
+	{ section: 'team', label: 'Équipe', href: homePathnames.pharmacyTeam },
 	{ section: 'group', label: 'Groupement', href: homePathnames.pharmacyGroup }
 ];
 
-const sectionsBySlug: Record<string, PharmacySection> = { horaires: 'openingHours', groupement: 'group' };
+const sectionsBySlug: Record<string, PharmacySection> = { horaires: 'openingHours', equipe: 'team', groupement: 'group' };
 
 /** L'onglet demandé par `?onglet=` ; les coordonnées par défaut, si la valeur est inconnue ou sans groupement. */
 export function readSelectedPharmacySection(searchParams: URLSearchParams, hasGroup: boolean): PharmacySection {
