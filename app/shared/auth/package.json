@@ -6,6 +6,7 @@
 		".": "./src/index.server.ts",
 		"./toolkit": "./src/toolkit.server.ts",
 		"./tables": "./src/toolkit/betterAuthTables.ts",
+		"./customer-tables": "./src/customer/customerAuthSchema.ts",
 		"./client": "./src/client.ts"
 	},
 	"scripts": {
