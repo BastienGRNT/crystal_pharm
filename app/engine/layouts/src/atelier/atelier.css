@@ -2,6 +2,9 @@
 @import '@fontsource/instrument-serif/latin-400-italic.css';
 @import '@fontsource/space-grotesk/latin-400.css';
 @import '@fontsource/space-grotesk/latin-500.css';
+/* Les polices proposées par le thème : le navigateur ne télécharge que celle qui s'affiche. */
+@import '@fontsource/fraunces/latin-400.css';
+@import '@fontsource/fraunces/latin-400-italic.css';
 
 /* Layout « atelier » : moderne et éditorial. Fond sombre, grande typographie serif, colonne latérale fixe. */
 
@@ -23,14 +26,6 @@
   font-family: var(--at-font-text);
   font-size: 16px;
   line-height: 1.55;
-}
-
-.layout-atelier [data-accent='sage'] {
-  --at-color-accent: #8fb39a;
-}
-
-.layout-atelier [data-accent='saffron'] {
-  --at-color-accent: #e8b64c;
 }
 
 .layout-atelier *,

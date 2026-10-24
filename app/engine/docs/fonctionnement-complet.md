@@ -144,15 +144,16 @@ flowchart TD
     kit --> result(["{ status: 'found',<br/>title: « Accueil · Pharmacie Dupont »,<br/>Page }"])
 ```
 
+Avant, `createTenantSitePage` appelle `layout.readSettings(layoutSettings)` : `v.safeParse(layout.settingsSchema, …)`
+(sinon `throw « Réglages invalides pour le layout … »`), puis `toThemeCssVariables` lit les réglages du thème.
+
 Quand l'app rend `<Page />` :
 
 ```mermaid
 flowchart TD
-    page(["&lt;Page /&gt;"]) --> wrap["&lt;div class='layout-{id}'&gt;<br/>la classe racine qui délimite le CSS du layout"]
-    wrap --> renderPage["<b>page.render</b>({ pharmacy, layoutSettings, modules, pageKit })<br/>layout-registry/createLayoutRegistry.ts"]
-    renderPage --> settings{"v.safeParse(<b>layout.settingsSchema</b>, layoutSettings)<br/>réglages valides ?"}
-    settings -- non --> settingsError(["throw « Réglages invalides pour le layout … »"])
-    settings -- oui --> component["<b>page.component</b>({ pharmacy, settings, modules, pageKit })<br/>le definePage du fichier de page<br/>(settings contient les valeurs par défaut)"]
+    page(["&lt;Page /&gt;"]) --> wrap["&lt;div class='layout-{id}' style='{themeCssVariables}'&gt;<br/>la classe racine qui délimite le CSS du layout,<br/>et les variables CSS du thème"]
+    wrap --> renderPage["<b>page.render</b>({ pharmacy, settings, modules, pageKit })<br/>layout-registry/createLayoutRegistry.ts"]
+    renderPage --> component["<b>page.component</b>({ pharmacy, settings, modules, pageKit })<br/>le definePage du fichier de page<br/>(settings contient les valeurs par défaut)"]
     component --> moduleSlot["&lt;pageKit.Module name='team' /&gt;<br/>→ si modules.team existe : layout.team(props)<br/>→ sinon : rien (pas de section vide)"]
     component --> pageCall["return <b>pageKit.Page</b>({<br/>  legalNotice: <b>pageKit.LegalNotice</b>({ class }),<br/>  children: …<br/>})<br/>→ Part&lt;'page'&gt;"]
 ```
@@ -313,7 +314,7 @@ Exemple concret de la garde, calculée par `computeOnDutyAnnouncement` à partir
 |---|---|---|
 | Un layout qui oublie un module ne compile pas | `PharmacySiteLayout` exige une clé par `ModuleName` | `contract/PharmacySiteLayout.ts` |
 | Un composant de module qui attend une prop inexistante ne compile pas | `Component<ModulePropsByName[Name]>`, déclaré comme propriété | `contract/PharmacySiteLayout.ts` |
-| Le schéma de réglages produit bien le type utilisé par les pages | `PharmacySiteLayout<Réglages>` exige `settingsSchema: GenericSchema<unknown, Réglages>` | `contract/PharmacySiteLayout.ts` |
+| Le schéma de réglages produit bien le type utilisé par les pages | `PharmacySiteLayout<Réglages>` exige `settingsSchema: ObjectSchema & GenericSchema<unknown, Réglages>` | `contract/PharmacySiteLayout.ts` |
 | Une page sans titre ne compile pas, et ses réglages sont typés | `definePage<Réglages>({ title, component })` | `contract/definePage.ts` |
 | Un fichier de page mal exporté, des pages sans layout, ou un layout sans manifeste, sont signalés au démarrage | Vérification de chaque fichier trouvé | `layout-registry/createLayoutRegistry.ts`, `layouts/src/layoutRegistry.ts` |
 | Une page sans mentions légales ne compile pas | `Part<'page'>` n'est fabriqué que par `pageKit.Page`, qui exige un `Part<'legalNotice'>` | `contract/Part.ts`, `page-kit/createPageKit.tsx` |

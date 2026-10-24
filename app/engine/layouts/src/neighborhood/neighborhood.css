@@ -2,6 +2,9 @@
 @import '@fontsource/fraunces/latin-700.css';
 @import '@fontsource/nunito/latin-400.css';
 @import '@fontsource/nunito/latin-700.css';
+/* Les polices proposées par le thème : le navigateur ne télécharge que celle qui s'affiche. */
+@import '@fontsource/space-grotesk/latin-500.css';
+@import '@fontsource/space-grotesk/latin-700.css';
 
 /* Layout « neighborhood » : classique et chaleureux. Crème, vert pharmacie, formes arrondies. */
 
@@ -10,8 +13,9 @@
   --nb-color-surface: #ffffff;
   --nb-color-tint: #f1ead9;
   --nb-color-primary: #1f6b45;
-  --nb-color-primary-dark: #154a30;
-  --nb-color-primary-soft: #dcebdf;
+  /* Tirées de la couleur principale, pour suivre celle que le thème choisit. */
+  --nb-color-primary-dark: color-mix(in srgb, var(--nb-color-primary) 68%, black);
+  --nb-color-primary-soft: color-mix(in srgb, var(--nb-color-primary) 16%, white);
   --nb-color-accent: #f2b84b;
   --nb-color-text: #2b2a26;
   --nb-color-muted: #6b675d;

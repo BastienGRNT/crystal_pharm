@@ -47,17 +47,24 @@ sont dans `pharmacy`.
 
 ```ts
 // monLayoutManifest.ts
+import { themeChoiceSetting, themeColorSetting } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutManifest } from '../manifest/LayoutManifest';
 
 export const monLayoutSettingsSchema = v.object({
   slogan: v.pipe(v.optional(v.string(), 'Votre pharmacie, près de chez vous.'), v.title('Slogan')),
   showOnDutyBanner: v.pipe(v.optional(v.boolean(), true), v.title('Bandeau de garde')),
-  accentTone: v.pipe(
-    v.optional(v.picklist(['green', 'blue']), 'green'),
-    v.title('Couleur d’accent'),
-    v.metadata({ optionLabels: { green: 'Vert', blue: 'Bleu' } }),
-  ),
+  // Le thème : chaque réglage devient une variable CSS du layout (cf. « Le thème » plus bas).
+  primaryColor: themeColorSetting({ title: 'Couleur principale', cssVariable: '--ml-color-primary', defaultColor: '#1f6b45' }),
+  headingFont: themeChoiceSetting({
+    title: 'Police des titres',
+    cssVariable: '--ml-font-heading',
+    options: {
+      fraunces: { label: 'Classique (Fraunces)', cssValue: "'Fraunces', Georgia, serif" },
+      nunito: { label: 'Douce (Nunito)', cssValue: "'Nunito', system-ui, sans-serif" },
+    },
+    defaultOption: 'fraunces',
+  }),
 });
 
 export type MonLayoutSettings = v.InferOutput<typeof monLayoutSettingsSchema>;
@@ -76,6 +83,22 @@ des options d'une liste.
 
 Le moteur valide les réglages du tenant avec ce schéma avant d'appeler tes pages. Dans tes pages,
 `props.settings.slogan` est donc toujours une `string`, jamais `undefined`.
+
+### Le thème
+
+Un réglage écrit avec `themeColorSetting` ou `themeChoiceSetting` (de `@crystal-pharm/schema`) est un
+réglage du **thème** : le moteur pose sa valeur dans la variable CSS `cssVariable`, sur le
+`<div class="layout-monLayout">`, ce qui écrase la valeur par défaut déclarée dans ton CSS. Tes
+composants ne changent pas, et l'édition les range à part, sous « Couleurs et polices ».
+
+- `themeColorSetting` : une couleur libre (`#rrggbb`, toute autre valeur est refusée). Les nuances
+  qui en dépendent se calculent dans le CSS (`color-mix(in srgb, var(--ml-color-primary) 70%, black)`),
+  jamais en dur.
+- `themeChoiceSetting` : une liste fermée (police, palette). La valeur enregistrée est la clé de
+  l'option, sa `cssValue` va dans la variable. Préfère-la quand une couleur libre pourrait rendre le
+  layout illisible (un fond sombre, par exemple).
+- Ne propose que ce que ton layout affiche proprement, et importe dans ton CSS chaque police
+  proposée : le navigateur ne télécharge que celle qui s'affiche.
 
 ## 3. Un composant par module
 
@@ -262,7 +285,7 @@ en quelques secondes.
 
 Le moteur entoure toute la page d'un `<div class="layout-monLayout">`. Commence **chaque** règle par
 cette classe pour ne pas déborder sur les autres layouts, et passe les couleurs et polices par des
-variables CSS, pour qu'un futur thème puisse les surcharger :
+variables CSS, pour que le thème (cf. « Les réglages ») puisse les surcharger :
 
 ```css
 @import '@fontsource/nunito/latin-400.css';
@@ -302,3 +325,4 @@ Elles contiennent `.legal-notice__title` et `.legal-notice__text`.
 - [ ] Un nom de pharmacie très long ne casse pas la mise en page.
 - [ ] Le formulaire d'ordonnance affiche les erreurs, puis « envoyée » ; l'envoi apparaît dans le journal du banc d'essai.
 - [ ] Rien ne déborde horizontalement à 390 px de large.
+- [ ] Chaque couleur et chaque police du thème, essayée dans l'aperçu, garde le texte lisible.

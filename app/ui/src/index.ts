@@ -37,6 +37,7 @@ export { default as TimeList } from './molecules/TimeList.svelte';
 export type { TimeListItem, TimeListItemTone } from './molecules/timeList';
 export { default as TextLink } from './atoms/actions/TextLink.svelte';
 export { default as ToggleCard } from './molecules/fields/ToggleCard.svelte';
+export { default as ColorInput } from './molecules/fields/ColorInput.svelte';
 export { default as UnitInput } from './molecules/fields/UnitInput.svelte';
 export { default as Alert } from './molecules/Alert.svelte';
 export { default as ActionList } from './molecules/ActionList.svelte';

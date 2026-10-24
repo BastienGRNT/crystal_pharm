@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { LayoutSettingsField } from '@crystal-pharm/layouts/manifest';
-	import { Checkbox, Field, Input, Select, Textarea } from '@crystal-pharm/ui';
+	import { Checkbox, ColorInput, Field, Input, Select, Textarea } from '@crystal-pharm/ui';
 	import { toLayoutSettingFieldName } from '../../domain/layoutSettingsForm';
 
 	type LayoutSettingFieldProps = {
@@ -39,6 +39,12 @@
 					<option value={option.value}>{option.label}</option>
 				{/each}
 			</Select>
+		{/snippet}
+	</Field>
+{:else if settingsField.kind === 'color'}
+	<Field label={settingsField.label} {hint} {errorMessage}>
+		{#snippet control(controlAttributes)}
+			<ColorInput {...controlAttributes} name={fieldName} bind:value={getText, setText} />
 		{/snippet}
 	</Field>
 {:else if settingsField.kind === 'json'}
