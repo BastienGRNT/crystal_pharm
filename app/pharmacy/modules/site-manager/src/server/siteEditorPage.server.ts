@@ -16,6 +16,7 @@ import {
 } from '../pages/siteEditorPageData';
 import { requireActiveTenantId } from './activeTenant.server';
 import { readPreviewFrame } from './previewFrame.server';
+import { readPublicSiteUrl } from './publicSiteUrl.server';
 import { readSiteEditorSources, saveSiteEdition, type SiteEditorSources } from './repositories/tenantSiteRepository.server';
 import { toSiteEditorBase } from './toSiteEditorBase.server';
 
@@ -27,6 +28,7 @@ export async function load({ locals }: SiteEditorRequest): Promise<SiteEditorPag
 	const base = toSiteEditorBase(tenantId, sources);
 	return {
 		isSiteCreated: sources.content !== undefined,
+		publicSiteUrl: readPublicSiteUrl(tenantId),
 		savedEdition: toSavedSiteEdition(sources, base),
 		base,
 		preview: readPreviewFrame()

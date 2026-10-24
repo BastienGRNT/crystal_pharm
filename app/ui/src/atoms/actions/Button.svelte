@@ -9,6 +9,8 @@
 		variant?: ButtonVariant;
 		icon?: IconName;
 		href?: string;
+		/** Avec `href` : ouvre la page à côté, sans quitter celle en cours (un formulaire à moitié rempli). */
+		opensInNewTab?: boolean;
 		type?: 'button' | 'submit' | 'reset';
 		disabled?: boolean;
 		isFullWidth?: boolean;
@@ -24,6 +26,7 @@
 		variant = 'primary',
 		icon,
 		href,
+		opensInNewTab = false,
 		type = 'button',
 		disabled = false,
 		isFullWidth = false,
@@ -37,7 +40,7 @@
 </script>
 
 {#if href}
-	<a {href} class={classes}>
+	<a {href} target={opensInNewTab ? '_blank' : undefined} rel={opensInNewTab ? 'noopener' : undefined} class={classes}>
 		{#if icon}<Icon name={icon} size={16} />{/if}
 		{@render children()}
 	</a>

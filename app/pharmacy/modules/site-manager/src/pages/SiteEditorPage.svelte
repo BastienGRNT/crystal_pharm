@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { findLayoutManifest, layoutManifests } from '@crystal-pharm/layouts/manifest';
 	import type { ModuleName } from '@crystal-pharm/schema';
-	import { Alert, Button, Card, ChoiceGroup, PageHeader } from '@crystal-pharm/ui';
+	import { Alert, Button, Card, ChoiceGroup, PageHeader, TextLink } from '@crystal-pharm/ui';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { untrack } from 'svelte';
 	import LayoutSettingField from '../components/molecules/LayoutSettingField.svelte';
@@ -119,10 +119,19 @@
 		title="Mon site"
 		context={data.isSiteCreated ? 'Votre site public' : 'Votre site n’est pas encore en ligne'}
 		icon="globe-simple"
-	/>
+	>
+		{#snippet actions()}
+			{#if data.isSiteCreated}
+				<Button variant="secondary" icon="arrow-square-out" href={data.publicSiteUrl} opensInNewTab>Voir mon site</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
 
 	{#if saveOutcome === 'saved' && !hasUnsavedChanges}
-		<Alert tone="success" title="Site enregistré">Vos visiteurs voient maintenant cette version.</Alert>
+		<Alert tone="success" title="Site enregistré">
+			Vos visiteurs voient maintenant cette version :
+			<TextLink href={data.publicSiteUrl} opensInNewTab>voir mon site</TextLink>.
+		</Alert>
 	{/if}
 	{#if saveOutcome === 'failed' && failure?.formError}
 		<Alert tone="danger" title="Le site n’a pas été enregistré">{failure.formError}</Alert>

@@ -14,6 +14,8 @@ export type SavedSiteEdition = {
 
 export type SiteEditorPageData = {
 	isSiteCreated: boolean;
+	/** Là où les Visitors voient le site, une fois enregistré. */
+	publicSiteUrl: string;
 	savedEdition: SavedSiteEdition;
 	base: SiteEditorBase;
 	preview: { frameUrl: string; frameOrigin: string };
