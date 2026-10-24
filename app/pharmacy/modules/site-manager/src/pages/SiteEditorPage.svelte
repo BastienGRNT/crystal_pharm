@@ -21,6 +21,7 @@
 		articlesFieldName,
 		newsSourceFieldName,
 		servicesFieldName,
+		siteAddressPathname,
 		type SiteEditionFailure,
 		type SiteEditionSaved,
 		type SiteEditorPageData
@@ -140,6 +141,9 @@
 	>
 		{#snippet actions()}
 			{#if data.isSiteCreated}
+				<Button variant="ghost" href={siteAddressPathname}>Changer d’adresse</Button>
+			{/if}
+			{#if data.isSiteCreated && data.publicSiteUrl}
 				<Button variant="secondary" icon="arrow-square-out" href={data.publicSiteUrl} opensInNewTab>Voir mon site</Button>
 			{/if}
 		{/snippet}
@@ -147,8 +151,12 @@
 
 	{#if saveOutcome === 'saved' && !hasUnsavedChanges}
 		<Alert tone="success" title="Site enregistré">
-			Vos visiteurs voient maintenant cette version :
-			<TextLink href={data.publicSiteUrl} opensInNewTab>voir mon site</TextLink>.
+			{#if data.publicSiteUrl}
+				Vos visiteurs voient maintenant cette version :
+				<TextLink href={data.publicSiteUrl} opensInNewTab>voir mon site</TextLink>.
+			{:else}
+				Il ne lui manque qu’une adresse : <TextLink href={siteAddressPathname}>choisir l’adresse de mon site</TextLink>.
+			{/if}
 		</Alert>
 	{/if}
 	{#if saveOutcome === 'failed' && failure?.formError}

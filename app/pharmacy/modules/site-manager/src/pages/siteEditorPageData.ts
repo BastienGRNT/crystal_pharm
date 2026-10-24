@@ -16,8 +16,8 @@ export type SavedSiteEdition = {
 
 export type SiteEditorPageData = {
 	isSiteCreated: boolean;
-	/** Là où les Visitors voient le site, une fois enregistré. */
-	publicSiteUrl: string;
+	/** Là où les Visitors voient le site ; `undefined` tant qu'il n'a pas d'adresse (avant le premier enregistrement). */
+	publicSiteUrl: string | undefined;
 	savedEdition: SavedSiteEdition;
 	base: SiteEditorBase;
 	preview: { frameUrl: string; frameOrigin: string };
@@ -38,6 +38,8 @@ export type SiteEditionFailure = {
 };
 
 export type SiteEditionSaved = { isSaved: true };
+
+export const siteAddressPathname = '/site-manager/adresse';
 
 /** Les champs cachés qui portent les listes saisies dans l'éditeur. */
 export const servicesFieldName = 'servicesJson';

@@ -10,10 +10,17 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 - Il lit le site dans `content` via `shared/content-db`, la fiche de la
   pharmacie (nom, adresse, téléphone) dans `shared/pharmacy-db`, et son
   groupement (fiche, modules imposés, actualités) dans `shared/group-db`. Un
-  adapter les assemble en `TenantSite`. Le cache a une clé qui contient **toujours** le
-  `tenantId`.
+  adapter les assemble en `TenantSite`, selon les règles du site affiché de
+  `shared/content-db` (les mêmes que l'aperçu).
 - Il ne rend rien lui-même : il appelle `createTenantSitePage` du moteur et
-  affiche la page obtenue. Une seule route attrape-tout.
+  affiche la page obtenue. Une seule route attrape-tout pour les pages ; à
+  côté, seulement des routes techniques préfixées `__` : `__media/*` (les
+  images) et `__preview` (dont ses images, `__preview/media/*`).
+- Le cache est celui de la passerelle : sa clé contient **toujours** le
+  `tenantId` et la version du site (l'empreinte de ce qu'il affiche), posés
+  par la passerelle. Seule une page `GET` réussie d'un Tenant se garde
+  (`public, s-maxage=60`) ; tout le reste est `no-store`, et rien de ce
+  qu'envoie un Visitor n'y entre jamais.
 - Il n'écrit jamais dans `content`.
 
 ## L'aperçu (`/__preview`)
@@ -25,6 +32,9 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
   jamais vers le C#.
 - `frame-ancestors` limité au domaine des outils ; `/__preview` n'est jamais
   servi sur le domaine d'un tenant.
+- Ses images passent par `/__preview/media/<jeton>` : un jeton signé et
+  daté par `site-manager` (cf. `shared/content-db`), jamais un identifiant
+  brut.
 
 ## Envois du Visitor (by design, dès le premier formulaire)
 

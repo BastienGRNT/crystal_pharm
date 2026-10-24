@@ -1,9 +1,9 @@
 import type { TenantSite } from '@crystal-pharm/schema';
 import { createAsync } from '@solidjs/router';
 import { createEffect, createSignal, ErrorBoundary, on, onCleanup, onMount, Show, type Accessor } from 'solid-js';
-import { TenantSitePageView } from '../components/TenantSitePageView';
-import { previewReadyMessage, readPreviewUpdate } from '../server/preview/previewMessages';
-import { getPreviewParentOrigin } from '../server/preview/previewSettings';
+import { TenantSitePageView } from '../../components/TenantSitePageView';
+import { previewReadyMessage, readPreviewUpdate } from '../../server/preview/previewMessages';
+import { getPreviewParentOrigin } from '../../server/preview/previewSettings';
 
 // Rien ne part de l'aperçu : le Manager teste son formulaire sans envoyer d'ordonnance.
 const sendPrescriptionWithoutEffect = async () => ({ outcome: 'sent' as const });

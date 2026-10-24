@@ -15,15 +15,19 @@ services:
       timeout: 5s
       retries: 10
 
-  # La passerelle devant `app/site` (lancé par `pnpm dev` sur le port 5177).
+  # La passerelle devant `app/site` (lancé par `pnpm dev` sur le port 5177) : elle
+  # demande à `pharmacy/host` (port 5173) à qui est chaque adresse, et garde les pages en cache.
   caddy:
-    image: caddy:2
+    build: ./docker/caddy
     ports:
       - "8080:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    environment:
+      SITE_GATEWAY_TOKEN: ${SITE_GATEWAY_TOKEN}
     volumes:
-      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/caddy/pages:/srv/pages:ro
 
 volumes:
   postgres_data:

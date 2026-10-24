@@ -4,9 +4,9 @@ import { ModuleNameSchema, TenantSiteSchema, type ModuleName } from '@crystal-ph
 import { newsSources, type NewsSource } from '@crystal-pharm/content-db';
 import { fail, type ActionFailure } from '@sveltejs/kit';
 import * as v from 'valibot';
-import { readLayoutSettingsFormValues, toLayoutSettings } from '../domain/layoutSettingsForm';
-import { parseArticleDrafts, parseServiceDrafts, readSiteContentLists } from '../domain/siteContentLists';
-import { collectAvailableModuleData, toTenantSiteInput, type SiteEditorBase } from '../domain/siteDraft';
+import { readLayoutSettingsFormValues, toLayoutSettings } from '../../domain/layoutSettingsForm';
+import { parseArticleDrafts, parseServiceDrafts, readSiteContentLists } from '../../domain/siteContentLists';
+import { collectAvailableModuleData, toTenantSiteInput, type SiteEditorBase } from '../../domain/siteDraft';
 import {
 	articlesFieldName,
 	newsSourceFieldName,
@@ -15,11 +15,11 @@ import {
 	type SiteEditionFailure,
 	type SiteEditionSaved,
 	type SiteEditorPageData
-} from '../pages/siteEditorPageData';
-import { requireActiveTenantId } from './activeTenant.server';
+} from '../../pages/siteEditorPageData';
+import { requireActiveTenantId } from '../activeTenant.server';
 import { readPreviewFrame } from './previewFrame.server';
-import { readPublicSiteUrl } from './publicSiteUrl.server';
-import { readSiteEditorSources, saveSiteEdition, type SiteEditorSources } from './repositories/tenantSiteRepository.server';
+import { ensureSiteSubdomain, readPublicSiteUrlOfTenant } from '../site-address/siteAddress.server';
+import { readSiteEditorSources, saveSiteEdition, type SiteEditorSources } from '../repositories/tenantSiteRepository.server';
 import { toSiteEditorBase } from './toSiteEditorBase.server';
 
 type SiteEditorRequest = { locals: { user: AuthenticatedUser | null } };
@@ -30,7 +30,7 @@ export async function load({ locals }: SiteEditorRequest): Promise<SiteEditorPag
 	const base = toSiteEditorBase(tenantId, sources);
 	return {
 		isSiteCreated: sources.content !== undefined,
-		publicSiteUrl: readPublicSiteUrl(tenantId),
+		publicSiteUrl: await readPublicSiteUrlOfTenant(tenantId),
 		savedEdition: toSavedSiteEdition(sources, base),
 		base,
 		preview: readPreviewFrame()
@@ -104,6 +104,7 @@ export const actions = {
 			articles: contentListsReading.articles,
 			newsSource
 		});
+		await ensureSiteSubdomain(tenantId, base.pharmacy.name);
 		return { isSaved: true };
 	}
 };

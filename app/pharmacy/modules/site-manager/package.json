@@ -15,10 +15,12 @@
 	},
 	"scripts": {
 		"check": "svelte-check --tsconfig ./tsconfig.json",
-		"test": "vitest run"
+		"test": "vitest run --exclude '**/*.integration.test.ts'",
+		"test:integration": "vitest run integration"
 	},
 	"dependencies": {
 		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/billing-db": "workspace:*",
 		"@crystal-pharm/content-db": "workspace:*",
 		"@crystal-pharm/group-db": "workspace:*",
 		"@crystal-pharm/layouts": "workspace:*",
@@ -35,6 +37,7 @@
 	"devDependencies": {
 		"@sveltejs/kit": "^2.63.0",
 		"@types/node": "^24.19.2",
+		"postgres": "^3.4.9",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",

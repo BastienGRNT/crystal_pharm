@@ -402,6 +402,9 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../../../shared/auth
+      '@crystal-pharm/billing-db':
+        specifier: workspace:*
+        version: link:../../../shared/billing-db
       '@crystal-pharm/content-db':
         specifier: workspace:*
         version: link:../../../shared/content-db
@@ -433,6 +436,9 @@ importers:
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
       svelte:
         specifier: ^5.56.1
         version: 5.57.0

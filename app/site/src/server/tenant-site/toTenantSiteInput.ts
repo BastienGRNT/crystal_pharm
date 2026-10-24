@@ -1,10 +1,10 @@
 import type { TenantSiteContent } from '@crystal-pharm/content-db';
+import { assembleDisplayedTenantSite, type ModuleDataByName, type TenantSiteInput } from '@crystal-pharm/content-db/domain';
 import type { GroupSiteProfileOfTenant } from '@crystal-pharm/group-db';
 import { chooseDisplayedNewsSource } from '@crystal-pharm/group-db/domain';
 import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import type { Employee, PharmacyProfile } from '@crystal-pharm/pharmacy-db';
-import { ModuleNameSchema, type ModuleName, type TenantSiteSchema } from '@crystal-pharm/schema';
-import * as v from 'valibot';
+import type { ModuleName } from '@crystal-pharm/schema';
 import { toEmployeePhotoUrl, toGroupImageUrl } from '../mediaUrls';
 
 /** Ce que l'adapter lit dans chaque base pour un Tenant. */
@@ -16,43 +16,40 @@ export type TenantSiteSources = {
   group: GroupSiteProfileOfTenant | undefined;
 };
 
-type TenantSiteInput = v.InferInput<typeof TenantSiteSchema>;
-type TenantModulesInput = TenantSiteInput['modules'];
-type ModuleDataByName = { [Name in ModuleName]: Extract<TenantModulesInput[Name], { enabled: true }>['data'] };
-
 /** Les modules qu'on ne peut pas afficher faute de données, même imposés par le groupement. */
 export type UnavailableMandatoryModules = ModuleName[];
 
-/** L'adapter : les trois bases → les données attendues par `engine/schema`, encore à valider. */
+/** L'adapter : les trois bases → les données attendues par `engine/schema`, encore à valider. Les règles sont celles de l'aperçu (`content-db`). */
 export function toTenantSiteInput(sources: TenantSiteSources): {
   tenantSiteInput: TenantSiteInput;
   unavailableMandatoryModules: UnavailableMandatoryModules;
   /** Les actualités du groupement sont demandées, mais il n'en a publié aucune : le bloc est masqué. */
   isGroupNewsMissing: boolean;
 } {
-  const moduleDataByName = collectAvailableModuleData(sources);
-  const mandatoryModules = readMandatoryModules(sources.group);
-  const requestedModules = new Set([...sources.content.enabledModules, ...mandatoryModules]);
-  const modules = toTenantModules(moduleDataByName, requestedModules);
-  const unavailableMandatoryModules = mandatoryModules.filter((moduleName) => !modules[moduleName].enabled);
-  const isGroupNewsMissing = requestedModules.has('news') && isGroupNewsDisplayed(sources) && !moduleDataByName.news;
-
-  return {
-    tenantSiteInput: {
-      tenantId: sources.tenantId,
-      layoutId: sources.content.layoutId,
-      layoutSettings: sources.content.layoutSettings,
-      pharmacy: toPharmacyInfo(sources, mandatoryModules, unavailableMandatoryModules),
-      modules,
+  const { content, pharmacyProfile, group } = sources;
+  const { tenantSiteInput, unavailableMandatoryModules } = assembleDisplayedTenantSite({
+    tenantId: sources.tenantId,
+    layoutId: content.layoutId,
+    layoutSettings: content.layoutSettings,
+    enabledModules: content.enabledModules,
+    pharmacy: {
+      name: pharmacyProfile.name,
+      address: { street: pharmacyProfile.street, postalCode: pharmacyProfile.postalCode, city: pharmacyProfile.city },
+      phone: pharmacyProfile.phoneNumber.toDisplayFormat(),
+      email: pharmacyProfile.email,
     },
-    unavailableMandatoryModules,
-    isGroupNewsMissing,
-  };
+    group: group && { name: group.name, logoUrl: group.logoId && toGroupImageUrl(group.logoId), mandatoryModules: group.mandatoryModules },
+    moduleData: collectModuleData(sources),
+  });
+  const isNewsRequested = content.enabledModules.includes('news') || (group?.mandatoryModules.includes('news') ?? false);
+  const isGroupNewsMissing = isNewsRequested && isGroupNewsDisplayed(sources) && (group?.articles.length ?? 0) === 0;
+
+  return { tenantSiteInput, unavailableMandatoryModules, isGroupNewsMissing };
 }
 
-// Un module sans données reste éteint, même demandé : la pharmacie n'a pas encore
-// saisi ses horaires, le groupement n'a pas de carte de fidélité…
-function collectAvailableModuleData(sources: TenantSiteSources): Partial<ModuleDataByName> {
+// Un module absent n'a pas encore de données : la pharmacie n'a pas saisi ses
+// horaires, le groupement n'a pas de carte de fidélité…
+function collectModuleData(sources: TenantSiteSources): Partial<ModuleDataByName> {
   const { content, pharmacyProfile, employees, group } = sources;
   return {
     openingHours: pharmacyProfile.weeklyOpeningSchedule && {
@@ -75,11 +72,9 @@ function collectAvailableModuleData(sources: TenantSiteSources): Partial<ModuleD
 }
 
 // La règle est celle de l'aperçu (`group-db`) : un groupement qui impose ses actualités l'emporte sur le choix de la pharmacie.
-function collectDisplayedNews({ content, group }: TenantSiteSources): ModuleDataByName['news'] | undefined {
+function collectDisplayedNews({ content, group }: TenantSiteSources): ModuleDataByName['news'] {
   if (!isGroupNewsDisplayed({ content, group })) return { articles: content.articles };
-  const groupArticles = group?.articles ?? [];
-  if (groupArticles.length === 0) return undefined;
-  return { articles: groupArticles.map(({ title, summary, publishedAt }) => ({ title, summary, publishedAt })) };
+  return { articles: (group?.articles ?? []).map(({ title, summary, publishedAt }) => ({ title, summary, publishedAt })) };
 }
 
 function isGroupNewsDisplayed({ content, group }: Pick<TenantSiteSources, 'content' | 'group'>): boolean {
@@ -91,47 +86,5 @@ function toTeamMember(employee: Employee): ModuleDataByName['team']['members'][n
     fullName: formatEmployeeFullName(employee),
     role: employee.jobTitle.toDisplayFormat(),
     photoUrl: employee.photoId && toEmployeePhotoUrl(employee.photoId),
-  };
-}
-
-function toTenantModules(moduleDataByName: Partial<ModuleDataByName>, requestedModules: Set<ModuleName>): TenantModulesInput {
-  return {
-    openingHours: toToggleableModule(moduleDataByName.openingHours, requestedModules.has('openingHours')),
-    team: toToggleableModule(moduleDataByName.team, requestedModules.has('team')),
-    services: toToggleableModule(moduleDataByName.services, requestedModules.has('services')),
-    news: toToggleableModule(moduleDataByName.news, requestedModules.has('news')),
-    prescriptionUpload: toToggleableModule(moduleDataByName.prescriptionUpload, requestedModules.has('prescriptionUpload')),
-    loyaltyCard: toToggleableModule(moduleDataByName.loyaltyCard, requestedModules.has('loyaltyCard')),
-  };
-}
-
-function toToggleableModule<ModuleData>(
-  moduleData: ModuleData | undefined,
-  isRequested: boolean,
-): { enabled: false } | { enabled: true; data: ModuleData } {
-  return isRequested && moduleData !== undefined ? { enabled: true, data: moduleData } : { enabled: false };
-}
-
-// `group-db` ne connaît pas `engine/schema` : un nom qui n'est plus un module est ignoré.
-function readMandatoryModules(group: GroupSiteProfileOfTenant | undefined): ModuleName[] {
-  return (group?.mandatoryModules ?? []).filter((moduleName) => v.is(ModuleNameSchema, moduleName));
-}
-
-function toPharmacyInfo(
-  { pharmacyProfile, group }: TenantSiteSources,
-  mandatoryModules: ModuleName[],
-  unavailableMandatoryModules: UnavailableMandatoryModules,
-): TenantSiteInput['pharmacy'] {
-  return {
-    name: pharmacyProfile.name,
-    address: { street: pharmacyProfile.street, postalCode: pharmacyProfile.postalCode, city: pharmacyProfile.city },
-    phone: pharmacyProfile.phoneNumber.toDisplayFormat(),
-    email: pharmacyProfile.email,
-    group: group && {
-      name: group.name,
-      logoUrl: group.logoId && toGroupImageUrl(group.logoId),
-      // Un module imposé mais sans données ne bloque pas le site : il est signalé dans les journaux.
-      mandatoryModules: mandatoryModules.filter((moduleName) => !unavailableMandatoryModules.includes(moduleName)),
-    },
   };
 }
