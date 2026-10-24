@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { findTool, type ToolKey } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, DayTimeline, Icon, PageHeader, TimeList } from '@crystal-pharm/ui';
+	import { Alert, Button, Card, DayTimeline, Icon, PageHeader, StatCard, TimeList } from '@crystal-pharm/ui';
 	import ToolTile from '../../components/molecules/ToolTile.svelte';
 	import { activeToolCardStatuses } from '../../domain/toolCards';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
@@ -21,13 +21,43 @@
 	const toolLabels = (toolKeys: readonly ToolKey[]) => toolKeys.map((toolKey) => findTool(toolKey).label).join(', ');
 	const findToolLink = (toolKey: string) => toolLinks.find((toolLink) => toolLink.toolKey === toolKey);
 	const coveringGroupName = $derived(data.coveringGroup?.isContractActive ? data.coveringGroup.groupName : undefined);
+	const activeToolCards = $derived(data.toolCards.filter((toolCard) => activeToolCardStatuses.includes(toolCard.status)));
+	// Un module actif est déjà dans la colonne de gauche : l'accueil ne montre en grand que ceux à activer.
+	const toolCardsToShow = $derived(hasActiveTool ? data.toolCards.filter((toolCard) => !activeToolCards.includes(toolCard)) : data.toolCards);
+	const headerContext = $derived(
+		[data.today?.dateLabel, data.today?.openingLabel].filter((part) => part !== undefined).join(' · ') || data.pharmacyName
+	);
 </script>
 
 <svelte:head>
 	<title>Accueil · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader icon="house" title={data.greetingName ? `Bonjour, ${data.greetingName}` : 'Bonjour'} context="{data.today?.dateLabel ?? 'Les outils'} · {data.pharmacyName}" />
+<PageHeader icon="house" title={data.greetingName ? `Bonjour, ${data.greetingName}` : 'Bonjour'} context={headerContext}>
+	{#snippet actions()}
+		{#if data.today?.links.planning}
+			<div data-module="planning"><Button variant="secondary" icon="calendar-dots" href={data.today.links.planning}>Planning du jour</Button></div>
+		{/if}
+	{/snippet}
+</PageHeader>
+
+{#if data.today?.coverageAlert}
+	<Alert tone="warning">
+		<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+			<span><strong class="font-semibold">{data.today.coverageAlert.text}</strong> La loi impose au moins un pharmacien présent.</span>
+			<div data-module="planning"><Button href={data.today.coverageAlert.correctionHref}>Corriger</Button></div>
+		</div>
+	</Alert>
+{/if}
+
+{#if data.isOpeningScheduleMissing}
+	<Alert tone="info">
+		<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+			<span><strong class="font-semibold">Renseignez vos horaires d’ouverture.</strong> Ils cadrent la journée ici et s’affichent sur votre site.</span>
+			<Button variant="secondary" icon="clock" href={homePathnames.pharmacyOpeningHours}>Renseigner les horaires</Button>
+		</div>
+	</Alert>
+{/if}
 
 {#if searchParams.get('groupement') === 'rejoint' && data.coveringGroup}
 	<Alert tone="success" title="Bienvenue dans {data.coveringGroup.groupName}">
@@ -87,59 +117,80 @@
 	</Card>
 {/if}
 
-{#if data.today}
-	{@const today = data.today}
-	<section aria-labelledby="aujourdhui-titre" class="grid gap-2">
-		<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-			<h2 id="aujourdhui-titre" class="title-2 text-ink">Aujourd’hui <span class="text-body font-normal text-ink-muted">· {today.summary}</span></h2>
-			<nav aria-label="La journée dans les modules" class="flex flex-wrap gap-x-4">
-				{#each today.links as link (link.href)}
-					<a href={link.href} class="text-small inline-flex items-center gap-1 font-semibold text-accent-text no-underline hover:underline">
-						{link.label} <Icon name="arrow-right" size={14} />
-					</a>
-				{/each}
-			</nav>
-		</div>
-		{#if today.areAppointmentsUnavailable}
+{#if data.today && data.today.keyFigures.length > 0}
+	<div class="grid gap-3 sm:grid-cols-3">
+		{#each data.today.keyFigures as keyFigure (keyFigure.key)}
+			<div data-module={keyFigure.module}>
+				<StatCard label={keyFigure.label} value={keyFigure.value}>
+					{#snippet detail()}
+						{#if keyFigure.link}
+							<a href={keyFigure.link.href} class="inline-flex items-center gap-1 font-semibold text-accent-text no-underline hover:underline">
+								{keyFigure.link.label} <Icon name="arrow-right" size={14} />
+							</a>
+						{:else}
+							{keyFigure.detail}
+						{/if}
+					{/snippet}
+				</StatCard>
+			</div>
+		{/each}
+	</div>
+{/if}
+
+{#if data.today?.timeline}
+	<section aria-labelledby="journee-titre" class="hidden gap-2 md:grid">
+		<h2 id="journee-titre" class="title-2 text-ink">La journée</h2>
+		{#if data.today.areAppointmentsUnavailable}
 			<Alert tone="warning">Les rendez-vous ne répondent pas pour le moment : ils manquent à la journée. Réessayez dans un instant.</Alert>
 		{/if}
-		{#if today.timeline}
-			<div class="hidden md:block">
-				<DayTimeline {...today.timeline} />
-			</div>
-		{/if}
-		<div class={today.timeline ? 'md:hidden' : ''}>
-			{#if today.agendaItems.length > 0}
-				<TimeList label="La journée heure par heure" items={today.agendaItems} />
-			{:else}
-				<p class="text-body rounded-md border border-dashed border-line-strong bg-surface-subtle px-4 py-3 text-ink-muted">{today.emptyLabel}</p>
-			{/if}
-		</div>
+		<DayTimeline {...data.today.timeline} />
 	</section>
 {/if}
 
-<section aria-labelledby="a-faire-titre" class="grid gap-2">
-	<h2 id="a-faire-titre" class="title-2 text-ink">À faire</h2>
-	{#if data.tasks.length > 0}
-		<TimeList label="À faire" items={data.tasks} />
-	{:else}
-		<p class="text-body rounded-md border border-dashed border-line-strong bg-surface-subtle px-4 py-3 text-ink-muted">Rien en attente. Tout est à jour.</p>
-	{/if}
-</section>
+{#if data.today?.appointmentItems}
+	<section aria-labelledby="rendez-vous-titre" class="grid gap-2" data-module="rdv">
+		<div class="flex flex-wrap items-baseline justify-between gap-2">
+			<h2 id="rendez-vous-titre" class="title-2 text-ink">Rendez-vous du jour</h2>
+			{#if data.today.links.appointments}
+				<a href={data.today.links.appointments} class="text-small inline-flex items-center gap-1 font-semibold text-accent-text no-underline hover:underline">
+					Agenda <Icon name="arrow-right" size={14} />
+				</a>
+			{/if}
+		</div>
+		{#if data.today.appointmentItems.length > 0}
+			<TimeList label="Rendez-vous du jour" items={data.today.appointmentItems} />
+		{:else}
+			<p class="text-body rounded-md border border-dashed border-line-strong bg-surface-subtle px-4 py-3 text-ink-muted">
+				{data.today.areAppointmentsUnavailable ? 'Les rendez-vous ne répondent pas pour le moment.' : 'Aucun rendez-vous aujourd’hui.'}
+			</p>
+		{/if}
+	</section>
+{/if}
 
 <section aria-labelledby="modules-titre" class="grid gap-2">
 	<div class="flex flex-wrap items-center justify-between gap-2">
-		<h2 id="modules-titre" class="title-2 text-ink">Vos modules</h2>
+		<h2 id="modules-titre" class="title-2 text-ink">{hasActiveTool && toolCardsToShow.length > 0 ? 'À activer' : 'Vos modules'}</h2>
 		{#if data.coveringGroup?.joinedAt && !data.coveringGroup.coverageEndsAt}
 			<a href={homePathnames.pharmacyGroup} class="text-small text-ink-muted underline">
 				Membre de {data.coveringGroup.groupName} depuis le {formatDay(data.coveringGroup.joinedAt)}
 			</a>
 		{/if}
 	</div>
-	<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-		{#each data.toolCards as toolCard (toolCard.toolKey)}
-			{@const toolLink = findToolLink(toolCard.toolKey)}
-			<ToolTile {toolCard} href={toolLink?.href} icon={toolLink?.icon} module={toolLink?.module} groupName={coveringGroupName} />
-		{/each}
-	</div>
+	{#if toolCardsToShow.length > 0}
+		<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+			{#each toolCardsToShow as toolCard (toolCard.toolKey)}
+				{@const toolLink = findToolLink(toolCard.toolKey)}
+				<ToolTile {toolCard} href={toolLink?.href} icon={toolLink?.icon} module={toolLink?.module} groupName={coveringGroupName} />
+			{/each}
+		</div>
+	{/if}
+	{#if hasActiveTool}
+		<p class="text-body flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-line-strong px-4 py-2.5 text-ink-muted">
+			<span>
+				{toolCardsToShow.length === 0 ? 'Tous vos modules sont actifs' : 'Actifs'} :
+				{activeToolCards.map((toolCard) => toolCard.label).join(', ')}.
+			</span>
+			<a href={homePathnames.subscription} class="font-semibold text-accent-text no-underline hover:underline">Gérer l’abonnement</a>
+		</p>
+	{/if}
 </section>

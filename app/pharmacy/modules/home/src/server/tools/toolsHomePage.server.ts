@@ -3,10 +3,11 @@ import { getToolAccessOfTenant, previewGroupJoining } from '@crystal-pharm/billi
 import type { ToolKey } from '@crystal-pharm/billing-db/domain';
 import { findCurrentGroupOfTenant, listPendingInvitationsForAccountEmail } from '@crystal-pharm/group-db';
 import { getPharmacyProfile } from '@crystal-pharm/pharmacy-db';
+import { weekdays, type WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
 import { describeToolCards } from '../../domain/toolCards';
 import type { ToolsHomePageData } from '../../pages/tools-home/toolsHomePageData';
 import { requireActiveTenantId, requireSignedInAccountId } from '../activeTenant.server';
-import { buildTodayOverview, buildTodayTasks, type TodayOverviewInput } from './today/todayOverview';
+import { buildTodayOverview, type TodayOverviewInput } from './today/todayOverview';
 import type { TodaySources } from './today/todaySources';
 
 /** `todaySources` : les fonctions du planning et des rendez-vous, passées par `pharmacy/host`. */
@@ -25,12 +26,12 @@ export async function loadToolsHomePage(
 	const todayInput = await readToday(
 		{ accountId: requireSignedInAccountId(locals.user), tenantId },
 		toolAccess.accessibleToolKeys,
+		pharmacyProfile.weeklyOpeningSchedule,
 		todaySources
 	);
 	return {
 		greetingName: readFirstName(locals.user),
 		today: buildTodayOverview(todayInput),
-		tasks: buildTodayTasks(todayInput, pharmacyProfile.weeklyOpeningSchedule === undefined),
 		toolCards: describeToolCards(toolAccess),
 		coveringGroup: toolAccess.coveringGroup && {
 			groupName: toolAccess.coveringGroup.groupName,
@@ -63,6 +64,7 @@ export async function loadToolsHomePage(
 async function readToday(
 	manager: { accountId: string; tenantId: string },
 	accessibleToolKeys: readonly ToolKey[],
+	weeklyOpeningSchedule: WeeklyOpeningSchedule | undefined,
 	todaySources: TodaySources
 ): Promise<TodayOverviewInput> {
 	const now = new Date();
@@ -74,6 +76,7 @@ async function readToday(
 	return {
 		isoDate,
 		nowMinutes: now.getHours() * 60 + now.getMinutes(),
+		openingPeriods: weeklyOpeningSchedule && listOpeningPeriodsOfDay(weeklyOpeningSchedule, now),
 		team: teamSummary && { href: todaySources.team.href, summary: teamSummary },
 		appointments: accessibleToolKeys.includes('booking')
 			? { href: todaySources.appointments.href, summary: appointmentsSummary }
@@ -92,6 +95,22 @@ async function readAppointmentsOrNothing(
 	} catch {
 		return undefined;
 	}
+}
+
+function listOpeningPeriodsOfDay(
+	weeklyOpeningSchedule: WeeklyOpeningSchedule,
+	date: Date
+): { startMinutes: number; endMinutes: number }[] {
+	const weekday = weekdays[(date.getDay() + 6) % 7];
+	return (weekday ? weeklyOpeningSchedule[weekday] : []).map((openingPeriod) => ({
+		startMinutes: toMinutesSinceMidnight(openingPeriod.opensAt),
+		endMinutes: toMinutesSinceMidnight(openingPeriod.closesAt)
+	}));
+}
+
+function toMinutesSinceMidnight(timeOfDay: string): number {
+	const [hours = 0, minutes = 0] = timeOfDay.split(':').map(Number);
+	return hours * 60 + minutes;
 }
 
 function toLocalIsoDate(date: Date): string {

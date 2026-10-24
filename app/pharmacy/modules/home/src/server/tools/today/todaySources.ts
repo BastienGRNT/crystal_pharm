@@ -5,8 +5,7 @@
  */
 
 export type TodayTeamSummary = {
-	isOpen: boolean;
-	openingPeriods: { startMinutes: number; endMinutes: number }[];
+	teamSize: number;
 	shifts: { id: string; personName: string; isPharmacist: boolean; startMinutes: number; endMinutes: number }[];
 	pharmacistCoverageGaps: { startMinutes: number; endMinutes: number; label: string }[];
 	/** Relative au module : `?view=day&day=2026-10-24`. */
