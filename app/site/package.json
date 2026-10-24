@@ -1,0 +1,30 @@
+{
+  "name": "@crystal-pharm/site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 5177",
+    "build": "vite build",
+    "check": "tsc --project tsconfig.json",
+    "start": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "@crystal-pharm/content-db": "workspace:*",
+    "@crystal-pharm/group-db": "workspace:*",
+    "@crystal-pharm/layouts": "workspace:*",
+    "@crystal-pharm/pharmacy-db": "workspace:*",
+    "@crystal-pharm/renderer": "workspace:*",
+    "@crystal-pharm/schema": "workspace:*",
+    "@solidjs/meta": "0.29.4",
+    "@solidjs/router": "0.16.3",
+    "@solidjs/start": "2.0.6",
+    "nitro": "3.0.260903-beta",
+    "solid-js": "^1.9.17",
+    "valibot": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^6.0.3",
+    "vite": "8.3.3"
+  }
+}

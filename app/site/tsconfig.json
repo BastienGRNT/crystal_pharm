@@ -1,0 +1,7 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["@solidjs/start/env", "node"]
+  },
+  "include": ["src", "vite.config.ts"]
+}

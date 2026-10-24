@@ -1,0 +1,1 @@
+ALTER TABLE "groups"."pharmacy_groups" ADD COLUMN "mandatory_modules" text[] DEFAULT '{}'::text[] NOT NULL;

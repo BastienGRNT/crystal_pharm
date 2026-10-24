@@ -15,5 +15,12 @@ services:
       timeout: 5s
       retries: 10
 
+  # La passerelle devant `app/site` (lancé par `pnpm dev` sur le port 5177).
+  caddy:
+    image: caddy:2
+    network_mode: host
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+
 volumes:
   postgres_data:

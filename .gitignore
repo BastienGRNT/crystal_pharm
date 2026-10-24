@@ -7,4 +7,5 @@ obj/
 .svelte-kit/
 build/
 dist/
+.output/
 .storage/

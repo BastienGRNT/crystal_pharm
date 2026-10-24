@@ -29,6 +29,8 @@ export const pharmacyGroups = groupsSchema.table(
 		loyaltyCardUrl: text('loyalty_card_url'),
 		/** « Retrouvez votre carte de fidélité en pharmacie »… */
 		loyaltyCardMessage: text('loyalty_card_message'),
+		/** Les modules que ses pharmacies membres ne peuvent pas désactiver sur leur site (noms de `engine/schema`). */
+		mandatoryModules: text('mandatory_modules').array().notNull().default(sql`'{}'::text[]`),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow(),
 		updatedAt: timestampWithTimeZone('updated_at')
 			.notNull()

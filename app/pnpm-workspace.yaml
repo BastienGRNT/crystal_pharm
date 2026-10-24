@@ -6,5 +6,6 @@ packages:
   - "pharmacy/modules/*"
   - "group"
   - "admin"
+  - "site"
 allowBuilds:
   esbuild: true
