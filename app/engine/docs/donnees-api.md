@@ -138,7 +138,11 @@ Chaque réglage a une valeur par défaut : l'API peut n'envoyer que ceux qui cha
 | `neighborhood` | `slogan` | `string` | « Votre pharmacie de quartier, toujours à votre écoute. » |
 | `neighborhood` | `heroImageUrl` | `string` | aucune image : une illustration la remplace |
 | `neighborhood` | `showOnDutyBanner` | `boolean` | `true` |
-| `atelier` | `accentTone` | `'terracotta' \| 'sage' \| 'saffron'` | `'terracotta'` |
+| `neighborhood` | `primaryColor` (thème) | `#rrggbb` | `'#1f6b45'` |
+| `neighborhood` | `accentColor` (thème) | `#rrggbb` | `'#f2b84b'` |
+| `neighborhood` | `headingFont` (thème) | `'fraunces' \| 'spaceGrotesk'` | `'fraunces'` |
+| `atelier` | `accentTone` (thème) | `'terracotta' \| 'sage' \| 'saffron'` | `'terracotta'` |
+| `atelier` | `displayFont` (thème) | `'instrumentSerif' \| 'fraunces'` | `'instrumentSerif'` |
 | `atelier` | `editorialHeadline` | `string` | « Prendre soin, simplement. » |
 
 Un réglage d'un mauvais type est refusé au rendu : « Réglages invalides pour le layout … ».

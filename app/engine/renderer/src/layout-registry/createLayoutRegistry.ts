@@ -1,4 +1,4 @@
-import { ModuleNameSchema, type PharmacyInfo } from '@crystal-pharm/schema';
+import { ModuleNameSchema, toThemeCssVariables, type PharmacyInfo, type ThemeCssVariables } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutPage } from '../contract/definePage';
 import type { Part } from '../contract/Part';
@@ -10,13 +10,18 @@ import type { PageKit } from '../page-kit/createPageKit';
 export type RegisteredLayout = {
   id: string;
   moduleComponents: LayoutModuleComponents;
+  /** Valide les réglages du tenant, les complète par leurs valeurs par défaut et en tire les variables CSS du thème. */
+  readSettings: (layoutSettings: unknown) => ReadLayoutSettings;
   findPage: (requestedPath: string) =>
     | {
         title: string;
-        render: (input: { pharmacy: PharmacyInfo; layoutSettings: unknown; modules: EnabledModulesProps; pageKit: PageKit }) => Part<'page'>;
+        render: (input: { pharmacy: PharmacyInfo; settings: ReadLayoutSettings; modules: EnabledModulesProps; pageKit: PageKit }) => Part<'page'>;
       }
     | undefined;
 };
+
+/** Des réglages passés par `readSettings` : seule façon d'en obtenir, donc toujours validés. */
+export type ReadLayoutSettings = { readonly settings: unknown; readonly themeCssVariables: ThemeCssVariables };
 
 export type LayoutRegistry = {
   layoutIds: string[];
@@ -66,19 +71,19 @@ function toRegisteredLayout(layoutId: string, layout: PharmacySiteLayout<unknown
   return {
     id: layoutId,
     moduleComponents: layout,
+    readSettings: (layoutSettings) => {
+      const settingsResult = v.safeParse(layout.settingsSchema, layoutSettings);
+      if (!settingsResult.success) {
+        throw new Error(`Réglages invalides pour le layout « ${layoutId} » :\n${v.summarize(settingsResult.issues)}`);
+      }
+      return { settings: settingsResult.output, themeCssVariables: toThemeCssVariables(layout.settingsSchema, settingsResult.output) };
+    },
     findPage: (requestedPath) => {
       const page = pagesByPath.get(requestedPath);
       if (!page) return undefined;
       return {
         title: page.title,
-        render: (input) => {
-          // Les réglages du tenant sont validés ici, et complétés par les valeurs par défaut du schéma.
-          const settingsResult = v.safeParse(layout.settingsSchema, input.layoutSettings);
-          if (!settingsResult.success) {
-            throw new Error(`Réglages invalides pour le layout « ${layoutId} » :\n${v.summarize(settingsResult.issues)}`);
-          }
-          return page.component({ pharmacy: input.pharmacy, settings: settingsResult.output, modules: input.modules, pageKit: input.pageKit });
-        },
+        render: (input) => page.component({ pharmacy: input.pharmacy, settings: input.settings.settings, modules: input.modules, pageKit: input.pageKit }),
       };
     },
   };

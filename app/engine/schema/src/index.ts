@@ -11,3 +11,7 @@ export * from './modules/ModuleNameSchema';
 export * from './modules/TenantModulesSchema';
 export * from './TenantSiteSchema';
 export * from './PrescriptionUploadRequestSchema';
+export * from './theme/themeColorSetting';
+export * from './theme/themeChoiceSetting';
+export { readThemeSetting, unwrapOptional, type ThemeSetting } from './theme/readThemeSetting';
+export * from './theme/toThemeCssVariables';

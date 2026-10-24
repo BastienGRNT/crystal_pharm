@@ -9,7 +9,7 @@ export default definePage<AtelierSettings>({
     props.pageKit.Page({
       legalNotice: props.pageKit.LegalNotice({ class: 'at-legal-notice' }),
       children: (
-        <AsymmetricGridTemplate pharmacy={props.pharmacy} modules={props.modules} accentTone={props.settings.accentTone} currentPath="/ordonnance">
+        <AsymmetricGridTemplate pharmacy={props.pharmacy} modules={props.modules} currentPath="/ordonnance">
           <Show
             when={props.modules.prescriptionUpload}
             fallback={

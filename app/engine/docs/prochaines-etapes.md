@@ -168,7 +168,10 @@ Questions à trancher avant de coder :
    `group-db`, avec du cache ; le tenant vient d'un en-tête posé par la passerelle (en dev, Caddy le
    déduit de `<slug>.site.localhost`) ; une route `/__preview` prête pour l'iframe de `site-manager`.
 3. **`site-manager`** : choix du layout, réglages (lus dans le manifeste), modules activés, aperçu.
-4. **Ajouter le thème personnalisable** (section 4).
+4. ~~**Ajouter le thème personnalisable** (section 4).~~ Fait : `themeColorSetting` et
+   `themeChoiceSetting` (`schema`) marquent un réglage comme réglage du thème ; le moteur en tire les
+   variables CSS (`toThemeCssVariables`) et les pose sur le `<div class="layout-…">`. `site-manager`
+   les affiche à part, sous « Couleurs et polices ».
 5. **Ajouter l'ordre des modules** (section 5), après avoir tranché les questions.
 
 ## Pistes notées, non prioritaires

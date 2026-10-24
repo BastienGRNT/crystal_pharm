@@ -12,6 +12,9 @@ export type LayoutModuleComponents = { [Name in ModuleName]: Component<ModulePro
  * Son identifiant est le nom de son dossier, et ses pages sont les fichiers de son dossier `pages/`.
  */
 export type PharmacySiteLayout<Settings> = LayoutModuleComponents & {
-  /** Valide les réglages du tenant et les complète par leurs valeurs par défaut. */
-  settingsSchema: v.GenericSchema<unknown, Settings>;
+  /**
+   * Valide les réglages du tenant et les complète par leurs valeurs par défaut.
+   * Les réglages écrits avec `themeColorSetting` ou `themeChoiceSetting` deviennent les variables CSS du layout.
+   */
+  settingsSchema: v.ObjectSchema<v.ObjectEntries, undefined> & v.GenericSchema<unknown, Settings>;
 };

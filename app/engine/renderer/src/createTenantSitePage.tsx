@@ -24,6 +24,7 @@ export function createTenantSitePage(input: {
   const layout = input.layouts.findLayoutById(tenantSite.layoutId);
   const page = layout.findPage(input.requestedPath);
   if (!page) return { status: 'notFound' };
+  const layoutSettings = layout.readSettings(tenantSite.layoutSettings);
 
   const enabledModulesProps = toEnabledModulesProps(tenantSite.modules, {
     renderedAt: input.renderedAt,
@@ -35,8 +36,9 @@ export function createTenantSitePage(input: {
     status: 'found',
     title: `${page.title} · ${tenantSite.pharmacy.name}`,
     Page: () => (
-      <div class={`layout-${layout.id}`}>
-        {page.render({ pharmacy: tenantSite.pharmacy, layoutSettings: tenantSite.layoutSettings, modules: enabledModulesProps, pageKit })}
+      // Le thème écrase, sur ce même élément, les variables CSS par défaut que le layout y déclare.
+      <div class={`layout-${layout.id}`} style={layoutSettings.themeCssVariables}>
+        {page.render({ pharmacy: tenantSite.pharmacy, settings: layoutSettings, modules: enabledModulesProps, pageKit })}
       </div>
     ),
   };
