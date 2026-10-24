@@ -1,5 +1,14 @@
 import type { ToolKey } from '@crystal-pharm/billing-db/domain';
-import type { DayTimelineHour, DayTimelineNow, DayTimelineRange, DayTimelineRow, ModuleKey, TimeListItem } from '@crystal-pharm/ui';
+import type {
+	ActionListItem,
+	DayTimelineHour,
+	DayTimelineNow,
+	DayTimelineRange,
+	DayTimelineRow,
+	ModuleKey,
+	StatusBadgeTone,
+	TimeListItem
+} from '@crystal-pharm/ui';
 import type { ToolCard } from '../../domain/toolCards';
 
 export type PendingInvitationSummary = {
@@ -20,28 +29,33 @@ export type ToolsHomePageData = {
 	pendingInvitations: PendingInvitationSummary[];
 	/** « Léa », pour « Bonjour, Léa ». */
 	greetingName: string;
-	/** `undefined` sans planning ni rendez-vous activés. */
-	today: TodayOverview | undefined;
+	today: TodayOverview;
 };
 
-export type TodayKeyFigure = {
-	key: string;
-	label: string;
-	value: string;
-	detail: string;
-	/** Un lien sous le chiffre, quand il appelle une action. */
-	link: { label: string; href: string } | undefined;
-	module: ModuleKey;
+/** Ce qui se passe à l'heure où la page s'ouvre. */
+export type TodayNow = {
+	/** « 10:12 ». */
+	timeLabel: string;
+	/** Qui est au comptoir en ce moment ; `undefined` sans le planning. */
+	presentPeople: { key: string; name: string; detail: string }[] | undefined;
+	/** Ouvert, et aucun pharmacien en ce moment. */
+	isPharmacistMissing: boolean;
+	/** Le prochain rendez-vous du jour ; `undefined` sans le module, `null` quand il n'y en a plus. */
+	nextAppointment: { startTime: string; reason: string; detail: string; isPending: boolean; href: string } | null | undefined;
+	/** « 3 rendez-vous aujourd’hui · 3 / 5 de l’équipe dans la journée ». */
+	summary: string;
 };
+
+export type TodayShortcut = { key: string; label: string; href: string; module: ModuleKey };
 
 export type TodayOverview = {
 	/** « Samedi 24 octobre ». */
 	dateLabel: string;
-	/** « ouvert de 09:00 à 12:30 », « fermé aujourd’hui » ; `undefined` sans horaires saisis. */
-	openingLabel: string | undefined;
-	/** Les heures d'ouverture sans pharmacien, dites une seule fois, avec l'action qui les corrige. */
-	coverageAlert: { text: string; correctionHref: string } | undefined;
-	keyFigures: TodayKeyFigure[];
+	/** « Ouvert · ferme à 12:30 » ; `undefined` sans horaires saisis. */
+	openingStatus: { label: string; tone: StatusBadgeTone } | undefined;
+	now: TodayNow;
+	/** Ce qui demande une action, le plus urgent d'abord. */
+	tasks: ActionListItem[];
 	/** La frise, sur un écran large ; `undefined` quand rien n'est prévu. */
 	timeline:
 		| {
@@ -53,9 +67,13 @@ export type TodayOverview = {
 				now: DayTimelineNow | undefined;
 		  }
 		| undefined;
-	/** Les rendez-vous du jour, dans l'ordre ; `undefined` sans le module. */
+	/** Les rendez-vous du jour, sur un téléphone ; `undefined` sans le module. */
 	appointmentItems: TimeListItem[] | undefined;
-	links: { planning: string | undefined; appointments: string | undefined };
+	planningHref: string | undefined;
+	shortcuts: TodayShortcut[];
 	/** Le C# n'a pas répondu : les rendez-vous manquent à la journée. */
 	areAppointmentsUnavailable: boolean;
 };
+
+/** Le retour d'une confirmation lancée depuis l'accueil. */
+export type ConfirmAppointmentFailure = { confirmationFailure: string };

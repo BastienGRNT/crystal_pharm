@@ -17,11 +17,25 @@ export type TodayAppointment = {
 	detailQuery: string;
 };
 
+/** Un rendez-vous de la semaine qui attend sa confirmation. */
+export type PendingAppointment = {
+	id: string;
+	/** Le jour, au format AAAA-MM-JJ. */
+	day: string;
+	startTime: string;
+	reason: string;
+	detailQuery: string;
+};
+
 export type TodayAppointments = {
 	appointments: TodayAppointment[];
+	/** Dans l'ordre de la semaine. */
+	pendingAppointments: PendingAppointment[];
 	/** Les rendez-vous en attente de la semaine : ceux que montre `pendingQuery`. */
 	pendingCount: number;
 	pendingQuery: string;
+	/** Le formulaire d'un nouveau rendez-vous. */
+	newAppointmentQuery: string;
 };
 
 const toMinutesSinceMidnight = (time: string): number => {
@@ -51,7 +65,17 @@ export async function getTodayAppointments(caller: BookingCaller, todayIsoDate: 
 					]
 				: []
 		),
+		pendingAppointments: weekAppointments
+			.filter((appointment) => appointment.status === 'pending')
+			.map((appointment) => ({
+				id: appointment.id,
+				day: appointment.day,
+				startTime: appointment.startTime,
+				reason: appointment.reason,
+				detailQuery: `?${new URLSearchParams({ jour: appointment.day, rdv: appointment.id })}`
+			})),
 		pendingCount: weekAppointments.filter((appointment) => appointment.status === 'pending').length,
-		pendingQuery: `?${new URLSearchParams({ jour: todayIsoDate, vue: 'semaine', statut: statusParameters.pending })}`
+		pendingQuery: `?${new URLSearchParams({ jour: todayIsoDate, vue: 'semaine', statut: statusParameters.pending })}`,
+		newAppointmentQuery: `?${new URLSearchParams({ jour: todayIsoDate, nouveau: '1' })}`
 	};
 }
