@@ -7,9 +7,10 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 
 - Il reçoit un `tenantId` de la passerelle et ne voit **jamais** un nom de
   domaine.
-- Il lit le site dans `content` via `shared/content-db`, et la fiche de la
-  pharmacie (nom, adresse, téléphone) dans `shared/pharmacy-db`. Un adapter les
-  assemble en `TenantSite`. Le cache a une clé qui contient **toujours** le
+- Il lit le site dans `content` via `shared/content-db`, la fiche de la
+  pharmacie (nom, adresse, téléphone) dans `shared/pharmacy-db`, et son
+  groupement (fiche, modules imposés, actualités) dans `shared/group-db`. Un
+  adapter les assemble en `TenantSite`. Le cache a une clé qui contient **toujours** le
   `tenantId`.
 - Il ne rend rien lui-même : il appelle `createTenantSitePage` du moteur et
   affiche la page obtenue. Une seule route attrape-tout.

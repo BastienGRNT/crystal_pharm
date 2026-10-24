@@ -76,7 +76,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		personaKey: 'pharmaplus',
 		space: 'group',
 		label: 'Pharma+ · à l’usage, sur facture',
-		description: 'Contrat actif : 3 pharmacies, une invitation en attente.',
+		description: 'Contrat actif : 3 pharmacies, une invitation en attente, deux actualités.',
 		email: demoEmail('pharmaplus'),
 		firstName: 'Paul',
 		lastName: 'Garnier'

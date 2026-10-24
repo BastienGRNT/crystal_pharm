@@ -66,7 +66,8 @@ lui.
 
 - Le schéma `groups` : les PharmacyGroups et leur quota de pharmacies, leurs
   GroupMembers, l'appartenance des pharmacies, les invitations (des
-  pharmacies et des GroupMembers).
+  pharmacies et des GroupMembers), les actualités du groupement et le choix
+  de les imposer à ses pharmacies.
 - Un PharmacyGroup est créé par la Platform, jamais par une inscription : son
   premier GroupMember arrive par une invitation envoyée depuis `admin`.
 - Une pharmacie appartient à un groupement au plus à la fois. L'appartenance
@@ -78,8 +79,10 @@ lui.
   explicitement que le groupement voie ses données ; chacun des deux peut y
   mettre fin. La prise en charge court jusqu'à la fin du mois du départ
   (`coverage_ends_at`).
-- Lu par `group` (seulement ses pharmacies, RLS sur le `groupId`), `admin`
-  et `pharmacy` (savoir à quel groupement on appartient).
+- Lu par `group` (seulement ses pharmacies, RLS sur le `groupId`), `admin`,
+  `pharmacy` (savoir à quel groupement on appartient) et, pour le site d'une
+  pharmacie membre, `site-manager` et `app/site` (sa fiche, ses modules
+  imposés, ses actualités).
 
 ## `billing-db` — les abonnements
 

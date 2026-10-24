@@ -1,0 +1,769 @@
+{
+  "id": "fa5c7e09-689c-4392-8f59-fe5db26c5709",
+  "prevId": "9502a568-16c8-4ce7-a360-39f84493664f",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "groups.group_articles": {
+      "name": "group_articles",
+      "schema": "groups",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "group_articles_group_id_published_at_index": {
+          "name": "group_articles_group_id_published_at_index",
+          "columns": [
+            {
+              "expression": "group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "published_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "group_articles_group_id_pharmacy_groups_id_fk": {
+          "name": "group_articles_group_id_pharmacy_groups_id_fk",
+          "tableFrom": "group_articles",
+          "tableTo": "pharmacy_groups",
+          "schemaTo": "groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "group_articles_readable_by_their_group_and_member_pharmacies": {
+          "name": "group_articles_readable_by_their_group_and_member_pharmacies",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on'\n\t\t\t\tor group_id in (select group_id from groups.pharmacy_memberships where tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid and left_at is null)"
+        },
+        "group_articles_written_by_their_group": {
+          "name": "group_articles_written_by_their_group",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on'",
+          "withCheck": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on'"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "groups.group_member_invitations": {
+      "name": "group_member_invitations",
+      "schema": "groups",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "group_member_invitations_group_id_index": {
+          "name": "group_member_invitations_group_id_index",
+          "columns": [
+            {
+              "expression": "group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "group_member_invitations_group_id_pharmacy_groups_id_fk": {
+          "name": "group_member_invitations_group_id_pharmacy_groups_id_fk",
+          "tableFrom": "group_member_invitations",
+          "tableTo": "pharmacy_groups",
+          "schemaTo": "groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "group_member_invitations_token_hash_unique": {
+          "name": "group_member_invitations_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_hash"
+          ]
+        }
+      },
+      "policies": {
+        "group_member_invitations_of_active_group_or_token": {
+          "name": "group_member_invitations_of_active_group_or_token",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on' or token_hash = nullif(current_setting('app.invitation_token_hash', true), '')",
+          "withCheck": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on' or token_hash = nullif(current_setting('app.invitation_token_hash', true), '')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "groups.group_members": {
+      "name": "group_members",
+      "schema": "groups",
+      "columns": {
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "group_members_account_id_index": {
+          "name": "group_members_account_id_index",
+          "columns": [
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "group_members_group_id_pharmacy_groups_id_fk": {
+          "name": "group_members_group_id_pharmacy_groups_id_fk",
+          "tableFrom": "group_members",
+          "tableTo": "pharmacy_groups",
+          "schemaTo": "groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "group_members_account_id_users_id_fk": {
+          "name": "group_members_account_id_users_id_fk",
+          "tableFrom": "group_members",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "group_members_group_id_account_id_pk": {
+          "name": "group_members_group_id_account_id_pk",
+          "columns": [
+            "group_id",
+            "account_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "group_members_of_active_group_or_account": {
+          "name": "group_members_of_active_group_or_account",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or account_id = nullif(current_setting('app.account_id', true), '') or current_setting('app.is_platform', true) = 'on'",
+          "withCheck": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on'\n\t\t\t\tor (account_id = nullif(current_setting('app.account_id', true), '') and group_id in (select group_id from groups.group_member_invitations where token_hash = nullif(current_setting('app.invitation_token_hash', true), '')))"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "groups.pharmacy_groups": {
+      "name": "pharmacy_groups",
+      "schema": "groups",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_email": {
+          "name": "contact_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pharmacy_quota": {
+          "name": "pharmacy_quota",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "logo_id": {
+          "name": "logo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loyalty_card_image_id": {
+          "name": "loyalty_card_image_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loyalty_card_url": {
+          "name": "loyalty_card_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loyalty_card_message": {
+          "name": "loyalty_card_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mandatory_modules": {
+          "name": "mandatory_modules",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "imposes_group_news": {
+          "name": "imposes_group_news",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "pharmacy_groups_readable_by_their_people": {
+          "name": "pharmacy_groups_readable_by_their_people",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on'\n\t\t\t\tor id in (select group_id from groups.group_members where account_id = nullif(current_setting('app.account_id', true), ''))\n\t\t\t\tor id in (select group_id from groups.pharmacy_memberships where tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)\n\t\t\t\tor id in (select group_id from groups.pharmacy_invitations where email = nullif(current_setting('app.account_email', true), '') or token_hash = nullif(current_setting('app.invitation_token_hash', true), ''))\n\t\t\t\tor id in (select group_id from groups.group_member_invitations where token_hash = nullif(current_setting('app.invitation_token_hash', true), ''))"
+        },
+        "pharmacy_groups_written_by_platform": {
+          "name": "pharmacy_groups_written_by_platform",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "current_setting('app.is_platform', true) = 'on'",
+          "withCheck": "current_setting('app.is_platform', true) = 'on'"
+        },
+        "pharmacy_groups_profile_updated_by_its_members": {
+          "name": "pharmacy_groups_profile_updated_by_its_members",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "public"
+          ],
+          "using": "id = nullif(current_setting('app.group_id', true), '')::uuid",
+          "withCheck": "id = nullif(current_setting('app.group_id', true), '')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "pharmacy_groups_quota_is_positive": {
+          "name": "pharmacy_groups_quota_is_positive",
+          "value": "pharmacy_quota >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "groups.pharmacy_invitations": {
+      "name": "pharmacy_invitations",
+      "schema": "groups",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pharmacy_name": {
+          "name": "pharmacy_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_sent_at": {
+          "name": "last_sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "accepted_tenant_id": {
+          "name": "accepted_tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "declined_at": {
+          "name": "declined_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "pharmacy_invitations_group_id_index": {
+          "name": "pharmacy_invitations_group_id_index",
+          "columns": [
+            {
+              "expression": "group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pharmacy_invitations_email_index": {
+          "name": "pharmacy_invitations_email_index",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pharmacy_invitations_group_id_pharmacy_groups_id_fk": {
+          "name": "pharmacy_invitations_group_id_pharmacy_groups_id_fk",
+          "tableFrom": "pharmacy_invitations",
+          "tableTo": "pharmacy_groups",
+          "schemaTo": "groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pharmacy_invitations_accepted_tenant_id_tenants_id_fk": {
+          "name": "pharmacy_invitations_accepted_tenant_id_tenants_id_fk",
+          "tableFrom": "pharmacy_invitations",
+          "tableTo": "tenants",
+          "schemaTo": "pharmacy",
+          "columnsFrom": [
+            "accepted_tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pharmacy_invitations_token_hash_unique": {
+          "name": "pharmacy_invitations_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_hash"
+          ]
+        }
+      },
+      "policies": {
+        "pharmacy_invitations_of_active_group_email_or_token": {
+          "name": "pharmacy_invitations_of_active_group_email_or_token",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on' or email = nullif(current_setting('app.account_email', true), '') or token_hash = nullif(current_setting('app.invitation_token_hash', true), '')",
+          "withCheck": "group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on' or email = nullif(current_setting('app.account_email', true), '') or token_hash = nullif(current_setting('app.invitation_token_hash', true), '')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "groups.pharmacy_memberships": {
+      "name": "pharmacy_memberships",
+      "schema": "groups",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "left_at": {
+          "name": "left_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coverage_ends_at": {
+          "name": "coverage_ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ended_by": {
+          "name": "ended_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "pharmacy_memberships_tenant_id_index": {
+          "name": "pharmacy_memberships_tenant_id_index",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pharmacy_memberships_group_id_index": {
+          "name": "pharmacy_memberships_group_id_index",
+          "columns": [
+            {
+              "expression": "group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pharmacy_memberships_one_current_group_per_tenant": {
+          "name": "pharmacy_memberships_one_current_group_per_tenant",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "left_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pharmacy_memberships_tenant_id_tenants_id_fk": {
+          "name": "pharmacy_memberships_tenant_id_tenants_id_fk",
+          "tableFrom": "pharmacy_memberships",
+          "tableTo": "tenants",
+          "schemaTo": "pharmacy",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pharmacy_memberships_group_id_pharmacy_groups_id_fk": {
+          "name": "pharmacy_memberships_group_id_pharmacy_groups_id_fk",
+          "tableFrom": "pharmacy_memberships",
+          "tableTo": "pharmacy_groups",
+          "schemaTo": "groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "pharmacy_memberships_of_active_group_or_tenant": {
+          "name": "pharmacy_memberships_of_active_group_or_tenant",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid or group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on'",
+          "withCheck": "tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid or group_id = nullif(current_setting('app.group_id', true), '')::uuid or current_setting('app.is_platform', true) = 'on'"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "groups": "groups"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

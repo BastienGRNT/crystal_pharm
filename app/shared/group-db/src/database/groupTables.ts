@@ -1,7 +1,7 @@
 import { users } from '@crystal-pharm/auth/customer-tables';
 import { tenants } from '@crystal-pharm/pharmacy-db/tables';
 import { sql } from 'drizzle-orm';
-import { check, index, integer, pgPolicy, pgSchema, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, index, integer, pgPolicy, pgSchema, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import {
 	activeAccountEmail,
 	activeAccountId,
@@ -31,6 +31,8 @@ export const pharmacyGroups = groupsSchema.table(
 		loyaltyCardMessage: text('loyalty_card_message'),
 		/** Les modules que ses pharmacies membres ne peuvent pas désactiver sur leur site (noms de `engine/schema`). */
 		mandatoryModules: text('mandatory_modules').array().notNull().default(sql`'{}'::text[]`),
+		/** Ses pharmacies membres affichent ses actualités sur leur site, sans pouvoir choisir les leurs. */
+		imposesGroupNews: boolean('imposes_group_news').notNull().default(false),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow(),
 		updatedAt: timestampWithTimeZone('updated_at')
 			.notNull()
@@ -172,6 +174,35 @@ export const pharmacyInvitations = groupsSchema.table(
 			for: 'all',
 			using: sql`group_id = ${activeGroupId} or ${isPlatform} or email = ${activeAccountEmail} or token_hash = ${activeInvitationTokenHash}`,
 			withCheck: sql`group_id = ${activeGroupId} or ${isPlatform} or email = ${activeAccountEmail} or token_hash = ${activeInvitationTokenHash}`
+		})
+	]
+);
+
+/** Une actualité qu'un groupement publie pour le site de toutes ses pharmacies membres. */
+export const groupArticles = groupsSchema.table(
+	'group_articles',
+	{
+		id: uuid('id').primaryKey(),
+		groupId: uuid('group_id')
+			.notNull()
+			.references(() => pharmacyGroups.id, { onDelete: 'cascade' }),
+		title: text('title').notNull(),
+		summary: text('summary').notNull(),
+		publishedAt: timestampWithTimeZone('published_at').notNull(),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('group_articles_group_id_published_at_index').on(table.groupId, table.publishedAt),
+		// Une pharmacie lit celles de son groupement actuel : après son départ, plus rien.
+		pgPolicy('group_articles_readable_by_their_group_and_member_pharmacies', {
+			for: 'select',
+			using: sql`group_id = ${activeGroupId} or ${isPlatform}
+				or group_id in (select group_id from groups.pharmacy_memberships where tenant_id = ${activeTenantId} and left_at is null)`
+		}),
+		pgPolicy('group_articles_written_by_their_group', {
+			for: 'all',
+			using: sql`group_id = ${activeGroupId} or ${isPlatform}`,
+			withCheck: sql`group_id = ${activeGroupId} or ${isPlatform}`
 		})
 	]
 );

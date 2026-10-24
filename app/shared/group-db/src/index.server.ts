@@ -23,6 +23,14 @@ export {
 	type GroupSiteProfileOfTenant
 } from './groups/site/groupSiteProfileOfTenant.server';
 export {
+	createGroupArticle,
+	deleteGroupArticle,
+	getGroupNews,
+	setGroupNewsImposition,
+	updateGroupArticle,
+	type GroupNews
+} from './news/groupNews.server';
+export {
 	acceptGroupMemberInvitation,
 	findActiveGroupIdOfAccount,
 	findGroupMemberInvitation,

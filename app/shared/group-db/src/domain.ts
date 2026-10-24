@@ -21,3 +21,13 @@ export { maximumPharmacyGroupImageMegabytes } from './groups/profile/PharmacyGro
 export { parseInvitationList, type InvitationListEntry, type InvitationListParsing } from './invitations/invitationList';
 export { describeInvitationStatus, type InvitationStatus } from './invitations/invitationStatus';
 export { computeCoverageEnd } from './pharmacies/coveragePeriod';
+export {
+	GroupArticleSchema,
+	maximumGroupArticleSummaryLength,
+	maximumGroupArticleTitleLength,
+	type GroupArticle,
+	type GroupArticleFieldName,
+	type GroupArticleInput,
+	type GroupArticleTexts
+} from './news/groupArticle';
+export { chooseDisplayedNewsSource, type DisplayedNewsSource, type NewsSource } from './news/displayedNewsSource';
