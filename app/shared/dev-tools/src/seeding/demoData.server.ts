@@ -16,6 +16,7 @@ import { clearDevelopmentOutbox, composeGroupMemberInvitationEmail, composePharm
 import {
 	acceptGroupMemberInvitation,
 	acceptPharmacyInvitation,
+	createGroupArticle,
 	createPharmacyGroup,
 	deletePharmacyGroup,
 	invitePharmacies,
@@ -140,6 +141,7 @@ async function seedDemoData(): Promise<void> {
 	for (const pharmacy of fillerPharmacies()) fillerTenantIds.push(await createDemoPharmacy(pharmacy));
 
 	const pharmaPlusId = await createDemoGroup(pharmaPlusName, 20, pharmaPlusContract, 'pharmaplus');
+	await publishDemoGroupArticles(pharmaPlusId);
 	const reseauSanteId = await createDemoGroup(reseauSanteName, 10, reseauSanteContract, 'reseau');
 
 	await joinGroup(pharmaPlusId, demoEmail('membre'), requireTenantId(tenantIdsByPersonaKey, 'membre'));
@@ -243,6 +245,19 @@ async function createDemoGroup(
 		await acceptGroupMemberInvitation(invitation.invitationToken, { accountId: memberAccountId, email: memberPersona.email });
 	}
 	return groupCreation.groupId;
+}
+
+// Non imposées : la pharmacie membre choisit d'afficher les siennes ou celles-ci.
+const demoGroupArticles = [
+	{ title: '-10 % sur la parapharmacie', summary: 'Tout le mois de novembre, dans toutes les pharmacies Pharma+.', publishedAt: '2026-10-20' },
+	{ title: 'Campagne de vaccination contre la grippe', summary: 'Sans rendez-vous, sur présentation de votre bon de l’Assurance maladie.', publishedAt: '2026-10-06' }
+];
+
+async function publishDemoGroupArticles(groupId: string): Promise<void> {
+	for (const article of demoGroupArticles) {
+		const publication = await createGroupArticle(groupId, article);
+		if (!publication.isSaved) throw new Error(`The demo group article ${article.title} was refused.`);
+	}
 }
 
 async function joinGroup(groupId: string, accountEmail: string, tenantId: string): Promise<void> {

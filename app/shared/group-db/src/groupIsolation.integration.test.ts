@@ -54,6 +54,8 @@ async function insertTwoGroupsWithOnePharmacyEach(transaction: postgres.Transact
 		await transaction`insert into groups.pharmacy_memberships (id, tenant_id, group_id) values (gen_random_uuid(), ${tenantId}, ${groupId})`;
 		await transaction`insert into groups.pharmacy_invitations (id, group_id, email, token_hash, expires_at)
 			values (gen_random_uuid(), ${groupId}, ${invitedEmail}, ${`hash-${groupId}`}, now() + interval '1 day')`;
+		await transaction`insert into groups.group_articles (id, group_id, title, summary, published_at)
+			values (gen_random_uuid(), ${groupId}, ${`Promo ${groupId}`}, '-10 %', now())`;
 	}
 }
 
@@ -182,6 +184,87 @@ describe('isolation entre groupements (Row-Level Security du schéma groups)', (
 			await expect(
 				transaction`insert into groups.pharmacy_groups (id, name, pharmacy_quota) values (gen_random_uuid(), 'Pirate', 10)`
 			).rejects.toThrow(/row-level security/);
+		});
+	});
+});
+
+describe('isolation des actualités de groupement (Row-Level Security de groups.group_articles)', () => {
+	it('ne montre rien tant qu’aucun groupement ni Tenant n’est posé', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			expect(await transaction`select id from groups.group_articles`).toHaveLength(0);
+		});
+	});
+
+	it('ne montre à un groupement que ses actualités', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.group_id', firstGroup.groupId);
+
+			const visibleArticles = await transaction`select group_id from groups.group_articles`;
+
+			expect(visibleArticles.map(({ group_id }) => group_id)).toEqual([firstGroup.groupId]);
+		});
+	});
+
+	it('ne laisse pas un groupement publier, modifier ni supprimer au nom d’un autre', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.group_id', firstGroup.groupId);
+
+			const updatedArticles = await transaction`update groups.group_articles set title = 'Piraté' where group_id = ${secondGroup.groupId}`;
+			const deletedArticles = await transaction`delete from groups.group_articles where group_id = ${secondGroup.groupId}`;
+
+			expect(updatedArticles.count).toBe(0);
+			expect(deletedArticles.count).toBe(0);
+			// En dernier : une requête refusée interrompt la transaction.
+			await expect(
+				transaction`insert into groups.group_articles (id, group_id, title, summary, published_at)
+					values (gen_random_uuid(), ${secondGroup.groupId}, 'Pirate', 'Pirate', now())`
+			).rejects.toThrow(/row-level security/);
+		});
+	});
+
+	it('montre à une pharmacie les actualités de son groupement, et seulement celles-là', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+
+			const visibleArticles = await transaction`select group_id from groups.group_articles`;
+
+			expect(visibleArticles.map(({ group_id }) => group_id)).toEqual([firstGroup.groupId]);
+		});
+	});
+
+	it('ne laisse pas une pharmacie écrire les actualités de son groupement', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+
+			const updatedArticles = await transaction`update groups.group_articles set title = 'Piraté'`;
+			const deletedArticles = await transaction`delete from groups.group_articles`;
+
+			expect(updatedArticles.count).toBe(0);
+			expect(deletedArticles.count).toBe(0);
+			// En dernier : une requête refusée interrompt la transaction.
+			await expect(
+				transaction`insert into groups.group_articles (id, group_id, title, summary, published_at)
+					values (gen_random_uuid(), ${firstGroup.groupId}, 'Pirate', 'Pirate', now())`
+			).rejects.toThrow(/row-level security/);
+		});
+	});
+
+	it('ne montre plus rien à une pharmacie partie de son groupement', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+			await transaction`update groups.pharmacy_memberships set left_at = now() where tenant_id = ${firstGroup.tenantId}`;
+
+			expect(await transaction`select id from groups.group_articles`).toHaveLength(0);
+		});
+	});
+
+	it('ne laisse pas une pharmacie imposer ou retirer les actualités de son groupement', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+
+			const updatedGroups = await transaction`update groups.pharmacy_groups set imposes_group_news = true`;
+
+			expect(updatedGroups.count).toBe(0);
 		});
 	});
 });

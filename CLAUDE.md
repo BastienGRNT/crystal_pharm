@@ -144,7 +144,7 @@ Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
 | `pharmacy/modules/site-manager` | en plus : l'export sans Solid de `layouts` (`/manifest`) |
 | `group` | `ui`, `shared/*` |
 | `admin` | `ui`, `shared/*` — de `shared/auth`, seulement `/toolkit`, `/tables` et `/client` (sauf par `shared/dev-tools`, en dev) |
-| `app/site` | `engine/*`, `shared/content-db`, `shared/pharmacy-db`, `shared/api-client` |
+| `app/site` | `engine/*`, `shared/content-db`, `shared/pharmacy-db`, `shared/group-db`, `shared/api-client` |
 | `ui` | rien d'autre que Svelte |
 | `shared/*` | voir `app/shared/CLAUDE.md` |
 | `engine/*` | entre eux seulement : `layouts → renderer → schema` |

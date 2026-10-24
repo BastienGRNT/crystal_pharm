@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { findLayoutManifest, layoutManifests } from '@crystal-pharm/layouts/manifest';
+	import { chooseDisplayedNewsSource, type NewsSource } from '@crystal-pharm/group-db/domain';
 	import type { ModuleName } from '@crystal-pharm/schema';
 	import { Alert, Button, Card, ChoiceGroup, PageHeader, TextLink } from '@crystal-pharm/ui';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { untrack } from 'svelte';
 	import LayoutSettingField from '../components/molecules/LayoutSettingField.svelte';
 	import ArticleListEditor from '../components/organisms/ArticleListEditor.svelte';
+	import GroupArticleList from '../components/organisms/GroupArticleList.svelte';
+	import NewsSourceChooser from '../components/organisms/NewsSourceChooser.svelte';
 	import ServiceListEditor from '../components/organisms/ServiceListEditor.svelte';
 	import SitePreviewFrame from '../components/organisms/SitePreviewFrame.svelte';
 	import SiteModuleToggles from '../components/organisms/SiteModuleToggles.svelte';
@@ -16,6 +19,7 @@
 	import { listSiteModuleChoices } from '../domain/siteModuleChoices';
 	import {
 		articlesFieldName,
+		newsSourceFieldName,
 		servicesFieldName,
 		type SiteEditionFailure,
 		type SiteEditionSaved,
@@ -37,6 +41,7 @@
 	let enabledModules: ModuleName[] = $state([...initialEdition.enabledModules]);
 	let services = $state(structuredClone(initialEdition.services));
 	let articles = $state(structuredClone(initialEdition.articles));
+	let newsSource = $state(initialEdition.newsSource);
 	// Un formulaire par layout : en changer puis revenir retrouve ce qu'on y avait saisi.
 	const formValuesByLayoutId: Record<string, LayoutSettingsFormValues> = $state(untrack(() => toInitialFormValuesByLayoutId()));
 
@@ -57,7 +62,7 @@
 	}
 
 	function fingerprintEdition(): string {
-		return JSON.stringify([layoutId, formValuesByLayoutId[layoutId], [...enabledModules].sort(), services, articles]);
+		return JSON.stringify([layoutId, formValuesByLayoutId[layoutId], [...enabledModules].sort(), services, articles, newsSource]);
 	}
 
 	const layoutOptions = layoutManifests.map((manifest) => ({
@@ -70,11 +75,19 @@
 	const chosenFormValues = $derived(formValuesByLayoutId[layoutId] ?? {});
 	const layoutSettingsReading = $derived(chosenManifest && toLayoutSettings(chosenManifest, chosenFormValues));
 	const settingsFieldErrors = $derived(layoutSettingsReading && !layoutSettingsReading.success ? layoutSettingsReading.fieldErrors : {});
-	const contentDraft = $derived({ services, articles });
+	const contentDraft = $derived({ services, articles, newsSource });
+	const displayedNewsSource = $derived(chooseDisplayedNewsSource(newsSource, data.base.group).source);
 	const moduleChoices = $derived(listSiteModuleChoices(data.base, contentDraft));
 	const previewedSite = $derived(
 		layoutSettingsReading?.success
-			? toTenantSiteInput(data.base, { layoutId, layoutSettings: layoutSettingsReading.layoutSettings, enabledModules, services, articles })
+			? toTenantSiteInput(data.base, {
+					layoutId,
+					layoutSettings: layoutSettingsReading.layoutSettings,
+					enabledModules,
+					services,
+					articles,
+					newsSource
+				})
 			: undefined
 	);
 	const unavailableMandatoryModuleTitles = $derived.by(() => {
@@ -93,6 +106,11 @@
 
 	function enableModule(moduleName: ModuleName): void {
 		if (!enabledModules.includes(moduleName)) enabledModules.push(moduleName);
+	}
+
+	// Passer aux actualités du groupement les affiche tout de suite, comme ajouter la sienne.
+	function showGroupNewsWhenAvailable(chosenNewsSource: NewsSource): void {
+		if (chosenNewsSource === 'group' && (data.base.group?.articles.length ?? 0) > 0) enableModule('news');
 	}
 
 	const saveWithoutReloading: SubmitFunction = () => {
@@ -146,6 +164,7 @@
 		<form method="POST" class="grid gap-6" use:enhance={saveWithoutReloading}>
 			<input type="hidden" name={servicesFieldName} value={JSON.stringify(services)} />
 			<input type="hidden" name={articlesFieldName} value={JSON.stringify(articles)} />
+			<input type="hidden" name={newsSourceFieldName} value={newsSource} />
 
 			<Card>
 				<div class="grid gap-4">
@@ -188,8 +207,15 @@
 
 			<Card>
 				<div id="actualites" class="grid scroll-mt-6 gap-4">
-					<h2 class="title-2 text-ink">Vos actualités</h2>
-					<ArticleListEditor bind:articles onarticleadded={() => enableModule('news')} />
+					<h2 class="title-2 text-ink">{data.base.group ? 'Actualités' : 'Vos actualités'}</h2>
+					{#if data.base.group}
+						<NewsSourceChooser group={data.base.group} bind:newsSource onchange={showGroupNewsWhenAvailable} />
+					{/if}
+					{#if displayedNewsSource === 'group' && data.base.group}
+						<GroupArticleList groupName={data.base.group.name} articles={data.base.group.articles} />
+					{:else}
+						<ArticleListEditor bind:articles onarticleadded={() => enableModule('news')} />
+					{/if}
 				</div>
 			</Card>
 

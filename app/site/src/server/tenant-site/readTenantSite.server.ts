@@ -20,9 +20,12 @@ export async function readTenantSite(tenantId: string): Promise<TenantSiteReadin
     listEmployees(tenantId),
     findGroupSiteProfileOfTenant(tenantId),
   ]);
-  const { tenantSiteInput, unavailableMandatoryModules } = toTenantSiteInput({ tenantId, content, pharmacyProfile, employees, group });
+  const { tenantSiteInput, unavailableMandatoryModules, isGroupNewsMissing } = toTenantSiteInput({ tenantId, content, pharmacyProfile, employees, group });
   if (unavailableMandatoryModules.length > 0) {
     console.warn(`Site du tenant ${tenantId} : modules imposés sans données, masqués : ${unavailableMandatoryModules.join(', ')}.`);
+  }
+  if (isGroupNewsMissing) {
+    console.warn(`Site du tenant ${tenantId} : actualités du groupement demandées, mais aucune publiée : bloc masqué.`);
   }
 
   const validation = v.safeParse(TenantSiteSchema, tenantSiteInput);

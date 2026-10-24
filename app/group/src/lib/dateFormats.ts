@@ -12,3 +12,8 @@ export function formatDaysUntil(date: Date, now = new Date()): string {
 	if (dayCount === 1) return 'demain';
 	return `dans ${dayCount} jours`;
 }
+
+/** « 24 octobre 2026 », pour un jour sans heure (`2026-10-24`). */
+export function formatCalendarDay(calendarDay: string): string {
+	return formatDay(new Date(`${calendarDay}T12:00:00`));
+}

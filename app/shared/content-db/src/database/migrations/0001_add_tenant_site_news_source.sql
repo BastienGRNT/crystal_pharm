@@ -1,0 +1,2 @@
+ALTER TABLE "content"."tenant_sites" ADD COLUMN "news_source" text DEFAULT 'pharmacy' NOT NULL;--> statement-breakpoint
+ALTER TABLE "content"."tenant_sites" ADD CONSTRAINT "tenant_sites_news_source_check" CHECK ("content"."tenant_sites"."news_source" in ('pharmacy', 'group'));
