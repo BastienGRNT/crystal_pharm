@@ -15,6 +15,13 @@
       "when": 1792676352499,
       "tag": "0001_add_person_names",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792836243818,
+      "tag": "0002_add_json_web_keys",
+      "breakpoints": true
     }
   ]
 }
