@@ -8,6 +8,7 @@ import {
 	type PharmacyGroupDetailsFieldName,
 	type PharmacyGroupDetailsInput
 } from './pharmacyGroupDetails';
+import { discardAllImagesOfPharmacyGroup } from './profile/pharmacyGroupImageFiles.server';
 
 export type PharmacyGroupSummary = {
 	groupId: string;
@@ -89,11 +90,12 @@ export async function getPharmacyGroup(groupId: string): Promise<PharmacyGroupSu
 	return groupSummary;
 }
 
-/** Supprime le groupement et tout ce qui en dépend (outil de dev). */
+/** Supprime le groupement, ses images et tout ce qui en dépend (outil de dev). */
 export async function deletePharmacyGroup(groupId: string): Promise<void> {
 	await runWithGroupAccess(platformAccess, (transaction) =>
 		transaction.delete(pharmacyGroups).where(eq(pharmacyGroups.id, groupId))
 	);
+	await discardAllImagesOfPharmacyGroup(groupId);
 }
 
 export function listPharmacyGroupIdsNamed(groupNames: readonly string[]): Promise<string[]> {

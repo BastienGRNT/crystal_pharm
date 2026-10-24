@@ -11,6 +11,13 @@ export {
 	type PharmacyGroupSummary
 } from './groups/pharmacyGroups.server';
 export {
+	getPharmacyGroupProfile,
+	readPharmacyGroupImage,
+	updatePharmacyGroupProfile,
+	type PharmacyGroupProfile
+} from './groups/profile/pharmacyGroupProfiles.server';
+export type { PharmacyGroupImage } from './groups/profile/PharmacyGroupImage';
+export {
 	acceptGroupMemberInvitation,
 	findActiveGroupIdOfAccount,
 	findGroupMemberInvitation,

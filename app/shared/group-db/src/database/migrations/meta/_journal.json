@@ -8,6 +8,13 @@
       "when": 1792741043670,
       "tag": "0000_create_group_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792837617471,
+      "tag": "0001_add_group_profile",
+      "breakpoints": true
     }
   ]
 }

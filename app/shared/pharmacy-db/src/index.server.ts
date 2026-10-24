@@ -24,3 +24,5 @@ export {
 	findActiveTenantIdOfAccount,
 	type TenantCreationResult
 } from './tenants/tenantMemberships.server';
+export { getFileStorage } from './file-storage/configuredFileStorage.server';
+export type { FileStorage } from './file-storage/fileStorage';

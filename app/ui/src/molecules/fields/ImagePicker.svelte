@@ -15,6 +15,8 @@
 		chooseLabel?: string;
 		changeLabel?: string;
 		removeLabel?: string;
+		/** `circle` recadre l'image dans un rond (une photo) ; `rectangle` la montre en entier (un logo, une carte). */
+		previewShape?: 'circle' | 'rectangle';
 		'aria-describedby'?: string;
 		'aria-invalid'?: true;
 	};
@@ -28,6 +30,7 @@
 		chooseLabel = 'Choisir une image',
 		changeLabel = 'Changer d’image',
 		removeLabel = 'Retirer',
+		previewShape = 'circle',
 		'aria-describedby': ariaDescribedBy,
 		'aria-invalid': ariaInvalid
 	}: ImagePickerProps = $props();
@@ -58,9 +61,13 @@
 </script>
 
 <div class="flex items-center gap-4">
-	<span class="grid size-16 flex-none place-items-center overflow-hidden rounded-full border border-line bg-surface-muted text-ink-subtle">
+	<span
+		class="grid h-16 flex-none place-items-center overflow-hidden border border-line bg-surface-muted text-ink-subtle {previewShape === 'circle'
+			? 'w-16 rounded-full'
+			: 'w-26 rounded-sm'}"
+	>
 		{#if previewUrl}
-			<img src={previewUrl} alt="" class="size-full object-cover" />
+			<img src={previewUrl} alt="" class="size-full {previewShape === 'circle' ? 'object-cover' : 'object-contain'}" />
 		{:else}
 			<Icon name="upload-simple" size={22} />
 		{/if}

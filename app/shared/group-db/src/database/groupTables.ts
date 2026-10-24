@@ -23,6 +23,12 @@ export const pharmacyGroups = groupsSchema.table(
 		contactEmail: text('contact_email'),
 		/** Le nombre maximal de pharmacies membres et d'invitations en attente. */
 		pharmacyQuota: integer('pharmacy_quota').notNull(),
+		/** `null` sans logo ; sinon l'identifiant de son fichier (cf. `pharmacyGroupImageFiles`). */
+		logoId: uuid('logo_id'),
+		loyaltyCardImageId: uuid('loyalty_card_image_id'),
+		loyaltyCardUrl: text('loyalty_card_url'),
+		/** « Retrouvez votre carte de fidélité en pharmacie »… */
+		loyaltyCardMessage: text('loyalty_card_message'),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow(),
 		updatedAt: timestampWithTimeZone('updated_at')
 			.notNull()
@@ -43,6 +49,12 @@ export const pharmacyGroups = groupsSchema.table(
 			for: 'all',
 			using: isPlatform,
 			withCheck: isPlatform
+		}),
+		// Ses GroupMembers modifient sa fiche ; le quota ne s'écrit que par `updatePharmacyGroup`, réservée à la Platform.
+		pgPolicy('pharmacy_groups_profile_updated_by_its_members', {
+			for: 'update',
+			using: sql`id = ${activeGroupId}`,
+			withCheck: sql`id = ${activeGroupId}`
 		})
 	]
 );

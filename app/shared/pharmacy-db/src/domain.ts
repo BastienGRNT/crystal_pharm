@@ -30,7 +30,7 @@ export { LastName, LastNameSchema } from './employees/identity/LastName';
 export {
 	acceptedEmployeePhotoTypes,
 	EmployeePhoto,
-	maximumEmployeePhotoMegabytes,
-	type ImageFormat
+	maximumEmployeePhotoMegabytes
 } from './employees/photos/EmployeePhoto';
+export { acceptedImageTypes, detectImageFormat, toImageContentType, type ImageFormat } from './file-storage/imageFormat';
 export { collectFieldErrors, wholeFormErrorKey, type FieldErrors, type SaveResult } from './fieldErrors';

@@ -10,9 +10,16 @@ const OptionalEmailSchema = v.pipe(
 	v.transform((email) => email || undefined)
 );
 
+export const PharmacyGroupNameSchema = v.pipe(
+	v.string(),
+	v.trim(),
+	v.nonEmpty('Indiquez le nom du groupement.'),
+	v.maxLength(200, '200 caractères au plus.')
+);
+
 /** Ce que la Platform saisit d'un groupement. */
 export const PharmacyGroupDetailsSchema = v.object({
-	name: v.pipe(v.string(), v.trim(), v.nonEmpty('Indiquez le nom du groupement.'), v.maxLength(200, '200 caractères au plus.')),
+	name: PharmacyGroupNameSchema,
 	contactEmail: OptionalEmailSchema,
 	pharmacyQuota: v.pipe(
 		v.union([v.string(), v.number()]),

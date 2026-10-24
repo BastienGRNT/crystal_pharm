@@ -152,6 +152,30 @@ describe('isolation entre groupements (Row-Level Security du schéma groups)', (
 		});
 	});
 
+	it('laisse un groupement modifier sa fiche, jamais celle d’un autre ni la supprimer', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.group_id', firstGroup.groupId);
+
+			const updatedOwnGroups = await transaction`update groups.pharmacy_groups set name = 'Renommé' where id = ${firstGroup.groupId}`;
+			const updatedOtherGroups = await transaction`update groups.pharmacy_groups set name = 'Piraté' where id = ${secondGroup.groupId}`;
+			const deletedGroups = await transaction`delete from groups.pharmacy_groups`;
+
+			expect(updatedOwnGroups.count).toBe(1);
+			expect(updatedOtherGroups.count).toBe(0);
+			expect(deletedGroups.count).toBe(0);
+		});
+	});
+
+	it('ne laisse pas une pharmacie modifier la fiche de son groupement', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setSetting(transaction, 'app.tenant_id', firstGroup.tenantId);
+
+			const updatedGroups = await transaction`update groups.pharmacy_groups set name = 'Piraté' where id = ${firstGroup.groupId}`;
+
+			expect(updatedGroups.count).toBe(0);
+		});
+	});
+
 	it('ne laisse créer un groupement qu’à la Platform', async () => {
 		await inRolledBackTransaction(async (transaction) => {
 			await setSetting(transaction, 'app.group_id', firstGroup.groupId);
