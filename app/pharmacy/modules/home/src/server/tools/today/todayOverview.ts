@@ -1,5 +1,6 @@
-import type { DayTimelineBar, DayTimelineRange, DayTimelineRow, TimeListItem } from '@crystal-pharm/ui';
-import type { TodayKeyFigure, TodayOverview } from '../../../pages/tools-home/toolsHomePageData';
+import type { ActionListItem, DayTimelineBar, DayTimelineRange, DayTimelineRow, TimeListItem } from '@crystal-pharm/ui';
+import { homePathnames } from '../../../homePathnames';
+import type { TodayNow, TodayOverview, TodayShortcut } from '../../../pages/tools-home/toolsHomePageData';
 import type { TodayAppointmentsSummary, TodayTeamSummary } from './todaySources';
 
 type MinuteRange = { startMinutes: number; endMinutes: number };
@@ -12,85 +13,169 @@ export type TodayOverviewInput = {
 	team: { href: string; summary: TodayTeamSummary } | undefined;
 	/** `summary` manque quand le C# n'a pas répondu. */
 	appointments: { href: string; summary: TodayAppointmentsSummary | undefined } | undefined;
+	/** L'action de la page qui confirme un rendez-vous (`?/confirmAppointment`). */
+	confirmAppointmentFormAction: string;
 };
 
+export const appointmentIdFieldName = 'appointmentId';
+
 const minutesPerHour = 60;
+const maximumPendingAppointmentTasks = 5;
 const defaultRange: MinuteRange = { startMinutes: 8 * minutesPerHour, endMinutes: 20 * minutesPerHour };
 
 const dayTitleFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+const shortDayFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 
-/** La journée de la pharmacie, d'un coup d'œil : ce qui manque, les chiffres du jour, l'équipe et les rendez-vous. */
+/**
+ * L'accueil répond à deux questions au comptoir : que se passe-t-il maintenant, et
+ * qu'est-ce qui attend une action. La journée et les raccourcis viennent ensuite.
+ */
 export function buildTodayOverview(input: TodayOverviewInput): TodayOverview {
 	const team = input.team;
-	const appointments = input.appointments;
-	const planningDayHref = team && `${team.href}${team.summary.dayQuery}`;
 	const hasSomethingToDraw =
-		(team?.summary.shifts.length ?? 0) + (appointments?.summary?.appointments.length ?? 0) + (team?.summary.pharmacistCoverageGaps.length ?? 0) > 0;
+		(team?.summary.shifts.length ?? 0) +
+			(input.appointments?.summary?.appointments.length ?? 0) +
+			(team?.summary.pharmacistCoverageGaps.length ?? 0) >
+		0;
 
 	return {
-		dateLabel: capitalize(dayTitleFormat.format(new Date(`${input.isoDate}T00:00:00Z`))),
-		openingLabel: input.openingPeriods && describeOpening(input.openingPeriods),
-		coverageAlert:
-			team && planningDayHref && team.summary.pharmacistCoverageGaps.length > 0
-				? {
-						text: `Aujourd’hui, ${joinWithAnd(team.summary.pharmacistCoverageGaps.map((gap) => gap.label))} : aucun pharmacien n’est planifié.`,
-						correctionHref: planningDayHref
-					}
-				: undefined,
-		keyFigures: buildKeyFigures(input),
-		timeline: (team || appointments) && hasSomethingToDraw ? buildTimeline(input) : undefined,
-		appointmentItems: appointments && buildAppointmentItems(appointments),
-		links: { planning: planningDayHref, appointments: appointments?.href },
-		areAppointmentsUnavailable: appointments !== undefined && appointments.summary === undefined
+		dateLabel: capitalize(dayTitleFormat.format(toCalendarDay(input.isoDate))),
+		openingStatus: input.openingPeriods && describeOpeningStatus(input.openingPeriods, input.nowMinutes),
+		now: describeNow(input),
+		tasks: listTasks(input),
+		timeline: (team || input.appointments) && hasSomethingToDraw ? buildTimeline(input) : undefined,
+		appointmentItems: input.appointments && buildAppointmentItems(input.appointments, input.nowMinutes),
+		planningHref: team && `${team.href}${team.summary.dayQuery}`,
+		shortcuts: listShortcuts(input),
+		areAppointmentsUnavailable: input.appointments !== undefined && input.appointments.summary === undefined
 	};
 }
 
-function buildKeyFigures({ team, appointments }: TodayOverviewInput): TodayKeyFigure[] {
-	const keyFigures: TodayKeyFigure[] = [];
+/** « Ouvert · ferme à 12:30 », « Fermé · ouvre à 14:00 » : l'état de la pharmacie à cette heure-ci. */
+export function describeOpeningStatus(openingPeriods: MinuteRange[], nowMinutes: number): TodayOverview['openingStatus'] {
+	if (openingPeriods.length === 0) return { label: 'Fermé aujourd’hui', tone: 'neutral' };
+	const currentPeriod = openingPeriods.find((period) => period.startMinutes <= nowMinutes && nowMinutes < period.endMinutes);
+	if (currentPeriod) return { label: `Ouvert · ferme à ${formatTimeOfDay(currentPeriod.endMinutes)}`, tone: 'success' };
+	const nextPeriod = openingPeriods.find((period) => nowMinutes < period.startMinutes);
+	if (nextPeriod) return { label: `Fermé · ouvre à ${formatTimeOfDay(nextPeriod.startMinutes)}`, tone: 'neutral' };
+	return { label: 'Fermé pour aujourd’hui', tone: 'neutral' };
+}
+
+function describeNow(input: TodayOverviewInput): TodayNow {
+	const { team, appointments, nowMinutes } = input;
+	const isOpenNow = (input.openingPeriods ?? []).some((period) => period.startMinutes <= nowMinutes && nowMinutes < period.endMinutes);
+	const shiftsInProgress = (team?.summary.shifts ?? []).filter((shift) => shift.startMinutes <= nowMinutes && nowMinutes < shift.endMinutes);
+	const presentPeople = team && keepOnePerPerson(shiftsInProgress).map((shift) => ({
+		key: shift.id,
+		name: shift.personName,
+		detail: `${shift.jobTitle} · jusqu’à ${formatTimeOfDay(shift.endMinutes)}`
+	}));
+	return {
+		timeLabel: formatTimeOfDay(nowMinutes),
+		presentPeople,
+		isPharmacistMissing: team !== undefined && isOpenNow && !shiftsInProgress.some((shift) => shift.isPharmacist),
+		nextAppointment: appointments?.summary && findNextAppointment(appointments.href, appointments.summary, nowMinutes),
+		summary: summarizeDay(input)
+	};
+}
+
+function findNextAppointment(
+	appointmentsHref: string,
+	summary: TodayAppointmentsSummary,
+	nowMinutes: number
+): TodayNow['nextAppointment'] {
+	const nextAppointment = summary.appointments.find((appointment) => appointment.endMinutes > nowMinutes);
+	if (!nextAppointment) return null;
+	const timing =
+		nextAppointment.startMinutes > nowMinutes ? `Dans ${formatDuration(nextAppointment.startMinutes - nowMinutes)}` : 'En cours';
+	return {
+		startTime: nextAppointment.startTime,
+		reason: nextAppointment.reason,
+		detail: `${timing} · ${formatDuration(nextAppointment.endMinutes - nextAppointment.startMinutes)}`,
+		isPending: nextAppointment.status === 'pending',
+		href: `${appointmentsHref}${nextAppointment.detailQuery}`
+	};
+}
+
+function summarizeDay({ team, appointments }: TodayOverviewInput): string {
+	const parts: string[] = [];
 	const appointmentsSummary = appointments?.summary;
-	if (appointments && appointmentsSummary) {
-		const todayCount = appointmentsSummary.appointments.length;
-		const todayPendingCount = appointmentsSummary.appointments.filter((appointment) => appointment.status === 'pending').length;
-		keyFigures.push(
-			{
-				key: 'appointments-today',
-				label: 'Rendez-vous aujourd’hui',
-				value: String(todayCount),
-				detail: todayCount === 0 ? 'Aucun de prévu' : todayPendingCount === 0 ? 'Tous confirmés' : `Dont ${todayPendingCount} à confirmer`,
-				link: undefined,
-				module: 'rdv'
-			},
-			{
-				key: 'appointments-to-confirm',
-				label: 'À confirmer cette semaine',
-				value: String(appointmentsSummary.pendingCount),
-				detail: appointmentsSummary.pendingCount === 0 ? 'Rien en attente' : '',
-				link:
-					appointmentsSummary.pendingCount > 0
-						? { label: 'Les confirmer', href: `${appointments.href}${appointmentsSummary.pendingQuery}` }
-						: undefined,
-				module: 'rdv'
-			}
-		);
+	if (appointmentsSummary) {
+		const appointmentCount = appointmentsSummary.appointments.length;
+		parts.push(appointmentCount === 0 ? 'Aucun rendez-vous aujourd’hui' : `${appointmentCount} rendez-vous aujourd’hui`);
 	}
 	if (team) {
-		const presentPeople = new Set(team.summary.shifts.map((shift) => shift.personName));
-		const presentPharmacists = new Set(team.summary.shifts.filter((shift) => shift.isPharmacist).map((shift) => shift.personName));
-		keyFigures.push({
-			key: 'team-present',
-			label: 'Équipe présente',
-			value: `${presentPeople.size} / ${team.summary.teamSize}`,
-			detail:
-				team.summary.pharmacistCoverageGaps.length > 0
-					? 'Pas de pharmacien sur toute l’ouverture'
-					: presentPharmacists.size === 1
-						? '1 pharmacien dans la journée'
-						: `${presentPharmacists.size} pharmaciens dans la journée`,
-			link: undefined,
-			module: 'planning'
+		const presentCount = new Set(team.summary.shifts.map((shift) => shift.personName)).size;
+		parts.push(`${presentCount} / ${team.summary.teamSize} de l’équipe dans la journée`);
+	}
+	return parts.join(' · ');
+}
+
+/** Les heures sans pharmacien d'abord (la loi), puis la fiche, puis les rendez-vous à confirmer. */
+function listTasks(input: TodayOverviewInput): ActionListItem[] {
+	const tasks: ActionListItem[] = [];
+	const team = input.team;
+	// Un trou déjà passé ne se corrige plus : la frise le garde, « À traiter » non.
+	const upcomingGaps = (team?.summary.pharmacistCoverageGaps ?? []).filter((gap) => gap.endMinutes > input.nowMinutes);
+	for (const gap of upcomingGaps) {
+		tasks.push({
+			id: `pharmacist-gap-${gap.startMinutes}`,
+			title: `Aucun pharmacien, ${gap.label}`,
+			detail: 'La loi impose au moins un pharmacien présent.',
+			tone: 'danger',
+			actions: team ? [{ label: 'Corriger le planning', isPrimary: true, href: `${team.href}${team.summary.dayQuery}` }] : []
 		});
 	}
-	return keyFigures;
+	if (!input.openingPeriods) {
+		tasks.push({
+			id: 'opening-schedule',
+			title: 'Renseignez vos horaires d’ouverture',
+			detail: 'Ils cadrent la journée ici et s’affichent sur votre site.',
+			tone: 'neutral',
+			actions: [{ label: 'Renseigner les horaires', isPrimary: true, href: homePathnames.pharmacyOpeningHours }]
+		});
+	}
+	const appointments = input.appointments;
+	const pendingAppointments = appointments?.summary?.pendingAppointments ?? [];
+	for (const pendingAppointment of pendingAppointments.slice(0, maximumPendingAppointmentTasks)) {
+		tasks.push({
+			id: `pending-${pendingAppointment.id}`,
+			title: `${pendingAppointment.reason} · ${describeDay(pendingAppointment.day, input.isoDate)}, ${pendingAppointment.startTime}`,
+			detail: 'En attente de confirmation.',
+			tone: 'warning',
+			actions: [
+				{
+					label: 'Confirmer',
+					isPrimary: true,
+					formAction: input.confirmAppointmentFormAction,
+					name: appointmentIdFieldName,
+					value: pendingAppointment.id
+				},
+				{ label: 'Voir', isPrimary: false, href: `${appointments?.href ?? ''}${pendingAppointment.detailQuery}` }
+			]
+		});
+	}
+	const otherPendingCount = pendingAppointments.length - maximumPendingAppointmentTasks;
+	if (appointments?.summary && otherPendingCount > 0) {
+		tasks.push({
+			id: 'other-pending-appointments',
+			title: otherPendingCount === 1 ? '1 autre rendez-vous à confirmer' : `${otherPendingCount} autres rendez-vous à confirmer`,
+			tone: 'warning',
+			actions: [{ label: 'Les voir', isPrimary: false, href: `${appointments.href}${appointments.summary.pendingQuery}` }]
+		});
+	}
+	return tasks;
+}
+
+function listShortcuts({ team, appointments }: TodayOverviewInput): TodayShortcut[] {
+	const shortcuts: TodayShortcut[] = [];
+	if (appointments?.summary) {
+		shortcuts.push({ key: 'new-appointment', label: 'Nouveau rendez-vous', href: `${appointments.href}${appointments.summary.newAppointmentQuery}`, module: 'rdv' });
+	}
+	if (team) {
+		shortcuts.push({ key: 'new-shift', label: 'Ajouter un créneau', href: `${team.href}${team.summary.addShiftQuery}`, module: 'planning' });
+	}
+	return shortcuts;
 }
 
 function buildTimeline(input: TodayOverviewInput): NonNullable<TodayOverview['timeline']> {
@@ -143,7 +228,7 @@ function buildTimelineRows(input: TodayOverviewInput, range: MinuteRange): DayTi
 			},
 			{
 				key: 'assistants',
-				label: 'Préparateurs',
+				label: 'Équipe',
 				module: 'planning',
 				bars: keepVisibleBars(team.summary.shifts.filter((shift) => !shift.isPharmacist).map((shift) => toShiftBar(shift, 'neutral'))),
 				emptyLabel: 'Personne au planning'
@@ -172,15 +257,18 @@ function buildTimelineRows(input: TodayOverviewInput, range: MinuteRange): DayTi
 	return rows;
 }
 
-function buildAppointmentItems(appointments: NonNullable<TodayOverviewInput['appointments']>): TimeListItem[] {
-	return (appointments.summary?.appointments ?? []).map((appointment) => ({
-		id: appointment.id,
-		timeLabel: appointment.startTime,
-		title: appointment.reason,
-		detail: appointment.status === 'pending' ? 'À confirmer' : 'Confirmé',
-		tone: appointment.status === 'pending' ? 'pending' : 'accent',
-		href: `${appointments.href}${appointment.detailQuery}`
-	}));
+function buildAppointmentItems(appointments: NonNullable<TodayOverviewInput['appointments']>, nowMinutes: number): TimeListItem[] {
+	return (appointments.summary?.appointments ?? []).map((appointment) => {
+		const isPast = appointment.endMinutes <= nowMinutes;
+		return {
+			id: appointment.id,
+			timeLabel: appointment.startTime,
+			title: appointment.reason,
+			detail: appointment.status === 'pending' ? 'À confirmer' : isPast ? 'Passé' : 'Confirmé',
+			tone: appointment.status === 'pending' ? 'pending' : isPast ? 'neutral' : 'accent',
+			href: `${appointments.href}${appointment.detailQuery}`
+		};
+	});
 }
 
 /**
@@ -216,13 +304,16 @@ export function listClosedRanges(openingPeriods: MinuteRange[], range: MinuteRan
 	return closedRanges;
 }
 
-function describeOpening(openingPeriods: MinuteRange[]): string {
-	if (openingPeriods.length === 0) return 'fermé aujourd’hui';
-	const [onlyPeriod] = openingPeriods;
-	if (onlyPeriod && openingPeriods.length === 1) {
-		return `ouvert de ${formatTimeOfDay(onlyPeriod.startMinutes)} à ${formatTimeOfDay(onlyPeriod.endMinutes)}`;
-	}
-	return `ouvert ${joinWithAnd(openingPeriods.map((period) => `${formatTimeOfDay(period.startMinutes)}–${formatTimeOfDay(period.endMinutes)}`))}`;
+/** « aujourd’hui », « demain », sinon « lun. 26 oct. ». */
+function describeDay(isoDay: string, todayIsoDate: string): string {
+	const daysFromToday = Math.round((toCalendarDay(isoDay).getTime() - toCalendarDay(todayIsoDate).getTime()) / (24 * 60 * 60 * 1000));
+	if (daysFromToday === 0) return 'aujourd’hui';
+	if (daysFromToday === 1) return 'demain';
+	return shortDayFormat.format(toCalendarDay(isoDay));
+}
+
+function keepOnePerPerson<Shift extends { personName: string }>(shifts: Shift[]): Shift[] {
+	return shifts.filter((shift, shiftIndex) => shifts.findIndex((candidate) => candidate.personName === shift.personName) === shiftIndex);
 }
 
 // Une barre entièrement hors du cadre n'a plus de largeur : elle ne se dessine pas.
@@ -252,14 +343,25 @@ function toBarPosition(interval: MinuteRange, range: MinuteRange): DayTimelineRa
 	return { startPercent, widthPercent: toPercent(interval.endMinutes, range) - startPercent };
 }
 
+function toCalendarDay(isoDay: string): Date {
+	return new Date(`${isoDay}T00:00:00Z`);
+}
+
 function formatTimeOfDay(minutesSinceMidnight: number): string {
 	const hours = Math.floor(minutesSinceMidnight / minutesPerHour);
 	return `${String(hours).padStart(2, '0')}:${String(minutesSinceMidnight % minutesPerHour).padStart(2, '0')}`;
 }
 
-/** « 09:00–10:00, 14:00–15:00 et 18:00–19:30 ». */
-function joinWithAnd(parts: string[]): string {
-	return parts.length <= 1 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} et ${parts.at(-1)}`;
+// Insécable : « 1 h 10 » ne se coupe jamais entre le nombre et l'unité.
+const nonBreakingSpace = ' ';
+
+/** « 3 min », « 1 h », « 1 h 10 ». */
+function formatDuration(totalMinutes: number): string {
+	if (totalMinutes < minutesPerHour) return `${totalMinutes}${nonBreakingSpace}min`;
+	const hours = Math.floor(totalMinutes / minutesPerHour);
+	const minutes = totalMinutes % minutesPerHour;
+	const hoursText = `${hours}${nonBreakingSpace}h`;
+	return minutes === 0 ? hoursText : `${hoursText}${nonBreakingSpace}${String(minutes).padStart(2, '0')}`;
 }
 
 function capitalize(text: string): string {

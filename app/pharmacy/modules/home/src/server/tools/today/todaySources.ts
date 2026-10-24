@@ -6,10 +6,11 @@
 
 export type TodayTeamSummary = {
 	teamSize: number;
-	shifts: { id: string; personName: string; isPharmacist: boolean; startMinutes: number; endMinutes: number }[];
+	shifts: { id: string; personName: string; jobTitle: string; isPharmacist: boolean; startMinutes: number; endMinutes: number }[];
 	pharmacistCoverageGaps: { startMinutes: number; endMinutes: number; label: string }[];
 	/** Relative au module : `?view=day&day=2026-10-24`. */
 	dayQuery: string;
+	addShiftQuery: string;
 };
 
 export type TodayAppointmentsSummary = {
@@ -23,8 +24,10 @@ export type TodayAppointmentsSummary = {
 		/** Relative au module : `?jour=2026-10-24&rdv=<uuid>`. */
 		detailQuery: string;
 	}[];
+	pendingAppointments: { id: string; day: string; startTime: string; reason: string; detailQuery: string }[];
 	pendingCount: number;
 	pendingQuery: string;
+	newAppointmentQuery: string;
 };
 
 export type TodayManager = { accountId: string; tenantId: string };
@@ -36,5 +39,6 @@ export type TodaySources = {
 	appointments: {
 		href: string;
 		getTodayAppointments: (manager: TodayManager, isoDate: string) => Promise<TodayAppointmentsSummary>;
+		confirmAppointment: (manager: TodayManager, appointmentId: string) => Promise<boolean>;
 	};
 };
