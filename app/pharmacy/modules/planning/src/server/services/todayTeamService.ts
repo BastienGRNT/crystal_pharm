@@ -6,6 +6,7 @@ import { getWeekPlanning, listOpeningPeriodsByDate } from './teamPlanningService
 export type TodayTeamShift = {
 	id: string;
 	personName: string;
+	jobTitle: string;
 	isPharmacist: boolean;
 	startMinutes: number;
 	endMinutes: number;
@@ -29,6 +30,8 @@ export type TodayTeam = {
 	pharmacistCoverageGaps: TodayTeamCoverageGap[];
 	/** La journée dans le planning, relative au module : `?view=day&day=2026-10-24`. */
 	dayQuery: string;
+	/** Le formulaire d'un nouveau créneau, ouvert sur cette journée. */
+	addShiftQuery: string;
 };
 
 /** La journée de l'équipe, telle que l'accueil la résume. */
@@ -53,6 +56,7 @@ export async function getTodayTeam(tenantId: string, isoDate: string): Promise<T
 			return cell.shifts.map((shift) => ({
 				id: shift.id,
 				personName: employee.fullName,
+				jobTitle: employee.jobTitle,
 				isPharmacist: employee.isPharmacist,
 				startMinutes: toMinutesSinceMidnight(shift.startTime),
 				endMinutes: toMinutesSinceMidnight(shift.endTime)
@@ -63,6 +67,7 @@ export async function getTodayTeam(tenantId: string, isoDate: string): Promise<T
 			endMinutes: gap.endMinutes,
 			label: formatMinuteRange(gap)
 		})),
-		dayQuery: `?view=day&day=${isoDate}`
+		dayQuery: `?view=day&day=${isoDate}`,
+		addShiftQuery: `?view=day&day=${isoDate}&add=1`
 	};
 }
