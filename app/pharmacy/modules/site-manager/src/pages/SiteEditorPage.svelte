@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { findLayoutManifest, layoutManifests } from '@crystal-pharm/layouts/manifest';
+	import { findLayoutManifest, layoutManifests, type LayoutSettingsField } from '@crystal-pharm/layouts/manifest';
 	import { chooseDisplayedNewsSource, type NewsSource } from '@crystal-pharm/group-db/domain';
 	import type { ModuleName } from '@crystal-pharm/schema';
 	import { Alert, Button, Card, ChoiceGroup, PageHeader, TextLink } from '@crystal-pharm/ui';
@@ -73,6 +73,8 @@
 	}));
 
 	const chosenManifest = $derived(findLayoutManifest(layoutId));
+	const themeSettingsFields = $derived(chosenManifest?.settingsFields.filter((settingsField) => settingsField.isThemeSetting) ?? []);
+	const otherSettingsFields = $derived(chosenManifest?.settingsFields.filter((settingsField) => !settingsField.isThemeSetting) ?? []);
 	const chosenFormValues = $derived(formValuesByLayoutId[layoutId] ?? {});
 	const layoutSettingsReading = $derived(chosenManifest && toLayoutSettings(chosenManifest, chosenFormValues));
 	const settingsFieldErrors = $derived(layoutSettingsReading && !layoutSettingsReading.success ? layoutSettingsReading.fieldErrors : {});
@@ -181,11 +183,11 @@
 				</div>
 			</Card>
 
-			{#if chosenManifest && chosenManifest.settingsFields.length > 0}
+			{#snippet layoutSettingsCard(title: string, settingsFields: LayoutSettingsField[])}
 				<Card>
 					<div class="grid gap-4">
-						<h2 class="title-2 text-ink">Réglages de « {chosenManifest.label} »</h2>
-						{#each chosenManifest.settingsFields as settingsField (`${layoutId}.${settingsField.settingKey}`)}
+						<h2 class="title-2 text-ink">{title}</h2>
+						{#each settingsFields as settingsField (`${layoutId}.${settingsField.settingKey}`)}
 							<LayoutSettingField
 								{settingsField}
 								errorMessage={settingsFieldErrors[settingsField.settingKey]}
@@ -197,6 +199,14 @@
 						{/each}
 					</div>
 				</Card>
+			{/snippet}
+
+			{#if chosenManifest && themeSettingsFields.length > 0}
+				{@render layoutSettingsCard(`Couleurs et polices de « ${chosenManifest.label} »`, themeSettingsFields)}
+			{/if}
+
+			{#if chosenManifest && otherSettingsFields.length > 0}
+				{@render layoutSettingsCard(`Réglages de « ${chosenManifest.label} »`, otherSettingsFields)}
 			{/if}
 
 			<Card>

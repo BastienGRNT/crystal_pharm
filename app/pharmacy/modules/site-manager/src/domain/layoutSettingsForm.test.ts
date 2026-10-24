@@ -20,6 +20,7 @@ const manifest: DescribedLayoutManifest = {
 			settingKey: 'accentTone',
 			label: 'Couleur',
 			isOptional: true,
+			isThemeSetting: true,
 			kind: 'choice',
 			options: [
 				{ value: 'terracotta', label: 'Terre cuite' },
@@ -27,9 +28,9 @@ const manifest: DescribedLayoutManifest = {
 			],
 			defaultValue: 'terracotta'
 		},
-		{ settingKey: 'headline', label: 'Accroche', isOptional: true, kind: 'text', defaultValue: 'Prendre soin' },
-		{ settingKey: 'isCompact', label: 'Compact', isOptional: false, kind: 'toggle' },
-		{ settingKey: 'highlights', label: 'Points forts', isOptional: true, kind: 'json' }
+		{ settingKey: 'headline', label: 'Accroche', isOptional: true, isThemeSetting: false, kind: 'text', defaultValue: 'Prendre soin' },
+		{ settingKey: 'isCompact', label: 'Compact', isOptional: false, isThemeSetting: false, kind: 'toggle' },
+		{ settingKey: 'highlights', label: 'Points forts', isOptional: true, isThemeSetting: false, kind: 'json' }
 	]
 };
 
