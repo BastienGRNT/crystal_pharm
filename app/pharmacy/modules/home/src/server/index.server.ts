@@ -12,4 +12,5 @@ export { downloadInvoicePdf } from './subscription/invoicePdfDownload.server';
 export { loadSubscriptionPage, subscriptionPageActions } from './subscription/subscriptionPage.server';
 export { createToolAccessHandle, type ProtectedTool } from './tools/toolAccessHandle.server';
 export { loadToolsHomePage } from './tools/toolsHomePage.server';
+export type { TodayAppointmentsSummary, TodayManager, TodaySources, TodayTeamSummary } from './tools/today/todaySources';
 export { loadToolsShell, type ToolsShellData } from './tools/toolsShell.server';

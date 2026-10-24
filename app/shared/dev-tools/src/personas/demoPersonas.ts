@@ -55,6 +55,15 @@ export const demoPersonas: readonly DemoPersona[] = [
 		lastName: 'Lefèvre'
 	},
 	{
+		personaKey: 'pharmacien',
+		space: 'pharmacy',
+		label: 'Pharmacie Saint-Louis · tout activé',
+		description: 'Pharmacienne titulaire : site, rendez-vous, ordonnances et planning, avec son équipe.',
+		email: demoEmail('pharmacien'),
+		firstName: 'Léa',
+		lastName: 'Garcia'
+	},
+	{
 		personaKey: 'invitee',
 		space: 'pharmacy',
 		label: 'Pharmacie des Tilleuls · invitée',
