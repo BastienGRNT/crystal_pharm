@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { findTool, type ToolKey } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, Icon, PageHeader } from '@crystal-pharm/ui';
+	import { Alert, Button, Card, DayTimeline, Icon, PageHeader, TimeList } from '@crystal-pharm/ui';
 	import ToolTile from '../../components/molecules/ToolTile.svelte';
 	import { activeToolCardStatuses } from '../../domain/toolCards';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
@@ -27,7 +27,7 @@
 	<title>Accueil · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader icon="house" title="Accueil" context="Les outils de {data.pharmacyName}." />
+<PageHeader icon="house" title={data.greetingName ? `Bonjour, ${data.greetingName}` : 'Bonjour'} context="{data.today?.dateLabel ?? 'Les outils'} · {data.pharmacyName}" />
 
 {#if searchParams.get('groupement') === 'rejoint' && data.coveringGroup}
 	<Alert tone="success" title="Bienvenue dans {data.coveringGroup.groupName}">
@@ -73,23 +73,6 @@
 	</Alert>
 {/if}
 
-{#if data.isOpeningScheduleMissing}
-	<Card>
-		<div class="flex flex-wrap items-center justify-between gap-4">
-			<div class="flex min-w-0 items-start gap-3">
-				<span class="grid size-10 flex-none place-items-center rounded-md bg-warning-soft text-warning">
-					<Icon name="clock" size={22} />
-				</span>
-				<div class="min-w-0">
-					<h2 class="title-2 text-ink">Complétez votre fiche : horaires d’ouverture</h2>
-					<p class="text-body text-ink-muted">Ils s’afficheront sur le site de votre pharmacie.</p>
-				</div>
-			</div>
-			<Button href={homePathnames.pharmacyOpeningHours} icon="clock">Renseigner les horaires</Button>
-		</div>
-	</Card>
-{/if}
-
 {#if !hasActiveTool}
 	<Card spacing="spacious">
 		<div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
@@ -103,6 +86,46 @@
 		</div>
 	</Card>
 {/if}
+
+{#if data.today}
+	{@const today = data.today}
+	<section aria-labelledby="aujourdhui-titre" class="grid gap-2">
+		<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+			<h2 id="aujourdhui-titre" class="title-2 text-ink">Aujourd’hui <span class="text-body font-normal text-ink-muted">· {today.summary}</span></h2>
+			<nav aria-label="La journée dans les modules" class="flex flex-wrap gap-x-4">
+				{#each today.links as link (link.href)}
+					<a href={link.href} class="text-small inline-flex items-center gap-1 font-semibold text-accent-text no-underline hover:underline">
+						{link.label} <Icon name="arrow-right" size={14} />
+					</a>
+				{/each}
+			</nav>
+		</div>
+		{#if today.areAppointmentsUnavailable}
+			<Alert tone="warning">Les rendez-vous ne répondent pas pour le moment : ils manquent à la journée. Réessayez dans un instant.</Alert>
+		{/if}
+		{#if today.timeline}
+			<div class="hidden md:block">
+				<DayTimeline {...today.timeline} />
+			</div>
+		{/if}
+		<div class={today.timeline ? 'md:hidden' : ''}>
+			{#if today.agendaItems.length > 0}
+				<TimeList label="La journée heure par heure" items={today.agendaItems} />
+			{:else}
+				<p class="text-body rounded-md border border-dashed border-line-strong bg-surface-subtle px-4 py-3 text-ink-muted">{today.emptyLabel}</p>
+			{/if}
+		</div>
+	</section>
+{/if}
+
+<section aria-labelledby="a-faire-titre" class="grid gap-2">
+	<h2 id="a-faire-titre" class="title-2 text-ink">À faire</h2>
+	{#if data.tasks.length > 0}
+		<TimeList label="À faire" items={data.tasks} />
+	{:else}
+		<p class="text-body rounded-md border border-dashed border-line-strong bg-surface-subtle px-4 py-3 text-ink-muted">Rien en attente. Tout est à jour.</p>
+	{/if}
+</section>
 
 <section aria-labelledby="modules-titre" class="grid gap-2">
 	<div class="flex flex-wrap items-center justify-between gap-2">
