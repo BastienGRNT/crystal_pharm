@@ -17,7 +17,11 @@ export {
 	type PharmacyGroupProfileInput,
 	type PharmacyGroupProfileTexts
 } from './groups/profile/pharmacyGroupProfile';
-export { maximumPharmacyGroupImageMegabytes } from './groups/profile/PharmacyGroupImage';
+export {
+	acceptedPharmacyGroupImageTypes,
+	maximumPharmacyGroupImageMegabytes,
+	type PharmacyGroupImageFormat
+} from './groups/profile/PharmacyGroupImage';
 export { parseInvitationList, type InvitationListEntry, type InvitationListParsing } from './invitations/invitationList';
 export { describeInvitationStatus, type InvitationStatus } from './invitations/invitationStatus';
 export { computeCoverageEnd } from './pharmacies/coveragePeriod';
