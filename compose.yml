@@ -18,7 +18,10 @@ services:
   # La passerelle devant `app/site` (lancé par `pnpm dev` sur le port 5177).
   caddy:
     image: caddy:2
-    network_mode: host
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
 

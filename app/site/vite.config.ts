@@ -9,7 +9,8 @@ export default defineConfig(({ mode }) => {
   Object.assign(process.env, loadEnv(mode, repositoryRootDirectory, ''));
 
   return {
-    plugins: [solidStart({ middleware: './src/middleware.ts' }), nitro({ preset: 'node' })],
+    // Sans la surcouche de dev : elle s'affichait par-dessus l'aperçu de site-manager.
+    plugins: [solidStart({ middleware: './src/middleware.ts', devOverlay: false }), nitro({ preset: 'node' })],
     // Les packages du workspace sont des sources TypeScript : Vite les compile
     // au lieu de les laisser à Node, qui ne résout pas leurs imports sans extension.
     ssr: { noExternal: [/^@crystal-pharm\//] },

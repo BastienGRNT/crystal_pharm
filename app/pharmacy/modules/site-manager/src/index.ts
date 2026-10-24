@@ -1,1 +1,1 @@
-export { default as SiteManagerHomePage } from './pages/SiteManagerHomePage.svelte';
+export { default as SiteEditorPage } from './pages/SiteEditorPage.svelte';

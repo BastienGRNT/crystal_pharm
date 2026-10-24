@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { SiteManagerHomePage } from '@crystal-pharm/site-manager';
+	import { SiteEditorPage } from '@crystal-pharm/site-manager';
+	import type { PageProps } from './$types';
+
+	let { data, form }: PageProps = $props();
 </script>
 
-<SiteManagerHomePage />
+<SiteEditorPage {data} {form} />

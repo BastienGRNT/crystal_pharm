@@ -22,8 +22,14 @@ export const tenantSites = contentSchema.table(
 	{
 		tenantId: uuid('tenant_id').primaryKey(),
 		layoutId: text('layout_id').notNull(),
-		/** Validés par le schéma de réglages du layout, au rendu. */
-		layoutSettings: jsonb('layout_settings').$type<Record<string, unknown>>().notNull().default({}),
+		/**
+		 * Les réglages de chaque layout essayé, par identifiant : revenir à un
+		 * layout retrouve ses réglages. Validés par le schéma du layout.
+		 */
+		layoutSettingsByLayoutId: jsonb('layout_settings')
+			.$type<Record<string, Record<string, unknown>>>()
+			.notNull()
+			.default({}),
 		enabledModules: jsonb('enabled_modules').$type<ModuleName[]>().notNull().default([]),
 		services: jsonb('services').$type<ServicesModuleData['services']>().notNull().default([]),
 		prescriptionIntroduction: text('prescription_introduction'),

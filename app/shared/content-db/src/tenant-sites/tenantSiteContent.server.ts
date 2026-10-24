@@ -6,7 +6,9 @@ import { articles, tenantSites } from '../database/contentTables';
 /** Ce que le Tenant a saisi pour son site ; le reste vient de sa fiche et de son groupement. */
 export type TenantSiteContent = {
 	layoutId: string;
+	/** Ceux du layout choisi. */
 	layoutSettings: Record<string, unknown>;
+	layoutSettingsByLayoutId: Record<string, Record<string, unknown>>;
 	enabledModules: ModuleName[];
 	services: ServicesModuleData['services'];
 	prescriptionIntroduction: string | undefined;
@@ -28,15 +30,21 @@ export async function readTenantSiteContent(tenantId: string): Promise<TenantSit
 
 		return {
 			layoutId: tenantSite.layoutId,
-			layoutSettings: tenantSite.layoutSettings,
+			layoutSettings: tenantSite.layoutSettingsByLayoutId[tenantSite.layoutId] ?? {},
+			layoutSettingsByLayoutId: tenantSite.layoutSettingsByLayoutId,
 			enabledModules: tenantSite.enabledModules,
 			services: tenantSite.services,
 			prescriptionIntroduction: tenantSite.prescriptionIntroduction ?? undefined,
 			articles: articleRows.map((articleRow) => ({
 				title: articleRow.title,
 				summary: articleRow.summary,
-				publishedAt: articleRow.publishedAt.toISOString()
+				publishedAt: toParisCalendarDate(articleRow.publishedAt)
 			}))
 		};
 	});
+}
+
+// `engine/schema` attend une date sans heure (`2026-10-24`) : le jour de publication à Paris.
+function toParisCalendarDate(instant: Date): string {
+	return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(instant);
 }
