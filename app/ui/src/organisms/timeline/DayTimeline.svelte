@@ -32,7 +32,7 @@
 	{#each gaps as gap (gap.key)}
 		<span
 			aria-hidden="true"
-			class="absolute inset-y-0 border-x border-danger bg-[repeating-linear-gradient(135deg,var(--danger-soft)_0_6px,transparent_6px_12px)]"
+			class="absolute inset-y-0 border-x border-danger/60 bg-danger-soft/40 bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--danger)_14%,transparent)_0_2px,transparent_2px_10px)]"
 			style:left="{gap.startPercent}%"
 			style:width="{gap.widthPercent}%"
 		></span>
@@ -46,16 +46,22 @@
 	<div class="min-w-[720px]">
 		<div class="flex border-b border-line bg-surface-subtle text-[12px] leading-4 font-semibold text-ink-muted">
 			<div class="w-[140px] flex-none px-4 py-[9px]"></div>
-			<div class="relative mr-6 ml-3 min-h-[34px] flex-1" aria-hidden="true">
+			<div class="relative mr-6 ml-3 flex-1 {gaps.length > 0 ? 'min-h-[58px]' : 'min-h-[34px]'}" aria-hidden="true">
 				{#each hours as hour (hour.label)}
 					<span class="absolute top-[9px] -translate-x-1/2 tabular-nums" style:left="{hour.percent}%">{hour.label}</span>
 				{/each}
+				<!-- Sous les heures, jamais dessus : une étiquette centrée couvrirait l'heure du milieu. -->
 				{#each gaps as gap (gap.key)}
 					<span
-						class="absolute top-[5px] z-[3] -translate-x-1/2 rounded-full bg-danger-soft px-1.5 py-0.5 text-[11.5px] leading-[14px] font-semibold whitespace-nowrap text-danger tabular-nums"
-						style:left="{gap.startPercent + gap.widthPercent / 2}%"
+						class="absolute top-[31px] flex justify-center"
+						style:left="{gap.startPercent}%"
+						style:width="{gap.widthPercent}%"
 					>
-						{gap.label}
+						<span
+							class="max-w-full truncate rounded-full bg-danger-soft px-1.5 py-0.5 text-[11.5px] leading-[14px] font-semibold whitespace-nowrap text-danger tabular-nums"
+						>
+							{gap.label}
+						</span>
 					</span>
 				{/each}
 			</div>
