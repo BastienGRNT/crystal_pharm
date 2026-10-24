@@ -6,7 +6,8 @@
     "dev": "vite dev --port 5177",
     "build": "vite build",
     "check": "tsc --project tsconfig.json",
-    "start": "node .output/server/index.mjs"
+    "start": "node .output/server/index.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@crystal-pharm/content-db": "workspace:*",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@types/node": "^24.19.2",
     "typescript": "^6.0.3",
-    "vite": "8.3.3"
+    "vite": "8.3.3",
+    "vitest": "^5.0.5"
   }
 }

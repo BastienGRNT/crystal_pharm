@@ -1,5 +1,6 @@
 import type { TenantSiteContent } from '@crystal-pharm/content-db';
 import type { GroupSiteProfileOfTenant } from '@crystal-pharm/group-db';
+import { chooseDisplayedNewsSource } from '@crystal-pharm/group-db/domain';
 import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import type { Employee, PharmacyProfile } from '@crystal-pharm/pharmacy-db';
 import { ModuleNameSchema, type ModuleName, type TenantSiteSchema } from '@crystal-pharm/schema';
@@ -26,12 +27,15 @@ export type UnavailableMandatoryModules = ModuleName[];
 export function toTenantSiteInput(sources: TenantSiteSources): {
   tenantSiteInput: TenantSiteInput;
   unavailableMandatoryModules: UnavailableMandatoryModules;
+  /** Les actualités du groupement sont demandées, mais il n'en a publié aucune : le bloc est masqué. */
+  isGroupNewsMissing: boolean;
 } {
   const moduleDataByName = collectAvailableModuleData(sources);
   const mandatoryModules = readMandatoryModules(sources.group);
   const requestedModules = new Set([...sources.content.enabledModules, ...mandatoryModules]);
   const modules = toTenantModules(moduleDataByName, requestedModules);
   const unavailableMandatoryModules = mandatoryModules.filter((moduleName) => !modules[moduleName].enabled);
+  const isGroupNewsMissing = requestedModules.has('news') && isGroupNewsDisplayed(sources) && !moduleDataByName.news;
 
   return {
     tenantSiteInput: {
@@ -42,12 +46,14 @@ export function toTenantSiteInput(sources: TenantSiteSources): {
       modules,
     },
     unavailableMandatoryModules,
+    isGroupNewsMissing,
   };
 }
 
 // Un module sans données reste éteint, même demandé : la pharmacie n'a pas encore
 // saisi ses horaires, le groupement n'a pas de carte de fidélité…
-function collectAvailableModuleData({ content, pharmacyProfile, employees, group }: TenantSiteSources): Partial<ModuleDataByName> {
+function collectAvailableModuleData(sources: TenantSiteSources): Partial<ModuleDataByName> {
+  const { content, pharmacyProfile, employees, group } = sources;
   return {
     openingHours: pharmacyProfile.weeklyOpeningSchedule && {
       weeklySchedule: pharmacyProfile.weeklyOpeningSchedule,
@@ -55,7 +61,7 @@ function collectAvailableModuleData({ content, pharmacyProfile, employees, group
     },
     team: { members: employees.map(toTeamMember) },
     services: { services: content.services },
-    news: { articles: content.articles },
+    news: collectDisplayedNews(sources),
     // Aucun module `Prescriptions` dans le C# pour l'instant : une ordonnance ne partirait nulle part.
     prescriptionUpload: undefined,
     loyaltyCard: group?.loyaltyCardUrl && group.loyaltyCardMessage
@@ -66,6 +72,18 @@ function collectAvailableModuleData({ content, pharmacyProfile, employees, group
         }
       : undefined,
   };
+}
+
+// La règle est celle de l'aperçu (`group-db`) : un groupement qui impose ses actualités l'emporte sur le choix de la pharmacie.
+function collectDisplayedNews({ content, group }: TenantSiteSources): ModuleDataByName['news'] | undefined {
+  if (!isGroupNewsDisplayed({ content, group })) return { articles: content.articles };
+  const groupArticles = group?.articles ?? [];
+  if (groupArticles.length === 0) return undefined;
+  return { articles: groupArticles.map(({ title, summary, publishedAt }) => ({ title, summary, publishedAt })) };
+}
+
+function isGroupNewsDisplayed({ content, group }: Pick<TenantSiteSources, 'content' | 'group'>): boolean {
+  return chooseDisplayedNewsSource(content.newsSource, group).source === 'group';
 }
 
 function toTeamMember(employee: Employee): ModuleDataByName['team']['members'][number] {
