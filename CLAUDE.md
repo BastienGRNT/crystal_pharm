@@ -18,7 +18,13 @@ justifie jamais de créer du code, des fichiers ou de l'outillage en avance.
 
 `Tenant` (une pharmacie cliente, `tenantId`, sa fiche dans `shared/pharmacy-db`) ·
 `Employee` (une personne de l'équipe d'un Tenant, avec ou sans compte) ·
-`Manager` (connecté à `pharmacy`) · `PharmacyGroup` (un groupement, `groupId`) ·
+`TenantMember` (un compte connecté à `pharmacy` : un Owner, un Employee qui a
+un compte, ou le CounterAccount) · `Owner` (un titulaire : tous les droits sur
+son Tenant, abonnement et accès compris ; plusieurs possibles, jamais aucun) ·
+`CounterAccount` (le compte comptoir d'un Tenant : un seul, partagé, sans
+email) · `Responsibility` (un droit qu'un Owner accorde à un TenantMember,
+`responsibilityKey` ; « responsabilité » dans l'interface) ·
+`PharmacyGroup` (un groupement, `groupId`) ·
 `GroupMember` (connecté à `group`) · `PlatformAdmin` (nous ou un commercial,
 connecté à `admin`) · `Platform` (nous, l'opérateur du SaaS) ·
 `Visitor` (la personne sur le site public, sans compte pour l'instant) ·
@@ -82,7 +88,7 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 
 | App | Public | En dev |
 |---|---|---|
-| `pharmacy/host` | les Managers | `http://localhost:5173` |
+| `pharmacy/host` | les TenantMembers | `http://localhost:5173` |
 | `group` | les GroupMembers | `http://groupement.localhost:5174` |
 | `admin` | les PlatformAdmins | `http://admin.localhost:5175` |
 | `site` | les Visitors | — |
@@ -101,7 +107,7 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 ## Sécurité — invariants
 
 - Deux identités, jamais mélangées :
-  - les **clients** (Manager, GroupMember) : Better Auth de `shared/auth`,
+  - les **clients** (TenantMember, GroupMember) : Better Auth de `shared/auth`,
     schéma `auth`, servi par `pharmacy/host` et `group`. Ce qu'un compte peut
     voir vient de ses appartenances (à un Tenant, à un PharmacyGroup), jamais
     du compte seul ;
@@ -110,10 +116,14 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
     d'emails. Il réutilise la boîte à outils de `shared/auth`, jamais ses
     comptes clients.
   Pas d'autre système d'auth. Chaque app a son cookie, limité à son domaine.
+- Ce qu'un TenantMember peut faire vient des Responsibilities de son
+  appartenance (un Owner les a toutes), jamais de son type de compte. Chaque
+  droit se vérifie côté serveur ; une interface qui masque un bouton ne
+  protège rien.
 - Le C# n'est **jamais exposé à Internet**. Il n'accepte que deux appelants
-  identifiés : un Manager (JWT court de Better Auth, vérifié par sa clé
+  identifiés : un TenantMember (JWT court de Better Auth, vérifié par sa clé
   publique) ou le service `site` (identité de service).
-- Le `tenantId` vient de la session (ou de son JWT) pour un Manager, de la
+- Le `tenantId` vient de la session (ou de son JWT) pour un TenantMember, de la
   passerelle pour un Visitor (elle écrase tout en-tête tenant venu du
   navigateur). Le `groupId` vient de la session d'un GroupMember. Jamais d'un
   paramètre, d'une URL ou d'un champ de formulaire.

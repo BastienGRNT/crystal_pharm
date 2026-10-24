@@ -3,8 +3,8 @@
 Monté sur `/prescriptions` par `pharmacy/host`. Module C# : `Prescriptions`.
 Données de santé.
 
-- Le Manager y retrouve les ordonnances envoyées depuis le site public et en
-  suit le traitement.
+- Un TenantMember qui a la Responsibility des ordonnances y retrouve celles
+  envoyées depuis le site public et en suit le traitement.
 - Pas de schéma propre : tous les appels passent par `src/server/api/`.
 - Les réponses ne sont jamais mises en cache (posé par `pharmacy/host`).
 - Les fichiers d'ordonnance sont servis en flux depuis le C#, jamais copiés.
