@@ -96,6 +96,18 @@ describe('isolation entre sites (Row-Level Security du schéma content)', () => 
 		});
 	});
 
+	it('ne change pas la source des actualités d’un autre Tenant', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setActiveTenant(transaction, firstTenantId);
+
+			const updatedOwnSites = await transaction`update content.tenant_sites set news_source = 'group' where tenant_id = ${firstTenantId}`;
+			const updatedOtherSites = await transaction`update content.tenant_sites set news_source = 'group' where tenant_id = ${secondTenantId}`;
+
+			expect(updatedOwnSites.count).toBe(1);
+			expect(updatedOtherSites.count).toBe(0);
+		});
+	});
+
 	it('refuse d’écrire un article pour un autre Tenant que l’actif', async () => {
 		await inRolledBackTransaction(async (transaction) => {
 			await setActiveTenant(transaction, firstTenantId);

@@ -1,5 +1,6 @@
 import type { ModuleName } from '@crystal-pharm/schema';
-import { collectAvailableModuleData, moduleNames, type SiteDraft, type SiteEditorBase } from './siteDraft';
+import { chooseDisplayedNewsSource } from '@crystal-pharm/group-db/domain';
+import { collectAvailableModuleData, moduleNames, type SiteContentDraft, type SiteEditorBase } from './siteDraft';
 
 /** Un module tel que le Manager le voit : il peut l'afficher, il lui est imposé, ou il lui manque quelque chose. */
 export type SiteModuleChoice = {
@@ -12,7 +13,9 @@ export type SiteModuleChoice = {
 		| { kind: 'unavailable'; reason: string; fixHref: string | undefined };
 };
 
-const moduleTexts: Record<ModuleName, { title: string; description: string; unavailableReason: string; fixHref?: string }> = {
+type ModuleTexts = { title: string; description: string; unavailableReason: string; fixHref?: string };
+
+const moduleTexts: Record<ModuleName, ModuleTexts> = {
 	openingHours: {
 		title: 'Horaires d’ouverture',
 		description: 'Vos horaires de la semaine et vos gardes.',
@@ -49,13 +52,24 @@ const moduleTexts: Record<ModuleName, { title: string; description: string; unav
 	}
 };
 
-export function listSiteModuleChoices(base: SiteEditorBase, draft: Pick<SiteDraft, 'services' | 'articles'>): SiteModuleChoice[] {
+const groupNewsTexts: ModuleTexts = {
+	title: 'Actualités',
+	description: 'Les actualités de votre groupement, de la plus récente à la plus ancienne.',
+	unavailableReason: 'Votre groupement n’a encore publié aucune actualité.'
+};
+
+export function listSiteModuleChoices(base: SiteEditorBase, draft: SiteContentDraft): SiteModuleChoice[] {
 	const availableModuleData = collectAvailableModuleData(base, draft);
+	const textsByModule = { ...moduleTexts, news: findNewsTexts(base, draft) };
 	return moduleNames.map((moduleName) => {
-		const { title, description, unavailableReason, fixHref } = moduleTexts[moduleName];
+		const { title, description, unavailableReason, fixHref } = textsByModule[moduleName];
 		const isAvailable = availableModuleData[moduleName] !== undefined;
 		return { moduleName, title, description, state: toModuleState(base, moduleName, isAvailable, unavailableReason, fixHref) };
 	});
+}
+
+function findNewsTexts(base: SiteEditorBase, draft: SiteContentDraft): ModuleTexts {
+	return chooseDisplayedNewsSource(draft.newsSource, base.group).source === 'group' ? groupNewsTexts : moduleTexts.news;
 }
 
 // Un module sans données est indisponible, même imposé : il n'aurait rien à montrer.

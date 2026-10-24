@@ -8,6 +8,13 @@
       "when": 1792840166090,
       "tag": "0000_create_content_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792851269446,
+      "tag": "0001_add_tenant_site_news_source",
+      "breakpoints": true
     }
   ]
 }

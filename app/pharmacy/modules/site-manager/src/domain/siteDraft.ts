@@ -1,4 +1,5 @@
-import type { ModuleName, TenantSiteSchema } from '@crystal-pharm/schema';
+import { chooseDisplayedNewsSource, type NewsSource } from '@crystal-pharm/group-db/domain';
+import type { ModuleName, NewsModuleData, TenantSiteSchema } from '@crystal-pharm/schema';
 import type * as v from 'valibot';
 import { listCompleteArticles, listCompleteServices, type ArticleDraft, type ServiceDraft } from './siteContentLists';
 
@@ -15,9 +16,19 @@ type ModuleEditedHere = 'services' | 'news';
 export type SiteEditorBase = {
 	tenantId: string;
 	pharmacy: Omit<TenantSiteInput['pharmacy'], 'group'>;
-	group: { name: string; logoUrl?: string; mandatoryModules: ModuleName[] } | undefined;
+	group: SiteEditorGroup | undefined;
 	/** Un module absent n'a pas encore de données : il ne peut pas s'afficher. */
 	availableModuleData: Partial<Omit<ModuleDataByName, ModuleEditedHere>>;
+};
+
+export type SiteEditorGroup = {
+	name: string;
+	logoUrl?: string;
+	mandatoryModules: ModuleName[];
+	/** S'il impose ses actualités, le choix du Manager ne compte plus. */
+	imposesGroupNews: boolean;
+	/** Du plus récent au plus ancien. */
+	articles: NewsModuleData['articles'];
 };
 
 /** Ce que le Manager choisit et saisit : le layout, ses réglages, les modules affichés, ses services et ses actualités. */
@@ -27,7 +38,11 @@ export type SiteDraft = {
 	enabledModules: ModuleName[];
 	services: ServiceDraft[];
 	articles: ArticleDraft[];
+	/** Le choix du Manager, gardé même quand son groupement impose les siennes. */
+	newsSource: NewsSource;
 };
+
+export type SiteContentDraft = Pick<SiteDraft, 'services' | 'articles' | 'newsSource'>;
 
 export const moduleNames: readonly ModuleName[] = [
 	'openingHours',
@@ -39,14 +54,20 @@ export const moduleNames: readonly ModuleName[] = [
 ];
 
 // Une liste vide ne s'affiche pas : un module sans contenu laisserait une section vide sur le site.
-export function collectAvailableModuleData(base: SiteEditorBase, draft: Pick<SiteDraft, 'services' | 'articles'>): Partial<ModuleDataByName> {
+export function collectAvailableModuleData(base: SiteEditorBase, draft: SiteContentDraft): Partial<ModuleDataByName> {
 	const services = listCompleteServices(draft.services);
-	const articles = listCompleteArticles(draft.articles);
+	const articles = listDisplayedArticles(base, draft);
 	return {
 		...base.availableModuleData,
 		...(services.length > 0 && { services: { services } }),
 		...(articles.length > 0 && { news: { articles } })
 	};
+}
+
+// Un groupement qui impose ses actualités sans en avoir publié masque le bloc : rien à montrer.
+function listDisplayedArticles(base: SiteEditorBase, draft: SiteContentDraft): NewsModuleData['articles'] {
+	const { source } = chooseDisplayedNewsSource(draft.newsSource, base.group);
+	return source === 'group' ? (base.group?.articles ?? []) : listCompleteArticles(draft.articles);
 }
 
 /** Les modules imposés par le groupement qu'on peut afficher ; les autres sont signalés au Manager. */
@@ -67,7 +88,7 @@ export function toTenantSiteInput(base: SiteEditorBase, draft: SiteDraft): Tenan
 		layoutSettings: draft.layoutSettings,
 		pharmacy: {
 			...base.pharmacy,
-			group: base.group && { ...base.group, mandatoryModules: displayableMandatoryModules }
+			group: base.group && { name: base.group.name, logoUrl: base.group.logoUrl, mandatoryModules: displayableMandatoryModules }
 		},
 		modules: {
 			openingHours: toModule('openingHours'),

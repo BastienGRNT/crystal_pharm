@@ -1,7 +1,7 @@
 import type { ModuleName, NewsModuleData, ServicesModuleData } from '@crystal-pharm/schema';
 import { desc, eq } from 'drizzle-orm';
 import { runAsTenant } from '../database/contentDatabase.server';
-import { articles, tenantSites } from '../database/contentTables';
+import { articles, tenantSites, type NewsSource } from '../database/contentTables';
 
 /** Ce que le Tenant a saisi pour son site ; le reste vient de sa fiche et de son groupement. */
 export type TenantSiteContent = {
@@ -12,6 +12,7 @@ export type TenantSiteContent = {
 	enabledModules: ModuleName[];
 	services: ServicesModuleData['services'];
 	prescriptionIntroduction: string | undefined;
+	newsSource: NewsSource;
 	/** Du plus récent au plus ancien. */
 	articles: NewsModuleData['articles'];
 };
@@ -35,6 +36,7 @@ export async function readTenantSiteContent(tenantId: string): Promise<TenantSit
 			enabledModules: tenantSite.enabledModules,
 			services: tenantSite.services,
 			prescriptionIntroduction: tenantSite.prescriptionIntroduction ?? undefined,
+			newsSource: tenantSite.newsSource,
 			articles: articleRows.map((articleRow) => ({
 				title: articleRow.title,
 				summary: articleRow.summary,

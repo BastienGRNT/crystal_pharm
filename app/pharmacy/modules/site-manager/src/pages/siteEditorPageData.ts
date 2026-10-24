@@ -1,3 +1,4 @@
+import type { NewsSource } from '@crystal-pharm/group-db/domain';
 import type { ModuleName } from '@crystal-pharm/schema';
 import type { LayoutSettingsFormValues } from '../domain/layoutSettingsForm';
 import type { ArticleDraft, ServiceDraft } from '../domain/siteContentLists';
@@ -10,6 +11,7 @@ export type SavedSiteEdition = {
 	enabledModules: ModuleName[];
 	services: ServiceDraft[];
 	articles: ArticleDraft[];
+	newsSource: NewsSource;
 };
 
 export type SiteEditorPageData = {
@@ -29,6 +31,7 @@ export type SiteEditionFailure = {
 		enabledModules: ModuleName[];
 		services: ServiceDraft[];
 		articles: ArticleDraft[];
+		newsSource: NewsSource;
 	};
 	fieldErrors: Record<string, string>;
 	formError: string | undefined;
@@ -39,3 +42,4 @@ export type SiteEditionSaved = { isSaved: true };
 /** Les champs cachés qui portent les listes saisies dans l'éditeur. */
 export const servicesFieldName = 'servicesJson';
 export const articlesFieldName = 'articlesJson';
+export const newsSourceFieldName = 'newsSource';

@@ -1,4 +1,4 @@
-import { readTenantSiteContent, runAsTenant, type TenantSiteContent } from '@crystal-pharm/content-db';
+import { readTenantSiteContent, runAsTenant, type NewsSource, type TenantSiteContent } from '@crystal-pharm/content-db';
 import { articles, tenantSites } from '@crystal-pharm/content-db/tables';
 import { findGroupSiteProfileOfTenant, type GroupSiteProfileOfTenant } from '@crystal-pharm/group-db';
 import { getPharmacyProfile, listEmployees, type Employee, type PharmacyProfile } from '@crystal-pharm/pharmacy-db';
@@ -22,6 +22,7 @@ export type SiteEdition = {
 	services: ServicesModuleData['services'];
 	/** La liste complète : celles qui n'y sont plus sont retirées du site. */
 	articles: NewsModuleData['articles'];
+	newsSource: NewsSource;
 };
 
 export async function readSiteEditorSources(tenantId: string): Promise<SiteEditorSources> {
@@ -45,7 +46,8 @@ export async function saveSiteEdition(tenantId: string, edition: SiteEdition): P
 				layoutId: edition.layoutId,
 				layoutSettingsByLayoutId: layoutSettingsOfChosenLayout,
 				enabledModules: edition.enabledModules,
-				services: edition.services
+				services: edition.services,
+				newsSource: edition.newsSource
 			})
 			.onConflictDoUpdate({
 				target: tenantSites.tenantId,
@@ -55,6 +57,7 @@ export async function saveSiteEdition(tenantId: string, edition: SiteEdition): P
 					layoutSettingsByLayoutId: sql`${tenantSites.layoutSettingsByLayoutId} || ${JSON.stringify(layoutSettingsOfChosenLayout)}::jsonb`,
 					enabledModules: edition.enabledModules,
 					services: edition.services,
+					newsSource: edition.newsSource,
 					updatedAt: new Date()
 				}
 			});

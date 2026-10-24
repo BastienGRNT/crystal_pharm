@@ -21,7 +21,12 @@ export function toSiteEditorBase(tenantId: string, sources: SiteEditorSources): 
 			email: pharmacyProfile.email
 		},
 		// `pharmacy/host` ne sert pas les images du groupement : l'aperçu montre son nom, sans logo.
-		group: group && { name: group.name, mandatoryModules: readMandatoryModules(group.mandatoryModules) },
+		group: group && {
+			name: group.name,
+			mandatoryModules: readMandatoryModules(group.mandatoryModules),
+			imposesGroupNews: group.imposesGroupNews,
+			articles: group.articles.map(({ title, summary, publishedAt }) => ({ title, summary, publishedAt }))
+		},
 		availableModuleData: collectAvailableModuleData(sources)
 	};
 }

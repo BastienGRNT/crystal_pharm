@@ -20,10 +20,30 @@ const baseWithoutGroup: SiteEditorBase = {
 
 const baseWithGroup: SiteEditorBase = {
 	...baseWithoutGroup,
-	group: { name: 'Groupement Santé', mandatoryModules: ['loyaltyCard', 'news'] }
+	group: { name: 'Groupement Santé', mandatoryModules: ['loyaltyCard', 'news'], imposesGroupNews: false, articles: [] }
 };
 
-const emptyDraft: SiteDraft = { layoutId: 'essential', layoutSettings: {}, enabledModules: [], services: [], articles: [] };
+const groupArticle = { title: '-10 % sur la parapharmacie', summary: 'Tout le mois de novembre.', publishedAt: '2026-10-20' };
+const pharmacyArticle = { title: 'Campagne grippe', summary: 'Dès le 15 octobre.', publishedAt: '2026-10-01' };
+
+const baseWithGroupNews: SiteEditorBase = {
+	...baseWithoutGroup,
+	group: { name: 'Groupement Santé', mandatoryModules: [], imposesGroupNews: false, articles: [groupArticle] }
+};
+
+const baseWithImposedGroupNews: SiteEditorBase = {
+	...baseWithoutGroup,
+	group: { name: 'Groupement Santé', mandatoryModules: [], imposesGroupNews: true, articles: [groupArticle] }
+};
+
+const emptyDraft: SiteDraft = {
+	layoutId: 'essential',
+	layoutSettings: {},
+	enabledModules: [],
+	services: [],
+	articles: [],
+	newsSource: 'pharmacy'
+};
 
 describe('toTenantSiteInput', () => {
 	it('shows a module only when the Manager enables it and it has data', () => {
@@ -81,9 +101,73 @@ describe('listSiteModuleChoices', () => {
 	it('makes news imposed by the group as soon as an article is complete', () => {
 		const newsChoice = listSiteModuleChoices(baseWithGroup, {
 			services: [],
-			articles: [{ title: 'Campagne grippe', summary: 'Dès le 15 octobre.', publishedAt: '2026-10-01' }]
+			articles: [pharmacyArticle],
+			newsSource: 'pharmacy'
 		}).find((moduleChoice) => moduleChoice.moduleName === 'news');
 
 		expect(newsChoice?.state.kind).toBe('mandatory');
+	});
+});
+
+describe('les actualités affichées', () => {
+	const draftShowingNews: SiteDraft = { ...emptyDraft, enabledModules: ['news'], articles: [pharmacyArticle] };
+
+	it('shows the pharmacy’s own news when it chooses them', () => {
+		const tenantSiteInput = toTenantSiteInput(baseWithGroupNews, draftShowingNews);
+
+		expect(tenantSiteInput.modules.news).toEqual({ enabled: true, data: { articles: [pharmacyArticle] } });
+	});
+
+	it('shows the group’s news when the pharmacy chooses them', () => {
+		const tenantSiteInput = toTenantSiteInput(baseWithGroupNews, { ...draftShowingNews, newsSource: 'group' });
+
+		expect(tenantSiteInput.modules.news).toEqual({ enabled: true, data: { articles: [groupArticle] } });
+	});
+
+	it('shows the group’s news when the group imposes them, whatever the pharmacy chose', () => {
+		const tenantSiteInput = toTenantSiteInput(baseWithImposedGroupNews, draftShowingNews);
+
+		expect(tenantSiteInput.modules.news).toEqual({ enabled: true, data: { articles: [groupArticle] } });
+	});
+
+	it('hides the news block when the group imposes its news but has published none', () => {
+		const baseWithImposedEmptyGroupNews: SiteEditorBase = {
+			...baseWithImposedGroupNews,
+			group: { name: 'Groupement Santé', mandatoryModules: ['news'], imposesGroupNews: true, articles: [] }
+		};
+
+		const tenantSiteInput = toTenantSiteInput(baseWithImposedEmptyGroupNews, draftShowingNews);
+
+		expect(tenantSiteInput.modules.news.enabled).toBe(false);
+		expect(v.safeParse(TenantSiteSchema, tenantSiteInput).success).toBe(true);
+	});
+
+	it('ignores a choice of group news when the pharmacy has no group', () => {
+		const tenantSiteInput = toTenantSiteInput(baseWithoutGroup, { ...draftShowingNews, newsSource: 'group' });
+
+		expect(tenantSiteInput.modules.news).toEqual({ enabled: true, data: { articles: [pharmacyArticle] } });
+	});
+
+	it('keeps the group’s own fields out of the site data', () => {
+		const tenantSiteInput = toTenantSiteInput(baseWithGroupNews, emptyDraft);
+
+		expect(tenantSiteInput.pharmacy.group).toEqual({ name: 'Groupement Santé', logoUrl: undefined, mandatoryModules: [] });
+	});
+
+	it('explains why group news cannot show yet', () => {
+		const baseWithEmptyGroupNews: SiteEditorBase = {
+			...baseWithGroupNews,
+			group: { name: 'Groupement Santé', mandatoryModules: [], imposesGroupNews: false, articles: [] }
+		};
+
+		const newsChoice = listSiteModuleChoices(baseWithEmptyGroupNews, { ...emptyDraft, newsSource: 'group' }).find(
+			(moduleChoice) => moduleChoice.moduleName === 'news'
+		);
+
+		expect(newsChoice?.state).toEqual({
+			kind: 'unavailable',
+			reason: 'Votre groupement n’a encore publié aucune actualité.',
+			fixHref: undefined
+		});
 	});
 });

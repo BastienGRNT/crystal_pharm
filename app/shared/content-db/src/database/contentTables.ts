@@ -1,6 +1,6 @@
 import type { ModuleName, ServicesModuleData } from '@crystal-pharm/schema';
 import { sql } from 'drizzle-orm';
-import { index, jsonb, pgPolicy, pgSchema, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { check, index, jsonb, pgPolicy, pgSchema, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const contentSchema = pgSchema('content');
 
@@ -8,6 +8,10 @@ export const contentSchema = pgSchema('content');
 // absent vaut NULL : il ne donne accès à rien.
 const activeTenantId = sql.raw(`nullif(current_setting('app.tenant_id', true), '')::uuid`);
 const isPlatform = sql.raw(`current_setting('app.is_platform', true) = 'on'`);
+
+/** D'où viennent les actualités affichées : celles du Tenant ou celles de son groupement. */
+export const newsSources = ['pharmacy', 'group'] as const;
+export type NewsSource = (typeof newsSources)[number];
 
 const timestampWithTimeZone = (columnName: string) => timestamp(columnName, { withTimezone: true });
 
@@ -33,13 +37,16 @@ export const tenantSites = contentSchema.table(
 		enabledModules: jsonb('enabled_modules').$type<ModuleName[]>().notNull().default([]),
 		services: jsonb('services').$type<ServicesModuleData['services']>().notNull().default([]),
 		prescriptionIntroduction: text('prescription_introduction'),
+		/** Le choix du Tenant ; son groupement peut l'imposer (cf. `group-db`). */
+		newsSource: text('news_source').$type<NewsSource>().notNull().default('pharmacy'),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow(),
 		updatedAt: timestampWithTimeZone('updated_at')
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => new Date())
 	},
-	() => [
+	(table) => [
+		check('tenant_sites_news_source_check', sql`${table.newsSource} in ('pharmacy', 'group')`),
 		pgPolicy('tenant_sites_of_active_tenant', {
 			for: 'all',
 			using: sql`tenant_id = ${activeTenantId} or ${isPlatform}`,
