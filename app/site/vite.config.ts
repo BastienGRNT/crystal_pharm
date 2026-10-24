@@ -22,6 +22,8 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: { entries: [entryClientFile, routeFiles] },
     // Les sites ne sont servis que derrière la passerelle (Caddy en dev), qui pose le tenant.
     server: {
+      // Caddy (dans Docker) joint le site par l'IPv4 de la machine : sans cela, Vite n'écoute qu'en local.
+      host: true,
       port: 5177,
       strictPort: true,
       allowedHosts: ['.localhost'],
