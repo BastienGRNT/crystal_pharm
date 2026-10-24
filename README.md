@@ -25,11 +25,11 @@ design system dans `app/ui/` (ses tokens : `app/ui/src/tokens/theme.css`).
 ```bash
 git config core.hooksPath .githooks   # une fois : retire les trailers d'outil des commits
 cp .env.example .env                  # une fois, puis adapter
-make start                            # Postgres
+make start                            # Postgres et la passerelle Caddy (les sites et l'aperçu)
 make migrate                          # les migrations Drizzle (auth, platform_auth)
 make api                              # l'API C#, dans son propre terminal
 cd app && pnpm install                # les dépendances JS
-pnpm dev                              # les trois apps Svelte
+pnpm dev                              # les trois apps Svelte et les sites publics
 ```
 
 | Déployable | Port de dev | Contenu |
@@ -37,7 +37,7 @@ pnpm dev                              # les trois apps Svelte
 | `pharmacy/host` | 5173 | les outils des pharmacies : `/login`, `/register`, `/`, `/site-manager`, `/planning`, `/booking`, `/prescriptions` |
 | `group` | 5174 | l'espace des groupements : http://groupement.localhost:5174 |
 | `admin` | 5175 | l'administration Platform : http://admin.localhost:5175 |
-| `app/site` | — | les sites publics (créé à l'étape 2 du moteur) |
+| `app/site` | 5177, derrière Caddy sur 8080 | les sites publics : http://<tenantId>.site.localhost:8080 ; l'aperçu de site-manager : http://apercu.localhost:8080/__preview |
 | API C# | 5158 | `Booking`, `Prescriptions` |
 
 `pnpm check` dans `app/` vérifie les types de tout le workspace.

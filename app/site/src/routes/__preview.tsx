@@ -10,6 +10,8 @@ const sendPrescriptionWithoutEffect = async () => ({ outcome: 'sent' as const })
 
 type PreviewedSite = { tenantSite: TenantSite; renderedAt: string };
 
+const readyAnnouncementIntervalInMilliseconds = 250;
+
 /**
  * L'aperçu de site-manager : rendu dans le navigateur, avec les données reçues par postMessage.
  * Il vit dans l'iframe de l'éditeur ou dans un onglet ouvert par lui ; sans éditeur, il n'affiche rien.
@@ -27,14 +29,22 @@ export default function PreviewRoute() {
     const editorWindow = findEditorWindow();
     if (!allowedOrigin || !editorWindow) return;
 
+    // L'éditeur peut ne pas écouter encore (sa page démarre) : on se signale jusqu'à recevoir un site.
+    const announceReady = () => editorWindow.postMessage(previewReadyMessage, allowedOrigin);
+    const readyAnnouncement = setInterval(announceReady, readyAnnouncementIntervalInMilliseconds);
     const receiveMessage = (event: MessageEvent<unknown>) => {
       if (event.origin !== allowedOrigin || event.source !== editorWindow) return;
       const tenantSite = readPreviewUpdate(event.data);
-      if (tenantSite) setPreviewedSite({ tenantSite, renderedAt: new Date().toISOString() });
+      if (!tenantSite) return;
+      clearInterval(readyAnnouncement);
+      setPreviewedSite({ tenantSite, renderedAt: new Date().toISOString() });
     };
     window.addEventListener('message', receiveMessage);
-    onCleanup(() => window.removeEventListener('message', receiveMessage));
-    editorWindow.postMessage(previewReadyMessage, allowedOrigin);
+    onCleanup(() => {
+      clearInterval(readyAnnouncement);
+      window.removeEventListener('message', receiveMessage);
+    });
+    announceReady();
   });
 
   // L'aperçu ne quitte jamais `/__preview` : un lien du site change la page montrée au lieu de naviguer.

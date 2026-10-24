@@ -6,7 +6,7 @@
 	"packageManager": "pnpm@11.22.0",
 	"scripts": {
 		"check": "pnpm --recursive check",
-		"dev": "pnpm --parallel --filter @crystal-pharm/pharmacy --filter @crystal-pharm/group --filter @crystal-pharm/admin dev"
+		"dev": "pnpm --parallel --filter @crystal-pharm/pharmacy --filter @crystal-pharm/group --filter @crystal-pharm/admin --filter @crystal-pharm/site dev"
 	},
 	"devDependencies": {
 		"typescript": "^6.0.3"

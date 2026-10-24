@@ -3,6 +3,9 @@ import { nitro } from 'nitro/vite';
 import { defineConfig, loadEnv } from 'vite';
 
 const repositoryRootDirectory = '../..';
+const entryClientFile = './src/entry-client.tsx';
+const entryServerFile = './src/entry-server.tsx';
+const routeFiles = './src/routes/**/*.tsx';
 
 export default defineConfig(({ mode }) => {
   // Le `.env` est à la racine du dépôt ; en prod, l'environnement vient du serveur.
@@ -14,7 +17,15 @@ export default defineConfig(({ mode }) => {
     // Les packages du workspace sont des sources TypeScript : Vite les compile
     // au lieu de les laisser à Node, qui ne résout pas leurs imports sans extension.
     ssr: { noExternal: [/^@crystal-pharm\//] },
+    // Vite découvre sinon les dépendances au premier affichage, puis recharge la page en plein
+    // chargement : l'aperçu restait bloqué. Tout est repéré et compilé dès le lancement.
+    optimizeDeps: { entries: [entryClientFile, routeFiles] },
     // Les sites ne sont servis que derrière la passerelle (Caddy en dev), qui pose le tenant.
-    server: { port: 5177, strictPort: true, allowedHosts: ['.localhost'] },
+    server: {
+      port: 5177,
+      strictPort: true,
+      allowedHosts: ['.localhost'],
+      warmup: { clientFiles: [entryClientFile, routeFiles], ssrFiles: [entryServerFile, routeFiles] },
+    },
   };
 });

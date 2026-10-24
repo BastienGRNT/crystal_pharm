@@ -23,7 +23,9 @@
 	let previewArea: HTMLDivElement | undefined = $state();
 	let device = $state('desktop');
 	let isFrameReady = $state(false);
+	let isFrameSlow = $state(false);
 	let isFullscreen = $state(false);
+	const slowFrameDelayInMilliseconds = 15_000;
 	// Les aperçus prêts à recevoir le site : l'iframe et, s'il est ouvert, l'onglet en grand.
 	const readyPreviewWindows = new Set<Window>();
 	let detachedPreviewWindow: Window | null = null;
@@ -64,6 +66,19 @@
 		return () => document.removeEventListener('fullscreenchange', followFullscreen);
 	});
 
+	// Un aperçu qui ne répond pas est signalé, avec de quoi réessayer, au lieu de charger sans fin.
+	$effect(() => {
+		if (isFrameReady) return;
+		const slowFrameTimeout = setTimeout(() => (isFrameSlow = true), slowFrameDelayInMilliseconds);
+		return () => clearTimeout(slowFrameTimeout);
+	});
+
+	function reloadFrame(): void {
+		isFrameReady = false;
+		isFrameSlow = false;
+		if (frame) frame.src = frameUrl;
+	}
+
 	function openDetachedPreview(): void {
 		detachedPreviewWindow = window.open(frameUrl, detachedPreviewName);
 	}
@@ -102,7 +117,16 @@
 				: ''}"
 		></iframe>
 		{#if !isFrameReady}
-			<p class="absolute inset-0 grid place-items-center bg-surface text-small text-ink-muted">Chargement de l’aperçu…</p>
+			<div class="absolute inset-0 grid place-items-center bg-surface p-6">
+				{#if isFrameSlow}
+					<div class="grid justify-items-center gap-3 text-center">
+						<p class="text-small text-ink-muted">L’aperçu ne répond pas. Vos modifications ne sont pas perdues.</p>
+						<Button variant="secondary" onclick={reloadFrame}>Réessayer</Button>
+					</div>
+				{:else}
+					<p class="text-small text-ink-muted">Chargement de l’aperçu…</p>
+				{/if}
+			</div>
 		{/if}
 	</div>
 </section>
