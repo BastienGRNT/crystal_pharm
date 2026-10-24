@@ -24,12 +24,12 @@ design system dans `app/ui/` (ses tokens : `app/ui/src/tokens/theme.css`).
 
 ```bash
 git config core.hooksPath .githooks   # une fois : retire les trailers d'outil des commits
-cp .env.example .env                  # une fois, puis adapter
+cp .env.example .env                  # une fois : en local, rien à changer
 make start                            # Postgres et la passerelle Caddy (les sites et l'aperçu)
-make migrate                          # les migrations Drizzle (auth, platform_auth)
-make api                              # l'API C#, dans son propre terminal
-cd app && pnpm install                # les dépendances JS
-pnpm dev                              # les trois apps Svelte et les sites publics
+(cd app && pnpm install)              # les dépendances JS
+make migrate                          # les migrations Drizzle, à relancer après chaque pull
+make api                              # l'API C# (rendez-vous), dans son propre terminal
+cd app && pnpm dev                    # les trois apps Svelte et les sites publics
 ```
 
 | Déployable | Port de dev | Contenu |
