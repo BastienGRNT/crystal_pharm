@@ -1,4 +1,4 @@
-# `site-manager` — l'édition du site par le Manager
+# `site-manager` — l'édition du site par un TenantMember
 
 Monté sur `/site-manager` par `pharmacy/host`.
 

@@ -23,7 +23,7 @@ lui.
 
 ## `auth` — les comptes clients (Better Auth)
 
-- Les comptes des Managers et des GroupMembers : la configuration de Better
+- Les comptes des TenantMembers et des GroupMembers : la configuration de Better
   Auth (adaptateur Drizzle) et le schéma `auth`, avec ses migrations
   (`src/customer/`). Celle de la Platform n'est pas ici : elle vit dans
   `admin`, construite avec la même boîte à outils (`src/toolkit/`).
@@ -42,10 +42,13 @@ lui.
   `pharmacy/modules/home` et dans `group`.
 - Les hooks SvelteKit communs : vérifier la session et remplir `locals.user`,
   rediriger selon la connexion. `auth` ne connaît ni Tenant ni groupement :
-  le Tenant actif et les rôles viennent des appartenances, ajoutés par
-  `pharmacy-db` (ou `group-db`).
-- Pour appeler le C# : un JWT court (plugin `jwt`, `tenantId` dans les
-  claims), clés publiques exposées en JWKS interne par `pharmacy/host`.
+  le Tenant actif et les Responsibilities viennent des appartenances, ajoutés
+  par `pharmacy-db` (ou `group-db`).
+- Le CounterAccount se connecte par un identifiant et un mot de passe, sans
+  email ; tous les autres comptes, par leur email.
+- Pour appeler le C# : un JWT court (plugin `jwt`, `tenantId` et les
+  `responsibilityKey` du Tenant actif dans les claims), clés publiques
+  exposées en JWKS interne par `pharmacy/host`.
 - Pour l'app mobile : un jeton porteur (plugin `bearer`), vérifié par le même
   hook.
 
@@ -53,8 +56,23 @@ lui.
 
 - Le schéma `pharmacy` (le Tenant, ses coordonnées, ses Employees, les
   appartenances des comptes) et ses migrations.
-- Un compte peut appartenir à plusieurs Tenants (un titulaire de plusieurs
+- Un compte peut appartenir à plusieurs Tenants (un Owner de plusieurs
   officines) : la session porte le Tenant actif, qu'un sélecteur change.
+- L'appartenance porte le type du TenantMember (Owner, Employee, CounterAccount)
+  et ses Responsibilities, propres à ce Tenant.
+- Les Responsibilities sont une liste écrite **une seule fois** (gérer le
+  planning de l'équipe et valider les congés, traiter les rendez-vous, traiter
+  les ordonnances, modifier le site, modifier la fiche de la pharmacie…).
+  L'abonnement et la gestion des accès sont réservés aux Owners, jamais une
+  Responsibility. Le code vérifie une Responsibility, jamais un type de compte.
+- Un Employee qui a un compte y est relié : son planning et ses demandes de
+  congés ne demandent aucune Responsibility. Le CounterAccount n'est relié à
+  aucun Employee.
+- Le compte qui souscrit devient Owner. Un Owner invite un Employee par email
+  (nominative, à usage unique, expire, se révoque, seule l'empreinte du jeton
+  est stockée, comme dans `group-db`), crée le CounterAccount (un seul par
+  Tenant), choisit les Responsibilities de chacun et peut nommer un autre
+  Owner. Le dernier Owner d'un Tenant ne peut être ni retiré ni rétrogradé.
 - Ses fonctions publiques sont **le seul moyen d'écrire** ces tables
   (`addEmployee`, `updatePharmacyContactDetails`…). `home` et `planning` les
   appellent toutes les deux : la règle métier n'existe qu'ici.

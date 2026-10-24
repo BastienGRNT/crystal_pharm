@@ -34,13 +34,15 @@ app/api/
 ## Qui appelle, pour quel tenant
 
 - Un seul `ITenantContext`, rempli par un middleware à partir de **deux
-  sources exclusives** : le JWT de Better Auth d'un Manager, ou l'identité de
+  sources exclusives** : le JWT de Better Auth d'un TenantMember, ou l'identité de
   service de `site` (qui transmet le `tenantId` de la passerelle).
+- Chaque endpoint d'un TenantMember exige la Responsibility qui le couvre
+  (dans les claims du JWT) : le C# la revérifie, même si `pharmacy` l'a fait.
 - Le C# n'émet aucun token et ne connaît aucun compte. Il vérifie le JWT par
   le JWKS interne de `pharmacy/host` (`kid`, `iss`, `aud`). Le JWT est court
   (≤ 15 min) : un compte désactivé perd l'accès au plus tard à son expiration.
 - Les endpoints du Visitor sont dans leurs propres controllers et
-  **exigent** l'identité de service `site`. Un JWT de Manager y est refusé,
+  **exigent** l'identité de service `site`. Un JWT de TenantMember y est refusé,
   et inversement.
 
 ## Base de données
@@ -78,6 +80,8 @@ app/api/
 - Stockage derrière des interfaces d'`Application` (ex. `IPrescriptionStore`) :
   local en dev, HDS en prod, choisi par la configuration.
 - Chaque lecture d'une donnée de santé laisse une trace (qui, quand, quoi).
+  Depuis le CounterAccount, « qui » est le compte comptoir, pas la personne :
+  choix assumé.
 - `EnableSensitiveDataLogging` interdit ; page d'exception détaillée en dev
   seulement ; les erreurs renvoyées ne contiennent jamais le contenu reçu.
 
