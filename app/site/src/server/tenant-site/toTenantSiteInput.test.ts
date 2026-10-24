@@ -94,3 +94,14 @@ describe('les actualités du site public', () => {
     expect(tenantSiteInput.modules.news).toEqual({ enabled: true, data: { articles: [pharmacyArticle] } });
   });
 });
+
+describe('les sections du site public', () => {
+  it('hides a chosen section that has nothing to show, like the preview', () => {
+    const { tenantSiteInput } = toTenantSiteInput({
+      ...sources,
+      content: { ...sources.content, enabledModules: ['team', 'services', 'news'], articles: [] },
+    });
+
+    expect(tenantSiteInput.modules).toMatchObject({ team: { enabled: false }, services: { enabled: false }, news: { enabled: false } });
+  });
+});

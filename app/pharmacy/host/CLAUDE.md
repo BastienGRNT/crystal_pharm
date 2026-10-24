@@ -13,6 +13,10 @@ métier** : il branche les modules de `pharmacy/modules/`.
   (avec `PHARMACY_URL`) et `Cache-Control: no-store` sur `/booking` et
   `/prescriptions`.
 - Il sert Better Auth (`/api/auth/*`) et le JWKS interne lu par le C#.
+- `src/routes/internal/` : les routes appelées par la passerelle, jamais par
+  un navigateur (ex. `/internal/site-access`, le `forward_auth` des sites).
+  Publiques pour le hook d'auth, protégées par leur propre jeton et
+  ré-exportées d'un module comme les autres.
 - Le menu : `src/lib/toolLinks.ts`, passé à `AppShell` de `ui`
   avec la personne connectée (le `load` du cadre vient de `home`).
 - L'API pour un client déployé à part : `src/routes/api/v1/<module>/`

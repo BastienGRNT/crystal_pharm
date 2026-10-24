@@ -2,13 +2,13 @@ import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import type { Employee } from '@crystal-pharm/pharmacy-db';
 import { ModuleNameSchema, type ModuleName } from '@crystal-pharm/schema';
 import * as v from 'valibot';
-import type { ModuleDataByName, SiteEditorBase } from '../domain/siteDraft';
-import type { SiteEditorSources } from './repositories/tenantSiteRepository.server';
+import type { ModuleDataByName, SiteEditorBase } from '../../domain/siteDraft';
+import { toPreviewMediaUrl } from './previewMediaUrls.server';
+import type { SiteEditorSources } from '../repositories/tenantSiteRepository.server';
 
 /**
- * L'adapter : les trois bases → ce que l'édition ne change pas. Même règle que
- * `app/site` (un module sans données reste éteint), mais les images sont
- * servies par `pharmacy/host` : l'aperçu tourne sur un autre domaine.
+ * L'adapter : les trois bases → ce que l'édition ne change pas. Mêmes sources
+ * que `app/site`, mais les images ont des adresses signées de l'aperçu.
  */
 export function toSiteEditorBase(tenantId: string, sources: SiteEditorSources): SiteEditorBase {
 	const { pharmacyProfile, group } = sources;
@@ -20,51 +20,47 @@ export function toSiteEditorBase(tenantId: string, sources: SiteEditorSources): 
 			phone: pharmacyProfile.phoneNumber.toDisplayFormat(),
 			email: pharmacyProfile.email
 		},
-		// `pharmacy/host` ne sert pas les images du groupement : l'aperçu montre son nom, sans logo.
 		group: group && {
 			name: group.name,
+			logoUrl: group.logoId ? toPreviewMediaUrl('group-image', tenantId, group.logoId) : undefined,
 			mandatoryModules: readMandatoryModules(group.mandatoryModules),
 			imposesGroupNews: group.imposesGroupNews,
 			articles: group.articles.map(({ title, summary, publishedAt }) => ({ title, summary, publishedAt }))
 		},
-		availableModuleData: collectAvailableModuleData(sources)
+		availableModuleData: collectAvailableModuleData(tenantId, sources)
 	};
 }
 
 // Les services et les actualités se saisissent dans l'éditeur : ils viennent du brouillon, pas d'ici.
-function collectAvailableModuleData({ pharmacyProfile, employees, group }: SiteEditorSources): SiteEditorBase['availableModuleData'] {
+function collectAvailableModuleData(
+	tenantId: string,
+	{ pharmacyProfile, employees, group }: SiteEditorSources
+): SiteEditorBase['availableModuleData'] {
 	return {
 		openingHours: pharmacyProfile.weeklyOpeningSchedule && {
 			weeklySchedule: pharmacyProfile.weeklyOpeningSchedule,
 			onDutyPeriods: []
 		},
-		team: employees.length > 0 ? { members: employees.map(toTeamMember) } : undefined,
+		team: { members: employees.map((employee) => toTeamMember(tenantId, employee)) },
 		// Aucun module `Prescriptions` dans le C# pour l'instant : une ordonnance ne partirait nulle part.
 		prescriptionUpload: undefined,
 		loyaltyCard:
 			group?.loyaltyCardUrl && group.loyaltyCardMessage
-				? { text: group.loyaltyCardMessage, url: group.loyaltyCardUrl }
+				? {
+						text: group.loyaltyCardMessage,
+						url: group.loyaltyCardUrl,
+						imageUrl: group.loyaltyCardImageId ? toPreviewMediaUrl('group-image', tenantId, group.loyaltyCardImageId) : undefined
+					}
 				: undefined
 	};
 }
 
-function toTeamMember(employee: Employee): ModuleDataByName['team']['members'][number] {
+function toTeamMember(tenantId: string, employee: Employee): ModuleDataByName['team']['members'][number] {
 	return {
 		fullName: formatEmployeeFullName(employee),
 		role: employee.jobTitle.toDisplayFormat(),
-		photoUrl: employee.photoId && toEmployeePhotoUrl(employee.photoId)
+		photoUrl: employee.photoId ? toPreviewMediaUrl('employee-photo', tenantId, employee.photoId) : undefined
 	};
-}
-
-// La route des photos de l'équipe est celle de `home` (`/pharmacie/equipe/photos/…`) : un module n'importe pas un autre.
-function toEmployeePhotoUrl(photoId: string): string {
-	return new URL(`/pharmacie/equipe/photos/${encodeURIComponent(photoId)}`, readPharmacyUrl()).href;
-}
-
-function readPharmacyUrl(): string {
-	const pharmacyUrl = process.env.PHARMACY_URL;
-	if (!pharmacyUrl) throw new Error('PHARMACY_URL is missing from the environment.');
-	return pharmacyUrl;
 }
 
 // `group-db` ne connaît pas `engine/schema` : un nom qui n'est plus un module est ignoré.

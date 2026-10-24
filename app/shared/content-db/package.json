@@ -4,10 +4,13 @@
 	"type": "module",
 	"exports": {
 		".": "./src/index.server.ts",
+		"./domain": "./src/domain.ts",
+		"./preview-media": "./src/preview/previewMediaToken.ts",
 		"./tables": "./src/database/contentTables.ts"
 	},
 	"scripts": {
 		"check": "tsc --project tsconfig.json",
+		"test": "vitest run --exclude '**/*.integration.test.ts'",
 		"test:integration": "vitest run integration",
 		"generate-migration": "drizzle-kit generate",
 		"migrate": "drizzle-kit migrate"

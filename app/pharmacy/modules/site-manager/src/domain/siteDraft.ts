@@ -1,13 +1,14 @@
+import {
+	assembleDisplayedTenantSite,
+	keepModuleDataWithContent,
+	type ModuleDataByName,
+	type TenantSiteInput
+} from '@crystal-pharm/content-db/domain';
 import { chooseDisplayedNewsSource, type NewsSource } from '@crystal-pharm/group-db/domain';
-import type { ModuleName, NewsModuleData, TenantSiteSchema } from '@crystal-pharm/schema';
-import type * as v from 'valibot';
+import type { ModuleName, NewsModuleData } from '@crystal-pharm/schema';
 import { listCompleteArticles, listCompleteServices, type ArticleDraft, type ServiceDraft } from './siteContentLists';
 
-export type TenantSiteInput = v.InferInput<typeof TenantSiteSchema>;
-type TenantModulesInput = TenantSiteInput['modules'];
-export type ModuleDataByName = {
-	[Name in ModuleName]: Extract<TenantModulesInput[Name], { enabled: true }>['data'];
-};
+export type { ModuleDataByName, TenantSiteInput };
 
 /** Les modules saisis ici ; les autres viennent de la fiche et du groupement. */
 type ModuleEditedHere = 'services' | 'news';
@@ -53,15 +54,13 @@ export const moduleNames: readonly ModuleName[] = [
 	'loyaltyCard'
 ];
 
-// Une liste vide ne s'affiche pas : un module sans contenu laisserait une section vide sur le site.
+// Les règles d'affichage sont celles du site en ligne (`content-db`) : l'aperçu montre le même site.
 export function collectAvailableModuleData(base: SiteEditorBase, draft: SiteContentDraft): Partial<ModuleDataByName> {
-	const services = listCompleteServices(draft.services);
-	const articles = listDisplayedArticles(base, draft);
-	return {
+	return keepModuleDataWithContent({
 		...base.availableModuleData,
-		...(services.length > 0 && { services: { services } }),
-		...(articles.length > 0 && { news: { articles } })
-	};
+		services: { services: listCompleteServices(draft.services) },
+		news: { articles: listDisplayedArticles(base, draft) }
+	});
 }
 
 // Un groupement qui impose ses actualités sans en avoir publié masque le bloc : rien à montrer.
@@ -77,33 +76,13 @@ export function listDisplayableMandatoryModules(base: SiteEditorBase, availableM
 
 /** Le site tel qu'il sera affiché, encore à valider par `TenantSiteSchema`. */
 export function toTenantSiteInput(base: SiteEditorBase, draft: SiteDraft): TenantSiteInput {
-	const availableModuleData = collectAvailableModuleData(base, draft);
-	const displayableMandatoryModules = listDisplayableMandatoryModules(base, availableModuleData);
-	const requestedModules = new Set([...draft.enabledModules, ...displayableMandatoryModules]);
-	const toModule = <Name extends ModuleName>(moduleName: Name) =>
-		toToggleableModule(availableModuleData[moduleName], requestedModules.has(moduleName));
-	return {
+	return assembleDisplayedTenantSite({
 		tenantId: base.tenantId,
 		layoutId: draft.layoutId,
 		layoutSettings: draft.layoutSettings,
-		pharmacy: {
-			...base.pharmacy,
-			group: base.group && { name: base.group.name, logoUrl: base.group.logoUrl, mandatoryModules: displayableMandatoryModules }
-		},
-		modules: {
-			openingHours: toModule('openingHours'),
-			team: toModule('team'),
-			services: toModule('services'),
-			news: toModule('news'),
-			prescriptionUpload: toModule('prescriptionUpload'),
-			loyaltyCard: toModule('loyaltyCard')
-		}
-	};
-}
-
-function toToggleableModule<ModuleData>(
-	moduleData: ModuleData,
-	isRequested: boolean
-): { enabled: false } | { enabled: true; data: NonNullable<ModuleData> } {
-	return isRequested && moduleData !== undefined && moduleData !== null ? { enabled: true, data: moduleData } : { enabled: false };
+		enabledModules: draft.enabledModules,
+		pharmacy: base.pharmacy,
+		group: base.group && { name: base.group.name, logoUrl: base.group.logoUrl, mandatoryModules: base.group.mandatoryModules },
+		moduleData: collectAvailableModuleData(base, draft)
+	}).tenantSiteInput;
 }

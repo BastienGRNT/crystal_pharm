@@ -1,6 +1,6 @@
 import type { ModuleName, ServicesModuleData } from '@crystal-pharm/schema';
 import { sql } from 'drizzle-orm';
-import { check, index, jsonb, pgPolicy, pgSchema, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, index, jsonb, pgPolicy, pgSchema, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 export const contentSchema = pgSchema('content');
 
@@ -8,6 +8,8 @@ export const contentSchema = pgSchema('content');
 // absent vaut NULL : il ne donne accès à rien.
 const activeTenantId = sql.raw(`nullif(current_setting('app.tenant_id', true), '')::uuid`);
 const isPlatform = sql.raw(`current_setting('app.is_platform', true) = 'on'`);
+// Posé par la passerelle, qui ne connaît que l'adresse demandée : elle ne voit que cette ligne.
+const requestedSubdomain = sql.raw(`nullif(current_setting('app.requested_subdomain', true), '')`);
 
 /** D'où viennent les actualités affichées : celles du Tenant ou celles de son groupement. */
 export const newsSources = ['pharmacy', 'group'] as const;
@@ -72,6 +74,35 @@ export const articles = contentSchema.table(
 			for: 'all',
 			using: sql`tenant_id = ${activeTenantId} or ${isPlatform}`,
 			withCheck: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
+		})
+	]
+);
+
+/**
+ * Les adresses d'un site sous notre domaine (`<subdomain>.<domaine des sites>`).
+ * Une seule est l'actuelle ; les anciennes restent à leur Tenant, qui les
+ * redirige vers l'actuelle : un lien déjà partagé marche toujours, et personne
+ * d'autre ne peut la reprendre. Unique entre tous les Tenants.
+ */
+export const siteSubdomains = contentSchema.table(
+	'site_subdomains',
+	{
+		subdomain: text('subdomain').primaryKey(),
+		tenantId: uuid('tenant_id').notNull(),
+		isCurrent: boolean('is_current').notNull(),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('site_subdomains_tenant_id_index').on(table.tenantId, table.isCurrent),
+		uniqueIndex('site_subdomains_one_current_per_tenant').on(table.tenantId).where(sql`${table.isCurrent}`),
+		pgPolicy('site_subdomains_of_active_tenant', {
+			for: 'all',
+			using: sql`tenant_id = ${activeTenantId} or ${isPlatform}`,
+			withCheck: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
+		}),
+		pgPolicy('site_subdomains_requested_by_gateway', {
+			for: 'select',
+			using: sql`subdomain = ${requestedSubdomain}`
 		})
 	]
 );

@@ -1,0 +1,70 @@
+# La passerelle de dev : le rôle que tiendra la passerelle de prod devant `app/site`.
+# Elle tourne dans Docker : `host.docker.internal` est la machine où tourne `pnpm dev`.
+# Elle seule dit quel Tenant est servi ; l'en-tête venu du navigateur est toujours écrasé.
+# Aucun journal des requêtes : une adresse demandée peut dire qu'une personne cherche un soin.
+{
+	auto_https off
+	admin off
+
+	# Une page n'est gardée que si `app/site` l'autorise (`s-maxage`), et sous une clé
+	# qui contient le Tenant et la version de son site (l'empreinte de tout ce qu'il
+	# affiche) : la moindre modification change la clé, l'ancienne page n'est plus
+	# jamais servie. Rien à purger.
+	cache {
+		otter
+		ttl 60s
+		default_cache_control no-store
+		log_level error
+		key {
+			headers X-Tenant-Id X-Site-Version
+		}
+	}
+}
+
+# Le site d'un Tenant : http://<son adresse>.site.localhost:8080, choisie dans site-manager.
+http://*.site.localhost:8080 {
+	route {
+		request_header -X-Tenant-Id
+		request_header -X-Site-Version
+
+		@preview path /__preview /__preview/*
+		respond @preview "Page introuvable." 404
+
+		# pharmacy/host dit à quel Tenant est l'adresse et s'il est abonné (cf. site-manager,
+		# `respondToSiteAccessRequest`). Une ancienne adresse y reçoit sa redirection (301).
+		forward_auth host.docker.internal:5173 {
+			uri /internal/site-access
+			header_up Host localhost:5173
+			header_up X-Site-Gateway-Token {$SITE_GATEWAY_TOKEN}
+			copy_headers X-Tenant-Id X-Site-Version
+
+			@unsubscribed status 402
+			handle_response @unsubscribed {
+				root * /srv/pages
+				rewrite * /site-indisponible.html
+				file_server {
+					status 503
+				}
+			}
+
+			@unknownAddress status 404
+			handle_response @unknownAddress {
+				root * /srv/pages
+				rewrite * /site-introuvable.html
+				file_server {
+					status 404
+				}
+			}
+		}
+
+		cache
+		reverse_proxy host.docker.internal:5177
+	}
+}
+
+# L'aperçu de site-manager : jamais de Tenant, les données arrivent par postMessage.
+http://apercu.localhost:8080 {
+	reverse_proxy host.docker.internal:5177 {
+		header_up -X-Tenant-Id
+	}
+}

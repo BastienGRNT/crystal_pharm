@@ -6,8 +6,9 @@ une seule zone reste dans cette zone. Un package `*-db` porte le nom du
 schéma qu'il possède.
 
 Modifiable. Un changement ici touche plusieurs zones : garde la compatibilité
-(ajouter plutôt que renommer ou supprimer). Tu ne modifies pas les zones qui
-l'utilisent dans la même session : tu lances leur typecheck et tu signales.
+(ajouter plutôt que renommer ou supprimer). Des zones qui l'utilisent, tu ne
+modifies que celle du lot (cf. racine, « Workflow de session ») : pour les
+autres, tu lances leur typecheck et tu signales.
 
 `content-db` et `api-client` sont créés avec leur premier besoin réel, selon
 les règles ci-dessous.
@@ -151,6 +152,17 @@ corrige dans le C#, puis on régénère.
   vivent).
 - Les fonctions de lecture du `TenantSite`, validé par `engine/schema`.
   Les écritures vivent dans `site-manager`.
+- Les règles du site affiché (`./domain`, fonctions pures, testées) : quels
+  modules s'affichent, imposés ou non, avec ou sans données. `app/site` et
+  l'aperçu de `site-manager` les appliquent à leurs propres sources : écrites
+  une seule fois, l'aperçu montre le site en ligne.
+- Le jeton signé des images de l'aperçu (`./preview-media`), émis par
+  `site-manager` et vérifié par `app/site`, avec `SITE_PREVIEW_MEDIA_SECRET`.
+- Les adresses des sites (`site_subdomains`) : une adresse actuelle par
+  Tenant, les anciennes gardées pour la redirection et réservées à leur
+  Tenant. La passerelle trouve un site par son adresse avec
+  `runAsSiteGateway` (la RLS ne montre que l'adresse demandée) ; les
+  écritures vivent dans `site-manager`.
 - Chaque requête passe par la Row-Level Security (cf. racine, « Base de
   données »).
 - Les infos de la pharmacie ne sont pas ici : `app/site` les lit dans
