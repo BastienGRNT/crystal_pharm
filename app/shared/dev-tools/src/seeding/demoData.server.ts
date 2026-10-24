@@ -23,6 +23,7 @@ import {
 	listPharmacyGroupIdsNamed
 } from '@crystal-pharm/group-db';
 import {
+	addEmployee,
 	createTenantForAccount,
 	deleteTenant,
 	findActiveTenantIdOfAccount,
@@ -84,11 +85,21 @@ const reseauSanteContract: GroupContractInput = {
 	}
 };
 
-/** Crée les démos si elles n'existent pas encore (au premier clic sur un compte de démo). */
+/**
+ * Crée les démos au premier clic sur un compte de démo, et les recrée toutes dès qu'un
+ * compte manque (un parcours ajouté depuis) : les semer par-dessus les dupliquerait.
+ */
 export async function ensureDemoData(): Promise<void> {
-	const seededPersona = findDemoPersona('independante');
-	if (seededPersona && (await findCustomerAccountIdByEmail(seededPersona.email))) return;
-	await seedDemoData();
+	if (await areAllCustomerPersonasSeeded()) return;
+	await resetDemoData();
+}
+
+// Les comptes de la Platform vivent dans `platform_auth` : ils ne sont pas semés ici.
+async function areAllCustomerPersonasSeeded(): Promise<boolean> {
+	for (const persona of demoPersonas.filter((candidate) => candidate.space !== 'admin')) {
+		if (!(await findCustomerAccountIdByEmail(persona.email))) return false;
+	}
+	return true;
 }
 
 /** Efface toutes les démos (comptes, pharmacies, groupements, emails), puis les recrée. */
@@ -140,6 +151,8 @@ async function seedDemoData(): Promise<void> {
 
 	await subscribe('abonnee', requireTenantId(tenantIdsByPersonaKey, 'abonnee'), ['site'], 'yearly');
 	await subscribe('membre', requireTenantId(tenantIdsByPersonaKey, 'membre'), ['planning'], 'monthly');
+	await subscribe('pharmacien', requireTenantId(tenantIdsByPersonaKey, 'pharmacien'), ['site', 'planning'], 'monthly');
+	await addDemoTeam(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'));
 }
 
 async function seedCatalog(): Promise<void> {
@@ -160,6 +173,7 @@ function personaPharmacies(): Record<string, DemoPharmacy> {
 		independante: demoPharmacyOf('independante', { name: 'Pharmacie Centrale', street: '12 place de la République', postalCode: '69002', city: 'Lyon' }),
 		abonnee: demoPharmacyOf('abonnee', { name: 'Pharmacie de la Gare', street: '3 avenue de la Gare', postalCode: '33000', city: 'Bordeaux' }),
 		membre: demoPharmacyOf('membre', { name: 'Pharmacie du Port', street: '8 quai du Port', postalCode: '13002', city: 'Marseille' }),
+		pharmacien: demoPharmacyOf('pharmacien', { name: 'Pharmacie Saint-Louis', street: '14 rue Saint-Louis', postalCode: '67000', city: 'Strasbourg' }),
 		invitee: demoPharmacyOf('invitee', { name: 'Pharmacie des Tilleuls', street: '27 allée des Tilleuls', postalCode: '44000', city: 'Nantes' })
 	};
 }
@@ -193,6 +207,22 @@ async function createDemoPharmacy(pharmacy: DemoPharmacy): Promise<string> {
 	if (!tenantCreation.isSaved) throw new Error(`The demo pharmacy ${pharmacy.contactDetails.name} was refused.`);
 	await updateWeeklyOpeningSchedule(tenantCreation.tenantId, usualOpeningSchedule);
 	return tenantCreation.tenantId;
+}
+
+// La titulaire et son équipe : deux pharmaciens pour la règle de présence, des préparateurs pour le reste.
+const demoTeam = [
+	{ firstName: 'Léa', lastName: 'Garcia', jobTitle: 'Pharmacienne titulaire' },
+	{ firstName: 'Thomas', lastName: 'Lambert', jobTitle: 'Pharmacien adjoint' },
+	{ firstName: 'Camille', lastName: 'Fontaine', jobTitle: 'Préparatrice' },
+	{ firstName: 'Julien', lastName: 'Mercier', jobTitle: 'Préparateur' },
+	{ firstName: 'Emma', lastName: 'Chevalier', jobTitle: 'Apprentie préparatrice' }
+];
+
+async function addDemoTeam(tenantId: string): Promise<void> {
+	for (const teamMember of demoTeam) {
+		const addition = await addEmployee(tenantId, teamMember, { kind: 'unchanged' });
+		if (!addition.isSaved) throw new Error(`The demo employee ${teamMember.firstName} was refused.`);
+	}
 }
 
 async function createDemoGroup(
