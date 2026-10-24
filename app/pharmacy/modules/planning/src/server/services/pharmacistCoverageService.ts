@@ -1,4 +1,4 @@
-import { computeCoverage, type CoverageSegment, type OpeningHours } from '../../domain/coverage';
+import { computeCoverageOfOpeningPeriods, type CoverageSegment, type OpeningHours } from '../../domain/coverage';
 import type { PlanningRow } from '../../domain/planning';
 
 /**
@@ -8,7 +8,7 @@ import type { PlanningRow } from '../../domain/planning';
 export function computePharmacistCoverage(
 	planningRows: PlanningRow[],
 	dayIndex: number,
-	openingHours: OpeningHours
+	openingPeriods: OpeningHours[]
 ): CoverageSegment[] {
 	const presentPharmacistShifts = planningRows
 		.filter((planningRow) => planningRow.employee.isPharmacist)
@@ -16,5 +16,5 @@ export function computePharmacistCoverage(
 			const cell = planningRow.cells[dayIndex];
 			return cell && cell.absenceKind === undefined ? cell.shifts : [];
 		});
-	return computeCoverage(openingHours, presentPharmacistShifts);
+	return computeCoverageOfOpeningPeriods(openingPeriods, presentPharmacistShifts);
 }

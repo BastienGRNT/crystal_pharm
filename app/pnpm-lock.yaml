@@ -350,13 +350,34 @@ importers:
 
   pharmacy/modules/planning:
     dependencies:
+      '@crystal-pharm/auth':
+        specifier: workspace:*
+        version: link:../../../shared/auth
+      '@crystal-pharm/pharmacy-db':
+        specifier: workspace:*
+        version: link:../../../shared/pharmacy-db
       '@crystal-pharm/ui':
         specifier: workspace:*
         version: link:../../../ui
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(kysely@0.29.7)(postgres@3.4.9)
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@6.0.3)
     devDependencies:
       '@sveltejs/kit':
         specifier: ^2.63.0
         version: 2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.0)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)))(svelte@5.57.0)(typescript@6.0.3)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      '@types/node':
+        specifier: ^24.19.2
+        version: 24.19.2
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
       svelte:
         specifier: ^5.56.1
         version: 5.57.0

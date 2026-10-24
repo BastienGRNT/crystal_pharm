@@ -5,6 +5,19 @@ export type Employee = {
 	isPharmacist: boolean;
 };
 
+// Le poste est un texte libre (cf. `JobTitle` de pharmacy-db), sans case « pharmacien » :
+// « Pharmacienne adjointe », « Titulaire »… se reconnaissent à ces mots.
+const pharmacistJobTitleWords = ['pharmacien', 'titulaire'];
+
+/** Compte pour la règle « un pharmacien présent », sans tenir compte des accents ni des majuscules. */
+export function isPharmacistJobTitle(jobTitle: string): boolean {
+	const comparableJobTitle = jobTitle
+		.normalize('NFD')
+		.replace(/\p{M}/gu, '')
+		.toLocaleLowerCase('fr');
+	return pharmacistJobTitleWords.some((pharmacistWord) => comparableJobTitle.includes(pharmacistWord));
+}
+
 export type Shift = {
 	id: string;
 	employeeId: string;
@@ -42,6 +55,17 @@ export type PlanningRow = {
 
 export function formatShiftHours(shift: Shift): string {
 	return `${shift.startTime}–${shift.endTime}`;
+}
+
+/** Le créneau du même employé, le même jour, qui empiète sur celui-ci ; deux créneaux qui se touchent ne se chevauchent pas. */
+export function findOverlappingShift(existingShifts: Shift[], newShift: Omit<Shift, 'id'>): Shift | undefined {
+	return existingShifts.find(
+		(existingShift) =>
+			existingShift.employeeId === newShift.employeeId &&
+			existingShift.date === newShift.date &&
+			existingShift.startTime < newShift.endTime &&
+			newShift.startTime < existingShift.endTime
+	);
 }
 
 export function toMinutesSinceMidnight(time: string): number {
