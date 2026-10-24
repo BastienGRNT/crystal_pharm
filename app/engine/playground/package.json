@@ -1,0 +1,19 @@
+{
+  "name": "@crystal-pharm/playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --kill-others --names layouts,playground \"pnpm --filter @crystal-pharm/layouts dev\" \"vite\"",
+    "check": "tsc --project tsconfig.json && tsc --project tsconfig.node.json"
+  },
+  "devDependencies": {
+    "@crystal-pharm/layouts": "workspace:*",
+    "@crystal-pharm/schema": "workspace:*",
+    "@types/node": "24.19.2",
+    "concurrently": "^10.0.6",
+    "solid-js": "^1.9.17",
+    "valibot": "^1.5.0",
+    "vite": "8.3.3",
+    "vite-plugin-solid": "^2.11.14"
+  }
+}

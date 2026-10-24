@@ -122,6 +122,33 @@ importers:
         specifier: ^2.11.14
         version: 2.11.14(solid-js@1.9.17)(supports-color@10.2.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
+  engine/playground:
+    devDependencies:
+      '@crystal-pharm/layouts':
+        specifier: workspace:*
+        version: link:../layouts
+      '@crystal-pharm/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@types/node':
+        specifier: 24.19.2
+        version: 24.19.2
+      concurrently:
+        specifier: ^10.0.6
+        version: 10.0.6
+      solid-js:
+        specifier: ^1.9.17
+        version: 1.9.17
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@6.0.3)
+      vite:
+        specifier: 8.3.3
+        version: 8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
+      vite-plugin-solid:
+        specifier: ^2.11.14
+        version: 2.11.14(solid-js@1.9.17)(supports-color@10.2.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+
   engine/renderer:
     dependencies:
       '@crystal-pharm/schema':
