@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		acceptedPharmacyGroupImageTypes,
 		maximumLoyaltyCardMessageLength,
 		maximumPharmacyGroupImageMegabytes,
 		pharmacyGroupImageFields,
@@ -7,7 +8,7 @@
 		type PharmacyGroupProfileFieldName,
 		type PharmacyGroupProfileInput
 	} from '@crystal-pharm/group-db/domain';
-	import { acceptedImageTypes, wholeFormErrorKey, type FieldErrors } from '@crystal-pharm/pharmacy-db/domain';
+	import { wholeFormErrorKey, type FieldErrors } from '@crystal-pharm/pharmacy-db/domain';
 	import { Alert, Button, Card, Field, ImagePicker, Input, Textarea } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 
@@ -21,7 +22,7 @@
 
 	// Le formulaire part du contenu reçu puis vit sa vie : la page est rechargée après chaque envoi.
 	const profile = $state(untrack(() => ({ ...initialProfile })));
-	const imageHint = `JPEG, PNG ou WebP, ${maximumPharmacyGroupImageMegabytes} Mo au plus.`;
+	const imageHint = `JPEG, PNG, WebP ou SVG, ${maximumPharmacyGroupImageMegabytes} Mo au plus.`;
 </script>
 
 <form method="POST" enctype="multipart/form-data" class="grid gap-3.5">
@@ -42,7 +43,7 @@
 						name={pharmacyGroupImageFields.logo.fieldName}
 						removalName={pharmacyGroupImageFields.logo.removalFieldName}
 						currentImageUrl={imageUrls.logo}
-						accept={acceptedImageTypes}
+						accept={acceptedPharmacyGroupImageTypes}
 						previewShape="rectangle"
 						chooseLabel="Choisir un logo"
 						changeLabel="Changer de logo"
@@ -66,7 +67,7 @@
 						name={pharmacyGroupImageFields.loyaltyCardImage.fieldName}
 						removalName={pharmacyGroupImageFields.loyaltyCardImage.removalFieldName}
 						currentImageUrl={imageUrls.loyaltyCardImage}
-						accept={acceptedImageTypes}
+						accept={acceptedPharmacyGroupImageTypes}
 						previewShape="rectangle"
 					/>
 				{/snippet}

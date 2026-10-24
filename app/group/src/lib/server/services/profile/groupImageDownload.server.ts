@@ -17,7 +17,9 @@ export async function downloadGroupImage({
 		headers: {
 			'Content-Type': groupImage.contentType,
 			'Cache-Control': 'private, max-age=31536000, immutable',
-			'X-Content-Type-Options': 'nosniff'
+			'X-Content-Type-Options': 'nosniff',
+			// Un SVG ouvert seul est un document : même vérifié à l'envoi, il ne peut rien exécuter ni charger.
+			'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox"
 		}
 	});
 }
