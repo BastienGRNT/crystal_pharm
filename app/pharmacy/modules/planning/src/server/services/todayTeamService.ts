@@ -20,6 +20,8 @@ export type TodayTeamCoverageGap = {
 
 export type TodayTeam = {
 	isOpen: boolean;
+	/** Toute l'équipe, présente ou non : « 3 / 5 présents ». */
+	teamSize: number;
 	openingPeriods: { startMinutes: number; endMinutes: number }[];
 	/** Les créneaux des présents, absents exclus. */
 	shifts: TodayTeamShift[];
@@ -40,6 +42,7 @@ export async function getTodayTeam(tenantId: string, isoDate: string): Promise<T
 
 	return {
 		isOpen: openingPeriods.length > 0,
+		teamSize: dayPlanning.employees.length,
 		openingPeriods: openingPeriods.map((openingPeriod) => ({
 			startMinutes: toMinutesSinceMidnight(openingPeriod.opensAt),
 			endMinutes: toMinutesSinceMidnight(openingPeriod.closesAt)

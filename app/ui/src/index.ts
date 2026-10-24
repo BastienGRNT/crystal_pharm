@@ -30,6 +30,7 @@ export type {
 	DayTimelineGap,
 	DayTimelineHour,
 	DayTimelineNow,
+	DayTimelineRange,
 	DayTimelineRow
 } from './organisms/timeline/dayTimeline';
 export { default as TimeList } from './molecules/TimeList.svelte';
