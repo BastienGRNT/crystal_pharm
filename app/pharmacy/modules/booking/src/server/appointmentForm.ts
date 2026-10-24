@@ -4,7 +4,7 @@ import {
 	appointmentFormFieldNames,
 	type AppointmentFormValues
 } from '../pages/appointmentsPageData';
-import type { NewAppointment } from './api/appointmentsApi';
+import type { NewAppointment } from './api/appointmentsApi.server';
 
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;

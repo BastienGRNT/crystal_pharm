@@ -1,21 +1,40 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { jwt } from 'better-auth/plugins';
 import { toBetterAuthDrizzleSchema } from '../toolkit/betterAuthTables';
 import { personNameFields } from '../toolkit/personNameFields';
 import { connectToDatabase } from '../toolkit/databaseConnection.server';
 import { readRequiredEnvironmentVariable } from '../toolkit/environment.server';
-import { accounts, sessions, users, verifications } from './customerAuthSchema';
+import { apiTokenAudience, apiTokenLifetime } from './customerApiTokenSettings';
+import { accounts, jsonWebKeys, sessions, users, verifications } from './customerAuthSchema';
 
 function createCustomerBetterAuth(baseUrlEnvironmentVariable: string) {
+	const baseUrl = readRequiredEnvironmentVariable(baseUrlEnvironmentVariable);
 	return betterAuth({
-		baseURL: readRequiredEnvironmentVariable(baseUrlEnvironmentVariable),
+		baseURL: baseUrl,
 		secret: readRequiredEnvironmentVariable('BETTER_AUTH_SECRET'),
 		database: drizzleAdapter(connectToDatabase(), {
 			provider: 'pg',
-			schema: toBetterAuthDrizzleSchema({ users, sessions, accounts, verifications })
+			schema: { ...toBetterAuthDrizzleSchema({ users, sessions, accounts, verifications }), jwks: jsonWebKeys }
 		}),
 		emailAndPassword: { enabled: true },
-		user: { additionalFields: personNameFields }
+		user: { additionalFields: personNameFields },
+		plugins: [
+			jwt({
+				// ES256 : le C# (Microsoft.IdentityModel) ne vérifie pas EdDSA, l'algorithme par défaut.
+				jwks: { keyPairConfig: { alg: 'ES256' } },
+				jwt: {
+					issuer: baseUrl,
+					audience: apiTokenAudience,
+					expirationTime: apiTokenLifetime,
+					// Un jeton demandé par le navigateur (`/api/auth/token`) ne porte aucun Tenant :
+					// le C# le refuse. Seul `issueApiToken`, côté serveur, en signe un utilisable.
+					definePayload: () => ({})
+				},
+				// Pas de jeton dans les en-têtes des réponses de session envoyées au navigateur.
+				disableSettingJwtHeader: true
+			})
+		]
 	});
 }
 
