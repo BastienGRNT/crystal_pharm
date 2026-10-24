@@ -18,7 +18,11 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@crystal-pharm/ui": "workspace:*"
+		"@crystal-pharm/api-client": "workspace:*",
+		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/pharmacy-db": "workspace:*",
+		"@crystal-pharm/ui": "workspace:*",
+		"openapi-fetch": "^0.14.0"
 	},
 	"peerDependencies": {
 		"svelte": "^5.56.1",

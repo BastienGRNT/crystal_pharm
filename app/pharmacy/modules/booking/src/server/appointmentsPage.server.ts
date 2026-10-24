@@ -1,3 +1,4 @@
+import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import {
 	countAppointmentsByStatus,
@@ -19,9 +20,11 @@ import {
 	listAppointmentReasons,
 	listAppointmentsOfDays,
 	listBookableEmployees
-} from './api/appointmentsApi';
+} from './api/appointmentsApi.server';
+import type { BookingCaller } from './api/bookingApiClient.server';
 import { readAppointmentFormValues, validateAppointmentForm } from './appointmentForm';
 import { buildAddAppointmentPanel, buildDetailPanel } from './appointmentPanels';
+import { requireBookingCaller } from './bookingCaller.server';
 import { buildPageHref, parsePageQuery, parsePanel, type AppointmentsPageQuery } from './appointmentsPageQuery';
 import {
 	buildAgendaHourRange,
@@ -39,12 +42,13 @@ import {
 	type EmployeeDirectory
 } from './appointmentsPresentation';
 
-async function loadEmployeeDirectory(): Promise<EmployeeDirectory> {
-	const employees = await listBookableEmployees();
+async function loadEmployeeDirectory(caller: BookingCaller): Promise<EmployeeDirectory> {
+	const employees = await listBookableEmployees(caller);
 	return new Map(employees.map((employee) => [employee.id, employee]));
 }
 
 async function buildPanels(
+	caller: BookingCaller,
 	url: URL,
 	query: AppointmentsPageQuery,
 	employees: EmployeeDirectory
@@ -53,21 +57,27 @@ async function buildPanels(
 	if (panel.kind === 'add') {
 		return { detailPanel: null, addAppointmentPanel: buildAddAppointmentPanel(query, employees, await listAppointmentReasons()) };
 	}
-	const appointment = panel.kind === 'detail' ? await findAppointment(panel.appointmentId) : undefined;
+	const appointment = panel.kind === 'detail' ? await findAppointment(caller, panel.appointmentId) : undefined;
 	return {
 		detailPanel: appointment ? buildDetailPanel(query, appointment, employees) : null,
 		addAppointmentPanel: null
 	};
 }
 
-export async function load({ url }: { url: URL }): Promise<AppointmentsPageData> {
+type AppointmentsRequest = {
+	url: URL;
+	locals: { user: AuthenticatedUser | null };
+};
+
+export async function load({ url, locals }: AppointmentsRequest): Promise<AppointmentsPageData> {
+	const caller = await requireBookingCaller(locals.user);
 	const now = new Date();
 	const clock: AgendaClock = { today: toCalendarDay(now), now };
 	const query = parsePageQuery(url, clock.today);
 	const period = buildPeriod(query);
-	const employees = await loadEmployeeDirectory();
+	const employees = await loadEmployeeDirectory(caller);
 
-	const appointmentsOfPeriod = sortAppointmentsByStartTime(await listAppointmentsOfDays(period.days.map(toIsoDate)));
+	const appointmentsOfPeriod = sortAppointmentsByStartTime(await listAppointmentsOfDays(caller, period.days.map(toIsoDate)));
 	const counts = countAppointmentsByStatus(appointmentsOfPeriod);
 	const shownAppointments: Appointment[] = filterAppointmentsByStatus(appointmentsOfPeriod, query.statusFilter);
 
@@ -78,7 +88,7 @@ export async function load({ url }: { url: URL }): Promise<AppointmentsPageData>
 		statusTabs: buildStatusTabs(query, counts),
 		addAppointmentHref: buildPageHref(query, {}, { kind: 'add' }),
 		emptyState: buildEmptyState(query, period),
-		...(await buildPanels(url, query, employees))
+		...(await buildPanels(caller, url, query, employees))
 	};
 
 	if (query.view === 'list') {
@@ -107,14 +117,19 @@ function readQueryOfAction(url: URL): AppointmentsPageQuery {
 }
 
 export const actions = {
-	createAppointment: async ({ request, url }) => {
+	createAppointment: async ({ request, url, locals }) => {
+		const caller = await requireBookingCaller(locals.user);
 		const values = readAppointmentFormValues(await request.formData());
-		const formResult = validateAppointmentForm(values, await listBookableEmployees());
+		const formResult = validateAppointmentForm(values, await listBookableEmployees(caller));
 		if (!formResult.isValid) {
 			return fail(400, { message: formResult.message, values } satisfies AppointmentsActionFailure);
 		}
 
-		const appointment = await createAppointment(formResult.newAppointment);
+		const creation = await createAppointment(caller, formResult.newAppointment);
+		if (!creation.isCreated) {
+			return fail(400, { message: creation.message, values } satisfies AppointmentsActionFailure);
+		}
+		const { appointment } = creation;
 		const query = readQueryOfAction(url);
 		redirect(
 			303,
@@ -126,17 +141,19 @@ export const actions = {
 		);
 	},
 
-	confirmAppointment: async ({ request, url }) => {
+	confirmAppointment: async ({ request, url, locals }) => {
+		const caller = await requireBookingCaller(locals.user);
 		const appointmentId = readAppointmentId(await request.formData());
-		if (!(await confirmAppointment(appointmentId))) {
+		if (!(await confirmAppointment(caller, appointmentId))) {
 			return fail(409, { message: 'Ce rendez-vous n’est plus en attente : rechargez la page.' } satisfies AppointmentsActionFailure);
 		}
 		redirect(303, buildPageHref(readQueryOfAction(url), {}, { kind: 'detail', appointmentId }));
 	},
 
-	cancelAppointment: async ({ request, url }) => {
+	cancelAppointment: async ({ request, url, locals }) => {
+		const caller = await requireBookingCaller(locals.user);
 		const appointmentId = readAppointmentId(await request.formData());
-		if (!(await cancelAppointment(appointmentId))) {
+		if (!(await cancelAppointment(caller, appointmentId))) {
 			return fail(409, { message: 'Ce rendez-vous est déjà annulé : rechargez la page.' } satisfies AppointmentsActionFailure);
 		}
 		redirect(303, buildPageHref(readQueryOfAction(url), {}, { kind: 'detail', appointmentId }));
