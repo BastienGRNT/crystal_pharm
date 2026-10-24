@@ -15,12 +15,12 @@ const contentTypesByExtension: Record<string, string> = {
   '.webp': 'image/webp',
 };
 
-/** Le JS et le CSS du moteur compilé, ceux que l'app des sites servira. */
-export function serveRendererAsset(response: ServerResponse, compiledClientDirectory: string, assetPath: string): void {
+/** Le JS et le CSS compilés de l'aperçu. */
+export function serveSiteAsset(response: ServerResponse, compiledClientDirectory: string, assetPath: string): void {
   const assetFile = resolve(compiledClientDirectory, `.${decodeURIComponent(assetPath)}`);
   const staysInsideClientDirectory = assetFile.startsWith(`${resolve(compiledClientDirectory)}${sep}`);
   if (!staysInsideClientDirectory || !existsSync(assetFile) || !statSync(assetFile).isFile()) {
-    send(response, 404, 'text/plain; charset=utf-8', `Fichier du moteur introuvable : ${assetPath}`);
+    send(response, 404, 'text/plain; charset=utf-8', `Fichier compilé de l’aperçu introuvable : ${assetPath}`);
     return;
   }
   send(response, 200, contentTypesByExtension[extname(assetFile)] ?? 'application/octet-stream', readFileSync(assetFile));

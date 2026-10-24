@@ -1,5 +1,5 @@
 import { createSignal, For, Match, Show, Switch } from 'solid-js';
-import { layoutSettingsFieldsByLayoutId, type LayoutSettingsField } from '../../../layoutSettingsFields';
+import { findLayoutManifest, type LayoutSettingsField } from '@crystal-pharm/layouts/manifest';
 import type { PlaygroundState } from '../../../state/createPlaygroundState';
 import { ChoiceSelect } from '../../fields/ChoiceSelect';
 import { FieldRow } from '../../fields/FieldRow';
@@ -10,7 +10,7 @@ const defaultValueChoice = '';
 export function SettingsTab(props: { state: PlaygroundState }) {
   const state = props.state;
   const layoutId = () => state.effectiveLayoutId();
-  const fields = () => layoutSettingsFieldsByLayoutId[layoutId()] ?? [];
+  const fields = () => findLayoutManifest(layoutId())?.settingsFields ?? [];
   const overrides = () => state.scenario().layoutSettingsOverridesByLayoutId[layoutId()] ?? {};
   const mockSettings = () => readLayoutSettings(state.outcome()?.tenantSiteInput);
 
@@ -32,7 +32,7 @@ export function SettingsTab(props: { state: PlaygroundState }) {
   return (
     <div class="tab">
       <p class="tab__intro">
-        Réglages du layout <strong>{layoutId()}</strong>, lus dans son schéma : les valeurs saisies ici sont gardées par layout.
+        Réglages du layout <strong>{layoutId()}</strong>, lus dans son manifeste : les valeurs saisies ici sont gardées par layout.
       </p>
       <Show when={fields().length > 0} fallback={<p class="notice">Ce layout n'a aucun réglage.</p>}>
         <For each={fields()}>
@@ -67,7 +67,7 @@ function SettingsFieldEditor(props: {
 
   return (
     <FieldRow
-      label={props.field.settingKey}
+      label={props.field.label}
       hint={jsonError() ?? defaultHint()}
       aside={
         <Show when={props.isOverridden}>
@@ -96,11 +96,11 @@ function SettingsFieldEditor(props: {
         </Match>
         <Match when={props.field.kind === 'choice'}>
           <ChoiceSelect
-            ariaLabel={props.field.settingKey}
+            ariaLabel={props.field.label}
             value={typeof props.currentValue === 'string' ? props.currentValue : defaultValueChoice}
             choices={[
               { value: defaultValueChoice, label: 'Valeur par défaut' },
-              ...choiceOptions().map((option) => ({ value: option, label: option })),
+              ...choiceOptions(),
             ]}
             onChange={(value) => props.onChange(value === defaultValueChoice ? undefined : value)}
           />

@@ -27,7 +27,6 @@ export const grandePharmacieDeLaPlace: MockTenant = {
     return {
       tenantId: 'grande-pharmacie-de-la-place',
       layoutId: 'neighborhood',
-      apiBaseUrl: '/api',
       layoutSettings: { heroImageUrl: mockImageUrl('hero', 'Grande Pharmacie de la Place'), showOnDutyBanner: true },
       pharmacy: {
         name: 'Grande Pharmacie de la Place',

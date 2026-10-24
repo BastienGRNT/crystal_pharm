@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { definePage } from '@crystal-pharm/renderer';
-import type { NeighborhoodSettings } from '../neighborhoodSettingsSchema';
+import type { NeighborhoodSettings } from '../neighborhoodManifest';
 import { NeighborhoodPageTemplate } from '../templates/NeighborhoodPageTemplate';
 
 export default definePage<NeighborhoodSettings>({

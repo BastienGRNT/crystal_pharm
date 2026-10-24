@@ -19,8 +19,8 @@ export async function renderScenarioPage(input: {
   if (!validation.success) return { tenantSiteInput, outcome: 'invalidData', issues: validation.issues };
 
   try {
-    const { renderTenantSite, layoutRegistry } = await input.loadSiteRenderer();
-    const result = renderTenantSite(validation.tenantSite, input.requestedPath, layoutRegistry);
+    const { renderTenantSiteDocument } = await input.loadSiteRenderer();
+    const result = renderTenantSiteDocument(validation.tenantSite, input.requestedPath);
     return { tenantSiteInput, outcome: 'rendered', ...result };
   } catch (error) {
     return { tenantSiteInput, outcome: 'renderFailed', errorMessage: error instanceof Error ? (error.stack ?? error.message) : String(error) };

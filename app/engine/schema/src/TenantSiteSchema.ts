@@ -11,7 +11,6 @@ export const TenantSiteSchema = v.pipe(
     layoutSettings: v.optional(v.record(v.string(), v.unknown()), {}),
     pharmacy: PharmacyInfoSchema,
     modules: TenantModulesSchema,
-    apiBaseUrl: v.pipe(v.string(), v.nonEmpty()),
   }),
   // Règle métier : un module imposé par le groupement ne peut pas être désactivé.
   v.rawCheck(({ dataset, addIssue }) => {

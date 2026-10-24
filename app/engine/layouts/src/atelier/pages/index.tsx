@@ -1,5 +1,5 @@
 import { definePage } from '@crystal-pharm/renderer';
-import type { AtelierSettings } from '../atelierSettingsSchema';
+import type { AtelierSettings } from '../atelierManifest';
 import { EditorialIntro } from '../organisms/EditorialIntro';
 import { AsymmetricGridTemplate } from '../templates/AsymmetricGridTemplate';
 

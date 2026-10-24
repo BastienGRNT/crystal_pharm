@@ -5,7 +5,6 @@ export const pharmacieSaintRoch: MockTenant = {
   createTenantSite: () => ({
     tenantId: 'pharmacie-saint-roch',
     layoutId: 'essential',
-    apiBaseUrl: '/api',
     pharmacy: {
       name: 'Pharmacie Saint-Roch',
       address: { street: '27 rue Saint-Roch', postalCode: '75001', city: 'Paris' },

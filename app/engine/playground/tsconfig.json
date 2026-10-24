@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["vite/client"]
   },
-  "include": ["src/panel", "src/shared"]
+  "include": ["src/panel", "src/site", "src/shared"]
 }

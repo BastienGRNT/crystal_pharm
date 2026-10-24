@@ -1,5 +1,5 @@
 import type { PharmacySiteLayout } from '@crystal-pharm/renderer';
-import { atelierSettingsSchema, type AtelierSettings } from './atelierSettingsSchema';
+import { atelierSettingsSchema, type AtelierSettings } from './atelierManifest';
 import { LoyaltyCardPanel } from './organisms/LoyaltyCardPanel';
 import { NewsColumns } from './organisms/NewsColumns';
 import { OpeningHoursGrid } from './organisms/OpeningHoursGrid';

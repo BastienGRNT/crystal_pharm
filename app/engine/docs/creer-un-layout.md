@@ -5,10 +5,10 @@ tu le ferais dans n'importe quel projet Solid. Le moteur ne te donne pas de « f
 composants tout faits. Il **type** ce que tu écris pour que tu n'oublies rien : un module, les
 mentions légales, un champ du formulaire d'ordonnance.
 
-Les layouts vivent dans leur propre paquet, `packages/layouts`, séparé du moteur. Tout ce que le moteur
+Les layouts vivent dans leur propre paquet, `engine/layouts`, séparé du moteur, sans build : c'est du code source que l'app des sites compile. Tout ce que le moteur
 fournit s'importe depuis `@crystal-pharm/renderer`.
 
-Exemple de référence, le plus court : `packages/layouts/src/essential/`.
+Exemple de référence, le plus court : `engine/layouts/src/essential/`.
 
 ## 1. L'arborescence
 
@@ -16,9 +16,9 @@ Chaque layout a son propre dossier, son CSS et son arborescence atomic design. *
 pages sont trouvés tout seuls** à partir des dossiers : il n'y a aucune liste à tenir à jour.
 
 ```
-packages/layouts/src/monLayout/     ← le nom du dossier est l'identifiant du layout (layoutId: 'monLayout')
+engine/layouts/src/monLayout/       ← le nom du dossier est l'identifiant du layout (layoutId: 'monLayout')
 ├─ monLayout.ts                  ← le layout : une valeur de type PharmacySiteLayout
-├─ monLayoutSettingsSchema.ts    les réglages du layout, avec leurs valeurs par défaut
+├─ monLayoutManifest.ts         son nom, sa description et ses réglages (avec valeurs par défaut)
 ├─ monLayout.css                 tout le CSS, limité à .layout-monLayout
 ├─ atoms/                        petits éléments : titre, bouton, portrait…
 ├─ molecules/                    combinaisons d'atomes : une carte, une ligne d'horaire…
@@ -36,7 +36,7 @@ packages/layouts/src/monLayout/     ← le nom du dossier est l'identifiant du l
 | le fichier `pages/ordonnance.tsx` | une page `/ordonnance` pour ce layout |
 
 Un fichier de `pages/` qui n'exporte pas `definePage(...)` par défaut, un dossier qui a des pages mais
-pas de `PharmacySiteLayout`, ou un layout sans page, déclenche une erreur claire dès le démarrage. Ne mets donc dans `pages/` que des pages : les composants vont dans
+pas de `PharmacySiteLayout`, un layout sans page, ou un layout sans manifeste, déclenche une erreur claire dès le démarrage. Ne mets donc dans `pages/` que des pages : les composants vont dans
 `atoms/` à `templates/`.
 
 ## 2. Les réglages
@@ -46,16 +46,33 @@ par défaut. Ils ne dupliquent jamais une information de la pharmacie : l'adress
 sont dans `pharmacy`.
 
 ```ts
-// monLayoutSettingsSchema.ts
+// monLayoutManifest.ts
 import * as v from 'valibot';
+import type { LayoutManifest } from '../manifest/LayoutManifest';
 
 export const monLayoutSettingsSchema = v.object({
-  slogan: v.optional(v.string(), 'Votre pharmacie, près de chez vous.'),
-  showOnDutyBanner: v.optional(v.boolean(), true),
+  slogan: v.pipe(v.optional(v.string(), 'Votre pharmacie, près de chez vous.'), v.title('Slogan')),
+  showOnDutyBanner: v.pipe(v.optional(v.boolean(), true), v.title('Bandeau de garde')),
+  accentTone: v.pipe(
+    v.optional(v.picklist(['green', 'blue']), 'green'),
+    v.title('Couleur d’accent'),
+    v.metadata({ optionLabels: { green: 'Vert', blue: 'Bleu' } }),
+  ),
 });
 
 export type MonLayoutSettings = v.InferOutput<typeof monLayoutSettingsSchema>;
+
+export const monLayoutManifest: LayoutManifest = {
+  label: 'Mon layout',
+  description: 'Une phrase qui aide la pharmacie à choisir.',
+  settingsSchema: monLayoutSettingsSchema,
+};
 ```
+
+Le manifeste est ce que lit l'édition du site (`site-manager`, et le panneau du banc d'essai) par
+`@crystal-pharm/layouts/manifest` : il ne doit importer ni Solid ni un composant. L'export s'appelle
+obligatoirement `<id>Manifest`. `v.title` donne le libellé de chaque réglage, `optionLabels` celui
+des options d'une liste.
 
 Le moteur valide les réglages du tenant avec ce schéma avant d'appeler tes pages. Dans tes pages,
 `props.settings.slogan` est donc toujours une `string`, jamais `undefined`.
@@ -150,7 +167,7 @@ export function PrescriptionSection(props: PrescriptionUploadModuleProps) {
 | `submitPrescription(form)` | Valide, puis envoie à l'API | `{ outcome: 'sent' }`, `{ outcome: 'invalid', errorsByField }` ou `{ outcome: 'failed' }` |
 | `validatePrescription(form)` | Valide **sans envoyer**, par exemple avant de passer à l'étape suivante | `{ firstName?: string, lastName?: string, phone?: string, file?: string }` |
 
-Un formulaire par étapes complet : `packages/layouts/src/atelier/organisms/PrescriptionSteps.tsx`.
+Un formulaire par étapes complet : `engine/layouts/src/atelier/organisms/PrescriptionSteps.tsx`.
 
 ## 5. Les pages
 
@@ -164,7 +181,7 @@ toujours présentes.
 // pages/index.tsx  →  la page /
 import { Show } from 'solid-js';
 import { definePage } from '@crystal-pharm/renderer';
-import type { MonLayoutSettings } from '../monLayoutSettingsSchema';
+import type { MonLayoutSettings } from '../monLayoutManifest';
 import { PageTemplate } from '../templates/PageTemplate';
 
 export default definePage<MonLayoutSettings>({
@@ -213,7 +230,7 @@ props, ne compile pas.
 ```ts
 // monLayout.ts
 import type { PharmacySiteLayout } from '@crystal-pharm/renderer';
-import { monLayoutSettingsSchema, type MonLayoutSettings } from './monLayoutSettingsSchema';
+import { monLayoutSettingsSchema, type MonLayoutSettings } from './monLayoutManifest';
 // … imports des 6 composants de modules …
 import './monLayout.css';
 
@@ -235,10 +252,10 @@ utilisé par tes pages.
 
 ## 7. Le tester
 
-Rien à enregistrer : le dossier suffit, il est découvert par `packages/layouts/src/layoutRegistry.ts`.
+Rien à enregistrer : le dossier suffit, il est découvert par `engine/layouts/src/layoutRegistry.ts`.
 Crée au moins deux mocks avec `layoutId: 'monLayout'` dans
-`apps/simulator/src/mocks/` (un complet, un avec des données manquantes), et ajoute-les à
-`allMockTenants.ts`. Avec `pnpm dev` lancé, un nouveau fichier de page ou de layout est pris en compte
+`playground/src/server/mocks/tenants/` (un complet, un avec des données manquantes), et ajoute-les à
+`allMockTenants.ts`. Avec le banc d'essai lancé (cf. `banc-d-essai.md`), un nouveau fichier de page ou de layout est pris en compte
 en quelques secondes.
 
 ## 8. Le CSS
@@ -278,10 +295,10 @@ Elles contiennent `.legal-notice__title` et `.legal-notice__text`.
 
 ## 10. Liste de contrôle
 
-- [ ] `pnpm check` passe : un module oublié, une page sans titre ou sans mentions légales, ou un champ d'ordonnance manquant le feraient échouer.
-- [ ] Les deux mocks s'affichent sur http://localhost:3000/.
+- [ ] `pnpm --filter @crystal-pharm/layouts check` passe : un module oublié, une page sans titre ou sans mentions légales, ou un champ d'ordonnance manquant le feraient échouer.
+- [ ] Les deux mocks s'affichent dans le banc d'essai (http://localhost:5176).
 - [ ] Un module désactivé ne laisse ni section vide, ni lien vers lui.
 - [ ] Sans photo, sans logo, sans groupement : un remplacement propre, jamais une image cassée.
 - [ ] Un nom de pharmacie très long ne casse pas la mise en page.
-- [ ] Le formulaire d'ordonnance affiche les erreurs, puis « envoyée » ; l'envoi apparaît dans la console du simulateur.
+- [ ] Le formulaire d'ordonnance affiche les erreurs, puis « envoyée » ; l'envoi apparaît dans le journal du banc d'essai.
 - [ ] Rien ne déborde horizontalement à 390 px de large.

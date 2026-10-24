@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { definePage } from '@crystal-pharm/renderer';
-import type { AtelierSettings } from '../atelierSettingsSchema';
+import type { AtelierSettings } from '../atelierManifest';
 import { AsymmetricGridTemplate } from '../templates/AsymmetricGridTemplate';
 
 export default definePage<AtelierSettings>({

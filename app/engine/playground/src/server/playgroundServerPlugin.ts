@@ -6,7 +6,7 @@ import { isSiteHostname } from '../shared/playgroundHosts';
 import type { PlaygroundScenario } from '../shared/PlaygroundScenario';
 import type * as playgroundRequestHandlers from './playgroundRequestHandlers';
 import { createSiteRendererLoader } from './site-rendering/createSiteRendererLoader';
-import { watchCompiledEngine } from './watchCompiledEngine';
+import { watchCompiledSite } from './watchCompiledSite';
 
 const panelApiPathPrefix = '/__playground/';
 
@@ -14,22 +14,21 @@ const panelApiPathPrefix = '/__playground/';
  * Le serveur du banc d'essai, branché dans celui de Vite. Ce fichier est chargé avec la configuration :
  * il ne dépend que de Node. Les réponses, qui lisent le schéma et les mocks, passent par `ssrLoadModule`.
  */
-export function playgroundServerPlugin(paths: { layoutsPackageDirectory: string; playgroundServerDirectory: string }): Plugin {
+export function playgroundServerPlugin(paths: { layoutsSourceDirectory: string; compiledSiteDirectory: string; playgroundServerDirectory: string }): Plugin {
   return {
     name: 'crystal-pharm-playground-server',
     apply: 'serve',
     configureServer(server) {
-      const compiledEngineDirectory = join(paths.layoutsPackageDirectory, 'dist');
-      const loadSiteRenderer = createSiteRendererLoader(join(compiledEngineDirectory, 'server', 'serverEntry.js'));
+      const loadSiteRenderer = createSiteRendererLoader(join(paths.compiledSiteDirectory, 'server', 'serverEntry.js'));
       const notifyPanel = (eventName: string, payload: unknown) => server.ws.send(eventName, payload);
       const loadRequestHandlers = () => loadPlaygroundRequestHandlers(server, join(paths.playgroundServerDirectory, 'playgroundRequestHandlers.ts'));
       let currentScenario: PlaygroundScenario | undefined;
 
-      const stopWatchingCompiledEngine = watchCompiledEngine(compiledEngineDirectory, {
+      const stopWatchingCompiledSite = watchCompiledSite(paths.compiledSiteDirectory, {
         onRebuilding: () => notifyPanel(playgroundEvents.siteRebuilding, {}),
         onRebuilt: () => notifyPanel(playgroundEvents.siteRebuilt, {}),
       });
-      server.httpServer?.once('close', stopWatchingCompiledEngine);
+      server.httpServer?.once('close', stopWatchingCompiledSite);
 
       server.middlewares.use((request, response, next) => {
         const isSiteRequest = isSiteHostname(readHostname(request));
@@ -45,7 +44,7 @@ export function playgroundServerPlugin(paths: { layoutsPackageDirectory: string;
             await handlers.handleSiteRequest(request, response, {
               readCurrentScenario: () => currentScenario ?? handlers.createInitialScenario(),
               loadSiteRenderer,
-              compiledClientDirectory: join(compiledEngineDirectory, 'client'),
+              compiledClientDirectory: join(paths.compiledSiteDirectory, 'client'),
               notifyPanel,
             });
           } else {
@@ -54,7 +53,7 @@ export function playgroundServerPlugin(paths: { layoutsPackageDirectory: string;
                 currentScenario = scenario;
               },
               loadSiteRenderer,
-              layoutsSourceDirectory: join(paths.layoutsPackageDirectory, 'src'),
+              layoutsSourceDirectory: paths.layoutsSourceDirectory,
             });
           }
         })().catch((error: unknown) => respondWithServerError(response, error));

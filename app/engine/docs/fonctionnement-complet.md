@@ -4,11 +4,14 @@ Ce document suit une visite sur le site d'une pharmacie, de la première requêt
 ordonnance. Chaque nom en `code` est un vrai fichier ou une vraie fonction du projet : on peut le
 retrouver avec Ctrl+P dans l'éditeur.
 
-1. [Les quatre paquets et qui dépend de qui](#1-les-quatre-paquets-et-qui-dépend-de-qui)
+L'app qui sert les sites est ici le banc d'essai (`engine/playground`) ; `app/site` fera la même chose
+avec SolidStart, ses bases de données et la passerelle.
+
+1. [Les paquets et qui dépend de qui](#1-les-paquets-et-qui-dépend-de-qui)
 2. [Vue d'ensemble d'une visite](#2-vue-densemble-dune-visite)
 3. [Côté serveur : de la requête au HTML](#3-côté-serveur--de-la-requête-au-html)
-4. [L'algorithme de `renderTenantSite`, pas à pas](#4-lalgorithme-de-rendertenantsite-pas-à-pas)
-5. [Ce qui se passe à l'intérieur de `TenantSiteRoot`](#5-ce-qui-se-passe-à-lintérieur-de-tenantsiteroot)
+4. [L'algorithme de `createTenantSitePage`, pas à pas](#4-lalgorithme-de-createtenantsitepage-pas-à-pas)
+5. [Ce que reçoit le layout](#5-ce-que-reçoit-le-layout)
 6. [Côté navigateur : l'hydratation](#6-côté-navigateur--lhydratation)
 7. [L'envoi d'une ordonnance](#7-lenvoi-dune-ordonnance)
 8. [Comment les données se transforment](#8-comment-les-données-se-transforment)
@@ -16,24 +19,23 @@ retrouver avec Ctrl+P dans l'éditeur.
 
 ---
 
-## 1. Les quatre paquets et qui dépend de qui
+## 1. Les paquets et qui dépend de qui
 
-La règle la plus importante du projet : les flèches ne vont que dans un sens. Le schéma ne connaît
-personne, le moteur ne connaît que le schéma, les layouts ne connaissent que le moteur, et le
-simulateur (le futur serveur des sites) assemble le tout.
+La règle la plus importante du moteur : les flèches ne vont que dans un sens. Le schéma ne connaît
+personne, le moteur ne connaît que le schéma, les layouts ne connaissent que le moteur, et l'app qui
+sert les sites assemble le tout.
 
 ```mermaid
 flowchart LR
-    subgraph apps["apps/"]
-        simulator["<b>simulator</b><br/>serveur Hono de développement<br/>mocks · résolution du tenant<br/>faux endpoint API · fichiers statiques"]
-    end
-    subgraph packages["packages/"]
-        layouts["<b>layouts</b><br/>essential · neighborhood · atelier<br/>chacun : une valeur PharmacySiteLayout<br/>+ layoutRegistry (découverte par dossiers)<br/>+ la compilation moteur + layouts"]
-        renderer["<b>renderer</b><br/>le moteur Solid, sans aucun layout<br/>renderTenantSite · hydratation<br/>type PharmacySiteLayout · pageKit"]
+    app["<b>l'app des sites</b><br/>playground en dev, app/site ensuite<br/>trouve le tenant et ses données<br/>document HTML · build · hydratation<br/>sendPrescription"]
+    subgraph engine["engine/"]
+        layouts["<b>layouts</b><br/>essential · neighborhood · atelier<br/>chacun : une valeur PharmacySiteLayout<br/>+ layoutRegistry (découverte par dossiers)<br/>+ /manifest (sans Solid)"]
+        renderer["<b>renderer</b><br/>le moteur Solid, sans aucun layout<br/>createTenantSitePage<br/>type PharmacySiteLayout · pageKit"]
         schema["<b>schema</b><br/>le contrat des données<br/>schémas Valibot + types<br/>aucune dépendance à Solid"]
     end
-    simulator -->|"renderTenantSite(tenantSite, chemin, layoutRegistry)"| layouts
-    simulator -->|"valide les mocks et les requêtes"| schema
+    app -->|"layoutRegistry"| layouts
+    app -->|"createTenantSitePage(…)"| renderer
+    app -->|"valide les données et les envois"| schema
     layouts -->|"type PharmacySiteLayout, definePage, props des modules"| renderer
     renderer -->|"types + validation"| schema
 ```
@@ -41,9 +43,9 @@ flowchart LR
 | Paquet | Il sait | Il ne sait pas |
 |---|---|---|
 | `schema` | À quoi ressemblent les données d'un site et d'une ordonnance | Qu'il existe Solid, un serveur, des layouts |
-| `renderer` | Rendre n'importe quel `PharmacySiteLayout` avec des données validées, puis rendre la page interactive | Quels layouts existent, d'où viennent les données, quel est le tenant |
+| `renderer` | Fabriquer la page de n'importe quel `PharmacySiteLayout` à partir de données validées | Quels layouts existent, d'où viennent les données, quel est le tenant, où part l'ordonnance |
 | `layouts` | Dessiner les sites, chacun à sa façon | D'où viennent les données, comment une page est envoyée au navigateur |
-| `simulator` | Trouver le tenant à partir de l'URL, lire les mocks, servir les fichiers | Comment une page est dessinée |
+| l'app | Trouver le tenant et ses données, rendre le HTML, servir le JS et le CSS, envoyer l'ordonnance | Comment une page est dessinée |
 
 ---
 
@@ -57,26 +59,27 @@ sequenceDiagram
     autonumber
     actor Visitor as Visiteur
     participant Browser as Navigateur
-    participant Server as simulator (server.ts)
-    participant Engine as renderer (côté serveur)
-    participant Client as renderer (client.js, dans le navigateur)
+    participant Server as l'app (serveur)
+    participant Engine as createTenantSitePage
+    participant Client as l'app (client.js)
     participant Api as POST /api/prescriptions
 
-    Visitor->>Browser: ouvre pharmacie-dupont.localhost:3000/
-    Browser->>Server: GET /  (Host: pharmacie-dupont.localhost)
-    Server->>Server: trouve le tenant, lit son mock, le valide
-    Server->>Engine: renderTenantSite(tenantSite, "/", layoutRegistry)
-    Engine-->>Server: { status: 200, html }
+    Visitor->>Browser: ouvre le site de la pharmacie
+    Browser->>Server: GET /
+    Server->>Server: trouve le tenant, ses données, les valide
+    Server->>Engine: createTenantSitePage({ tenantSite, "/", renderedAt, layouts, sendPrescription })
+    Engine-->>Server: { status: 'found', title, Page }
+    Server->>Server: renderToString(<Page />) → document HTML
     Server-->>Browser: la page HTML complète
     Note over Browser: La page s'affiche immédiatement.<br/>Elle est complète mais encore figée.
     Browser->>Server: GET /_renderer/client.css et /_renderer/client.js
-    Server-->>Browser: fichiers de packages/layouts/dist/client
     Browser->>Client: exécute client.js
-    Client->>Client: relit les données écrites dans la page,<br/>hydrate avec le même composant racine
+    Client->>Engine: relit les données écrites dans la page,<br/>rappelle createTenantSitePage avec les mêmes
+    Client->>Client: hydrate(<Page />)
     Note over Browser: La page est maintenant interactive.
     Visitor->>Browser: remplit et envoie le formulaire d'ordonnance
-    Browser->>Client: submitPrescription(form)
-    Client->>Api: POST multipart (tenantId, prénom, nom, téléphone, fichier)
+    Browser->>Client: submitPrescription(form) → validation → sendPrescription(demande)
+    Client->>Api: POST multipart (prénom, nom, téléphone, fichier)
     Api-->>Client: 201 Created
     Client-->>Browser: le layout affiche « Ordonnance envoyée »
 ```
@@ -85,67 +88,28 @@ sequenceDiagram
 
 ## 3. Côté serveur : de la requête au HTML
 
-Tout part de `app.get('*')` dans `apps/simulator/src/server.ts`. Le simulateur décide quel tenant
-est demandé, puis délègue tout le rendu au moteur.
+Dans le banc d'essai, tout part de `handleSiteRequest` (`playground/src/server/site-requests/`) :
+
+| URL | Réponse |
+|---|---|
+| `/_renderer/*` | `dist/site/client` : `client.js`, `client.css`, polices (`serveSiteAsset`) |
+| `/mock-images/*` | Les images dessinées des mocks (`serveMockImage`) |
+| `POST /api/prescriptions` | La fausse API, voir la section 7 |
+| tout le reste | La page : `renderScenarioPage` |
+
+`renderScenarioPage` assemble le `TenantSite` du scénario en cours, le valide avec `TenantSiteSchema`
+(données invalides : une page d'erreur qui liste les problèmes), puis appelle
+`renderTenantSiteDocument`, compilé dans `dist/site/server/serverEntry.js` :
 
 ```mermaid
 flowchart TD
-    request(["Requête GET<br/>Host + chemin + ?tenant="]) --> resolve
-
-    resolve["<b>resolveTenantFromHostOrQuery</b>(host, ?tenant)<br/>'pharmacie-dupont.localhost' → 'pharmacie-dupont'<br/>sinon la valeur de ?tenant="]
-    resolve --> hasTenant{"un tenant ?"}
-
-    hasTenant -- non --> referer{"<b>findTenantInRefererQuery</b><br/>la page précédente<br/>avait-elle ?tenant= ?"}
-    referer -- oui --> redirect(["302 vers le même chemin<br/>+ ?tenant=…<br/>(un lien &lt;a href='/ordonnance'&gt;<br/>perd sinon le paramètre)"])
-    referer -- non --> index(["<b>renderMockTenantIndexPage</b><br/>la liste des pharmacies mock"])
-
-    hasTenant -- oui --> find["<b>findValidatedTenantSite</b>(tenantId)<br/>joue le rôle de l'API"]
-    find --> mockExists{"un mock<br/>pour ce tenant ?"}
-    mockExists -- non --> unknown(["404 « Aucun mock pour le tenant »"])
-    mockExists -- oui --> validate{"v.safeParse(<b>TenantSiteSchema</b>, mock)<br/>données valides ?<br/>modules imposés par le groupement activés ?"}
-    validate -- non --> invalid(["Erreur lisible → app.onError<br/>500 « Le mock ne respecte pas TenantSiteSchema »<br/>+ la liste exacte des problèmes"])
-    validate -- oui --> render["<b>renderTenantSite</b>(tenantSite, chemin, layoutRegistry)<br/>voir la section 4"]
-    render --> response(["c.html(html, status)<br/>200 ou 404"])
-```
-
-Les fichiers statiques sont servis avant cette route :
-
-| URL | Dossier servi | Contenu |
-|---|---|---|
-| `/_renderer/*` | `packages/layouts/dist/client` | `client.js`, `client.css`, polices |
-| `/mock-images/*` | `apps/simulator/public/mock-images` | Photos et logos des mocks |
-| `POST /api/prescriptions` | `handlePrescriptionUploadRequest` | Le faux endpoint, voir la section 7 |
-
----
-
-## 4. L'algorithme de `renderTenantSite`, pas à pas
-
-Le moteur reçoit les layouts en paramètre (`layoutRegistry`). Ils sont trouvés **par les dossiers** de
-`packages/layouts/src/` : le dossier `atelier/`, dont `atelier.ts` exporte un `PharmacySiteLayout`, est
-le layout `atelier`, et le fichier `atelier/pages/ordonnance.tsx` est sa page `/ordonnance`. Aucune
-liste n'est déclarée à la main.
-
-`packages/renderer/src/renderTenantSite.tsx` est le point d'entrée du moteur côté serveur. Il reçoit
-un `TenantSite` **déjà validé** et un chemin, et renvoie `{ status, html }`.
-
-```mermaid
-flowchart TD
-    startStep(["renderTenantSite(tenantSite, requestedPath, layouts)"]) --> findLayoutStep
-
-    findLayoutStep["<b>layouts.findLayoutById</b>(tenantSite.layoutId)<br/>cherche parmi les dossiers de packages/layouts/src/<br/>qui exportent un PharmacySiteLayout"]
-    findLayoutStep --> layoutFoundCheck{"layout connu ?"}
-    layoutFoundCheck -- non --> layoutErrorEnd(["throw « Layout inconnu : … Layouts disponibles : … »"])
-    layoutFoundCheck -- oui --> findPageStep["<b>layout.findPage</b>(requestedPath)<br/>'/' → pages/index.tsx<br/>'/ordonnance' → pages/ordonnance.tsx"]
-
-    findPageStep --> pageFoundCheck{"page trouvée ?"}
-    pageFoundCheck -- non --> notFoundEnd(["{ status: 404,<br/>html: <b>renderNotFoundDocument</b>(pharmacy) }"])
-    pageFoundCheck -- oui --> renderDataStep["Prépare <b>TenantSiteRenderData</b><br/>{ tenantSite, requestedPath,<br/>renderedAt: new Date().toISOString() }<br/><i>l'heure est figée ici, une fois pour toutes</i>"]
-
-    renderDataStep --> renderToStringStep["<b>renderToString</b>(() => &lt;TenantSiteRoot renderData /&gt;)<br/>Solid exécute tout l'arbre de composants<br/>et produit le HTML du corps de la page<br/>voir la section 5"]
-    renderToStringStep --> htmlDocumentStep["<b>renderHtmlDocument</b>({ title, bodyHtml, renderData })<br/>html-document/renderHtmlDocument.ts"]
-
-    htmlDocumentStep --> documentPartsStep["Le document contient, dans l'ordre :<br/>1. &lt;title&gt; « Accueil · Pharmacie Dupont »<br/>2. &lt;link&gt; vers /_renderer/client.css<br/>3. le script d'hydratation de Solid<br/>4. &lt;div id='tenant-site'&gt; + le HTML rendu<br/>5. &lt;script type='application/json'&gt; renderData<br/>   (les &lt; sont échappés en <)<br/>6. &lt;script type='module'&gt; vers /_renderer/client.js"]
-    documentPartsStep --> doneEnd(["{ status: 200, html }"])
+    start(["renderTenantSiteDocument(tenantSite, requestedPath)<br/>playground/src/site/serverEntry.tsx"]) --> renderData["Prépare <b>TenantSiteRenderData</b><br/>{ tenantSite, requestedPath,<br/>renderedAt: new Date().toISOString() }<br/><i>l'heure est figée ici, une fois pour toutes</i>"]
+    renderData --> create["<b>createSitePage</b>(renderData, sendPrescription)<br/>→ createTenantSitePage, voir la section 4"]
+    create --> found{"status ?"}
+    found -- notFound --> notFound(["{ status: 404,<br/>html: <b>renderNotFoundDocument</b>(pharmacy) }"])
+    found -- found --> toString["<b>renderToString</b>(() => &lt;Page /&gt;)<br/>le HTML du corps de la page"]
+    toString --> document["<b>renderHtmlDocument</b>({ title, bodyHtml, renderData })<br/>1. &lt;title&gt; « Accueil · Pharmacie Dupont »<br/>2. &lt;link&gt; vers /_renderer/client.css<br/>3. le script d'hydratation de Solid<br/>4. &lt;div id='tenant-site'&gt; + le HTML rendu<br/>5. &lt;script type='application/json'&gt; renderData<br/>   (les &lt; sont échappés)<br/>6. &lt;script type='module'&gt; vers /_renderer/client.js"]
+    document --> done(["{ status: 200, html }"])
 ```
 
 > **Pourquoi l'heure est-elle figée dans `renderData` ?** Les horaires (« Aujourd'hui ») et la garde
@@ -155,34 +119,47 @@ flowchart TD
 
 ---
 
-## 5. Ce qui se passe à l'intérieur de `TenantSiteRoot`
+## 4. L'algorithme de `createTenantSitePage`, pas à pas
 
-`packages/renderer/src/TenantSiteRoot.tsx` est **le même composant** sur le serveur et dans le
-navigateur. C'est lui qui prépare tout ce que le layout va recevoir.
+Le moteur reçoit les layouts en paramètre (`layoutRegistry`). Ils sont trouvés **par les dossiers** de
+`engine/layouts/src/` : le dossier `atelier/`, dont `atelier.ts` exporte un `PharmacySiteLayout`, est
+le layout `atelier`, et le fichier `atelier/pages/ordonnance.tsx` est sa page `/ordonnance`. Aucune
+liste n'est déclarée à la main.
+
+`engine/renderer/src/createTenantSitePage.tsx` est le même appel sur le serveur et dans le navigateur.
 
 ```mermaid
 flowchart TD
-    root(["&lt;TenantSiteRoot renderData layouts /&gt;"]) --> findLayout["<b>layouts.findLayoutById</b>(layoutId)<br/>puis <b>layout.findPage</b>(requestedPath)"]
+    start(["createTenantSitePage({ tenantSite, requestedPath, renderedAt, layouts, sendPrescription })"]) --> findLayout
 
-    findLayout --> submit["<b>createSubmitPrescription</b>({ apiBaseUrl, tenantId })<br/>prescription/createSubmitPrescription.ts<br/>→ la fonction submitPrescription(form)<br/><i>l'URL de l'API et le tenant restent enfermés dedans</i>"]
+    findLayout["<b>layouts.findLayoutById</b>(tenantSite.layoutId)"]
+    findLayout --> layoutKnown{"layout connu ?"}
+    layoutKnown -- non --> layoutError(["throw « Layout inconnu : … Layouts disponibles : … »"])
+    layoutKnown -- oui --> findPage["<b>layout.findPage</b>(requestedPath)<br/>'/' → pages/index.tsx<br/>'/ordonnance' → pages/ordonnance.tsx"]
+    findPage --> pageFound{"page trouvée ?"}
+    pageFound -- non --> notFound(["{ status: 'notFound' }"])
+    pageFound -- oui --> submit["<b>createSubmitPrescription</b>(sendPrescription)<br/>→ submitPrescription(form) : valide, puis sendPrescription(demande)"]
+    submit --> props["<b>toEnabledModulesProps</b>(tenantSite.modules, { renderedAt, submitPrescription })<br/>pour chacun des 6 modules :<br/>activé → toXxxModuleProps(data) · désactivé → undefined"]
+    props --> kit["<b>createPageKit</b>({ pharmacy, moduleComponents, enabledModulesProps })<br/>→ { Page, LegalNotice, Module }"]
+    kit --> result(["{ status: 'found',<br/>title: « Accueil · Pharmacie Dupont »,<br/>Page }"])
+```
 
-    submit --> props["<b>toEnabledModulesProps</b>(tenantSite.modules, { renderedAt, submitPrescription })<br/>module-props/toEnabledModulesProps.ts<br/>pour chacun des 6 modules :<br/>activé → toXxxModuleProps(data) · désactivé → undefined"]
+Quand l'app rend `<Page />` :
 
-    props --> kit["<b>createPageKit</b>({ pharmacy, moduleComponents, enabledModulesProps })<br/>page-kit/createPageKit.tsx<br/>→ { Page, LegalNotice, Module }"]
-
-    kit --> renderPage["<b>page.render</b>({ pharmacy, layoutSettings, modules, pageKit })<br/>layout-registry/createLayoutRegistry.ts"]
-
+```mermaid
+flowchart TD
+    page(["&lt;Page /&gt;"]) --> wrap["&lt;div class='layout-{id}'&gt;<br/>la classe racine qui délimite le CSS du layout"]
+    wrap --> renderPage["<b>page.render</b>({ pharmacy, layoutSettings, modules, pageKit })<br/>layout-registry/createLayoutRegistry.ts"]
     renderPage --> settings{"v.safeParse(<b>layout.settingsSchema</b>, layoutSettings)<br/>réglages valides ?"}
     settings -- non --> settingsError(["throw « Réglages invalides pour le layout … »"])
     settings -- oui --> component["<b>page.component</b>({ pharmacy, settings, modules, pageKit })<br/>le definePage du fichier de page<br/>(settings contient les valeurs par défaut)"]
-
-    component --> layoutCode["Code libre du layout :<br/>templates, organisms, molecules, atoms<br/>qui utilisent pharmacy, settings, modules"]
-    layoutCode --> moduleSlot["&lt;pageKit.Module name='team' /&gt;<br/>→ si modules.team existe :<br/>   layout.team(props)<br/>→ sinon : rien (pas de section vide)"]
-    layoutCode --> pageCall["return <b>pageKit.Page</b>({<br/>  legalNotice: <b>pageKit.LegalNotice</b>({ class }),<br/>  children: …<br/>})<br/>→ Part&lt;'page'&gt;"]
-
-    moduleSlot --> wrap
-    pageCall --> wrap(["&lt;div class='layout-{id}'&gt; … &lt;/div&gt;<br/>la classe racine qui délimite le CSS du layout"])
+    component --> moduleSlot["&lt;pageKit.Module name='team' /&gt;<br/>→ si modules.team existe : layout.team(props)<br/>→ sinon : rien (pas de section vide)"]
+    component --> pageCall["return <b>pageKit.Page</b>({<br/>  legalNotice: <b>pageKit.LegalNotice</b>({ class }),<br/>  children: …<br/>})<br/>→ Part&lt;'page'&gt;"]
 ```
+
+---
+
+## 5. Ce que reçoit le layout
 
 Le layout **ne reçoit jamais** le `TenantSite` entier. Il ne reçoit que :
 
@@ -197,30 +174,27 @@ Le layout **ne reçoit jamais** le `TenantSite` entier. Il ne reçoit que :
 
 ## 6. Côté navigateur : l'hydratation
 
-`packages/layouts/src/browserEntry.tsx` est compilé dans `client.js` : il appelle
-`hydrateTenantSite(layoutRegistry)` (`packages/renderer/src/hydrateTenantSite.tsx`). Il refait exactement le
-même calcul que le serveur, avec les mêmes données, mais au lieu de produire du HTML, Solid **se
-rattache** au HTML déjà affiché.
+`playground/src/site/browserEntry.tsx` est compilé dans `client.js`. Il refait exactement le même
+appel que le serveur, avec les mêmes données, mais au lieu de produire du HTML, Solid **se rattache**
+au HTML déjà affiché.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Page as HTML reçu
-    participant Hydrate as hydrateTenantSite.tsx
-    participant Root as TenantSiteRoot
+    participant Entry as browserEntry.tsx
+    participant Engine as createTenantSitePage
     participant Solid as Solid (hydrate)
 
-    Page->>Hydrate: le navigateur exécute client.js
-    Hydrate->>Page: getElementById('tenant-site-render-data')
-    Page-->>Hydrate: le JSON écrit par le serveur
-    Hydrate->>Hydrate: JSON.parse → TenantSiteRenderData<br/>(même tenantSite, même chemin, même renderedAt)
-    Hydrate->>Solid: hydrate(() => TenantSiteRoot(renderData, layoutRegistry), #tenant-site)
-    Solid->>Root: exécute le composant racine
-    Root->>Root: mêmes étapes que la section 5<br/>(layouts.findLayoutById, toEnabledModulesProps, createPageKit…)
-    Root-->>Solid: le même arbre de composants
+    Page->>Entry: le navigateur exécute client.js
+    Entry->>Page: getElementById('tenant-site-render-data')
+    Page-->>Entry: le JSON écrit par le serveur
+    Entry->>Engine: createSitePage(renderData, sendPrescription du navigateur)<br/>(même tenantSite, même chemin, même renderedAt)
+    Engine-->>Entry: { status: 'found', Page }
+    Entry->>Solid: hydrate(() => &lt;Page /&gt;, #tenant-site)
     Solid->>Page: réutilise chaque nœud HTML existant<br/>(repérés par les attributs data-hk)
     Solid->>Page: branche les événements : onClick, onInput, onSubmit
-    Note over Page: Aucun élément n'est redessiné : vérifié dans le navigateur,<br/>100 % des nœuds envoyés par le serveur sont réutilisés.
+    Note over Page: Aucun élément n'est redessiné : le panneau du banc d'essai<br/>affiche la part des nœuds du serveur réutilisés.
 ```
 
 Pour que ça marche, il faut que le serveur et le navigateur produisent **exactement** le même arbre.
@@ -239,7 +213,7 @@ D'où ces règles, appliquées partout :
 
 Le formulaire est écrit **librement** par chaque layout : ses champs, son état, ses étapes, ses
 messages. Le moteur ne lui donne que deux fonctions typées, dans les props du module
-`prescriptionUpload`.
+`prescriptionUpload`. L'envoi lui-même appartient à l'app.
 
 ```mermaid
 sequenceDiagram
@@ -248,7 +222,8 @@ sequenceDiagram
     participant Form as Formulaire du layout<br/>(ex. atelier/PrescriptionSteps.tsx)
     participant Validate as validatePrescription<br/>(prescription/validatePrescriptionForm.ts)
     participant Submit as submitPrescription<br/>(prescription/createSubmitPrescription.ts)
-    participant Handler as handlePrescriptionUploadRequest<br/>(simulator)
+    participant Send as sendPrescription<br/>(fourni par l'app)
+    participant Api as POST /api/prescriptions
 
     Visitor->>Form: clique sur « Suivant » (formulaire par étapes)
     Form->>Validate: validatePrescription({ firstName, lastName, phone, file })
@@ -261,20 +236,12 @@ sequenceDiagram
     alt un champ est invalide
         Submit-->>Form: { outcome: 'invalid', errorsByField }
     else tout est valide
-        Submit->>Submit: ajoute tenantId (caché dans la fonction)<br/>construit un FormData
-        Submit->>Handler: fetch POST ${apiBaseUrl}/prescriptions
-        Handler->>Handler: v.safeParse(PrescriptionUploadRequestSchema, body)
-        alt requête invalide
-            Handler-->>Submit: 400 { error }
-        else tenant inconnu
-            Handler-->>Submit: 404 { error }
-        else module prescriptionUpload désactivé pour ce tenant
-            Handler-->>Submit: 403 { error }
-        else tout est bon
-            Handler->>Handler: console.log(tenant, patient, téléphone, fichier, taille)
-            Handler-->>Submit: 201 { received: true }
-        end
-        Submit-->>Form: { outcome: 'sent' } ou { outcome: 'failed' }
+        Submit->>Send: sendPrescription(demande validée)
+        Send->>Api: fetch POST, FormData
+        Api->>Api: v.safeParse(PrescriptionUploadRequestSchema, body)<br/>le tenant vient de la passerelle, pas du formulaire
+        Api-->>Send: 201, 400 ou 500
+        Send-->>Submit: { outcome: 'sent' } ou { outcome: 'failed' }
+        Submit-->>Form: le même résultat
     end
     Form-->>Visitor: le layout affiche le message qu'il a choisi
 ```
@@ -283,8 +250,10 @@ Pourquoi ce découpage :
 
 - **Le layout ne peut pas oublier un champ.** `submitPrescription` exige un objet avec `firstName`,
   `lastName`, `phone` et `file` : un champ manquant ne compile pas.
-- **Le layout ne peut pas appeler l'API lui-même.** Il ne connaît ni son URL ni le tenant : ils sont
-  enfermés dans `createSubmitPrescription`.
+- **Le layout ne peut pas appeler l'API lui-même.** Il ne connaît ni son URL ni le tenant.
+- **Rien ne part sans être validé.** `sendPrescription` ne reçoit qu'une demande déjà passée par
+  `PrescriptionUploadRequestSchema`.
+- **Le moteur reste pur.** Où et comment envoyer, et pour quel tenant, c'est l'app qui le sait.
 - **Les règles de validation sont écrites une seule fois.** `PrescriptionUploadRequestSchema` (dans
   `schema`) sert au navigateur et au serveur.
 
@@ -346,7 +315,7 @@ Exemple concret de la garde, calculée par `computeOnDutyAnnouncement` à partir
 | Un composant de module qui attend une prop inexistante ne compile pas | `Component<ModulePropsByName[Name]>`, déclaré comme propriété | `contract/PharmacySiteLayout.ts` |
 | Le schéma de réglages produit bien le type utilisé par les pages | `PharmacySiteLayout<Réglages>` exige `settingsSchema: GenericSchema<unknown, Réglages>` | `contract/PharmacySiteLayout.ts` |
 | Une page sans titre ne compile pas, et ses réglages sont typés | `definePage<Réglages>({ title, component })` | `contract/definePage.ts` |
-| Un fichier de page mal exporté, ou des pages sans layout, sont signalés au démarrage | Vérification de chaque fichier trouvé | `layout-registry/createLayoutRegistry.ts` |
+| Un fichier de page mal exporté, des pages sans layout, ou un layout sans manifeste, sont signalés au démarrage | Vérification de chaque fichier trouvé | `layout-registry/createLayoutRegistry.ts`, `layouts/src/layoutRegistry.ts` |
 | Une page sans mentions légales ne compile pas | `Part<'page'>` n'est fabriqué que par `pageKit.Page`, qui exige un `Part<'legalNotice'>` | `contract/Part.ts`, `page-kit/createPageKit.tsx` |
 | Un JSX écrit à la main n'est pas une page | `Part` est un type marqué ; `createPart` n'est pas exporté | `page-kit/createPageKit.tsx` |
 | Une donnée optionnelle (photo, groupement…) est traitée comme optionnelle | `photoUrl?: string` : l'utiliser comme `string` ne compile pas | `schema` |

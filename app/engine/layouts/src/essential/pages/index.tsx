@@ -1,5 +1,5 @@
 import { definePage } from '@crystal-pharm/renderer';
-import type { EssentialSettings } from '../essentialSettingsSchema';
+import type { EssentialSettings } from '../essentialManifest';
 import { DenseGridTemplate } from '../templates/DenseGridTemplate';
 
 export default definePage<EssentialSettings>({

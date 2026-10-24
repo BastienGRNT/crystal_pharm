@@ -4,7 +4,6 @@ const tenMegabytes = 10 * 1024 * 1024;
 
 /** Ce que le formulaire d'ordonnance envoie à l'API, validé à l'identique dans le navigateur et sur le serveur. */
 export const PrescriptionUploadRequestSchema = v.object({
-  tenantId: v.pipe(v.string(), v.nonEmpty()),
   firstName: v.pipe(v.string(), v.trim(), v.nonEmpty('Indiquez votre prénom.')),
   lastName: v.pipe(v.string(), v.trim(), v.nonEmpty('Indiquez votre nom.')),
   phone: v.pipe(

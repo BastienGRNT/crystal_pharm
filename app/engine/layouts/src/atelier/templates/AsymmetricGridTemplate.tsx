@@ -1,7 +1,7 @@
 import type { PharmacyInfo } from '@crystal-pharm/schema';
 import type { JSX } from 'solid-js';
 import type { EnabledModulesProps } from '@crystal-pharm/renderer';
-import type { AtelierSettings } from '../atelierSettingsSchema';
+import type { AtelierSettings } from '../atelierManifest';
 import { MinimalFooter } from '../organisms/MinimalFooter';
 import { SideHeader, type AtelierPagePath } from '../organisms/SideHeader';
 

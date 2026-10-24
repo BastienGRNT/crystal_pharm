@@ -3,11 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently --kill-others --names layouts,playground \"pnpm --filter @crystal-pharm/layouts dev\" \"vite\"",
+    "dev": "concurrently --kill-others --names browser,server,playground \"vite build --config vite.site.config.ts --watch\" \"vite build --config vite.site.config.ts --ssr src/site/serverEntry.tsx --watch\" \"vite\"",
     "check": "tsc --project tsconfig.json && tsc --project tsconfig.node.json"
   },
   "devDependencies": {
     "@crystal-pharm/layouts": "workspace:*",
+    "@crystal-pharm/renderer": "workspace:*",
     "@crystal-pharm/schema": "workspace:*",
     "@types/node": "24.19.2",
     "concurrently": "^10.0.6",

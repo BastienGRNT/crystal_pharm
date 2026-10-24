@@ -1,5 +1,5 @@
 import type { PharmacySiteLayout } from '@crystal-pharm/renderer';
-import { neighborhoodSettingsSchema, type NeighborhoodSettings } from './neighborhoodSettingsSchema';
+import { neighborhoodSettingsSchema, type NeighborhoodSettings } from './neighborhoodManifest';
 import { LoyaltyCardSection } from './organisms/LoyaltyCardSection';
 import { NewsSection } from './organisms/NewsSection';
 import { OpeningHoursSection } from './organisms/OpeningHoursSection';

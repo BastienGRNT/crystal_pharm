@@ -7,7 +7,6 @@ export const pharmacieDesTilleuls: MockTenant = {
   createTenantSite: () => ({
     tenantId: 'pharmacie-des-tilleuls',
     layoutId: 'neighborhood',
-    apiBaseUrl: '/api',
     layoutSettings: { slogan: 'Sous les tilleuls, depuis 1987.' },
     pharmacy: {
       name: 'Pharmacie des Tilleuls',

@@ -3,31 +3,24 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./src/serverEntry.ts",
-      "default": "./dist/server/serverEntry.js"
-    }
+    ".": "./src/layoutRegistry.ts",
+    "./manifest": "./src/manifest/index.ts"
   },
   "scripts": {
-    "build": "vite build && vite build --ssr src/serverEntry.ts",
-    "dev": "concurrently --names browser,server \"vite build --watch\" \"vite build --ssr src/serverEntry.ts --watch\"",
-    "check": "tsc --project tsconfig.json && tsc --project tsconfig.node.json"
+    "check": "tsc --project tsconfig.json"
   },
   "dependencies": {
     "@crystal-pharm/renderer": "workspace:*",
     "@crystal-pharm/schema": "workspace:*",
-    "solid-js": "^1.9.17",
-    "valibot": "^1.5.0"
-  },
-  "devDependencies": {
     "@fontsource/fraunces": "5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/instrument-serif": "5.3.0",
     "@fontsource/nunito": "5.3.0",
     "@fontsource/space-grotesk": "5.3.0",
-    "@types/node": "24.19.2",
-    "concurrently": "^10.0.6",
-    "vite": "8.3.3",
-    "vite-plugin-solid": "^2.11.14"
+    "solid-js": "^1.9.17",
+    "valibot": "^1.5.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.3"
   }
 }

@@ -19,6 +19,7 @@ export type RegisteredLayout = {
 };
 
 export type LayoutRegistry = {
+  layoutIds: string[];
   findLayoutById: (layoutId: string) => RegisteredLayout;
 };
 
@@ -49,6 +50,7 @@ export function createLayoutRegistry(files: {
   const registeredLayouts = [...layoutsById].map(([layoutId, layout]) => toRegisteredLayout(layoutId, layout, findLayoutPages(layoutId, files.pageFiles)));
 
   return {
+    layoutIds: registeredLayouts.map((registeredLayout) => registeredLayout.id),
     findLayoutById: (layoutId) => {
       const registeredLayout = registeredLayouts.find((candidate) => candidate.id === layoutId);
       if (!registeredLayout) {

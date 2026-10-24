@@ -1,10 +1,7 @@
-// Pour l'application qui sert les sites : rendre, hydrater, et construire les layouts à partir de leurs dossiers.
-export { renderTenantSite, type RenderResult } from './renderTenantSite';
-export { hydrateTenantSite } from './hydrateTenantSite';
+// Pour l'app qui sert les sites : construire la page d'un tenant, avec les layouts découverts dans leurs dossiers.
+export { createTenantSitePage, type TenantSitePage } from './createTenantSitePage';
 export { createLayoutRegistry, type LayoutRegistry } from './layout-registry/createLayoutRegistry';
-export { rendererClientAssetsPath } from './html-document/rendererClientAssetsPath';
-/** Pour une future app SolidStart, qui gérerait elle-même le document HTML et l'hydratation. */
-export { TenantSiteRoot } from './TenantSiteRoot';
+export type { SendPrescription } from './prescription/createSubmitPrescription';
 
 // Pour écrire un layout : le type à respecter, les pages, et les props que reçoit chaque module.
 export type { PharmacySiteLayout } from './contract/PharmacySiteLayout';

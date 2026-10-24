@@ -10,7 +10,6 @@ export const pharmacieDupont: MockTenant = {
     return {
       tenantId: 'pharmacie-dupont',
       layoutId: 'essential',
-      apiBaseUrl: '/api',
       pharmacy: {
         name: 'Pharmacie Dupont',
         address: { street: '12 rue de la République', postalCode: '69002', city: 'Lyon' },

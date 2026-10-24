@@ -1,5 +1,5 @@
 import type { PharmacySiteLayout } from '@crystal-pharm/renderer';
-import { essentialSettingsSchema, type EssentialSettings } from './essentialSettingsSchema';
+import { essentialSettingsSchema, type EssentialSettings } from './essentialManifest';
 import { LoyaltyCardBlock } from './organisms/LoyaltyCardBlock';
 import { NewsBlock } from './organisms/NewsBlock';
 import { OpeningHoursBlock } from './organisms/OpeningHoursBlock';

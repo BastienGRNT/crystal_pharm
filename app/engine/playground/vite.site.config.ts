@@ -2,10 +2,10 @@ import { utimesSync, watch, type FSWatcher } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import solid from 'vite-plugin-solid';
-import { rendererClientAssetsPath } from '../renderer/src/html-document/rendererClientAssetsPath.ts';
+import { siteClientAssetsPath } from './src/shared/siteClientAssetsPath';
 
-const layoutsDirectory = fileURLToPath(new URL('./src', import.meta.url));
-const layoutRegistryFile = fileURLToPath(new URL('./src/layoutRegistry.ts', import.meta.url));
+const layoutsSourceDirectory = fileURLToPath(new URL('../layouts/src', import.meta.url));
+const layoutRegistryFile = fileURLToPath(new URL('../layouts/src/layoutRegistry.ts', import.meta.url));
 
 /**
  * En mode watch, Vite ne voit pas un fichier de page ou de layout qui vient d'être créé ou supprimé.
@@ -17,31 +17,31 @@ function rebuildWhenLayoutFilesAreAddedOrRemoved(): Plugin {
     name: 'rebuild-when-layout-files-are-added-or-removed',
     buildStart() {
       if (!this.meta.watchMode || watcher) return;
-      watcher = watch(layoutsDirectory, { recursive: true }, (eventType) => {
+      watcher = watch(layoutsSourceDirectory, { recursive: true }, (eventType) => {
         if (eventType === 'rename') utimesSync(layoutRegistryFile, new Date(), new Date());
       });
     },
   };
 }
 
-// Le moteur et les layouts sont compilés ensemble, deux fois :
-// `vite build` pour le navigateur, `vite build --ssr` pour le serveur des sites.
+// L'aperçu du banc d'essai : le moteur et les layouts compilés deux fois, comme le fera l'app des sites :
+// `vite build` pour le navigateur, `vite build --ssr` pour le serveur.
 // Les fichiers construits sont écrasés plutôt que supprimés, pour que le serveur ne les trouve jamais absents.
 export default defineConfig(({ isSsrBuild }) => ({
   plugins: [solid({ ssr: true }), rebuildWhenLayoutFilesAreAddedOrRemoved()],
-  base: `${rendererClientAssetsPath}/`,
-  ssr: { noExternal: ['@crystal-pharm/schema', '@crystal-pharm/renderer'] },
+  base: `${siteClientAssetsPath}/`,
+  ssr: { noExternal: ['@crystal-pharm/schema', '@crystal-pharm/renderer', '@crystal-pharm/layouts'] },
   build: isSsrBuild
     ? {
-        outDir: 'dist/server',
+        outDir: 'dist/site/server',
         emptyOutDir: false,
         rolldownOptions: { output: { entryFileNames: 'serverEntry.js' } },
       }
     : {
-        outDir: 'dist/client',
+        outDir: 'dist/site/client',
         emptyOutDir: false,
         rolldownOptions: {
-          input: { client: 'src/browserEntry.tsx' },
+          input: { client: 'src/site/browserEntry.tsx' },
           output: { entryFileNames: '[name].js', assetFileNames: '[name][extname]' },
         },
       },

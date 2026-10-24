@@ -5,24 +5,23 @@ Ce fichier sert de point de départ à la prochaine session de travail. Lis-le e
 
 ## Où on en est
 
-Le prototype fonctionne de bout en bout (`pnpm dev`, puis http://localhost:3000/) :
+Le moteur est pur, et le banc d'essai le fait tourner (`pnpm --filter @crystal-pharm/playground dev`) :
 
 ```
-packages/
-├─ schema/     le contrat des données (Valibot), aucune dépendance à Solid
-├─ renderer/   le moteur : type PharmacySiteLayout, definePage, pageKit, module-props,
-│              validation et envoi de l'ordonnance, TenantSiteRoot… et encore la plomberie
-│              (renderTenantSite, hydrateTenantSite, html-document/)
-└─ layouts/    essential, neighborhood, atelier : chacun est une valeur de type PharmacySiteLayout
-               + layoutRegistry.ts (découverte par dossiers) + la config Vite qui compile tout
-apps/
-└─ simulator/  serveur Hono : trouve le tenant ET appelle le rendu, mocks, faux endpoint d'ordonnance
+engine/
+├─ schema/      le contrat des données (Valibot), aucune dépendance à Solid
+├─ renderer/    le moteur : createTenantSitePage, type PharmacySiteLayout, definePage, pageKit,
+│               module-props, validation de l'ordonnance. Ni HTML, ni build, ni fetch.
+├─ layouts/     essential, neighborhood, atelier : chacun est une valeur de type PharmacySiteLayout
+│               + layoutRegistry.ts (découverte par dossiers) + l'export /manifest (sans Solid)
+└─ playground/  le banc d'essai : compile l'aperçu, rend le HTML, hydrate, mocks, fausse API
 ```
 
 - Un layout est une **valeur typée** `PharmacySiteLayout<Réglages>` : un schéma de réglages et un
   composant par module. Un module oublié ne compile pas.
 - Son identifiant est le nom de son dossier. Ses pages sont les fichiers de `pages/`
-  (`index.tsx` → `/`, `ordonnance.tsx` → `/ordonnance`), typés par `definePage`.
+  (`index.tsx` → `/`, `ordonnance.tsx` → `/ordonnance`), typés par `definePage`. Son manifeste
+  (`<id>Manifest.ts`) donne son nom, sa description et ses réglages à l'édition.
 - Le moteur ne connaît aucun layout : il reçoit un `LayoutRegistry` en paramètre.
 - 6 modules : `openingHours`, `team`, `services`, `news`, `prescriptionUpload`, `loyaltyCard`.
 - Un groupement peut imposer des modules (`pharmacy.group.mandatoryModules`), vérifié par le schéma.
@@ -35,7 +34,7 @@ apps/
 - **Moins on déclare, moins on oublie.** Préférer la découverte par dossiers et les types aux listes
   écrites à la main. Garder une déclaration seulement quand elle apporte une garantie à la compilation.
 - Le moteur, c'est **la logique** : pas de plomberie de serveur, pas d'accès extérieur, aucun layout.
-- Tout reste typé de bout en bout, et `pnpm check` doit passer.
+- Tout reste typé de bout en bout, et le `check` de chaque package doit passer.
 - Identifiants en anglais, textes affichés en français, noms longs et explicites, un fichier = une chose.
 - Travailler par étapes et s'arrêter à la fin de chacune pour validation.
 
@@ -54,8 +53,8 @@ navigateur ──▶ pharmacie-dupont.fr
                     │  GET /ordonnance   +   tenantId: pharmacie-dupont
                     ▼
         ┌───────────────────────┐
-        │  App de rendu         │  tenantId → API → TenantSite (en cache)
-        │  (SolidStart)         │  → <TenantSiteRoot /> → HTML + hydratation
+        │  App de rendu         │  tenantId → bases → TenantSite (en cache)
+        │  (SolidStart)         │  → createTenantSitePage → HTML + hydratation
         └───────────────────────┘
                     │
                     ▼
@@ -67,7 +66,7 @@ navigateur ──▶ pharmacie-dupont.fr
 | Rôle | Il connaît | Il ne connaît pas |
 |---|---|---|
 | **Passerelle** | Les noms de domaine et le tenant qui correspond à chacun | Les layouts, le rendu |
-| **App de rendu** | Un `tenantId`, l'API, le cache | Les noms de domaine |
+| **App de rendu** | Un `tenantId`, les bases, l'API, le cache | Les noms de domaine |
 | **Moteur** | Les données d'un site et les layouts | Le tenant, le domaine, l'API |
 
 **L'app qui trouve le tenant par le nom de domaine n'est pas celle qui génère la page.** Pourquoi :
@@ -82,33 +81,41 @@ navigateur ──▶ pharmacie-dupont.fr
 ### 2. L'app de rendu sera une app SolidStart
 
 ```
-apps/
-└─ site/                         l'app SolidStart qui sert tous les sites
-   └─ src/routes/[...path].tsx   une seule route attrape-tout
-packages/
+app/site/                        l'app SolidStart qui sert tous les sites
+└─ src/routes/[...path].tsx      une seule route attrape-tout
+app/engine/
 ├─ schema/  renderer/  layouts/  l'app les importe
 ```
 
-SolidStart prend en charge le document HTML, l'hydratation, la compilation et le cache : exactement
-la plomberie qu'on veut sortir du moteur. Le moteur exporte déjà `TenantSiteRoot`, le seul point de
-rencontre.
+SolidStart prend en charge le document HTML, l'hydratation, la compilation et le cache : la plomberie
+sortie du moteur. `createTenantSitePage` est le seul point de rencontre :
 
-### 3. L'aperçu dans l'admin (l'admin sera en Svelte)
+```tsx
+// app/site/src/routes/[...path].tsx
+export default function TenantSiteRoute() {
+  const result = createTenantSitePage({ … });
+  if (result.status === 'notFound') return <NotFound />;
+  return (
+    <>
+      <Title>{result.title}</Title>
+      <result.Page />
+    </>
+  );
+}
+```
 
-Svelte ne peut pas afficher des composants Solid : l'admin ne rend donc pas les sites lui-même. Deux
-options retenues, à départager le moment venu :
+### 3. L'aperçu dans `site-manager` (en Svelte) : une iframe
 
-- **c. Une iframe vers l'app SolidStart (recommandée).**
-  `admin Svelte ── postMessage(données en cours) ──▶ <iframe src="site/__preview"> ──▶ <TenantSiteRoot />`.
-  Isolation totale (CSS, JS, navigation), vrai aperçu mobile (une iframe de 390 px déclenche le CSS
-  mobile), même code qu'en production, mise à jour en direct. C'est la méthode de Shopify et Webflow.
-- **b. Solid monte le site dans un `div` fourni par Svelte.**
-  `mountSitePreview(element, tenantSiteEnCoursDeModification)`, un Shadow DOM pour isoler le CSS. Mise à
-  jour fine à chaque modification, mais les éléments fixes ou collants (la colonne latérale d'`atelier`),
-  les tailles en `vh` et l'aperçu mobile posent problème, car le CSS regarde la fenêtre de l'admin.
+Svelte ne peut pas afficher des composants Solid : `site-manager` ne rend donc pas les sites lui-même.
 
-Écartée : insérer le HTML rendu avec `{@html}` dans un `<div id="solid_rendu">` (le CSS fuit dans les
-deux sens, la mise en page casse, pas d'aperçu mobile, les liens font naviguer l'admin).
+`site-manager ── postMessage(données en cours) ──▶ <iframe src="site/__preview"> ──▶ createTenantSitePage`.
+
+Isolation totale (CSS, JS, navigation), vrai aperçu mobile (une iframe de 390 px déclenche le CSS
+mobile), même code qu'en production, mise à jour en direct. C'est la méthode de Shopify et Webflow.
+
+Écartés : monter Solid dans un `div` fourni par Svelte (les éléments fixes, les tailles en `vh` et
+l'aperçu mobile regardent la fenêtre de l'édition), et insérer le HTML rendu avec `{@html}` (le CSS
+fuit dans les deux sens, les liens font naviguer l'édition).
 
 ### 4. Le thème personnalisable, en restant typé
 
@@ -154,71 +161,17 @@ Questions à trancher avant de coder :
 
 ## Le plan pour la suite, dans cet ordre
 
-1. **Sortir la plomberie du moteur.** `renderTenantSite.tsx`, `hydrateTenantSite.tsx`, `html-document/`
-   et la config Vite vont dans l'app de rendu (le simulateur pour l'instant). `packages/renderer` ne
-   garde que la logique : contrat, module-props, `pageKit`, ordonnance, registre des layouts et
-   `TenantSiteRoot`. `packages/layouts` redevient du simple code source, sans build.
-
-   **Objectif : un moteur pur à 100 %.** Il ne produit ni HTML, ni JS, ni CSS : il fournit la
-   description de la page (`TenantSiteRoot`, un arbre de composants Solid), à partir des données, des
-   layouts et de l'instant du rendu. Il ne sait ni qui l'appelle, ni pour quel tenant, ni où il tourne.
-   C'est l'app qui le consomme qui trouve les données, rend le HTML, sert le JS et le CSS, et hydrate.
-
-   **Le seul point d'entrée du moteur** remplacera `renderTenantSite` (qui renvoie du HTML) et
-   `TenantSiteRoot` :
-
-   ```ts
-   createTenantSitePage({
-     tenantSite,          // les données du site, déjà validées par TenantSiteSchema
-     requestedPath,       // '/ordonnance'
-     renderedAt,          // l'instant du rendu, pour les horaires et la garde
-     layouts,             // le registre des layouts disponibles
-     submitPrescription,  // la fonction d'envoi de l'ordonnance, fournie par l'app
-   }):
-     | { status: 'notFound' }
-     | { status: 'found'; title: string; Page: Component }
-   ```
-
-   Une fonction pure : aucun effet, même résultat à données égales. `'notFound'` permet à l'app
-   d'envoyer un 404 avant de rendre. `title` (« Envoyer une ordonnance · Pharmacie Dupont ») va dans le
-   `<title>` de l'app. `Page` est un composant Solid, pas du HTML : la page complète (layout, réglages,
-   modules activés, mentions légales). L'app l'affiche avec `<result.Page />` ; SolidStart le rend en
-   HTML côté serveur, puis rappelle la même fonction dans le navigateur pour hydrater.
-
-   Le nom `createTenantSitePage` suit la convention de Solid (`createSignal`…) : la fonction **fabrique**
-   le composant de la page, elle ne le dessine pas. Éviter `render…` (dans Solid, `render` veut dire
-   dessiner pour de vrai) et `Show…` (`<Show>` est déjà un composant de Solid). Côté SolidStart, la
-   route attrape-tout s'appelle `TenantSiteRoute` :
-
-   ```tsx
-   // apps/site/src/routes/[...path].tsx
-   export default function TenantSiteRoute() {
-     const result = createTenantSitePage({ … });
-     if (result.status === 'notFound') return <NotFound />;
-     return (
-       <>
-         <Title>{result.title}</Title>
-         <result.Page />
-       </>
-     );
-   }
-   ```
-
-   Pour cela, retirer aussi le dernier `fetch` du moteur : l'app fournit elle-même la fonction d'envoi
-   de l'ordonnance (`<TenantSiteRoot … submitPrescription={(form) => …} />`). Le moteur garde la
-   validation (`validatePrescriptionForm`), qui est de la logique pure, et transmet la fonction aux
-   layouts, qui ne voient aucune différence.
-2. **Remplacer le simulateur par la vraie app SolidStart** (`apps/site`), avec du cache, et séparer
-   tout de suite les rôles :
-   - l'app reçoit un `tenantId` (en-tête ou préfixe de chemin : à choisir ensemble) et ne voit jamais
-     de nom de domaine ;
-   - un petit simulateur de passerelle fait la conversion « domaine → tenantId » en développement ;
-   - une route d'aperçu `/__preview` prête pour l'iframe de l'admin (données reçues par `postMessage`).
-3. **Ajouter le thème personnalisable** (section 4).
-4. **Ajouter l'ordre des modules** (section 5), après avoir tranché les questions.
+1. ~~**Sortir la plomberie du moteur.**~~ Fait : `createTenantSitePage` est le seul point d'entrée,
+   l'app fournit `sendPrescription`, `layouts` n'a plus de build et expose `/manifest`, le banc d'essai
+   compile lui-même son aperçu.
+2. **L'app SolidStart** (`app/site`) : une route attrape-tout qui lit `content`, `pharmacy-db` et
+   `group-db`, avec du cache ; le tenant vient d'un en-tête posé par la passerelle (en dev, Caddy le
+   déduit de `<slug>.site.localhost`) ; une route `/__preview` prête pour l'iframe de `site-manager`.
+3. **`site-manager`** : choix du layout, réglages (lus dans le manifeste), modules activés, aperçu.
+4. **Ajouter le thème personnalisable** (section 4).
+5. **Ajouter l'ordre des modules** (section 5), après avoir tranché les questions.
 
 ## Pistes notées, non prioritaires
 
 - La règle « carte de fidélité seulement avec un groupement » dans le schéma.
 - Les tests.
-- L'admin.

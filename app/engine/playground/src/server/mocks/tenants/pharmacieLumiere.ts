@@ -7,7 +7,6 @@ export const pharmacieLumiere: MockTenant = {
   createTenantSite: () => ({
     tenantId: 'pharmacie-lumiere',
     layoutId: 'atelier',
-    apiBaseUrl: '/api',
     layoutSettings: { accentTone: 'saffron', editorialHeadline: 'La pharmacie qui éclaire vos choix.' },
     pharmacy: {
       name: 'Pharmacie Lumière',

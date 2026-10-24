@@ -1,6 +1,6 @@
 import { escape, generateHydrationScript } from 'solid-js/web';
 import { htmlDocumentElementIds } from './htmlDocumentElementIds';
-import { rendererClientAssetsPath } from './rendererClientAssetsPath';
+import { siteClientAssetsPath } from '../../shared/siteClientAssetsPath';
 import type { TenantSiteRenderData } from './TenantSiteRenderData';
 
 /** L'équivalent de l'`app.html` de SvelteKit : la page complète autour du HTML rendu par Solid. */
@@ -13,13 +13,13 @@ export function renderHtmlDocument(document: { title: string; bodyHtml: string; 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escape(document.title)}</title>
-    <link rel="stylesheet" href="${rendererClientAssetsPath}/client.css" />
+    <link rel="stylesheet" href="${siteClientAssetsPath}/client.css" />
     ${generateHydrationScript()}
   </head>
   <body>
     <div id="${htmlDocumentElementIds.siteRoot}">${document.bodyHtml}</div>
     <script type="application/json" id="${htmlDocumentElementIds.renderData}">${serializedRenderData}</script>
-    <script type="module" src="${rendererClientAssetsPath}/client.js"></script>
+    <script type="module" src="${siteClientAssetsPath}/client.js"></script>
   </body>
 </html>`;
 }

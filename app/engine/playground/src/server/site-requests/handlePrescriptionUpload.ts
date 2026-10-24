@@ -11,6 +11,7 @@ const slowResponseDelayInMilliseconds = 3000;
 
 /**
  * Une fausse API d'ordonnances : elle valide l'envoi comme le fera le C#, puis répond ce que le panneau a choisi.
+ * Le tenant n'est pas dans l'envoi : dans l'app des sites, c'est la passerelle qui le donne.
  * Rien n'est gardé ni journalisé : seuls le type et la taille du fichier remontent au panneau.
  */
 export async function handlePrescriptionUpload(request: IncomingMessage, response: ServerResponse, context: SiteRequestContext): Promise<void> {

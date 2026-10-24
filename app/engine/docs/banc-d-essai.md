@@ -12,12 +12,12 @@ Depuis `app/` :
 pnpm --filter @crystal-pharm/playground dev
 ```
 
-puis `http://localhost:5176`. La commande compile aussi le moteur en continu
-(`layouts dev`) : une sauvegarde dans un layout recharge l'aperçu tout seul.
+puis `http://localhost:5176`. La commande compile aussi l'aperçu en continu
+(`vite.site.config.ts`, client et serveur, dans `dist/site`) : une sauvegarde dans un layout recharge l'aperçu tout seul.
 
 ## Ce que l'aperçu rend
 
-- Le moteur **compilé** (`layouts/dist`), comme l'app des sites : le HTML du
+- Le moteur et les layouts **compilés** (`dist/site`), comme l'app des sites : le HTML du
   serveur, puis l'hydratation dans le navigateur. Ce qui marche ici marche en
   production.
 - Les données passent par `TenantSiteSchema` à chaque rendu : des données
@@ -35,7 +35,7 @@ puis `http://localhost:5176`. La commande compile aussi le moteur en continu
 |---|---|
 | Scénario | la pharmacie, le layout, la page, le groupement, la garde, les données extrêmes (sans images, textes longs, listes vides), la réponse à l'envoi d'ordonnance, la largeur, la comparaison des layouts |
 | Modules | chaque module comme le mock, activé ou désactivé ; « imposé » quand le groupement l'exige |
-| Réglages | les réglages du layout, lus dans son `<id>SettingsSchema.ts` |
+| Réglages | les réglages du layout, lus dans son manifeste (`<id>Manifest.ts`) |
 | Données | le TenantSite exact envoyé au moteur, modifiable à la main |
 | Journal | erreurs et avertissements des aperçus, hydratation incomplète, ordonnances reçues |
 

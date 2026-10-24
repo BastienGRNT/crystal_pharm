@@ -1,10 +1,10 @@
 # Les données que l'API doit envoyer
 
 Le serveur des sites trouve la pharmacie à partir du nom de domaine, demande ses données à l'API, les
-valide avec `TenantSiteSchema`, puis appelle `renderTenantSite`. Ce document décrit ces données, et
+valide avec `TenantSiteSchema`, puis appelle `createTenantSitePage`. Ce document décrit ces données, et
 la requête que le site renvoie à l'API quand un visiteur envoie une ordonnance.
 
-La source de vérité est le code : `packages/schema/src/`. Ici, c'est la version lisible.
+La source de vérité est le code : `engine/schema/src/`. Ici, c'est la version lisible.
 
 ## Vue d'ensemble
 
@@ -13,7 +13,6 @@ flowchart TD
     tenantSite["<b>TenantSite</b>"] --> tenantId["tenantId · string"]
     tenantSite --> layoutId["layoutId · 'essential' | 'neighborhood' | 'atelier'"]
     tenantSite --> layoutSettings["layoutSettings · objet, propre à chaque layout"]
-    tenantSite --> apiBaseUrl["apiBaseUrl · string, ex. '/api'"]
     tenantSite --> pharmacy["<b>pharmacy</b> · PharmacyInfo"]
     tenantSite --> modules["<b>modules</b> · les 6 modules"]
 
@@ -34,12 +33,11 @@ flowchart TD
 
 | Champ | Type | Obligatoire | Description |
 |---|---|---|---|
-| `tenantId` | `string` non vide | oui | Identifiant de la pharmacie, ex. `pharmacie-dupont`. Renvoyé par le formulaire d'ordonnance |
+| `tenantId` | `string` non vide | oui | Identifiant de la pharmacie, ex. `pharmacie-dupont`. Le moteur ne s'en sert pas : l'envoi d'une ordonnance prend le tenant de la passerelle |
 | `layoutId` | `string` non vide | oui | Le layout à utiliser. Un identifiant inconnu provoque une erreur qui liste les layouts disponibles |
 | `layoutSettings` | objet | non (défaut `{}`) | Les réglages du layout, validés par le schéma du layout choisi (voir plus bas) |
 | `pharmacy` | `PharmacyInfo` | oui | Les informations générales de la pharmacie |
 | `modules` | objet | oui | Les 6 modules, chacun activé ou non |
-| `apiBaseUrl` | `string` non vide | oui | La base de l'API pour l'ordonnance. Le site enverra `POST {apiBaseUrl}/prescriptions` |
 
 **Règle métier :** chaque module listé dans `pharmacy.group.mandatoryModules` doit avoir
 `enabled: true`. Sinon le tenant est refusé :
@@ -151,7 +149,6 @@ Un réglage d'un mauvais type est refusé au rendu : « Réglages invalides pour
 {
   "tenantId": "pharmacie-dupont",
   "layoutId": "neighborhood",
-  "apiBaseUrl": "/api",
   "layoutSettings": {
     "slogan": "Au cœur du quartier depuis 1987.",
     "heroImageUrl": "https://cdn.exemple.fr/pharmacie-dupont/facade.jpg"
@@ -212,21 +209,21 @@ Un réglage d'un mauvais type est refusé au rendu : « Réglages invalides pour
 }
 ```
 
-Les mocks de `apps/simulator/src/mocks/` sont d'autres exemples, typés par le schéma : un mock mal
+Les mocks du banc d'essai (`playground/src/server/mocks/tenants/`) sont d'autres exemples, typés par le schéma : un mock mal
 formé ne compile pas.
 
 ## Ce que le site envoie à l'API : l'ordonnance
 
-Quand un visiteur envoie son ordonnance, le navigateur appelle :
+Quand un visiteur envoie son ordonnance, le navigateur appelle la route de l'app des sites, qui
+relaie au C# avec le tenant donné par la passerelle (jamais par le formulaire) :
 
 ```
-POST {apiBaseUrl}/prescriptions
+POST /api/prescriptions
 Content-Type: multipart/form-data
 ```
 
 | Champ | Type | Règle (message affiché au visiteur) |
 |---|---|---|
-| `tenantId` | texte | Ajouté par le moteur, jamais par le layout |
 | `firstName` | texte | Non vide après suppression des espaces (« Indiquez votre prénom. ») |
 | `lastName` | texte | Non vide après suppression des espaces (« Indiquez votre nom. ») |
 | `phone` | texte | Numéro français : `0612345678`, `06 12 34 56 78`, `+33 6 12 34 56 78`… |

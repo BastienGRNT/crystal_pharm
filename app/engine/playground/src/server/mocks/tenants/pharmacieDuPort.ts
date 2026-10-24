@@ -8,7 +8,6 @@ export const pharmacieDuPort: MockTenant = {
   createTenantSite: () => ({
     tenantId: 'pharmacie-du-port',
     layoutId: 'atelier',
-    apiBaseUrl: '/api',
     layoutSettings: { accentTone: 'sage' },
     pharmacy: {
       name: 'Pharmacie du Port',

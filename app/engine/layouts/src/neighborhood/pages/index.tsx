@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { definePage } from '@crystal-pharm/renderer';
-import type { NeighborhoodSettings } from '../neighborhoodSettingsSchema';
+import type { NeighborhoodSettings } from '../neighborhoodManifest';
 import { FindUsSection } from '../organisms/FindUsSection';
 import { HeroBanner } from '../organisms/HeroBanner';
 import { OnDutyBanner } from '../organisms/OnDutyBanner';

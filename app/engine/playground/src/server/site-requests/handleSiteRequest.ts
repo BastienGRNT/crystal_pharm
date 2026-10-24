@@ -1,8 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-// Le fichier seul, comme la config de `layouts` : l'index du moteur charge du JSX Solid, inutile ici.
-import { rendererClientAssetsPath } from '../../../../renderer/src/html-document/rendererClientAssetsPath';
 import { readComparedLayoutId } from '../../shared/playgroundHosts';
 import type { PlaygroundScenario } from '../../shared/PlaygroundScenario';
+import { siteClientAssetsPath } from '../../shared/siteClientAssetsPath';
 import { sendHtml } from '../http/sendResponse';
 import { mockImagesPath } from '../mocks/mockImageUrl';
 import { injectFrameAgent } from '../site-rendering/injectFrameAgent';
@@ -10,7 +9,7 @@ import { renderPlaygroundErrorPage } from '../site-rendering/renderPlaygroundErr
 import { renderScenarioPage } from '../site-rendering/renderScenarioPage';
 import { handlePrescriptionUpload } from './handlePrescriptionUpload';
 import { serveMockImage } from './serveMockImage';
-import { serveRendererAsset } from './serveRendererAsset';
+import { serveSiteAsset } from './serveSiteAsset';
 import type { SiteRequestContext } from './SiteRequestContext';
 
 const prescriptionsApiPath = '/api/prescriptions';
@@ -18,8 +17,8 @@ const prescriptionsApiPath = '/api/prescriptions';
 /** Tout ce que demande un aperçu : la page du site, le JS et le CSS du moteur, les images des mocks, l'API simulée. */
 export async function handleSiteRequest(request: IncomingMessage, response: ServerResponse, context: SiteRequestContext): Promise<void> {
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'site.localhost'}`);
-  if (url.pathname.startsWith(`${rendererClientAssetsPath}/`)) {
-    serveRendererAsset(response, context.compiledClientDirectory, url.pathname.slice(rendererClientAssetsPath.length));
+  if (url.pathname.startsWith(`${siteClientAssetsPath}/`)) {
+    serveSiteAsset(response, context.compiledClientDirectory, url.pathname.slice(siteClientAssetsPath.length));
   } else if (url.pathname.startsWith(`${mockImagesPath}/`)) {
     serveMockImage(response, url.pathname);
   } else if (url.pathname === prescriptionsApiPath && request.method === 'POST') {

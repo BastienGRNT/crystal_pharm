@@ -1,11 +1,11 @@
 import { existsSync, statSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import type * as compiledLayouts from '@crystal-pharm/layouts';
+import type * as compiledSite from '../../site/serverEntry';
 
-export type SiteRenderer = Pick<typeof compiledLayouts, 'renderTenantSite' | 'layoutRegistry'>;
+export type SiteRenderer = typeof compiledSite;
 
 /**
- * Le rendu passe par le moteur compilé (`layouts/dist/server`), comme pour l'app des sites : on teste exactement
+ * Le rendu passe par le moteur et les layouts compilés (`dist/site/server`), comme dans l'app des sites : on teste exactement
  * ce qui partira en production. Node garde un module importé en cache ; l'URL change donc à chaque compilation.
  */
 export function createSiteRendererLoader(compiledServerEntryFile: string): () => Promise<SiteRenderer> {
