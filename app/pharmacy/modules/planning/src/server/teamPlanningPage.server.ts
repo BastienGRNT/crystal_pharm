@@ -1,8 +1,15 @@
+import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import { fail, redirect } from '@sveltejs/kit';
 import type { SegmentedControlOption } from '@crystal-pharm/ui';
 import type { PlanningTimelineCoverage, PlanningTimelineRow } from '../components/organisms/day/planningTimeline';
 import type { PlanningGridRow, PlanningGridSummary } from '../components/organisms/week/planningGrid';
-import { formatMinuteRange, listCoverageGaps, type CoverageSegment, type OpeningHours } from '../domain/coverage';
+import {
+	formatMinuteRange,
+	listCoverageGaps,
+	spanOpeningPeriods,
+	type CoverageSegment,
+	type OpeningHours
+} from '../domain/coverage';
 import {
 	buildPlanningRows,
 	formatDuration,
@@ -41,8 +48,15 @@ import type {
 	PlanningPageData,
 	WeekViewData
 } from '../pages/teamPlanningPageData';
-import { addShift, deleteShift, getOpeningHours, getWeekPlanning } from './repositories/planningRepository';
+import { requireActiveTenantId } from './activeTenant.server';
 import { computePharmacistCoverage } from './services/pharmacistCoverageService';
+import {
+	addShift,
+	getWeekPlanning,
+	listOpeningPeriodsByDate,
+	removeShift,
+	type ShiftSubmission
+} from './services/teamPlanningService';
 
 const shiftFieldNames = ['employeeId', 'date', 'startTime', 'endTime'] as const;
 
@@ -85,7 +99,13 @@ function buildFormActions(url: URL): FormActions {
 	};
 }
 
-export async function load({ url }: { url: URL }): Promise<PlanningPageData> {
+type PlanningRequest = {
+	url: URL;
+	locals: { user: AuthenticatedUser | null };
+};
+
+export async function load({ url, locals }: PlanningRequest): Promise<PlanningPageData> {
+	const tenantId = await requireActiveTenantId(locals.user);
 	const now = new Date();
 	const today = toCalendarDay(now);
 	const formActions = buildFormActions(url);
@@ -96,11 +116,11 @@ export async function load({ url }: { url: URL }): Promise<PlanningPageData> {
 
 	if (isWeekView) {
 		const monday = parseWeekParameter(url.searchParams.get('week'), today);
-		return { ...(await loadWeekView(monday, today)), ...formActions };
+		return { ...(await loadWeekView(tenantId, monday, today)), ...formActions };
 	}
 
 	const day = parseDayParameter(url.searchParams.get('day'), today);
-	return { ...(await loadDayView(day, today, now)), ...formActions };
+	return { ...(await loadDayView(tenantId, day, today, now)), ...formActions };
 }
 
 function buildViewOptions(currentView: 'week' | 'day', monday: Date, dayInWeek: Date): SegmentedControlOption[] {
@@ -111,15 +131,18 @@ function buildViewOptions(currentView: 'week' | 'day', monday: Date, dayInWeek: 
 }
 
 async function loadWeekView(
+	tenantId: string,
 	monday: Date,
 	today: Date
 ): Promise<Omit<WeekViewData, keyof FormActions>> {
 	const weekDays = listWeekDays(monday);
 	const weekDates = weekDays.map(toIsoDate);
-	const weekPlanning = await getWeekPlanning(weekDates[0] ?? '', weekDates[6] ?? '');
+	const [weekPlanning, openingPeriodsByDay] = await Promise.all([
+		getWeekPlanning(tenantId, weekDates[0] ?? '', weekDates[6] ?? ''),
+		listOpeningPeriodsByDate(tenantId, weekDates)
+	]);
 	const planningRows = buildPlanningRows(weekPlanning, weekDates);
 	const todayIsInWeek = weekDates.includes(toIsoDate(today));
-	const openingHoursByDay = await Promise.all(weekDates.map(getOpeningHours));
 
 	return {
 		view: 'week',
@@ -146,19 +169,23 @@ async function loadWeekView(
 			href: dayHref(day)
 		})),
 		rows: planningRows.map((planningRow) => toPlanningGridRow(planningRow, weekPlanning)),
-		pharmacistCoverage: buildWeekPharmacistCoverage(planningRows, weekDates, openingHoursByDay)
+		pharmacistCoverage: buildWeekPharmacistCoverage(planningRows, weekDates, openingPeriodsByDay)
 	};
 }
 
 async function loadDayView(
+	tenantId: string,
 	day: Date,
 	today: Date,
 	now: Date
 ): Promise<Omit<DayViewData, keyof FormActions>> {
 	const date = toIsoDate(day);
-	const dayPlanning = await getWeekPlanning(date, date);
+	const [dayPlanning, [openingPeriods = []]] = await Promise.all([
+		getWeekPlanning(tenantId, date, date),
+		listOpeningPeriodsByDate(tenantId, [date])
+	]);
 	const planningRows = buildPlanningRows(dayPlanning, [date]);
-	const openingHours = await getOpeningHours(date);
+	const openingHours = spanOpeningPeriods(openingPeriods);
 	const timelineRange = computeTimelineRange(dayPlanning.shifts, openingHours);
 	const isToday = date === toIsoDate(today);
 	const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -207,7 +234,7 @@ async function loadDayView(
 		},
 		pharmacistCoverage:
 			openingHours &&
-			buildDayPharmacistCoverage(computePharmacistCoverage(planningRows, 0, openingHours), timelineRange),
+			buildDayPharmacistCoverage(computePharmacistCoverage(planningRows, 0, openingPeriods), timelineRange),
 		now: isToday
 			? { percent: toTimelinePercent(toMinutesSinceMidnight(currentTime), timelineRange), label: currentTime }
 			: undefined
@@ -239,14 +266,14 @@ const pharmacistCoverageLabel = 'Pharmacien présent';
 function buildWeekPharmacistCoverage(
 	planningRows: PlanningRow[],
 	weekDates: string[],
-	openingHoursByDay: (OpeningHours | undefined)[]
+	openingPeriodsByDay: OpeningHours[][]
 ): PlanningGridSummary {
 	return {
 		label: pharmacistCoverageLabel,
 		cells: weekDates.map((date, dayIndex) => {
-			const openingHours = openingHoursByDay[dayIndex];
-			if (!openingHours) return { key: date, tone: 'neutral', text: 'Fermé' };
-			const gaps = listCoverageGaps(computePharmacistCoverage(planningRows, dayIndex, openingHours));
+			const openingPeriods = openingPeriodsByDay[dayIndex] ?? [];
+			if (openingPeriods.length === 0) return { key: date, tone: 'neutral', text: 'Fermé' };
+			const gaps = listCoverageGaps(computePharmacistCoverage(planningRows, dayIndex, openingPeriods));
 			const [firstGap] = gaps;
 			if (!firstGap) return { key: date, tone: 'success', text: 'Toute la journée' };
 			const otherGapsCount = gaps.length - 1;
@@ -295,11 +322,12 @@ function sortPharmaciansFirst(planningRows: PlanningRow[]): PlanningRow[] {
 }
 
 export const actions = {
-	addShift: async ({ request, url }) => {
+	addShift: async ({ request, url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
 		const formData = await request.formData();
 		const values = Object.fromEntries(
 			shiftFieldNames.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? '')])
-		) as Record<(typeof shiftFieldNames)[number], string>;
+		) as ShiftSubmission;
 
 		if (shiftFieldNames.some((fieldName) => values[fieldName] === '')) {
 			return fail(400, {
@@ -308,16 +336,18 @@ export const actions = {
 			} satisfies AddShiftFailure);
 		}
 
-		await addShift(values);
+		const saveResult = await addShift(tenantId, values);
+		if (!saveResult.isSaved) return fail(400, { message: saveResult.message, values } satisfies AddShiftFailure);
 		redirect(303, toPageHref(url, readPageQuery(url)));
 	},
 
-	deleteShift: async ({ request, url }) => {
+	deleteShift: async ({ request, url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
 		const formData = await request.formData();
 		const slotId = String(formData.get('slotId') ?? '');
 		if (slotId === '') return fail(400, { message: 'Créneau introuvable.' });
 
-		await deleteShift(slotId);
+		await removeShift(tenantId, slotId);
 		redirect(303, toPageHref(url, readPageQuery(url)));
 	}
 } satisfies Actions;
