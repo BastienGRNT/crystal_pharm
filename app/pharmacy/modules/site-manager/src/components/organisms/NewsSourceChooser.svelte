@@ -32,7 +32,6 @@
 		name="newsSourceChoice"
 		legend="Actualités affichées sur le site"
 		options={newsSourceOptions}
-		layout="cards"
 		bind:value={
 			() => newsSource,
 			(chosenValue) => {

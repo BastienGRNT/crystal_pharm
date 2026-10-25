@@ -22,7 +22,7 @@
 	<div class="grid gap-3">
 		<p class="text-small text-ink-muted">Écrites par {groupName}, elles se mettent à jour toutes seules.</p>
 		{#each articles as article, articleIndex (articleIndex)}
-			<div class="grid gap-1 rounded-md border border-line p-4">
+			<div class="grid gap-1 rounded-md border border-line p-3">
 				<p class="body-strong text-ink">{article.title}</p>
 				<p class="text-small text-ink-muted">{formatCalendarDay(article.publishedAt)}</p>
 				<p class="text-body text-ink">{article.summary}</p>

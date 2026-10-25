@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, ChoiceGroup } from '@crystal-pharm/ui';
+	import { Button } from '@crystal-pharm/ui';
 	import { isPreviewReadyMessage, toPreviewUpdateMessage, type PreviewUpdateMessage } from '../../domain/previewMessages';
 	import type { TenantSiteInput } from '../../domain/siteDraft';
 
@@ -12,26 +12,15 @@
 
 	let { frameUrl, frameOrigin, tenantSite }: SitePreviewFrameProps = $props();
 
-	const deviceOptions = [
-		{ value: 'desktop', label: 'Ordinateur' },
-		{ value: 'mobile', label: 'Mobile' }
-	];
-	// Un seul onglet d'aperçu à la fois : le rouvrir le recharge au lieu d'en ouvrir un autre.
-	const detachedPreviewName = 'crystal-pharm-site-preview';
-
 	let frame: HTMLIFrameElement | undefined = $state();
-	let previewArea: HTMLDivElement | undefined = $state();
-	let device = $state('desktop');
 	let isFrameReady = $state(false);
 	let isFrameSlow = $state(false);
-	let isFullscreen = $state(false);
 	const slowFrameDelayInMilliseconds = 15_000;
-	// Les aperçus prêts à recevoir le site : l'iframe et, s'il est ouvert, l'onglet en grand.
+	// L'aperçu prêt à recevoir le site.
 	const readyPreviewWindows = new Set<Window>();
-	let detachedPreviewWindow: Window | null = null;
 
 	function isPreviewWindow(source: MessageEventSource | null): source is Window {
-		return source !== null && (source === frame?.contentWindow || source === detachedPreviewWindow);
+		return source !== null && (source === frame?.contentWindow);
 	}
 
 	function sendToPreviewWindow(previewWindow: Window, message: PreviewUpdateMessage): void {
@@ -60,12 +49,6 @@
 		return () => cancelAnimationFrame(animationFrame);
 	});
 
-	$effect(() => {
-		const followFullscreen = () => (isFullscreen = document.fullscreenElement === previewArea);
-		document.addEventListener('fullscreenchange', followFullscreen);
-		return () => document.removeEventListener('fullscreenchange', followFullscreen);
-	});
-
 	// Un aperçu qui ne répond pas est signalé, avec de quoi réessayer, au lieu de charger sans fin.
 	$effect(() => {
 		if (isFrameReady) return;
@@ -78,55 +61,23 @@
 		isFrameSlow = false;
 		if (frame) frame.src = frameUrl;
 	}
-
-	function openDetachedPreview(): void {
-		detachedPreviewWindow = window.open(frameUrl, detachedPreviewName);
-	}
-
-	function toggleFullscreen(): void {
-		if (document.fullscreenElement) void document.exitFullscreen();
-		else void previewArea?.requestFullscreen();
-	}
 </script>
 
-<section class="grid gap-3 xl:sticky xl:top-6" aria-label="Aperçu du site">
-	<div class="flex flex-wrap items-center justify-between gap-3">
-		<h2 class="title-2 text-ink">Aperçu</h2>
-		<div class="flex flex-wrap items-center gap-2">
-			<ChoiceGroup name="previewDevice" legend="Taille de l’aperçu" options={deviceOptions} bind:value={device} />
-			<Button variant="secondary" onclick={toggleFullscreen}>Plein écran</Button>
-			<Button variant="secondary" icon="arrow-square-out" onclick={openDetachedPreview}>Ouvrir en grand</Button>
+<section
+	class="relative h-[720px] overflow-hidden rounded-lg border border-line bg-surface shadow-card lg:fixed lg:inset-y-0 lg:right-0 lg:z-10 lg:h-dvh lg:w-[45vw] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-none"
+	aria-label="Aperçu du site"
+>
+	<iframe bind:this={frame} src={frameUrl} title="Aperçu du site" class="block size-full bg-surface"></iframe>
+	{#if !isFrameReady}
+		<div class="absolute inset-0 grid place-items-center bg-surface p-6">
+			{#if isFrameSlow}
+				<div class="grid justify-items-center gap-3 text-center">
+					<p class="text-small text-ink-muted">L’aperçu ne répond pas. Vos modifications ne sont pas perdues.</p>
+					<Button variant="secondary" onclick={reloadFrame}>Réessayer</Button>
+				</div>
+			{:else}
+				<p class="text-small text-ink-muted">Chargement de l’aperçu…</p>
+			{/if}
 		</div>
-	</div>
-	<div
-		bind:this={previewArea}
-		class="relative flex flex-col overflow-hidden bg-surface-muted {isFullscreen ? '' : 'rounded-lg border border-line shadow-card'}"
-	>
-		{#if isFullscreen}
-			<div class="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2">
-				<ChoiceGroup name="fullscreenPreviewDevice" legend="Taille de l’aperçu" options={deviceOptions} bind:value={device} />
-				<Button variant="secondary" icon="x" onclick={toggleFullscreen}>Quitter le plein écran</Button>
-			</div>
-		{/if}
-		<iframe
-			bind:this={frame}
-			src={frameUrl}
-			title="Aperçu du site"
-			class="mx-auto block w-full bg-surface {isFullscreen ? 'min-h-0 flex-1' : 'h-[720px]'} {device === 'mobile'
-				? 'max-w-[390px]'
-				: ''}"
-		></iframe>
-		{#if !isFrameReady}
-			<div class="absolute inset-0 grid place-items-center bg-surface p-6">
-				{#if isFrameSlow}
-					<div class="grid justify-items-center gap-3 text-center">
-						<p class="text-small text-ink-muted">L’aperçu ne répond pas. Vos modifications ne sont pas perdues.</p>
-						<Button variant="secondary" onclick={reloadFrame}>Réessayer</Button>
-					</div>
-				{:else}
-					<p class="text-small text-ink-muted">Chargement de l’aperçu…</p>
-				{/if}
-			</div>
-		{/if}
-	</div>
+	{/if}
 </section>

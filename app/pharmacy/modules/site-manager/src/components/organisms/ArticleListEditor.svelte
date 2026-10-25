@@ -25,12 +25,12 @@
 	}
 </script>
 
-<div class="grid gap-3">
+<div class="grid gap-2">
 	<div>
 		<Button variant="secondary" icon="plus" onclick={addArticle}>Ajouter une actualité</Button>
 	</div>
 	{#each articles as article, articleIndex (article)}
-		<div class="grid gap-3 rounded-md border border-line p-4">
+		<div class="grid gap-2 rounded-md border border-line p-3">
 			<div class="flex items-center justify-between gap-3">
 				<p class="body-strong text-ink">Actualité {articleIndex + 1}</p>
 				<IconButton icon="trash" label="Retirer cette actualité" onclick={() => removeArticle(article)} />
@@ -42,7 +42,7 @@
 			</Field>
 			<Field label="Résumé" errorMessage={findMissingTextError(article.summary, article.title, 'Résumez cette actualité en quelques lignes.')}>
 				{#snippet control(controlAttributes)}
-					<Textarea {...controlAttributes} rows={4} maxlength={1200} bind:value={article.summary} />
+					<Textarea {...controlAttributes} rows={3} maxlength={1200} bind:value={article.summary} />
 				{/snippet}
 			</Field>
 			<Field label="Date de publication">
