@@ -843,6 +843,65 @@
   cursor: pointer;
 }
 
+.layout-neighborhood .nb-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.layout-neighborhood .nb-checkbox input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--nb-color-primary);
+}
+
+.layout-neighborhood .nb-timesavers {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  border: 2px dashed #cfc5ae;
+  border-radius: var(--nb-radius);
+}
+
+.layout-neighborhood .nb-timesavers__legend {
+  padding: 0 8px;
+  color: var(--nb-color-primary);
+  font-weight: 700;
+}
+
+.layout-neighborhood .nb-timesavers__text {
+  margin: 0;
+  color: var(--nb-color-muted);
+}
+
+.layout-neighborhood .nb-switch {
+  display: inline-flex;
+  justify-self: start;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--nb-color-background);
+}
+
+.layout-neighborhood .nb-switch__option {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.layout-neighborhood .nb-switch__option[aria-pressed='true'] {
+  background: var(--nb-color-primary);
+  color: #fff;
+}
+
 .layout-neighborhood .nb-form__submit {
   justify-self: start;
 }

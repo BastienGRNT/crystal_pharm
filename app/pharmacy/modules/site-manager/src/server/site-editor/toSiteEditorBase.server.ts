@@ -42,8 +42,8 @@ function collectAvailableModuleData(
 			onDutyPeriods: []
 		},
 		team: { members: employees.map((employee) => toTeamMember(tenantId, employee)) },
-		// Aucun module `Prescriptions` dans le C# pour l'instant : une ordonnance ne partirait nulle part.
-		prescriptionUpload: undefined,
+		// Le module `Prescriptions` du C# reçoit les ordonnances : rien à saisir, le module est toujours affichable.
+		prescriptionUpload: {},
 		loyaltyCard:
 			group?.loyaltyCardUrl && group.loyaltyCardMessage
 				? {

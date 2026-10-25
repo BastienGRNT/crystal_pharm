@@ -594,6 +594,52 @@
   cursor: pointer;
 }
 
+.layout-atelier .at-field__hint {
+  color: var(--at-color-muted);
+  font-size: 0.9rem;
+}
+
+.layout-atelier .at-file--compact {
+  padding: 18px 24px;
+  font-size: 1.2rem;
+}
+
+.layout-atelier .at-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.layout-atelier .at-checkbox input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--at-color-accent);
+}
+
+.layout-atelier .at-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.layout-atelier .at-choice button {
+  padding: 10px 18px;
+  border: 1px solid var(--at-color-muted);
+  background: transparent;
+  color: var(--at-color-text);
+  font: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.layout-atelier .at-choice button[aria-pressed='true'] {
+  border-color: var(--at-color-accent);
+  color: var(--at-color-accent);
+}
+
 .layout-atelier .at-summary {
   display: grid;
   grid-template-columns: max-content 1fr;

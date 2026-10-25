@@ -227,7 +227,7 @@ sequenceDiagram
     participant Api as POST /api/prescriptions
 
     Visitor->>Form: clique sur « Suivant » (formulaire par étapes)
-    Form->>Validate: validatePrescription({ firstName, lastName, phone, file })
+    Form->>Validate: validatePrescription(form)
     Validate-->>Form: { firstName?: "Indiquez votre prénom.", … }
     Form->>Form: ne garde que les erreurs des champs de l'étape,<br/>passe à l'étape suivante s'il n'y en a pas
 
@@ -249,8 +249,8 @@ sequenceDiagram
 
 Pourquoi ce découpage :
 
-- **Le layout ne peut pas oublier un champ.** `submitPrescription` exige un objet avec `firstName`,
-  `lastName`, `phone` et `file` : un champ manquant ne compile pas.
+- **Le layout ne peut pas oublier un champ.** `submitPrescription` exige un objet avec tous les champs (`firstName`,
+  `lastName`, `birthDate`, `prescriptionFile`…) : un champ manquant ne compile pas.
 - **Le layout ne peut pas appeler l'API lui-même.** Il ne connaît ni son URL ni le tenant.
 - **Rien ne part sans être validé.** `sendPrescription` ne reçoit qu'une demande déjà passée par
   `PrescriptionUploadRequestSchema`.

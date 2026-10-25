@@ -9,8 +9,8 @@ using Npgsql;
 
 namespace CrystalPharm.Api.IntegrationTests;
 
-[Collection(BookingApiCollection.Name)]
-public sealed class AppointmentsApiTests(BookingApiFixture api)
+[Collection(ApiCollection.Name)]
+public sealed class AppointmentsApiTests(ApiFixture api)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {

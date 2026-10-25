@@ -1,22 +1,12 @@
-import { createSignal, Show } from 'solid-js';
-import type { PrescriptionFormErrors, SubmitPrescription } from '@crystal-pharm/renderer';
+import { Show } from 'solid-js';
+import { createPrescriptionFormState, type PrescriptionUploadModuleProps } from '@crystal-pharm/renderer';
 import { FormField } from '../molecules/FormField';
+import { CounterTimeSavers } from './CounterTimeSavers';
 
 /** Formulaire classique : tous les champs visibles en même temps. */
-export function PrescriptionForm(props: { submitPrescription: SubmitPrescription }) {
-  const [firstName, setFirstName] = createSignal('');
-  const [lastName, setLastName] = createSignal('');
-  const [phone, setPhone] = createSignal('');
-  const [file, setFile] = createSignal<File>();
-  const [errorsByField, setErrorsByField] = createSignal<PrescriptionFormErrors>({});
-  const [status, setStatus] = createSignal<'editing' | 'sending' | 'sent' | 'failed'>('editing');
-
-  async function send() {
-    setStatus('sending');
-    const result = await props.submitPrescription({ firstName: firstName(), lastName: lastName(), phone: phone(), file: file() });
-    setErrorsByField(result.outcome === 'invalid' ? result.errorsByField : {});
-    setStatus(result.outcome === 'invalid' ? 'editing' : result.outcome);
-  }
+export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'submitPrescription' | 'validatePrescription'>) {
+  const state = createPrescriptionFormState(props);
+  const { form, updateField, errorsByField, status } = state;
 
   return (
     <Show
@@ -32,27 +22,50 @@ export function PrescriptionForm(props: { submitPrescription: SubmitPrescription
         novalidate
         onSubmit={(event) => {
           event.preventDefault();
-          void send();
+          void state.send();
         }}
       >
         <fieldset class="essential-form__group">
           <legend class="essential-form__group-title">Vous</legend>
           <FormField label="Prénom" error={errorsByField().firstName}>
-            <input class="essential-input" autocomplete="given-name" value={firstName()} onInput={(event) => setFirstName(event.currentTarget.value)} />
+            <input class="essential-input" autocomplete="given-name" value={form.firstName} onInput={(event) => updateField('firstName', event.currentTarget.value)} />
           </FormField>
           <FormField label="Nom" error={errorsByField().lastName}>
-            <input class="essential-input" autocomplete="family-name" value={lastName()} onInput={(event) => setLastName(event.currentTarget.value)} />
+            <input class="essential-input" autocomplete="family-name" value={form.lastName} onInput={(event) => updateField('lastName', event.currentTarget.value)} />
+          </FormField>
+          <FormField label="Date de naissance" error={errorsByField().birthDate}>
+            <input class="essential-input" type="date" autocomplete="bday" value={form.birthDate} onInput={(event) => updateField('birthDate', event.currentTarget.value)} />
           </FormField>
           <FormField label="Téléphone" error={errorsByField().phone}>
-            <input class="essential-input" type="tel" autocomplete="tel" value={phone()} onInput={(event) => setPhone(event.currentTarget.value)} />
+            <input class="essential-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
           </FormField>
         </fieldset>
         <fieldset class="essential-form__group">
           <legend class="essential-form__group-title">Ordonnance</legend>
-          <FormField label="Photo ou PDF" error={errorsByField().file}>
-            <input class="essential-input" type="file" accept="image/*,application/pdf" onInput={(event) => setFile(event.currentTarget.files?.[0])} />
+          <FormField label="Photo ou PDF" error={errorsByField().prescriptionFile}>
+            <input
+              class="essential-input"
+              type="file"
+              accept="image/*,application/pdf"
+              onInput={(event) => updateField('prescriptionFile', event.currentTarget.files?.[0])}
+            />
           </FormField>
+          <FormField label="Heure de passage prévue" error={errorsByField().plannedVisitAt}>
+            <input
+              class="essential-input"
+              type="datetime-local"
+              value={form.plannedVisitAt}
+              onInput={(event) => updateField('plannedVisitAt', event.currentTarget.value)}
+            />
+          </FormField>
+          <label class="essential-checkbox">
+            <input type="checkbox" checked={form.hasAlreadyVisited} onChange={(event) => updateField('hasAlreadyVisited', event.currentTarget.checked)} />
+            <span>Je suis déjà venu dans cette pharmacie</span>
+          </label>
         </fieldset>
+        <Show when={!form.hasAlreadyVisited}>
+          <CounterTimeSavers state={state} />
+        </Show>
         <button class="essential-form__submit" type="submit" disabled={status() === 'sending'}>
           {status() === 'sending' ? 'Envoi en cours…' : 'Envoyer mon ordonnance'}
         </button>

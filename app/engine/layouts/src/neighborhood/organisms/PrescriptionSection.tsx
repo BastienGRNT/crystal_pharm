@@ -15,7 +15,7 @@ export function PrescriptionSection(props: PrescriptionUploadModuleProps) {
         </ol>
       </div>
       <div class="nb-prescription__form-card">
-        <PrescriptionForm submitPrescription={props.submitPrescription} />
+        <PrescriptionForm submitPrescription={props.submitPrescription} validatePrescription={props.validatePrescription} />
       </div>
     </section>
   );

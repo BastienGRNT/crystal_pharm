@@ -14,6 +14,7 @@ const baseWithoutGroup: SiteEditorBase = {
 	group: undefined,
 	availableModuleData: {
 		team: { members: [{ fullName: 'Marie Dupont', role: 'Pharmacienne' }] },
+		prescriptionUpload: {},
 		loyaltyCard: { text: '-10 % sur la parapharmacie', url: 'https://groupement.example/carte' }
 	}
 };
@@ -93,7 +94,7 @@ describe('listSiteModuleChoices', () => {
 			team: 'optional',
 			services: 'unavailable',
 			news: 'unavailable',
-			prescriptionUpload: 'unavailable',
+			prescriptionUpload: 'optional',
 			loyaltyCard: 'mandatory'
 		});
 	});

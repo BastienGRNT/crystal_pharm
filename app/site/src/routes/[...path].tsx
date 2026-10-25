@@ -1,10 +1,8 @@
 import { createAsync, useLocation } from '@solidjs/router';
 import { Match, Switch } from 'solid-js';
+import { sendPrescriptionToSiteServer } from '../client/sendPrescriptionToSiteServer';
 import { TenantSitePageView, UnavailablePage } from '../components/TenantSitePageView';
 import { getTenantSiteOfRequest } from '../server/tenant-site/tenantSiteOfRequest';
-
-// Aucun module `Prescriptions` dans le C# pour l'instant : le module est toujours désactivé.
-const sendPrescriptionNowhere = async () => ({ outcome: 'failed' as const });
 
 export default function TenantSiteRoute() {
   const location = useLocation();
@@ -27,7 +25,7 @@ export default function TenantSiteRoute() {
             tenantSite={reading().tenantSite}
             requestedPath={location.pathname}
             renderedAt={reading().renderedAt}
-            sendPrescription={sendPrescriptionNowhere}
+            sendPrescription={sendPrescriptionToSiteServer}
           />
         )}
       </Match>

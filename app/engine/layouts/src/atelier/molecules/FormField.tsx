@@ -1,9 +1,10 @@
 import { Show, type JSX } from 'solid-js';
 
-export function FormField(props: { label: string; error: string | undefined; children: JSX.Element }) {
+export function FormField(props: { label: string; hint?: string; error: string | undefined; children: JSX.Element }) {
   return (
     <label class="at-field" classList={{ 'at-field--invalid': props.error !== undefined }}>
       <span class="at-field__label">{props.label}</span>
+      <Show when={props.hint}>{(hint) => <span class="at-field__hint">{hint()}</span>}</Show>
       {props.children}
       <Show when={props.error}>
         {(error) => (

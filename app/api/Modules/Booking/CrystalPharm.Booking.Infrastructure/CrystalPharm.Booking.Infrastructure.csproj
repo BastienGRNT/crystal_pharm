@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CrystalPharm.Booking.Application\CrystalPharm.Booking.Application.csproj" />
+    <ProjectReference Include="..\..\..\CrystalPharm.SharedKernel.Persistence\CrystalPharm.SharedKernel.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

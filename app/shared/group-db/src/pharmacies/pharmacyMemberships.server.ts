@@ -1,6 +1,6 @@
 import { listTenantSummaries, type TenantSummary } from '@crystal-pharm/pharmacy-db';
 import { and, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
-import { platformAccess, runWithGroupAccess, type GroupAccess } from '../database/groupDatabase.server';
+import { platformAccess, runWithGroupAccess, type GroupAccess, type GroupTransaction } from '../database/groupDatabase.server';
 import { pharmacyGroups, pharmacyMemberships, type MembershipEndedBy } from '../database/groupTables';
 import { computeCoverageEnd } from './coveragePeriod';
 
@@ -41,25 +41,32 @@ export async function findCurrentGroupOfTenant(tenantId: string): Promise<Curren
 	return membership;
 }
 
-export async function findCoveringGroupOfTenant(tenantId: string, now: Date): Promise<CoveringGroupOfTenant | undefined> {
-	const coveringMemberships = await runWithGroupAccess({ tenantId }, (transaction) =>
-		transaction
-			.select({
-				groupId: pharmacyMemberships.groupId,
-				groupName: pharmacyGroups.name,
-				leftAt: pharmacyMemberships.leftAt,
-				coverageEndsAt: pharmacyMemberships.coverageEndsAt
-			})
-			.from(pharmacyMemberships)
-			.innerJoin(pharmacyGroups, eq(pharmacyGroups.id, pharmacyMemberships.groupId))
-			.where(
-				and(
-					eq(pharmacyMemberships.tenantId, tenantId),
-					or(isNull(pharmacyMemberships.leftAt), gt(pharmacyMemberships.coverageEndsAt, now))
-				)
+export function findCoveringGroupOfTenant(tenantId: string, now: Date): Promise<CoveringGroupOfTenant | undefined> {
+	return runWithGroupAccess({ tenantId }, (transaction) => readCoveringGroupOfTenant(transaction, tenantId, now));
+}
+
+/** Pour qui a déjà une transaction ouverte : en ouvrir une deuxième bloquerait le pool de connexions. */
+export async function readCoveringGroupOfTenant(
+	transaction: GroupTransaction,
+	tenantId: string,
+	now: Date
+): Promise<CoveringGroupOfTenant | undefined> {
+	const coveringMemberships = await transaction
+		.select({
+			groupId: pharmacyMemberships.groupId,
+			groupName: pharmacyGroups.name,
+			leftAt: pharmacyMemberships.leftAt,
+			coverageEndsAt: pharmacyMemberships.coverageEndsAt
+		})
+		.from(pharmacyMemberships)
+		.innerJoin(pharmacyGroups, eq(pharmacyGroups.id, pharmacyMemberships.groupId))
+		.where(
+			and(
+				eq(pharmacyMemberships.tenantId, tenantId),
+				or(isNull(pharmacyMemberships.leftAt), gt(pharmacyMemberships.coverageEndsAt, now))
 			)
-			.orderBy(desc(pharmacyMemberships.joinedAt))
-	);
+		)
+		.orderBy(desc(pharmacyMemberships.joinedAt));
 	const coveringMembership =
 		coveringMemberships.find((membership) => membership.leftAt === null) ?? coveringMemberships[0];
 	if (!coveringMembership) return undefined;

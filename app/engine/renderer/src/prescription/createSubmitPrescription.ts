@@ -1,6 +1,6 @@
 import { PrescriptionUploadRequestSchema, type PrescriptionUploadRequest } from '@crystal-pharm/schema';
 import * as v from 'valibot';
-import { validatePrescriptionForm, type PrescriptionForm, type PrescriptionFormErrors } from './validatePrescriptionForm';
+import { validatePrescriptionForm, withoutDocumentsKnownToThePharmacy, type PrescriptionForm, type PrescriptionFormErrors } from './validatePrescriptionForm';
 
 export type PrescriptionSubmissionResult =
   | { outcome: 'sent' }
@@ -17,6 +17,6 @@ export function createSubmitPrescription(sendPrescription: SendPrescription): Su
   return async (form) => {
     const errorsByField = validatePrescriptionForm(form);
     if (Object.values(errorsByField).some((error) => error !== undefined)) return { outcome: 'invalid', errorsByField };
-    return sendPrescription(v.parse(PrescriptionUploadRequestSchema, form));
+    return sendPrescription(v.parse(PrescriptionUploadRequestSchema, withoutDocumentsKnownToThePharmacy(form)));
   };
 }

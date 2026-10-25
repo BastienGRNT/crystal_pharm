@@ -14,7 +14,7 @@ api:
 # Le contrat du C# (OpenAPI, écrit au build sans lancer l'API) devient les types de
 # shared/api-client. Les valeurs factices ne servent qu'à construire l'hôte, jamais à se connecter.
 gen-types:
-	cd app/api && ConnectionStrings__Booking=Host=unused ManagerJwt__JwksUrl=http://unused ManagerJwt__Issuer=unused ManagerJwt__Audience=unused \
+	cd app/api && ConnectionStrings__Booking=Host=unused ConnectionStrings__Prescriptions=Host=unused PrescriptionStorage__LocalDirectory=unused SiteService__ApiKey=unused-unused-unused-unused-unused ManagerJwt__JwksUrl=http://unused ManagerJwt__Issuer=unused ManagerJwt__Audience=unused \
 		dotnet build CrystalPharm.Api -p:OpenApiGenerateDocuments=true
 	cd app && pnpm --filter @crystal-pharm/api-client generate
 

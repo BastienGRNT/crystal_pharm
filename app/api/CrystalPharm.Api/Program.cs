@@ -4,6 +4,7 @@ using CrystalPharm.Api.Authentication;
 using CrystalPharm.Api.ErrorHandling;
 using CrystalPharm.Api.Tenancy;
 using CrystalPharm.Booking.Infrastructure;
+using CrystalPharm.Prescriptions.Infrastructure;
 using CrystalPharm.SharedKernel.Tenancy;
 using DotNetEnv;
 
@@ -28,12 +29,16 @@ builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.C
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<InvalidAppointmentExceptionHandler>();
+builder.Services.AddExceptionHandler<InvalidPrescriptionExceptionHandler>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<RequestTenantContext>();
 builder.Services.AddScoped<ITenantContext>(services => services.GetRequiredService<RequestTenantContext>());
 builder.Services.AddManagerAuthentication(builder.Configuration, builder.Environment);
+builder.Services.AddSiteServiceAuthentication(builder.Configuration);
+builder.Services.AddPrescriptionRateLimiting();
 builder.Services.AddBookingModule(builder.Configuration);
+builder.Services.AddPrescriptionsModule(builder.Configuration);
 
 var app = builder.Build();
 
@@ -41,6 +46,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     await app.Services.ApplyBookingMigrationsAsync(CancellationToken.None);
+    await app.Services.ApplyPrescriptionsMigrationsAsync(CancellationToken.None);
 }
 
 app.UseExceptionHandler();
@@ -49,6 +55,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 

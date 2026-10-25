@@ -1,7 +1,7 @@
 using CrystalPharm.Booking.Application.Interfaces;
 using CrystalPharm.Booking.Application.Services;
 using CrystalPharm.Booking.Infrastructure.Persistence;
-using CrystalPharm.Booking.Infrastructure.Persistence.Interceptors;
+using CrystalPharm.SharedKernel.Persistence.Tenancy;
 using CrystalPharm.Booking.Infrastructure.Repositories;
 using CrystalPharm.Booking.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;

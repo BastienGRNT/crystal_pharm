@@ -3,13 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace CrystalPharm.Booking.Infrastructure.Persistence.Interceptors;
+namespace CrystalPharm.SharedKernel.Persistence.Tenancy;
 
 /// <summary>
 /// Pose le Tenant de la requête sur chaque donnée ajoutée, et refuse toute
 /// modification ou suppression d'une donnée d'un autre Tenant.
 /// </summary>
-internal sealed class TenantOwnershipInterceptor(ITenantContext tenantContext) : SaveChangesInterceptor
+public sealed class TenantOwnershipInterceptor(ITenantContext tenantContext) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {

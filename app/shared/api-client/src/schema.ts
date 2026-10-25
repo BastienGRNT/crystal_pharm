@@ -4,6 +4,236 @@
  */
 
 export interface paths {
+    "/prescriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    "Idempotency-Key"?: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        FirstName?: string;
+                        LastName?: string;
+                        BirthDate?: string;
+                        Phone?: string;
+                        PlannedVisitAt?: string;
+                        HasAlreadyVisited?: string;
+                        SocialSecurityNumber?: string;
+                        PrescriptionFile?: components["schemas"]["IFormFile"];
+                        VitalCardPhoto?: components["schemas"]["IFormFile"];
+                        MutualCardFront?: components["schemas"]["IFormFile"];
+                        MutualCardBack?: components["schemas"]["IFormFile"];
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PrescriptionSubmissionResult"];
+                        "application/json": components["schemas"]["PrescriptionSubmissionResult"];
+                        "text/json": components["schemas"]["PrescriptionSubmissionResult"];
+                    };
+                };
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PrescriptionSubmissionResult"];
+                        "application/json": components["schemas"]["PrescriptionSubmissionResult"];
+                        "text/json": components["schemas"]["PrescriptionSubmissionResult"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/received-prescriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReceivedPrescriptionSummaryDto"][];
+                        "application/json": components["schemas"]["ReceivedPrescriptionSummaryDto"][];
+                        "text/json": components["schemas"]["ReceivedPrescriptionSummaryDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/received-prescriptions/{submissionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    submissionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReceivedPrescriptionDto"];
+                        "application/json": components["schemas"]["ReceivedPrescriptionDto"];
+                        "text/json": components["schemas"]["ReceivedPrescriptionDto"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/received-prescriptions/{submissionId}/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    submissionId: string;
+                    documentId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": components["schemas"]["FileStreamResult"];
+                        "image/png": components["schemas"]["FileStreamResult"];
+                        "image/webp": components["schemas"]["FileStreamResult"];
+                        "image/heic": components["schemas"]["FileStreamResult"];
+                        "application/pdf": components["schemas"]["FileStreamResult"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": components["schemas"]["ProblemDetails"];
+                        "image/png": components["schemas"]["ProblemDetails"];
+                        "image/webp": components["schemas"]["ProblemDetails"];
+                        "image/heic": components["schemas"]["ProblemDetails"];
+                        "application/pdf": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/booking/appointments": {
         parameters: {
             query?: never;
@@ -267,6 +497,25 @@ export interface components {
         };
         /** @enum {unknown} */
         AppointmentStatus: "pending" | "confirmed" | "cancelled";
+        /** @enum {unknown} */
+        DocumentFormat: "jpeg" | "png" | "webp" | "heic" | "pdf";
+        /** @enum {unknown} */
+        DocumentKind: "prescription" | "vitalCard" | "mutualCardFront" | "mutualCardBack";
+        EntityTagHeaderValue: {
+            tag?: components["schemas"]["StringSegment"];
+            isWeak?: boolean;
+        } | null;
+        FileStreamResult: {
+            fileStream?: components["schemas"]["Stream"];
+            contentType?: string | null;
+            fileDownloadName?: string | null;
+            /** Format: date-time */
+            lastModified?: string | null;
+            entityTag?: components["schemas"]["EntityTagHeaderValue"];
+            enableRangeProcessing?: boolean;
+        };
+        /** Format: binary */
+        IFormFile: string;
         NewAppointmentDto: {
             /** Format: uuid */
             employeeId: string;
@@ -280,6 +529,11 @@ export interface components {
             patientPhone: string;
             reason: string;
         };
+        PrescriptionSubmissionResult: {
+            /** Format: uuid */
+            submissionId: string;
+            alreadyReceived: boolean;
+        };
         ProblemDetails: {
             type?: string | null;
             title?: string | null;
@@ -287,6 +541,55 @@ export interface components {
             status?: number | null;
             detail?: string | null;
             instance?: string | null;
+        };
+        ReceivedDocumentDto: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["DocumentKind"];
+            format: components["schemas"]["DocumentFormat"];
+            /** Format: int64 */
+            sizeInBytes: number;
+        };
+        ReceivedPrescriptionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            submittedAt: string;
+            firstName: string;
+            lastName: string;
+            /** Format: date */
+            birthDate: string;
+            phone: string;
+            /** Format: date-time */
+            plannedVisitAt: string;
+            hasAlreadyVisited: boolean;
+            socialSecurityNumber: string | null;
+            documents: components["schemas"]["ReceivedDocumentDto"][];
+        };
+        ReceivedPrescriptionSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            submittedAt: string;
+            firstName: string;
+            lastName: string;
+            phone: string;
+            /** Format: date-time */
+            plannedVisitAt: string;
+            hasAlreadyVisited: boolean;
+            /** Format: int32 */
+            documentCount: number;
+        };
+        /** Format: binary */
+        Stream: string;
+        StringSegment: {
+            buffer?: string | null;
+            /** Format: int32 */
+            offset?: number;
+            /** Format: int32 */
+            length?: number;
+            value?: string | null;
+            hasValue?: boolean;
         };
     };
     responses: never;

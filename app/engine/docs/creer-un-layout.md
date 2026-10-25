@@ -145,39 +145,28 @@ export function TeamSection(props: TeamModuleProps) {
 
 ## 4. Le formulaire d'ordonnance
 
-C'est ton formulaire : tu choisis les champs, leur disposition, les étapes, les messages. Tu dois
-seulement l'envoyer avec `props.submitPrescription`, le seul moyen d'atteindre l'API.
+C'est ton formulaire : tu choisis la disposition, les étapes, les messages. L'état (valeurs, erreurs,
+envoi) vient de `createPrescriptionFormState`, et rien ne part sans passer par `props.submitPrescription`,
+le seul moyen d'atteindre l'API.
 
 ```tsx
 // organisms/PrescriptionSection.tsx
-import { createSignal, Show } from 'solid-js';
-import type { PrescriptionFormErrors, PrescriptionUploadModuleProps } from '@crystal-pharm/renderer';
+import { Show } from 'solid-js';
+import { createPrescriptionFormState, type PrescriptionUploadModuleProps } from '@crystal-pharm/renderer';
 
 export function PrescriptionSection(props: PrescriptionUploadModuleProps) {
-  const [firstName, setFirstName] = createSignal('');
-  const [lastName, setLastName] = createSignal('');
-  const [phone, setPhone] = createSignal('');
-  const [file, setFile] = createSignal<File>();
-  const [errors, setErrors] = createSignal<PrescriptionFormErrors>({});
-  const [status, setStatus] = createSignal<'editing' | 'sending' | 'sent' | 'failed'>('editing');
-
-  async function send() {
-    setStatus('sending');
-    // Oublier un des 4 champs ne compile pas.
-    const result = await props.submitPrescription({ firstName: firstName(), lastName: lastName(), phone: phone(), file: file() });
-    setErrors(result.outcome === 'invalid' ? result.errorsByField : {});
-    setStatus(result.outcome === 'invalid' ? 'editing' : result.outcome);
-  }
+  const state = createPrescriptionFormState(props);
+  const { form, updateField, errorsByField, status } = state;
 
   return (
     <Show when={status() !== 'sent'} fallback={<p>Ordonnance envoyée, merci !</p>}>
-      <form novalidate onSubmit={(event) => { event.preventDefault(); void send(); }}>
+      <form novalidate onSubmit={(event) => { event.preventDefault(); void state.send(); }}>
         <label>
           Prénom
-          <input value={firstName()} onInput={(event) => setFirstName(event.currentTarget.value)} />
-          <Show when={errors().firstName}>{(message) => <span>{message()}</span>}</Show>
+          <input value={form.firstName} onInput={(event) => updateField('firstName', event.currentTarget.value)} />
+          <Show when={errorsByField().firstName}>{(message) => <span>{message()}</span>}</Show>
         </label>
-        {/* … nom, téléphone, fichier, placés où tu veux … */}
+        {/* … les autres champs, placés où tu veux … */}
         <button type="submit" disabled={status() === 'sending'}>Envoyer</button>
       </form>
     </Show>
@@ -185,10 +174,29 @@ export function PrescriptionSection(props: PrescriptionUploadModuleProps) {
 }
 ```
 
-| Fonction | Rôle | Renvoie |
+Les champs du formulaire (`PrescriptionForm`) :
+
+| Champ | Obligatoire | Note |
 |---|---|---|
-| `submitPrescription(form)` | Valide, puis envoie à l'API | `{ outcome: 'sent' }`, `{ outcome: 'invalid', errorsByField }` ou `{ outcome: 'failed' }` |
-| `validatePrescription(form)` | Valide **sans envoyer**, par exemple avant de passer à l'étape suivante | `{ firstName?: string, lastName?: string, phone?: string, file?: string }` |
+| `firstName`, `lastName`, `birthDate` (`2026-03-14`), `phone` | oui | `<input type="date">` pour la date de naissance |
+| `plannedVisitAt` (`2026-03-14T17:30`) | oui | l'heure de passage prévue, `<input type="datetime-local">` |
+| `prescriptionFile` | oui | photo ou PDF |
+| `hasAlreadyVisited` | — | « je suis déjà venu » : la carte Vitale et la mutuelle sont alors écartées à l'envoi, **masque-les** |
+| `socialSecurityNumber` **ou** `vitalCardPhoto` | non | au choix ; propose un sélecteur photo / numéro plutôt que deux champs |
+| `mutualCardFront`, `mutualCardBack` | non | un seul choix côté interface (`setMutualCardFiles`) : un PDF, ou une à deux photos ; le 1er fichier va dans `Front`, le 2e dans `Back` |
+
+La carte Vitale et la mutuelle sont facultatives (le formulaire sert aussi au comptoir) : dis-le au
+visiteur comme un gain de temps, pas comme une corvée.
+
+| Fonction de l'état | Rôle |
+|---|---|
+| `updateField(nom, valeur)` | Change un champ et efface son erreur |
+| `validateFields(noms)` | Valide ces champs seulement, affiche leurs erreurs, dit s'ils sont valides : pour passer à l'étape suivante |
+| `send()` | Valide, envoie, met à jour `status()` (`editing`, `sending`, `sent`, `failed`), renvoie les erreurs par champ |
+
+Sans l'état fourni, `props.submitPrescription(form)` valide puis envoie (`{ outcome: 'sent' }`,
+`{ outcome: 'invalid', errorsByField }` ou `{ outcome: 'failed' }`), et `props.validatePrescription(form)`
+valide sans envoyer.
 
 Un formulaire par étapes complet : `engine/layouts/src/atelier/organisms/PrescriptionSteps.tsx`.
 

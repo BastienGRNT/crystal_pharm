@@ -43,7 +43,7 @@ const moduleTexts: Record<ModuleName, ModuleTexts> = {
 	prescriptionUpload: {
 		title: 'Envoi d’ordonnance',
 		description: 'Vos patients vous envoient leur ordonnance depuis le site.',
-		unavailableReason: 'L’envoi d’ordonnance arrive bientôt.'
+		unavailableReason: 'L’envoi d’ordonnance n’est pas disponible pour ce site.'
 	},
 	loyaltyCard: {
 		title: 'Carte de fidélité',

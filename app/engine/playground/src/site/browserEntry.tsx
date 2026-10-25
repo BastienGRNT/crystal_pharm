@@ -1,4 +1,4 @@
-import type { SendPrescription } from '@crystal-pharm/renderer';
+import { toPrescriptionFormData, type SendPrescription } from '@crystal-pharm/renderer';
 import { hydrate } from 'solid-js/web';
 import { createSitePage } from './createSitePage';
 import { htmlDocumentElementIds } from './html-document/htmlDocumentElementIds';
@@ -8,10 +8,8 @@ const prescriptionsApiPath = '/api/prescriptions';
 
 /** Vers la fausse API du banc d'essai. Le tenant n'est pas envoyé : dans l'app des sites, il vient de la passerelle. */
 const sendPrescriptionToPlaygroundApi: SendPrescription = async (request) => {
-  const formData = new FormData();
-  for (const [fieldName, value] of Object.entries(request)) formData.set(fieldName, value);
   try {
-    const response = await fetch(prescriptionsApiPath, { method: 'POST', body: formData });
+    const response = await fetch(prescriptionsApiPath, { method: 'POST', body: toPrescriptionFormData(request) });
     return response.ok ? { outcome: 'sent' } : { outcome: 'failed' };
   } catch {
     return { outcome: 'failed' };

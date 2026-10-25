@@ -2,13 +2,13 @@ using System.Data.Common;
 using CrystalPharm.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace CrystalPharm.Booking.Infrastructure.Persistence.Interceptors;
+namespace CrystalPharm.SharedKernel.Persistence.Tenancy;
 
 /// <summary>
 /// Pose le Tenant de la requête pour la Row-Level Security au début de chaque transaction
 /// (<c>set_config(…, true)</c>, l'équivalent de <c>SET LOCAL</c>), jamais pour toute la connexion.
 /// </summary>
-internal sealed class TenantTransactionInterceptor(ITenantContext tenantContext) : DbTransactionInterceptor
+public sealed class TenantTransactionInterceptor(ITenantContext tenantContext) : DbTransactionInterceptor
 {
     public override DbTransaction TransactionStarted(DbConnection connection, TransactionEndEventData eventData, DbTransaction result)
     {

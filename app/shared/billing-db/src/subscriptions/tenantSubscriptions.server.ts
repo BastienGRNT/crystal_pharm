@@ -1,5 +1,5 @@
 import type { AuthenticatedUser } from '@crystal-pharm/auth/toolkit';
-import { findCoveringGroupOfTenant } from '@crystal-pharm/group-db';
+import { readCoveringGroupOfTenant } from '@crystal-pharm/group-db';
 import { and, desc, eq, gt, gte, isNull, or } from 'drizzle-orm';
 import { readToolCatalog } from '../catalog/toolCatalog.server';
 import { readGroupContract } from '../contracts/groupContracts.server';
@@ -328,7 +328,7 @@ async function readCoveringGroup(
 	tenantId: string,
 	now: Date
 ): Promise<CoveringGroup | undefined> {
-	const coveringGroupOfTenant = await findCoveringGroupOfTenant(tenantId, now);
+	const coveringGroupOfTenant = await readCoveringGroupOfTenant(transaction, tenantId, now);
 	if (!coveringGroupOfTenant) return undefined;
 	const contract = await readGroupContract(transaction, coveringGroupOfTenant.groupId);
 	return {

@@ -1,6 +1,7 @@
 using CrystalPharm.Api.Authentication;
 using CrystalPharm.Api.Tenancy;
 using CrystalPharm.Booking.Infrastructure;
+using CrystalPharm.Prescriptions.Infrastructure;
 using CrystalPharm.SharedKernel.Tenancy;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -19,14 +20,20 @@ namespace CrystalPharm.Api.IntegrationTests;
 /// L'API sur un vrai Postgres, connectée comme en production par un rôle ordinaire,
 /// soumis à la Row-Level Security (le superutilisateur du conteneur ne sert qu'à migrer).
 /// </summary>
-public sealed class BookingApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
+public sealed class ApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private const string ApplicationRoleName = "booking_api";
-    private const string ApplicationRolePassword = "booking-api-test";
+    private const string ApplicationRoleName = "crystal_pharm_api";
+    private const string ApplicationRolePassword = "crystal-pharm-api-test";
 
     private readonly PostgreSqlContainer _database = new PostgreSqlBuilder().WithImage("postgres:16").Build();
 
+    public const string SiteServiceKey = "test-site-service-key-0123456789abcdef";
+
+    private readonly string _prescriptionStorageDirectory = Path.Combine(Path.GetTempPath(), $"crystal-pharm-tests-{Guid.NewGuid():N}");
+
     public ManagerTokens ManagerTokens { get; } = new();
+
+    public string PrescriptionStorageDirectory => _prescriptionStorageDirectory;
 
     public string SuperuserConnectionString => _database.GetConnectionString();
 
@@ -36,7 +43,10 @@ public sealed class BookingApiFixture : WebApplicationFactory<Program>, IAsyncLi
         await MigrateAsSuperuserAsync();
         await CreateApplicationRoleAsync();
 
-        Environment.SetEnvironmentVariable("ConnectionStrings__Booking", ApplicationRoleConnectionString());
+        Environment.SetEnvironmentVariable("ConnectionStrings__Booking", BuildApplicationRoleConnectionString());
+        Environment.SetEnvironmentVariable("ConnectionStrings__Prescriptions", BuildApplicationRoleConnectionString());
+        Environment.SetEnvironmentVariable("PrescriptionStorage__LocalDirectory", _prescriptionStorageDirectory);
+        Environment.SetEnvironmentVariable("SiteService__ApiKey", SiteServiceKey);
         Environment.SetEnvironmentVariable("ManagerJwt__JwksUrl", "http://jwks.test/api/auth/jwks");
         Environment.SetEnvironmentVariable("ManagerJwt__Issuer", ManagerTokens.Issuer);
         Environment.SetEnvironmentVariable("ManagerJwt__Audience", ManagerTokens.Audience);
@@ -46,6 +56,10 @@ public sealed class BookingApiFixture : WebApplicationFactory<Program>, IAsyncLi
     {
         await base.DisposeAsync();
         await _database.DisposeAsync();
+        if (Directory.Exists(_prescriptionStorageDirectory))
+        {
+            Directory.Delete(_prescriptionStorageDirectory, recursive: true);
+        }
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -63,14 +77,19 @@ public sealed class BookingApiFixture : WebApplicationFactory<Program>, IAsyncLi
     private async Task MigrateAsSuperuserAsync()
     {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Booking"] = SuperuserConnectionString })
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Booking"] = SuperuserConnectionString,
+                ["ConnectionStrings:Prescriptions"] = SuperuserConnectionString,
+                ["PrescriptionStorage:LocalDirectory"] = _prescriptionStorageDirectory,
+            })
             .Build();
         var services = new ServiceCollection()
             .AddSingleton(TimeProvider.System)
             .AddScoped<ITenantContext, RequestTenantContext>()
-            .AddBookingModule(configuration);
+            .AddBookingModule(configuration)
+            .AddPrescriptionsModule(configuration);
         await using var serviceProvider = services.BuildServiceProvider();
         await serviceProvider.ApplyBookingMigrationsAsync(CancellationToken.None);
+        await serviceProvider.ApplyPrescriptionsMigrationsAsync(CancellationToken.None);
     }
 
     private async Task CreateApplicationRoleAsync()
@@ -80,14 +99,16 @@ public sealed class BookingApiFixture : WebApplicationFactory<Program>, IAsyncLi
         await using var command = new NpgsqlCommand(
             $"""
             create role {ApplicationRoleName} login password '{ApplicationRolePassword}';
-            grant usage on schema booking to {ApplicationRoleName};
-            grant select, insert, update, delete on all tables in schema booking to {ApplicationRoleName};
+            grant usage on schema booking, prescriptions to {ApplicationRoleName};
+            grant select, insert, update, delete on all tables in schema booking, prescriptions to {ApplicationRoleName};
             """,
             connection);
         await command.ExecuteNonQueryAsync();
     }
 
-    private string ApplicationRoleConnectionString() =>
+    public string ApplicationRoleConnectionString => BuildApplicationRoleConnectionString();
+
+    private string BuildApplicationRoleConnectionString() =>
         new NpgsqlConnectionStringBuilder(SuperuserConnectionString)
         {
             Username = ApplicationRoleName,
@@ -96,7 +117,7 @@ public sealed class BookingApiFixture : WebApplicationFactory<Program>, IAsyncLi
 }
 
 [CollectionDefinition(Name)]
-public sealed class BookingApiCollection : ICollectionFixture<BookingApiFixture>
+public sealed class ApiCollection : ICollectionFixture<ApiFixture>
 {
-    public const string Name = "Booking API";
+    public const string Name = "API";
 }

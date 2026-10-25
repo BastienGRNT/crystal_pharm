@@ -16,7 +16,7 @@ export function PrescriptionCollapsibleCard(props: PrescriptionUploadModuleProps
       <div class="essential-prescription__panel" inert={!isOpen()}>
         <div class="essential-prescription__panel-content">
           <Show when={props.introduction}>{(introduction) => <p class="essential-prescription__introduction">{introduction()}</p>}</Show>
-          <PrescriptionForm submitPrescription={props.submitPrescription} />
+          <PrescriptionForm submitPrescription={props.submitPrescription} validatePrescription={props.validatePrescription} />
         </div>
       </div>
     </section>

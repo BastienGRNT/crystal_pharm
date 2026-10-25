@@ -1,22 +1,13 @@
-import { createSignal, Show } from 'solid-js';
-import type { PrescriptionFormErrors, SubmitPrescription } from '@crystal-pharm/renderer';
+import { Show } from 'solid-js';
+import { createPrescriptionFormState, type PrescriptionUploadModuleProps } from '@crystal-pharm/renderer';
+import { FileDropzone } from '../molecules/FileDropzone';
 import { FormField } from '../molecules/FormField';
+import { CounterTimeSavers } from './CounterTimeSavers';
 
 /** Formulaire classique sur une seule page. */
-export function PrescriptionForm(props: { submitPrescription: SubmitPrescription }) {
-  const [firstName, setFirstName] = createSignal('');
-  const [lastName, setLastName] = createSignal('');
-  const [phone, setPhone] = createSignal('');
-  const [file, setFile] = createSignal<File>();
-  const [errorsByField, setErrorsByField] = createSignal<PrescriptionFormErrors>({});
-  const [status, setStatus] = createSignal<'editing' | 'sending' | 'sent' | 'failed'>('editing');
-
-  async function send() {
-    setStatus('sending');
-    const result = await props.submitPrescription({ firstName: firstName(), lastName: lastName(), phone: phone(), file: file() });
-    setErrorsByField(result.outcome === 'invalid' ? result.errorsByField : {});
-    setStatus(result.outcome === 'invalid' ? 'editing' : result.outcome);
-  }
+export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'submitPrescription' | 'validatePrescription'>) {
+  const state = createPrescriptionFormState(props);
+  const { form, updateField, errorsByField, status } = state;
 
   return (
     <Show
@@ -34,26 +25,43 @@ export function PrescriptionForm(props: { submitPrescription: SubmitPrescription
         novalidate
         onSubmit={(event) => {
           event.preventDefault();
-          void send();
+          void state.send();
         }}
       >
         <div class="nb-form__row">
           <FormField label="Prénom" error={errorsByField().firstName}>
-            <input class="nb-input" autocomplete="given-name" value={firstName()} onInput={(event) => setFirstName(event.currentTarget.value)} />
+            <input class="nb-input" autocomplete="given-name" value={form.firstName} onInput={(event) => updateField('firstName', event.currentTarget.value)} />
           </FormField>
           <FormField label="Nom" error={errorsByField().lastName}>
-            <input class="nb-input" autocomplete="family-name" value={lastName()} onInput={(event) => setLastName(event.currentTarget.value)} />
+            <input class="nb-input" autocomplete="family-name" value={form.lastName} onInput={(event) => updateField('lastName', event.currentTarget.value)} />
           </FormField>
         </div>
-        <FormField label="Téléphone" hint="Pour vous prévenir quand votre commande est prête." error={errorsByField().phone}>
-          <input class="nb-input" type="tel" autocomplete="tel" value={phone()} onInput={(event) => setPhone(event.currentTarget.value)} />
+        <div class="nb-form__row">
+          <FormField label="Date de naissance" error={errorsByField().birthDate}>
+            <input class="nb-input" type="date" autocomplete="bday" value={form.birthDate} onInput={(event) => updateField('birthDate', event.currentTarget.value)} />
+          </FormField>
+          <FormField label="Téléphone" hint="Pour vous prévenir quand votre commande est prête." error={errorsByField().phone}>
+            <input class="nb-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
+          </FormField>
+        </div>
+        <FormField label="Quand pensez-vous passer ?" hint="Nous préparons votre commande pour ce moment-là." error={errorsByField().plannedVisitAt}>
+          <input
+            class="nb-input"
+            type="datetime-local"
+            value={form.plannedVisitAt}
+            onInput={(event) => updateField('plannedVisitAt', event.currentTarget.value)}
+          />
         </FormField>
-        <FormField label="Votre ordonnance" error={errorsByField().file}>
-          <span class="nb-dropzone">
-            <input class="nb-dropzone__input" type="file" accept="image/*,application/pdf" onInput={(event) => setFile(event.currentTarget.files?.[0])} />
-            <span class="nb-dropzone__text">{file()?.name ?? 'Choisir une photo ou un PDF'}</span>
-          </span>
+        <FormField label="Votre ordonnance" error={errorsByField().prescriptionFile}>
+          <FileDropzone prompt="Choisir une photo ou un PDF" fileNames={form.prescriptionFile?.name ?? ''} onFiles={(files) => updateField('prescriptionFile', files[0])} />
         </FormField>
+        <label class="nb-checkbox">
+          <input type="checkbox" checked={form.hasAlreadyVisited} onChange={(event) => updateField('hasAlreadyVisited', event.currentTarget.checked)} />
+          <span>Je suis déjà venu dans cette pharmacie</span>
+        </label>
+        <Show when={!form.hasAlreadyVisited}>
+          <CounterTimeSavers state={state} />
+        </Show>
         <button class="nb-button nb-button--primary nb-form__submit" type="submit" disabled={status() === 'sending'}>
           {status() === 'sending' ? 'Envoi en cours…' : 'Envoyer mon ordonnance'}
         </button>

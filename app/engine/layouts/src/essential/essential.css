@@ -403,6 +403,46 @@
   cursor: pointer;
 }
 
+.layout-essential .essential-form__group--wide {
+  grid-column: 1 / -1;
+}
+
+.layout-essential .essential-form__note {
+  margin: 0;
+}
+
+.layout-essential .essential-field__hint {
+  font-size: 0.75rem;
+}
+
+.layout-essential .essential-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.layout-essential .essential-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.layout-essential .essential-choice button {
+  padding: 6px 10px;
+  border: 2px solid var(--essential-color-ink);
+  background: var(--essential-color-paper);
+  color: inherit;
+  font: inherit;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.layout-essential .essential-choice button[aria-pressed='true'] {
+  background: var(--essential-color-ink);
+  color: var(--essential-color-paper);
+}
+
 .layout-essential .essential-form__submit {
   grid-column: 1 / -1;
   justify-self: start;

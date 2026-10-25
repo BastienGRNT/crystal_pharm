@@ -17,7 +17,7 @@ const slowResponseDelayInMilliseconds = 3000;
 export async function handlePrescriptionUpload(request: IncomingMessage, response: ServerResponse, context: SiteRequestContext): Promise<void> {
   const simulatedResponse = context.readCurrentScenario().prescriptionResponseChoice;
   const formData = await readMultipartForm(request);
-  const file = formData.get('file');
+  const file = formData.get('prescriptionFile');
   const validation = v.safeParse(PrescriptionUploadRequestSchema, Object.fromEntries(formData));
   const receivedEvent: PrescriptionReceivedEvent = {
     receivedAt: new Date().toISOString(),

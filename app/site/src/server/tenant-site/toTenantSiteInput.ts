@@ -59,8 +59,8 @@ function collectModuleData(sources: TenantSiteSources): Partial<ModuleDataByName
     team: { members: employees.map(toTeamMember) },
     services: { services: content.services },
     news: collectDisplayedNews(sources),
-    // Aucun module `Prescriptions` dans le C# pour l'instant : une ordonnance ne partirait nulle part.
-    prescriptionUpload: undefined,
+    // Le module `Prescriptions` du C# reçoit les envois (cf. `/api/prescriptions`) : rien à saisir côté pharmacie.
+    prescriptionUpload: {},
     loyaltyCard: group?.loyaltyCardUrl && group.loyaltyCardMessage
       ? {
           text: group.loyaltyCardMessage,

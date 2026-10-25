@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\CrystalPharm.Prescriptions.Domain\CrystalPharm.Prescriptions.Domain.csproj" />
+    <ProjectReference Include="..\..\..\CrystalPharm.SharedKernel\CrystalPharm.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

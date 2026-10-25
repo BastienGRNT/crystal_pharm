@@ -228,10 +228,17 @@ Content-Type: multipart/form-data
 
 | Champ | Type | Règle (message affiché au visiteur) |
 |---|---|---|
-| `firstName` | texte | Non vide après suppression des espaces (« Indiquez votre prénom. ») |
-| `lastName` | texte | Non vide après suppression des espaces (« Indiquez votre nom. ») |
+| `firstName`, `lastName` | texte | Non vide après suppression des espaces |
+| `birthDate` | texte `2026-03-14` | Date réelle, passée, après 1900 |
 | `phone` | texte | Numéro français : `0612345678`, `06 12 34 56 78`, `+33 6 12 34 56 78`… |
-| `file` | fichier | JPEG, PNG, WebP, HEIC ou PDF, 10 Mo maximum |
+| `plannedVisitAt` | texte `2026-03-14T17:30` | Date et heure locales de la pharmacie, prévues pour le passage |
+| `hasAlreadyVisited` | `true` / `false` | Déjà client : la carte Vitale et la mutuelle sont ignorées si elles arrivent |
+| `prescriptionFile` | fichier | JPEG, PNG, WebP, HEIC ou PDF, 10 Mo maximum |
+| `socialSecurityNumber` | texte, facultatif | 15 chiffres (espaces tolérés), clé de contrôle vérifiée ; au choix avec `vitalCardPhoto` |
+| `vitalCardPhoto` | fichier, facultatif | Mêmes formats et même taille que l'ordonnance |
+| `mutualCardFront`, `mutualCardBack` | fichier, facultatif | Mêmes formats et même taille que l'ordonnance. Un patient n'a souvent qu'un fichier : le 1er va dans `Front`, le 2e (s'il existe) dans `Back` |
+
+Un champ facultatif non renseigné est simplement absent de la requête.
 
 La validation utilise `PrescriptionUploadRequestSchema`, le même schéma dans le navigateur et sur le
 serveur. Réponses du faux endpoint, que la vraie API devra reproduire :
