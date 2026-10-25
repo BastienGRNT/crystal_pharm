@@ -24,24 +24,17 @@
 	}
 </script>
 
-<div class="grid gap-3">
+<div class="grid gap-2">
 	{#each services as service, serviceIndex (service)}
-		<div class="grid gap-3 rounded-md border border-line p-4">
+		<div class="grid gap-2 rounded-md border border-line p-3">
 			<div class="flex items-center justify-between gap-3">
 				<p class="body-strong text-ink">Service {serviceIndex + 1}</p>
 				<IconButton icon="trash" label="Retirer ce service" onclick={() => removeService(service)} />
 			</div>
+			<div class="grid gap-3 sm:grid-cols-2">
 			<Field label="Nom" errorMessage={findMissingTextError(service.title, service.description, 'Donnez un nom à ce service.')}>
 				{#snippet control(controlAttributes)}
 					<Input {...controlAttributes} maxlength={120} placeholder="Vaccination" bind:value={service.title} />
-				{/snippet}
-			</Field>
-			<Field
-				label="Description"
-				errorMessage={findMissingTextError(service.description, service.title, 'Décrivez ce service en une phrase.')}
-			>
-				{#snippet control(controlAttributes)}
-					<Textarea {...controlAttributes} rows={3} maxlength={600} bind:value={service.description} />
 				{/snippet}
 			</Field>
 			<Field label="Icône">
@@ -52,6 +45,15 @@
 							<option value={iconOption.value}>{iconOption.label}</option>
 						{/each}
 					</Select>
+				{/snippet}
+			</Field>
+			</div>
+			<Field
+				label="Description"
+				errorMessage={findMissingTextError(service.description, service.title, 'Décrivez ce service en une phrase.')}
+			>
+				{#snippet control(controlAttributes)}
+					<Textarea {...controlAttributes} rows={2} maxlength={600} bind:value={service.description} />
 				{/snippet}
 			</Field>
 		</div>
