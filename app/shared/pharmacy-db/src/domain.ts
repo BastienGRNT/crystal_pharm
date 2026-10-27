@@ -34,3 +34,17 @@ export {
 } from './employees/photos/EmployeePhoto';
 export { acceptedImageTypes, detectImageFormat, toImageContentType, type ImageFormat } from './file-storage/imageFormat';
 export { collectFieldErrors, wholeFormErrorKey, type FieldErrors, type SaveResult } from './fieldErrors';
+export {
+	isResponsibilityKey,
+	keepKnownResponsibilityKeys,
+	responsibilities,
+	responsibilityKeys,
+	type ResponsibilityKey
+} from './members/responsibilities';
+export {
+	canManageSubscriptionAndAccess,
+	hasResponsibility,
+	tenantMemberKindLabels,
+	type TenantMemberAccess,
+	type TenantMemberKind
+} from './members/tenantMemberAccess';

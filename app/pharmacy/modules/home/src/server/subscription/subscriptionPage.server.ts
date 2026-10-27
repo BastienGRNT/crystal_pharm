@@ -12,14 +12,14 @@ import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs
 import { describeToolCards } from '../../domain/toolCards';
 import { homePathnames, invoicePdfPathname } from '../../homePathnames';
 import type { SubscriptionActionFailure, SubscriptionPageData } from '../../pages/subscription/subscriptionPageData';
-import { requireActiveTenantId } from '../activeTenant.server';
+import { requireOwner } from '../activeTenant.server';
 
 export async function loadSubscriptionPage({
 	locals
 }: {
 	locals: { user: AuthenticatedUser | null };
 }): Promise<SubscriptionPageData> {
-	const tenantId = await requireActiveTenantId(locals.user);
+	const tenantId = (await requireOwner(locals.user)).tenantId;
 	const [toolAccess, invoices, hasAcceptedCurrentTerms] = await Promise.all([
 		getToolAccessOfTenant(tenantId),
 		listInvoices({ tenantId }),
@@ -57,7 +57,7 @@ export async function loadSubscriptionPage({
 
 export const subscriptionPageActions = {
 	selectTools: async ({ locals, request }: RequestEvent): Promise<ActionFailure<SubscriptionActionFailure>> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireOwner(locals.user)).tenantId;
 		const formData = await request.formData();
 		const requestedToolKeys = formData.getAll('toolKeys').map(String).filter(isToolKey);
 		const requestedBillingPeriod = formData.get('billingPeriod') === 'yearly' ? 'yearly' : 'monthly';
@@ -75,7 +75,7 @@ export const subscriptionPageActions = {
 	},
 
 	cancel: async ({ locals }: RequestEvent): Promise<never> => {
-		const cancellation = await cancelSubscription(await requireActiveTenantId(locals.user));
+		const cancellation = await cancelSubscription((await requireOwner(locals.user)).tenantId);
 		const outcome: Record<string, string> =
 			cancellation.outcome === 'refunded'
 				? { resiliation: 'rembourse', montant: String(cancellation.refundedAmountCents) }
@@ -86,7 +86,7 @@ export const subscriptionPageActions = {
 	},
 
 	resume: async ({ locals }: RequestEvent): Promise<never> => {
-		await resumeSubscription(await requireActiveTenantId(locals.user));
+		await resumeSubscription((await requireOwner(locals.user)).tenantId);
 		redirect(303, `${homePathnames.subscription}?repris=1`);
 	}
 };

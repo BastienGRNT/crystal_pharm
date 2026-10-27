@@ -64,6 +64,15 @@ export const demoPersonas: readonly DemoPersona[] = [
 		lastName: 'Garcia'
 	},
 	{
+		personaKey: 'preparatrice',
+		space: 'pharmacy',
+		label: 'Pharmacie Saint-Louis · préparatrice',
+		description: 'Membre de l’équipe : seulement les rendez-vous et les ordonnances, ni le site, ni le planning, ni l’abonnement.',
+		email: demoEmail('preparatrice'),
+		firstName: 'Camille',
+		lastName: 'Fontaine'
+	},
+	{
 		personaKey: 'invitee',
 		space: 'pharmacy',
 		label: 'Pharmacie des Tilleuls · invitée',

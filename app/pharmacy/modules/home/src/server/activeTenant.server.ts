@@ -1,6 +1,12 @@
 import type { AuthenticatedUser } from '@crystal-pharm/auth';
-import { findActiveTenantIdOfAccount } from '@crystal-pharm/pharmacy-db';
-import { redirect } from '@sveltejs/kit';
+import { findActiveTenantMemberAccess } from '@crystal-pharm/pharmacy-db';
+import {
+	canManageSubscriptionAndAccess,
+	hasResponsibility,
+	type ResponsibilityKey,
+	type TenantMemberAccess
+} from '@crystal-pharm/pharmacy-db/domain';
+import { error, redirect } from '@sveltejs/kit';
 import { homePathnames } from '../homePathnames';
 
 export function requireSignedInAccountId(user: AuthenticatedUser | null): string {
@@ -9,9 +15,30 @@ export function requireSignedInAccountId(user: AuthenticatedUser | null): string
 	return user.userId;
 }
 
-/** Le Tenant de la session ; un compte sans pharmacie est envoyé la créer. */
+/** Ce que le compte peut faire dans le Tenant de la session ; un compte sans pharmacie est envoyé la créer. */
+export async function requireActiveTenantMember(user: AuthenticatedUser | null): Promise<TenantMemberAccess> {
+	const memberAccess = await findActiveTenantMemberAccess(requireSignedInAccountId(user));
+	if (!memberAccess) redirect(303, homePathnames.contactDetailsStep);
+	return memberAccess;
+}
+
 export async function requireActiveTenantId(user: AuthenticatedUser | null): Promise<string> {
-	const tenantId = await findActiveTenantIdOfAccount(requireSignedInAccountId(user));
-	if (!tenantId) redirect(303, homePathnames.contactDetailsStep);
-	return tenantId;
+	return (await requireActiveTenantMember(user)).tenantId;
+}
+
+/** Le Tenant de la session, pour un TenantMember qui a cette Responsibility ; sinon, refusé. */
+export async function requireResponsibility(
+	user: AuthenticatedUser | null,
+	responsibilityKey: ResponsibilityKey
+): Promise<TenantMemberAccess> {
+	const memberAccess = await requireActiveTenantMember(user);
+	if (!hasResponsibility(memberAccess, responsibilityKey)) error(403, 'Votre compte n’a pas accès à cette page.');
+	return memberAccess;
+}
+
+/** L'abonnement et la gestion des accès : réservés aux Owners. */
+export async function requireOwner(user: AuthenticatedUser | null): Promise<TenantMemberAccess> {
+	const memberAccess = await requireActiveTenantMember(user);
+	if (!canManageSubscriptionAndAccess(memberAccess)) error(403, 'Seul un titulaire de la pharmacie a accès à cette page.');
+	return memberAccess;
 }

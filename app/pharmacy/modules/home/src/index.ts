@@ -9,5 +9,11 @@ export { default as TermsOfSalePage } from './pages/legal/TermsOfSalePage.svelte
 export { default as PharmacyPage } from './pages/pharmacy/PharmacyPage.svelte';
 export { default as CheckoutPage } from './pages/subscription/CheckoutPage.svelte';
 export { default as SubscriptionPage } from './pages/subscription/SubscriptionPage.svelte';
+export { default as TeamInvitationPage } from './pages/team-invitation/TeamInvitationPage.svelte';
 export { default as ToolsHomePage } from './pages/tools-home/ToolsHomePage.svelte';
-export { keepAccessibleLinks, type ToolNavigationLink } from './toolNavigation';
+export {
+	keepAccessibleLinks,
+	keepPermittedAccountLinks,
+	type AccountNavigationLink,
+	type ToolNavigationLink
+} from './toolNavigation';

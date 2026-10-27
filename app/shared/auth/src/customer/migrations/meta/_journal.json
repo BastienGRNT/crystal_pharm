@@ -22,6 +22,13 @@
       "when": 1792836243818,
       "tag": "0002_add_json_web_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793119297481,
+      "tag": "0003_add_counter_account_usernames",
+      "breakpoints": true
     }
   ]
 }

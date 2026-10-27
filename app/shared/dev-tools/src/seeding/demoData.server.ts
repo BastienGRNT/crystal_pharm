@@ -24,8 +24,11 @@ import {
 	listPharmacyGroupIdsNamed
 } from '@crystal-pharm/group-db';
 import {
+	acceptTenantMemberInvitation,
 	addEmployee,
 	createTenantForAccount,
+	inviteEmployeeToCreateAccount,
+	listEmployees,
 	deleteTenant,
 	findActiveTenantIdOfAccount,
 	updateWeeklyOpeningSchedule
@@ -155,6 +158,10 @@ async function seedDemoData(): Promise<void> {
 	await subscribe('membre', requireTenantId(tenantIdsByPersonaKey, 'membre'), ['planning'], 'monthly');
 	await subscribe('pharmacien', requireTenantId(tenantIdsByPersonaKey, 'pharmacien'), ['site', 'planning'], 'monthly');
 	await addDemoTeam(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'));
+	await giveDemoEmployeeAnAccount(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'), 'preparatrice', [
+		'handle-appointments',
+		'handle-prescriptions'
+	]);
 }
 
 async function seedCatalog(): Promise<void> {
@@ -225,6 +232,28 @@ async function addDemoTeam(tenantId: string): Promise<void> {
 		const addition = await addEmployee(tenantId, teamMember, { kind: 'unchanged' });
 		if (!addition.isSaved) throw new Error(`The demo employee ${teamMember.firstName} was refused.`);
 	}
+}
+
+/** Par le parcours d'un Owner : l'invitation de l'Employee du même nom, acceptée par son compte. */
+async function giveDemoEmployeeAnAccount(
+	tenantId: string,
+	personaKey: string,
+	responsibilityKeyInputs: readonly string[]
+): Promise<void> {
+	const persona = findDemoPersona(personaKey);
+	const accountId = persona && (await findCustomerAccountIdByEmail(persona.email));
+	const employee = (await listEmployees(tenantId)).find(
+		(candidate) => candidate.firstName.toDisplayFormat() === persona?.firstName && candidate.lastName.toDisplayFormat() === persona.lastName
+	);
+	if (!persona || !accountId || !employee) throw new Error(`The demo employee ${personaKey} does not exist.`);
+
+	const invitation = await inviteEmployeeToCreateAccount(tenantId, {
+		employeeId: employee.employeeId,
+		emailInput: persona.email,
+		responsibilityKeyInputs
+	});
+	if (!invitation.isSent) throw new Error(`The demo employee ${personaKey} was not invited: ${invitation.failureMessage}`);
+	await acceptTenantMemberInvitation(invitation.invitationToken, { accountId, email: persona.email });
 }
 
 async function createDemoGroup(
