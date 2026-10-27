@@ -66,7 +66,7 @@ function describeStatus(
 ): ToolCardStatus {
 	if (!toolQuote) return 'unavailable';
 	if (toolQuote.isIncludedWithAnotherTool) return toolQuote.isActive ? 'comes-with' : 'needs-another';
-	if (toolQuote.isIncluded) return 'included';
+	if (toolQuote.isIncluded && toolQuote.listPriceCents > 0) return 'included';
 	if (!subscribedTool) return 'available';
 	return subscribedTool.endsAt || subscriptionEndsAt ? 'ending' : 'subscribed';
 }

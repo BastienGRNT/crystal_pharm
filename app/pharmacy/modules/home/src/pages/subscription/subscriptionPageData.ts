@@ -1,4 +1,4 @@
-import type { UpcomingCharge } from '@crystal-pharm/billing-db';
+import type { SubscribedOffers, UpcomingCharge } from '@crystal-pharm/billing-db';
 import type { BillingPeriod, InvoiceRow, ToolCatalog, ToolCoverage, ToolKey } from '@crystal-pharm/billing-db/domain';
 import type { ToolCard } from '../../domain/toolCards';
 
@@ -25,6 +25,8 @@ export type SubscriptionPageData = {
 	/** Les Tools payés aujourd'hui et qui continuent : le point de départ du choix. */
 	paidToolKeys: ToolKey[];
 	subscription: SubscriptionSummary | undefined;
+	/** Les offres de l'abonnement, avec le prix appliqué ; l'état du paiement. */
+	subscribedOffers: SubscribedOffers | undefined;
 	/** Le prochain prélèvement, TVA comprise ; rien si l'abonnement s'arrête. */
 	upcomingCharge: UpcomingCharge | undefined;
 	/** Ce que rembourserait une résiliation dans les 30 jours (TTC). */

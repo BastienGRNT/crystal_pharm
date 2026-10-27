@@ -22,6 +22,7 @@ export {
 export {
 	createTenantForAccount,
 	findActiveTenantIdOfAccount,
+	listOwnerEmailsOfTenant,
 	type TenantCreationResult
 } from './tenants/tenantMemberships.server';
 export { getFileStorage } from './file-storage/configuredFileStorage.server';

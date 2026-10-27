@@ -7,7 +7,8 @@ import {
 	type BillingPeriod,
 	type CheckoutLine,
 	type CheckoutPurpose,
-	type CheckoutStatus
+	type CheckoutStatus,
+	type PaymentStatus
 } from '../database/billingTables';
 import type { ToolKey } from '../tools/tools';
 import { vatRatePercent } from '../invoicing/vatAmounts';
@@ -41,7 +42,7 @@ export type Payment = {
 	paymentId: string;
 	description: string;
 	amountCents: number;
-	status: 'paid' | 'refunded';
+	status: PaymentStatus;
 	paidAt: Date;
 	refundedAt: Date | undefined;
 };

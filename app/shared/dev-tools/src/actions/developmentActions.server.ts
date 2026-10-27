@@ -1,11 +1,16 @@
 import {
 	backdateSubscriptionsOfTenant,
+	declineNextPaymentsOfTenant,
 	deleteSubscriptionsOfTenant,
+	leaveGroupAndRebuildToolAccess,
+	makeSubscriptionOverdueOfTenant,
+	rebuildToolAccessOfAllTenants,
+	rebuildToolAccessOfOneTenant,
 	setGroupContractStatus,
 	simulateOneMonthLater
 } from '@crystal-pharm/billing-db';
 import { clearDevelopmentOutbox } from '@crystal-pharm/email';
-import { endCoverageNow, findActiveGroupIdOfAccount, leaveGroup } from '@crystal-pharm/group-db';
+import { endCoverageNow, findActiveGroupIdOfAccount } from '@crystal-pharm/group-db';
 import { clearWeeklyOpeningSchedule, deleteTenant, findActiveTenantIdOfAccount } from '@crystal-pharm/pharmacy-db';
 import type { DemoSpace } from '../personas/demoPersonas';
 import { resetDemoData } from '../seeding/demoData.server';
@@ -75,6 +80,30 @@ const developmentActions: readonly DevelopmentAction[] = [
 		}
 	},
 	{
+		actionName: 'decline-next-payments',
+		label: 'Refuser les prochains paiements',
+		description: 'Le faux prestataire refuse la carte : au prochain renouvellement, l’abonnement passe en retard.',
+		space: 'pharmacy',
+		needsSignedInAccount: true,
+		run: async ({ accountId, returnPathname }) => {
+			const tenantId = await requireActiveTenantId(accountId);
+			if (tenantId) await declineNextPaymentsOfTenant(tenantId);
+			return returnPathname;
+		}
+	},
+	{
+		actionName: 'make-subscription-overdue',
+		label: 'Mettre l’abonnement en retard de paiement',
+		description: 'Échéance dépassée de deux jours, prélèvement refusé : bandeau « Paiement en retard » et relances.',
+		space: 'pharmacy',
+		needsSignedInAccount: true,
+		run: async ({ accountId, returnPathname }) => {
+			const tenantId = await requireActiveTenantId(accountId);
+			if (tenantId) await makeSubscriptionOverdueOfTenant(tenantId);
+			return returnPathname;
+		}
+	},
+	{
 		actionName: 'end-group-coverage',
 		label: 'Passer à la fin du mois',
 		description: 'Après un départ du groupement : la prise en charge s’arrête tout de suite.',
@@ -83,8 +112,9 @@ const developmentActions: readonly DevelopmentAction[] = [
 		run: async ({ accountId, returnPathname }) => {
 			const tenantId = await requireActiveTenantId(accountId);
 			if (tenantId) {
-				await leaveGroup(tenantId);
+				await leaveGroupAndRebuildToolAccess(tenantId);
 				await endCoverageNow(tenantId);
+				await rebuildToolAccessOfOneTenant(tenantId);
 			}
 			return returnPathname;
 		}
@@ -98,6 +128,17 @@ const developmentActions: readonly DevelopmentAction[] = [
 		run: async ({ accountId, returnPathname }) => {
 			const groupId = accountId ? await findActiveGroupIdOfAccount(accountId) : undefined;
 			if (groupId) await setGroupContractStatus(groupId, 'awaiting_payment');
+			return returnPathname;
+		}
+	},
+	{
+		actionName: 'rebuild-tool-access',
+		label: 'Reconstruire les accès',
+		description: 'Refait les accès aux Tools de toutes les pharmacies depuis leurs abonnements et leur groupement.',
+		space: 'everywhere',
+		needsSignedInAccount: false,
+		run: async ({ returnPathname }) => {
+			await rebuildToolAccessOfAllTenants();
 			return returnPathname;
 		}
 	},

@@ -3,6 +3,7 @@ import type { SaveResult } from '@crystal-pharm/pharmacy-db/domain';
 import { platformBillingAccess, runWithBillingAccess } from '../database/billingDatabase.server';
 import { groupContracts } from '../database/billingTables';
 import type { GroupContractStatus } from '../database/billingTables';
+import { recordGroupContractChange } from '../events/groupContractEvents.server';
 import { billDueGroupContract } from '../renewal/dueBilling.server';
 import {
 	validateGroupContractInput,
@@ -20,6 +21,7 @@ export async function saveGroupContract(
 	const validation = validateGroupContractInput(contractInput);
 	if (!validation.isValid) return { isSaved: false, fieldErrors: validation.fieldErrors };
 	await writeGroupContract(groupId, validation);
+	await recordGroupContractChange(groupId, new Date());
 	await billDueGroupContract(groupId);
 	return { isSaved: true };
 }
@@ -34,6 +36,7 @@ export async function setGroupContractStatus(groupId: string, status: GroupContr
 		await writeGroupContractStatus(transaction, groupId, status);
 		return contract?.status;
 	});
+	await recordGroupContractChange(groupId, new Date());
 	if (status === 'active') {
 		await billDueGroupContract(groupId, new Date(), previousStatus === 'awaiting_payment' ? 'transfer' : undefined);
 	}

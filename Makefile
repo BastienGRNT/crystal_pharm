@@ -7,6 +7,7 @@ logs:
 
 migrate:
 	cd app && pnpm --recursive migrate
+	cd app && pnpm --filter @crystal-pharm/billing-db rebuild-tool-access
 
 api:
 	cd app/api/CrystalPharm.Api && dotnet watch run

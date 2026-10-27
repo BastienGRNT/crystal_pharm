@@ -46,6 +46,15 @@ export const demoPersonas: readonly DemoPersona[] = [
 		lastName: 'Bonnet'
 	},
 	{
+		personaKey: 'enretard',
+		space: 'pharmacy',
+		label: 'Pharmacie du Marché · paiement en retard',
+		description: 'Abonnée au site, prélèvement refusé : les modules restent ouverts par la grâce, le bandeau s’affiche.',
+		email: demoEmail('enretard'),
+		firstName: 'Renée',
+		lastName: 'Marchand'
+	},
+	{
 		personaKey: 'membre',
 		space: 'pharmacy',
 		label: 'Pharmacie du Port · Pharma+',

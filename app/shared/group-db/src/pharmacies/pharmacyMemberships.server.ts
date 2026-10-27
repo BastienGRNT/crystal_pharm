@@ -104,14 +104,33 @@ export function listCoveredTenantIdsOfGroup(access: GroupAccess, groupId: string
 }
 
 /** La pharmacie quitte son groupement ; la prise en charge court jusqu'à la fin du mois. */
-export async function leaveGroup(tenantId: string): Promise<CoveringGroupOfTenant | undefined> {
-	return endMembership({ tenantId }, and(eq(pharmacyMemberships.tenantId, tenantId)), 'pharmacy');
+export function leaveGroup(tenantId: string): Promise<CoveringGroupOfTenant | undefined> {
+	return runWithGroupAccess({ tenantId }, (transaction) => leaveGroupInTransaction(transaction, tenantId));
+}
+
+/** Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction. */
+export function leaveGroupInTransaction(
+	transaction: GroupTransaction,
+	tenantId: string
+): Promise<CoveringGroupOfTenant | undefined> {
+	return endMembership(transaction, eq(pharmacyMemberships.tenantId, tenantId), 'pharmacy');
 }
 
 /** Le groupement retire une de ses pharmacies ; la prise en charge court jusqu'à la fin du mois. */
-export async function removePharmacyFromGroup(groupId: string, membershipId: string): Promise<CoveringGroupOfTenant | undefined> {
+export function removePharmacyFromGroup(groupId: string, membershipId: string): Promise<CoveringGroupOfTenant | undefined> {
+	return runWithGroupAccess({ groupId }, (transaction) =>
+		removePharmacyFromGroupInTransaction(transaction, groupId, membershipId)
+	);
+}
+
+/** Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction. */
+export function removePharmacyFromGroupInTransaction(
+	transaction: GroupTransaction,
+	groupId: string,
+	membershipId: string
+): Promise<(CoveringGroupOfTenant & { tenantId: string }) | undefined> {
 	return endMembership(
-		{ groupId },
+		transaction,
 		and(eq(pharmacyMemberships.id, membershipId), eq(pharmacyMemberships.groupId, groupId)),
 		'group'
 	);
@@ -141,25 +160,28 @@ export async function shiftGroupDatesBackOneMonth(): Promise<void> {
 }
 
 async function endMembership(
-	access: GroupAccess,
+	transaction: GroupTransaction,
 	membershipCondition: ReturnType<typeof and>,
 	endedBy: MembershipEndedBy
-): Promise<CoveringGroupOfTenant | undefined> {
+): Promise<(CoveringGroupOfTenant & { tenantId: string }) | undefined> {
 	const now = new Date();
 	const coverageEndsAt = computeCoverageEnd(now);
-	return runWithGroupAccess(access, async (transaction) => {
-		const [endedMembership] = await transaction
-			.update(pharmacyMemberships)
-			.set({ leftAt: now, coverageEndsAt, endedBy })
-			.where(and(membershipCondition, isNull(pharmacyMemberships.leftAt)))
-			.returning();
-		if (!endedMembership) return undefined;
-		const [group] = await transaction
-			.select({ name: pharmacyGroups.name })
-			.from(pharmacyGroups)
-			.where(eq(pharmacyGroups.id, endedMembership.groupId));
-		return { groupId: endedMembership.groupId, groupName: group?.name ?? '', coverageEndsAt };
-	});
+	const [endedMembership] = await transaction
+		.update(pharmacyMemberships)
+		.set({ leftAt: now, coverageEndsAt, endedBy })
+		.where(and(membershipCondition, isNull(pharmacyMemberships.leftAt)))
+		.returning();
+	if (!endedMembership) return undefined;
+	const [group] = await transaction
+		.select({ name: pharmacyGroups.name })
+		.from(pharmacyGroups)
+		.where(eq(pharmacyGroups.id, endedMembership.groupId));
+	return {
+		tenantId: endedMembership.tenantId,
+		groupId: endedMembership.groupId,
+		groupName: group?.name ?? '',
+		coverageEndsAt
+	};
 }
 
 function listCurrentMemberships(access: GroupAccess, groupId: string) {

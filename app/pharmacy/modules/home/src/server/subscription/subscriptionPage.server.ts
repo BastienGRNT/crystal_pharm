@@ -4,6 +4,7 @@ import {
 	getToolAccessOfTenant,
 	hasTenantAcceptedCurrentTerms,
 	listInvoices,
+	readSubscribedOffers,
 	requestToolSelection,
 	resumeSubscription
 } from '@crystal-pharm/billing-db';
@@ -20,8 +21,9 @@ export async function loadSubscriptionPage({
 	locals: { user: AuthenticatedUser | null };
 }): Promise<SubscriptionPageData> {
 	const tenantId = await requireActiveTenantId(locals.user);
-	const [toolAccess, invoices, hasAcceptedCurrentTerms] = await Promise.all([
+	const [toolAccess, subscribedOffers, invoices, hasAcceptedCurrentTerms] = await Promise.all([
 		getToolAccessOfTenant(tenantId),
+		readSubscribedOffers(tenantId),
 		listInvoices({ tenantId }),
 		hasTenantAcceptedCurrentTerms(tenantId)
 	]);
@@ -48,6 +50,7 @@ export async function loadSubscriptionPage({
 			moneyBackGuaranteeEndsAt: subscription.moneyBackGuaranteeEndsAt,
 			isMoneyBackGuaranteed: subscription.isMoneyBackGuaranteed
 		},
+		subscribedOffers,
 		upcomingCharge: toolAccess.upcomingCharge,
 		refundableAmountCents: refundableInvoices.reduce((total, invoice) => total + invoice.totalCents, 0),
 		invoices: invoices.map((invoice) => toInvoiceRow(invoice, invoicePdfPathname(invoice.invoiceId))),

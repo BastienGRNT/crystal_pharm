@@ -51,6 +51,8 @@ export type ChargeToInvoice = {
 	periodEnd: Date | undefined;
 	paymentMethod: InvoicePaymentMethod;
 	checkoutId?: string;
+	/** Un prélèvement déjà fait chez le prestataire (renouvellement, relance). */
+	storedCardPayment?: { subscriptionId: string; attemptNumber: number; providerPaymentReference: string };
 };
 
 /**
@@ -58,49 +60,71 @@ export type ChargeToInvoice = {
  * carte est débitée tout de suite ; un virement laisse la facture « à régler ».
  */
 export async function chargeAndInvoice(charge: ChargeToInvoice): Promise<Invoice | undefined> {
-	const subtotalCents = charge.lines.reduce((total, line) => total + line.amountCents, 0);
+	if (computeSubtotalCents(charge) <= 0) return undefined;
+	const customer = await describeInvoiceCustomer(charge.payer);
+	return runWithBillingAccess(platformBillingAccess, (transaction) => chargeAndInvoiceInTransaction(transaction, charge, customer));
+}
+
+export type InvoiceCustomer = { name: string; addressLines: string[] };
+
+/** Pour qui a déjà sa transaction (un événement d'abonnement) : le client se lit avant de l'ouvrir. */
+export async function chargeAndInvoiceInTransaction(
+	transaction: BillingTransaction,
+	charge: ChargeToInvoice,
+	customer: InvoiceCustomer
+): Promise<Invoice | undefined> {
+	const subtotalCents = computeSubtotalCents(charge);
 	if (subtotalCents <= 0) return undefined;
 	const amounts = addVat(subtotalCents);
-	const customer = await describeCustomer(charge.payer);
-
-	return runWithBillingAccess(platformBillingAccess, async (transaction) => {
-		const now = new Date();
-		const paymentId = charge.paymentMethod === 'card' ? crypto.randomUUID() : undefined;
-		if (paymentId) {
-			await transaction.insert(payments).values({
+	const now = new Date();
+	const paymentId = charge.paymentMethod === 'card' ? crypto.randomUUID() : undefined;
+	if (paymentId) {
+		const [insertedPayment] = await transaction
+			.insert(payments)
+			.values({
 				id: paymentId,
 				...toPayerColumns(charge.payer),
 				checkoutId: charge.checkoutId ?? null,
+				subscriptionId: charge.storedCardPayment?.subscriptionId ?? null,
+				attemptNumber: charge.storedCardPayment?.attemptNumber ?? null,
 				amountCents: amounts.totalCents,
 				description: charge.description,
 				status: 'paid',
-				providerPaymentReference: getPaymentProvider().createPaymentReference(charge.checkoutId ?? paymentId),
+				providerPaymentReference:
+					charge.storedCardPayment?.providerPaymentReference ??
+					getPaymentProvider().createPaymentReference(charge.checkoutId ?? paymentId),
 				paidAt: now
-			});
-		}
-		const [invoiceRow] = await transaction
-			.insert(invoices)
-			.values({
-				id: crypto.randomUUID(),
-				number: await takeNextInvoiceNumber(transaction, now),
-				kind: 'invoice',
-				...toPayerColumns(charge.payer),
-				issuedAt: now,
-				periodStart: charge.periodStart ?? null,
-				periodEnd: charge.periodEnd ?? null,
-				customerName: customer.name,
-				customerAddressLines: customer.addressLines,
-				lines: [...charge.lines],
-				...amounts,
-				vatRatePercent,
-				status: paymentId ? 'paid' : 'due',
-				paymentMethod: charge.paymentMethod,
-				paymentId: paymentId ?? null,
-				paidAt: paymentId ? now : null
 			})
-			.returning();
-		return invoiceRow && toInvoice(invoiceRow);
-	});
+			.onConflictDoNothing({ target: payments.providerPaymentReference })
+			.returning({ id: payments.id });
+		if (!insertedPayment) return undefined;
+	}
+	const [invoiceRow] = await transaction
+		.insert(invoices)
+		.values({
+			id: crypto.randomUUID(),
+			number: await takeNextInvoiceNumber(transaction, now),
+			kind: 'invoice',
+			...toPayerColumns(charge.payer),
+			issuedAt: now,
+			periodStart: charge.periodStart ?? null,
+			periodEnd: charge.periodEnd ?? null,
+			customerName: customer.name,
+			customerAddressLines: customer.addressLines,
+			lines: [...charge.lines],
+			...amounts,
+			vatRatePercent,
+			status: paymentId ? 'paid' : 'due',
+			paymentMethod: charge.paymentMethod,
+			paymentId: paymentId ?? null,
+			paidAt: paymentId ? now : null
+		})
+		.returning();
+	return invoiceRow && toInvoice(invoiceRow);
+}
+
+function computeSubtotalCents(charge: ChargeToInvoice): number {
+	return charge.lines.reduce((total, line) => total + line.amountCents, 0);
 }
 
 /** Rembourse une facture payée par carte : un avoir l'annule, et la carte est recréditée. */
@@ -199,7 +223,7 @@ async function takeNextInvoiceNumber(transaction: BillingTransaction, issuedAt: 
 	return `CP-${year}-${String(sequence?.lastNumber ?? 1).padStart(5, '0')}`;
 }
 
-async function describeCustomer(payer: Payer): Promise<{ name: string; addressLines: string[] }> {
+export async function describeInvoiceCustomer(payer: Payer): Promise<InvoiceCustomer> {
 	if ('tenantId' in payer) {
 		const pharmacyProfile = await getPharmacyProfile(payer.tenantId);
 		return {

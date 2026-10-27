@@ -89,6 +89,41 @@
 	failureMessage={form?.failureMessage}
 />
 
+{#if data.subscribedOffers?.paymentStatus === 'past_due'}
+	<Alert tone="warning" title="Paiement en retard">
+		Votre dernier prélèvement a été refusé. Vos modules restent actifs pendant quelques jours.
+		{#if data.subscribedOffers.nextRetryAt}Nous réessaierons le {formatDay(data.subscribedOffers.nextRetryAt)}.{/if}
+	</Alert>
+{/if}
+
+{#if data.subscribedOffers && data.subscribedOffers.offers.length > 0}
+	<Card>
+		<h2 class="title-2 text-ink">Vos offres</h2>
+		<ul class="mt-2 grid gap-2">
+			{#each data.subscribedOffers.offers as offer (offer.offerKey)}
+				<li class="grid gap-0.5">
+					<div class="flex flex-wrap items-baseline justify-between gap-2">
+						<span class="body-strong text-ink">{offer.label} <span class="text-small text-ink-muted">· version {offer.versionNumber}</span></span>
+						<span class="body-strong tabular-nums text-ink">{formatEuros(offer.billedMonthlyPriceCents)} HT / mois</span>
+					</div>
+					{#if offer.priceAgreement}
+						<p class="text-small text-ink-muted">
+							Prix négocié (au lieu de {formatEuros(offer.versionPriceCents)}),
+							{offer.priceAgreement.endsAt ? `jusqu’au ${formatLastDayBefore(offer.priceAgreement.endsAt)}` : 'sans limite de durée'}.
+						</p>
+					{/if}
+					{#if offer.upcomingVersionPriceCents !== undefined}
+						<p class="text-small text-success">Le prix baisse à {formatEuros(offer.upcomingVersionPriceCents)} dès le prochain renouvellement.</p>
+					{/if}
+					{#if offer.endsAt}
+						<p class="text-small text-ink-muted">Retirée : active jusqu’au {formatLastDayBefore(offer.endsAt)}.</p>
+					{/if}
+				</li>
+			{/each}
+		</ul>
+	</Card>
+{/if}
+
 {#if data.subscription}
 	<Card>
 		<div class="flex flex-wrap items-center justify-between gap-4">

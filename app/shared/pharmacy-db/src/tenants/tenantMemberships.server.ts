@@ -1,3 +1,4 @@
+import { users } from '@crystal-pharm/auth/customer-tables';
 import { asc, eq } from 'drizzle-orm';
 import * as v from 'valibot';
 import {
@@ -44,4 +45,21 @@ export async function findActiveTenantIdOfAccount(accountId: string): Promise<st
 			.limit(1)
 	);
 	return firstMembership?.tenantId;
+}
+
+/**
+ * Les emails des titulaires du Tenant. Les Responsibilities n'existent pas
+ * encore : tout compte membre du Tenant est un Owner, à restreindre le jour où
+ * un Employee peut avoir son compte.
+ */
+export async function listOwnerEmailsOfTenant(tenantId: string): Promise<string[]> {
+	const ownerRows = await runAsTenant(tenantId, (transaction) =>
+		transaction
+			.select({ email: users.email })
+			.from(tenantMemberships)
+			.innerJoin(users, eq(users.id, tenantMemberships.accountId))
+			.where(eq(tenantMemberships.tenantId, tenantId))
+			.orderBy(asc(tenantMemberships.createdAt))
+	);
+	return ownerRows.map((ownerRow) => ownerRow.email);
 }

@@ -1,13 +1,20 @@
-import { and, eq, isNull, lte, or, gt } from 'drizzle-orm';
+import { and, eq, lte } from 'drizzle-orm';
+import { listTenantIdsWithAccessSources } from '../access/rebuildToolAccessOfTenant.server';
+import { reconcileToolAccessOfTenant } from '../access/toolAccessReconciliation.server';
 import { platformBillingAccess, runWithBillingAccess } from '../database/billingDatabase.server';
-import { groupContracts, tenantSubscriptions, type InvoicePaymentMethod } from '../database/billingTables';
+import { groupContracts, type InvoicePaymentMethod } from '../database/billingTables';
 import { chargeAndInvoice } from '../invoicing/invoices.server';
 import { describeGroupChargeLines, getGroupBillingOverview } from '../overview/groupBilling.server';
-import { spreadLinesOverPeriod } from '../pricing/billingPeriodPricing';
 import { computePeriodEnd } from '../subscriptions/subscriptionPeriod';
-import { describeMonthlyToolLines, getToolAccessOfTenant } from '../subscriptions/tenantSubscriptions.server';
+import { listSubscriptionsDueForRenewal, listSubscriptionsDueForRetry, renewSubscription, retryFailedPayment, type RenewalOutcome } from './subscriptionRenewal.server';
 
-export type DueBillingReport = { invoicedTenantCount: number; invoicedGroupCount: number };
+export type DueBillingReport = {
+	invoicedTenantCount: number;
+	invoicedGroupCount: number;
+	failedPaymentCount: number;
+	abandonedSubscriptionCount: number;
+	repairedToolAccessCount: number;
+};
 
 /**
  * Le renouvellement mensuel : chaque abonnement et chaque contrat actif dont la
@@ -16,12 +23,26 @@ export type DueBillingReport = { invoicedTenantCount: number; invoicedGroupCount
  * jour ; en dev, l'outil de dev le lance.
  */
 export async function runDueBilling(now = new Date()): Promise<DueBillingReport> {
-	const report: DueBillingReport = { invoicedTenantCount: 0, invoicedGroupCount: 0 };
-	for (const subscription of await listSubscriptionsDue(now)) {
-		report.invoicedTenantCount += await billDueSubscription(subscription.id, subscription.tenantId, now);
+	const report: DueBillingReport = { invoicedTenantCount: 0, invoicedGroupCount: 0, failedPaymentCount: 0, abandonedSubscriptionCount: 0, repairedToolAccessCount: 0 };
+	for (const subscription of await listSubscriptionsDueForRenewal(now)) {
+		let outcome = await renewSubscription(subscription.id, subscription.tenantId, now);
+		while (outcome === 'renewed') {
+			report.invoicedTenantCount += 1;
+			outcome = await renewSubscription(subscription.id, subscription.tenantId, now);
+		}
+		countFailure(report, outcome);
+	}
+	for (const subscription of await listSubscriptionsDueForRetry(now)) {
+		const outcome = await retryFailedPayment(subscription.id, subscription.tenantId, now);
+		if (outcome === 'renewed') report.invoicedTenantCount += 1;
+		countFailure(report, outcome);
 	}
 	for (const contract of await listGroupContractsDue(now)) {
 		report.invoicedGroupCount += await billDueGroupContract(contract.groupId, now);
+	}
+	for (const tenantId of await listTenantIdsWithAccessSources()) {
+		const reconciliation = await reconcileToolAccessOfTenant(tenantId, now);
+		if (reconciliation.differences.length > 0) report.repairedToolAccessCount += 1;
 	}
 	return report;
 }
@@ -63,55 +84,6 @@ export async function billDueGroupContract(
 	return invoicedPeriodCount;
 }
 
-async function billDueSubscription(subscriptionId: string, tenantId: string, now: Date): Promise<number> {
-	let invoicedPeriodCount = 0;
-	let toolAccess = await getToolAccessOfTenant(tenantId, now);
-	while (toolAccess.subscription?.subscriptionId === subscriptionId && toolAccess.subscription.currentPeriodEndsAt <= now) {
-		const subscription = toolAccess.subscription;
-		const periodStart = subscription.currentPeriodEndsAt;
-		const billingPeriod = subscription.nextBillingPeriod ?? subscription.billingPeriod;
-		const periodEnd = computePeriodEnd(periodStart, billingPeriod);
-		const continuingToolKeys = subscription.tools
-			.filter((subscribedTool) => !subscribedTool.endsAt)
-			.map((subscribedTool) => subscribedTool.toolKey);
-		const invoice = await chargeAndInvoice({
-			payer: { tenantId },
-			lines: spreadLinesOverPeriod(
-				describeMonthlyToolLines(toolAccess.quote, continuingToolKeys),
-				billingPeriod,
-				toolAccess.catalog.annualFreeMonths
-			),
-			description: 'Abonnement Crystal Pharm',
-			periodStart,
-			periodEnd,
-			paymentMethod: 'card'
-		});
-		if (invoice) invoicedPeriodCount += 1;
-		await runWithBillingAccess(platformBillingAccess, (transaction) =>
-			transaction
-				.update(tenantSubscriptions)
-				.set({ billedUntil: periodEnd, billingPeriod, nextBillingPeriod: null })
-				.where(eq(tenantSubscriptions.id, subscriptionId))
-		);
-		toolAccess = await getToolAccessOfTenant(tenantId, now);
-	}
-	return invoicedPeriodCount;
-}
-
-function listSubscriptionsDue(now: Date) {
-	return runWithBillingAccess(platformBillingAccess, (transaction) =>
-		transaction
-			.select({ id: tenantSubscriptions.id, tenantId: tenantSubscriptions.tenantId })
-			.from(tenantSubscriptions)
-			.where(
-				and(
-					lte(tenantSubscriptions.billedUntil, now),
-					or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, tenantSubscriptions.billedUntil))
-				)
-			)
-	);
-}
-
 function listGroupContractsDue(now: Date) {
 	return runWithBillingAccess(platformBillingAccess, (transaction) =>
 		transaction
@@ -119,6 +91,11 @@ function listGroupContractsDue(now: Date) {
 			.from(groupContracts)
 			.where(and(eq(groupContracts.status, 'active'), lte(groupContracts.billedUntil, now)))
 	);
+}
+
+function countFailure(report: DueBillingReport, outcome: RenewalOutcome): void {
+	if (outcome === 'payment-failed') report.failedPaymentCount += 1;
+	if (outcome === 'abandoned') report.abandonedSubscriptionCount += 1;
 }
 
 async function readGroupBilledUntil(groupId: string): Promise<Date | undefined> {

@@ -4,7 +4,11 @@ import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } 
 import { runDueBilling, type DueBillingReport } from './dueBilling.server';
 
 const billingDateColumnsByTable: Record<string, string[]> = {
-	tenant_subscriptions: ['started_at', 'cancelled_at', 'ends_at', 'billed_until'],
+	tenant_subscriptions: ['started_at', 'cancelled_at', 'ends_at', 'billed_until', 'first_failed_at', 'next_retry_at'],
+	tenant_subscription_items: ['started_at', 'ends_at'],
+	tenant_tool_access: ['starts_at', 'paid_until', 'ends_at'],
+	group_contract_versions: ['starts_at', 'ends_at'],
+	price_agreements: ['starts_at', 'ends_at'],
 	tenant_subscription_tools: ['added_at', 'ends_at'],
 	group_contracts: ['activated_at', 'billed_until'],
 	payments: ['paid_at', 'refunded_at'],

@@ -18,7 +18,7 @@ les règles ci-dessous.
 `auth`, `email` et `api-client` ne dépendent d'aucun autre package partagé.
 `pharmacy-db` dépend seulement de `auth` (un compte appartient à des
 Tenants). `group-db` dépend de `auth` et de `pharmacy-db`. `billing-db`
-dépend de `auth`, `pharmacy-db` et `group-db`. `content-db` dépend seulement
+dépend de `auth`, `email`, `pharmacy-db` et `group-db`. `content-db` dépend seulement
 de `engine/schema`. `dev-tools` peut dépendre de tous, et aucun ne dépend de
 lui.
 
@@ -105,28 +105,69 @@ lui.
 
 ## `billing-db` — les abonnements
 
-- Le schéma `billing` : le prix mensuel de chaque Tool et du pack « tous les
-  Tools », la grille des forfaits de groupement, les GroupContracts (prise en
+- Le schéma `billing` : les Offers et leurs OfferVersions, les PriceAgreements,
+  la grille des forfaits de groupement, les GroupContracts (versionnés, prise en
   charge Tool par Tool, mode de paiement, facturation), les Subscriptions des
-  Tenants, les paiements et les factures.
+  Tenants et leurs lignes (une par Offer), les paiements et les factures.
 - Tous les prix sont **hors taxes** (vente entre professionnels) : la TVA
   s'ajoute sur la facture et sur le paiement (`addVat`). Une interface écrit
   toujours « HT » ou « TTC » à côté d'un montant.
 - Les Tools sont une liste écrite **une seule fois** (`src/tools/`) ; tout le
-  reste (prix, contrats, accès, menu) se déduit de leur `toolKey`. Ajouter un
-  Tool = l'ajouter à cette liste, puis lui donner un prix dans `admin`. Un
-  Tool sans prix n'est pas encore en vente ; un prix à 0 le rend gratuit pour
-  tous.
-- Une règle de prix, une seule fonction pure (`src/pricing/`, testée), utilisée
-  par le serveur et par le navigateur (l'aperçu en direct) : part de la
-  pharmacie = prix × (1 − remise) × (1 − part du groupement). Un Tool est
-  accessible si cette part vaut 0 ou si le Tenant y est abonné.
+  reste (offres, contrats, accès, menu) se déduit de leur `toolKey`. Une
+  Offer à un seul Tool a pour `offerKey` son `toolKey`, le pack « tous les
+  Tools » est l'Offer `pack`. Un Tool sans prix n'est pas encore en vente.
+- **Une OfferVersion n'est jamais modifiée** : une correction ou un nouveau prix
+  est une nouvelle version. Un abonné garde sa version. Seule une **baisse de
+  prix** (même Offer, au moins les mêmes Tools, prix plus bas) suit les
+  abonnés : leurs lignes passent à la nouvelle version au prochain
+  renouvellement (`next_offer_version_id`) et un email les prévient. Une hausse
+  ne touche personne.
+- **Un PriceAgreement est un plafond** (`price_agreements`, un Tenant ou un
+  PharmacyGroup, par Offer, sans date de fin = à vie). Prix facturé =
+  min(prix de la version, prix de l'accord) : une seule fonction pure
+  (`src/pricing/`, testée), dont le résultat est écrit sur la ligne d'abonnement à
+  l'écriture. L'accord ne suit pas un changement d'Offer.
 - Un PharmacyGroup paie à l'usage (la somme de ses parts, pharmacie par
   pharmacie) ou au forfait (une offre de la grille, ou sur mesure) : au-delà
   du quota, chaque pharmacie coûte forfait ÷ quota. Une seule fonction pure
-  (`computeGroupMonthlyCharge`).
+  (`computeGroupMonthlyCharge`). Chaque changement de contrat écrit une version
+  (`group_contract_versions`).
+- **Les droits se lisent en une instruction, sans cache** :
+  `billing.tenant_tool_access` est une projection (Tenant, Tool, début, payé
+  jusqu'à, fin, donneur). Tout le travail se fait à l'écriture : **seule**
+  `rebuildToolAccessOfTenant` l'écrit, appelée à la fin de chaque événement
+  (souscription, changement, résiliation, renouvellement, échec, relance,
+  version publiée, accord de prix, contrat de groupement, entrée ou sortie
+  d'un groupement), dans la transaction de l'événement, l'abonnement verrouillé (`for update`). Les règles entre Tools
+  (`includedWith`) s'y appliquent. Un Tool est accessible s'il a une ligne
+  ouverte (`starts_at <= now() < ends_at`). Un Tool à 0 € ne s'ouvre plus tout seul :
+  la pharmacie y souscrit comme à un autre (une ligne d'offre à 0 €, sans
+  paiement) ; seul un contrat de groupement ou un abonnement ouvre une ligne. `computeToolAccessOfTenant` +
+  `reconcileToolAccessOfTenant` vérifient la projection et la réparent
+  (`runDueBilling` les passe sur chaque Tenant). Après `make migrate`, le script
+  `rebuild-tool-access` de `billing-db` reconstruit la projection de tous les
+  Tenants ; l'outil de dev a le même bouton.
+- Toute écriture de `group-db` qui change une prise en charge (adhésion
+  acceptée, départ, retrait) passe par `billing-db`
+  (`…AndRebuildToolAccess`), qui l'enchaîne avec la reconstruction dans une seule
+  transaction ; les variantes `…InTransaction` de `group-db` n'existent que pour elle.
+- Paiement raté : rien n'est écrit dans les accès. La grâce est de 7 jours
+  après l'échéance (`ends_at = paid_until + 7 j` à chaque renouvellement) ;
+  l'abonnement passe `past_due` avec des relances à J+1, J+3 et J+6, puis
+  `ended` (`ends_at = billed_until`). « En retard » = `now() > paid_until`, ce
+  que l'interface affiche. La table `payments` n'est jamais lue pour décider
+  d'un accès ; `provider_payment_reference` y est unique (idempotence).
+- Le renouvellement et les relances prennent leur abonnement `for update skip
+  locked` : plusieurs instances peuvent tourner sans doublon.
+- Les anciennes tables (`tool_prices`, `catalog_settings`,
+  `tenant_subscription_tools`, `group_tool_coverages`) restent pour les zones
+  qui les lisent encore (`admin`, `group`, `site-manager`) ; `tenant_subscription_tools`
+  est un miroir réécrit à chaque événement. Une zone qui les lit migre vers les
+  nouvelles lectures dans son propre lot.
 - Le paiement passe par l'interface `PaymentProvider` : le faux prestataire en
-  dev (une page de paiement de test), Stripe plus tard, sans autre changement.
+  dev (une page de paiement de test, et une carte refusée à volonté), Stripe
+  plus tard, sans autre changement. `billing-db` envoie les emails de baisse de
+  prix par `shared/email`.
 - Chaque paiement et chaque renouvellement émet une facture : numérotation
   continue par année, sans trou (`CP-2026-00017`, avoirs compris), client figé
   au moment de l'émission, jamais modifiée ensuite — seul son statut change
@@ -134,8 +175,9 @@ lui.
   Les mentions de l'émetteur viennent de l'environnement (`INVOICE_ISSUER_*`).
 - Renouvellement : chaque Subscription et chaque GroupContract garde la date
   jusqu'où il est facturé (`billed_until`) ; `runDueBilling` facture ce qui
-  est échu (prélevé par carte, ou « à régler » par virement). En dev, l'outil
-  de dev le lance (« Passer au mois suivant ») ; en prod, une tâche planifiée.
+  est échu (prélevé par carte, ou « à régler » par virement), lance les
+  relances et vérifie la projection. En dev, l'outil de dev le lance
+  (« Passer au mois suivant ») ; en prod, une tâche planifiée.
 - Satisfait ou remboursé : une Subscription résiliée dans ses 30 premiers
   jours est remboursée.
 

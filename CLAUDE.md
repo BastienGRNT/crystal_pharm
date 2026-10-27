@@ -32,7 +32,11 @@ connecté à `admin`) · `Platform` (nous, l'opérateur du SaaS) ·
 (un dossier de `engine/layouts`, son nom est l'identifiant) · `Module` (un bloc
 activable d'un site) · `Tool` (un outil payant de `pharmacy` qu'un Tenant
 active : site, rendez-vous…, `toolKey` ; « module » dans l'interface) ·
-`Subscription` (l'abonnement d'un Tenant à des Tools) · `GroupContract` (ce
+`Offer` (ce qu'un Tenant achète : un ou plusieurs Tools à un prix, `offerKey`) ·
+`OfferVersion` (une version figée d'une Offer : ses Tools et son prix, jamais
+modifiée ; l'abonné garde la sienne) · `PriceAgreement` (un prix négocié pour
+une Offer, au nom d'un Tenant ou d'un PharmacyGroup : un plafond) ·
+`Subscription` (l'abonnement d'un Tenant à des Offers) · `GroupContract` (ce
 qu'un PharmacyGroup prend en charge, Tool par Tool, et comment il paie).
 
 ## La carte

@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from '@crystal-pharm/auth';
-import { getToolAccessOfTenant } from '@crystal-pharm/billing-db';
+import { getToolAccessOfTenant, leaveGroupAndRebuildToolAccess } from '@crystal-pharm/billing-db';
 import { findTool, summarizeCoverage } from '@crystal-pharm/billing-db/domain';
-import { findCurrentGroupOfTenant, leaveGroup } from '@crystal-pharm/group-db';
+import { findCurrentGroupOfTenant } from '@crystal-pharm/group-db';
 import {
 	addEmployee,
 	getPharmacyProfile,
@@ -158,7 +158,7 @@ export const pharmacyPageActions = {
 	},
 
 	leaveGroup: async ({ locals }: RequestEvent): Promise<PharmacySectionSaved> => {
-		await leaveGroup(await requireActiveTenantId(locals.user));
+		await leaveGroupAndRebuildToolAccess(await requireActiveTenantId(locals.user));
 		return { savedSection: 'group' };
 	}
 };

@@ -4,7 +4,9 @@ import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } 
 import { catalogSettings, toolPrices } from '../database/billingTables';
 import { parseEurosToCents } from '../money/euroAmount';
 import type { ToolCatalog, ToolPrice } from '../pricing/toolPricing';
-import { isIncludedTool, isToolKey, sellableToolKeys, type ToolKey } from '../tools/tools';
+import { publishOfferVersion, type OfferVersionPublication } from '../events/offerVersionPublication.server';
+import { packOfferKey, readLatestOfferVersion } from '../offers/offerCatalog.server';
+import { findTool, isIncludedTool, isToolKey, sellableToolKeys, type ToolKey } from '../tools/tools';
 
 export const packPriceFieldName = 'pack';
 export const annualFreeMonthsFieldName = 'annualFreeMonths';
@@ -84,5 +86,28 @@ export async function saveToolCatalog(catalogInput: ToolCatalogInput): Promise<S
 				set: { packMonthlyPriceCents: packMonthlyPriceCents ?? null, annualFreeMonths }
 			});
 	});
+	await publishChangedOfferVersions(pricesOnSale, packMonthlyPriceCents);
 	return { isSaved: true };
+}
+
+/** Un prix qui change = une nouvelle version de l'offre ; un prix inchangé n'en publie pas. */
+async function publishChangedOfferVersions(pricesOnSale: readonly ToolPrice[], packMonthlyPriceCents: number | undefined): Promise<void> {
+	const now = new Date();
+	const offersToPublish: OfferVersionPublication[] = pricesOnSale.map((toolPrice) => {
+		const tool: { label: string; offerLabel?: string } = findTool(toolPrice.toolKey);
+		return {
+			offerKey: toolPrice.toolKey,
+			label: tool.offerLabel ?? tool.label,
+			monthlyPriceCents: toolPrice.monthlyPriceCents,
+			toolKeys: [toolPrice.toolKey]
+		};
+	});
+	if (packMonthlyPriceCents !== undefined) {
+		offersToPublish.push({ offerKey: packOfferKey, label: 'Tous les modules', monthlyPriceCents: packMonthlyPriceCents, toolKeys: [...sellableToolKeys] });
+	}
+	for (const offerToPublish of offersToPublish) {
+		const latestOffer = await runWithBillingAccess({}, (transaction) => readLatestOfferVersion(transaction, offerToPublish.offerKey));
+		if (latestOffer?.monthlyPriceCents === offerToPublish.monthlyPriceCents) continue;
+		await publishOfferVersion(offerToPublish, now);
+	}
 }

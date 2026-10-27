@@ -184,39 +184,53 @@ export async function findPharmacyInvitation(proof: InvitationProof): Promise<Ph
 }
 
 /** La pharmacie accepte : le groupement voit désormais ses données et prend en charge ce que prévoit son contrat. */
-export async function acceptPharmacyInvitation(tenantId: string, proof: InvitationProof): Promise<PharmacyInvitationAnswer> {
-	return runWithGroupAccess({ ...toInvitationAccess(proof), tenantId }, async (transaction) => {
-		const [invitation] = await transaction.select().from(pharmacyInvitations).where(toInvitationCondition(proof));
-		if (!invitation) return { isAnswered: false, failureMessage: 'Cette invitation n’existe pas.' };
+export function acceptPharmacyInvitation(tenantId: string, proof: InvitationProof): Promise<PharmacyInvitationAnswer> {
+	return runWithGroupAccess(toAcceptanceAccess(tenantId, proof), (transaction) =>
+		acceptPharmacyInvitationInTransaction(transaction, tenantId, proof)
+	);
+}
 
-		const status = describeInvitationStatus(invitation, new Date());
-		if (status !== 'pending') return { isAnswered: false, failureMessage: invitationUnavailableMessages[status] };
+/** L'accès sous lequel une pharmacie accepte : celui de l'invitation, et la pharmacie elle-même. */
+export function toAcceptanceAccess(tenantId: string, proof: InvitationProof): GroupAccess {
+	return { ...toInvitationAccess(proof), tenantId };
+}
 
-		const [currentMembership] = await transaction
-			.select({ groupName: pharmacyGroups.name })
-			.from(pharmacyMemberships)
-			.innerJoin(pharmacyGroups, eq(pharmacyGroups.id, pharmacyMemberships.groupId))
-			.where(and(eq(pharmacyMemberships.tenantId, tenantId), isNull(pharmacyMemberships.leftAt)));
-		if (currentMembership) {
-			return {
-				isAnswered: false,
-				failureMessage: `Votre pharmacie est déjà membre de ${currentMembership.groupName}. Quittez-le d’abord depuis « Pharmacie ».`
-			};
-		}
+/** Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction. */
+export async function acceptPharmacyInvitationInTransaction(
+	transaction: GroupTransaction,
+	tenantId: string,
+	proof: InvitationProof
+): Promise<PharmacyInvitationAnswer> {
+	const [invitation] = await transaction.select().from(pharmacyInvitations).where(toInvitationCondition(proof));
+	if (!invitation) return { isAnswered: false, failureMessage: 'Cette invitation n’existe pas.' };
 
-		const now = new Date();
-		await transaction.insert(pharmacyMemberships).values({
-			id: crypto.randomUUID(),
-			tenantId,
-			groupId: invitation.groupId,
-			joinedAt: now
-		});
-		await transaction
-			.update(pharmacyInvitations)
-			.set({ acceptedAt: now, acceptedTenantId: tenantId })
-			.where(eq(pharmacyInvitations.id, invitation.id));
-		return { isAnswered: true, groupId: invitation.groupId };
+	const status = describeInvitationStatus(invitation, new Date());
+	if (status !== 'pending') return { isAnswered: false, failureMessage: invitationUnavailableMessages[status] };
+
+	const [currentMembership] = await transaction
+		.select({ groupName: pharmacyGroups.name })
+		.from(pharmacyMemberships)
+		.innerJoin(pharmacyGroups, eq(pharmacyGroups.id, pharmacyMemberships.groupId))
+		.where(and(eq(pharmacyMemberships.tenantId, tenantId), isNull(pharmacyMemberships.leftAt)));
+	if (currentMembership) {
+		return {
+			isAnswered: false,
+			failureMessage: `Votre pharmacie est déjà membre de ${currentMembership.groupName}. Quittez-le d’abord depuis « Pharmacie ».`
+		};
+	}
+
+	const now = new Date();
+	await transaction.insert(pharmacyMemberships).values({
+		id: crypto.randomUUID(),
+		tenantId,
+		groupId: invitation.groupId,
+		joinedAt: now
 	});
+	await transaction
+		.update(pharmacyInvitations)
+		.set({ acceptedAt: now, acceptedTenantId: tenantId })
+		.where(eq(pharmacyInvitations.id, invitation.id));
+	return { isAnswered: true, groupId: invitation.groupId };
 }
 
 export async function declinePharmacyInvitation(proof: InvitationProof): Promise<PharmacyInvitationAnswer> {

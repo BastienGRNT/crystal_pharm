@@ -510,6 +510,9 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../auth
+      '@crystal-pharm/email':
+        specifier: workspace:*
+        version: link:../email
       '@crystal-pharm/group-db':
         specifier: workspace:*
         version: link:../group-db

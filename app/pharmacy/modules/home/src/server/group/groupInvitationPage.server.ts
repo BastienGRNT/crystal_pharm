@@ -1,8 +1,12 @@
 import { findCustomerAccountIdByEmail, type AuthenticatedUser } from '@crystal-pharm/auth';
-import { getToolAccessOfTenant, previewGroupJoining, stopPayingForIncludedTools } from '@crystal-pharm/billing-db';
+import {
+	acceptPharmacyInvitationAndRebuildToolAccess,
+	getToolAccessOfTenant,
+	previewGroupJoining,
+	stopPayingForIncludedTools
+} from '@crystal-pharm/billing-db';
 import { describeIncludedTools, findOfferLabel, type ToolQuote } from '@crystal-pharm/billing-db/domain';
 import {
-	acceptPharmacyInvitation,
 	declinePharmacyInvitation,
 	findCurrentGroupOfTenant,
 	findPharmacyInvitation,
@@ -93,7 +97,7 @@ export const groupInvitationPageActions = {
 	accept: async ({ locals, request }: RequestEvent): Promise<ActionFailure<GroupInvitationActionFailure>> => {
 		const tenantId = await requireActiveTenantId(locals.user);
 		const proof = await readSubmittedProof(request, locals.user);
-		const acceptance = await acceptPharmacyInvitation(tenantId, proof);
+		const acceptance = await acceptPharmacyInvitationAndRebuildToolAccess(tenantId, proof);
 		if (!acceptance.isAnswered) return fail(400, { failureMessage: acceptance.failureMessage });
 		await stopPayingForIncludedTools(tenantId);
 		redirect(303, `${homePathnames.toolsHome}?groupement=rejoint`);

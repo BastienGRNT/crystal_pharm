@@ -4,7 +4,10 @@ import { and, desc, eq, gt, gte, isNull, or } from 'drizzle-orm';
 import { readToolCatalog } from '../catalog/toolCatalog.server';
 import { readGroupContract } from '../contracts/groupContracts.server';
 import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } from '../database/billingDatabase.server';
-import { invoices, tenantSubscriptions, tenantSubscriptionTools } from '../database/billingTables';
+import { invoices, tenantSubscriptionItems, tenantSubscriptions, tenantSubscriptionTools, tenantToolAccess } from '../database/billingTables';
+import { getToolAccessSummary } from '../access/toolAccessReading.server';
+import { selectOffersOfSubscription } from '../events/offerSelection.server';
+import { finishSubscriptionEvent, listItemsOfSubscription, lockCurrentSubscriptionOfTenant } from '../events/subscriptionEventSupport.server';
 import { creditInvoice } from '../invoicing/invoices.server';
 import { addVat } from '../invoicing/vatAmounts';
 import type { UpcomingCharge } from '../overview/groupBilling.server';
@@ -87,18 +90,22 @@ export async function readToolAccessOfTenant(
 		coverages: coveringGroup?.coverages ?? [],
 		selectedToolKeys: subscription?.tools.map((subscribedTool) => subscribedTool.toolKey) ?? []
 	});
+	const accessRows = await transaction
+		.select({ toolKey: tenantToolAccess.toolKey })
+		.from(tenantToolAccess)
+		.where(and(eq(tenantToolAccess.tenantId, tenantId), gt(tenantToolAccess.endsAt, now)));
 	return {
 		catalog,
 		coveringGroup,
 		subscription,
 		quote,
-		accessibleToolKeys: quote.toolQuotes.filter((toolQuote) => toolQuote.isActive).map((toolQuote) => toolQuote.toolKey),
+		accessibleToolKeys: [...new Set(accessRows.map((accessRow) => accessRow.toolKey))],
 		upcomingCharge: describeUpcomingCharge(catalog, coveringGroup?.coverages ?? [], subscription)
 	};
 }
 
 export async function canTenantUseTool(tenantId: string, toolKey: ToolKey): Promise<boolean> {
-	const { accessibleToolKeys } = await getToolAccessOfTenant(tenantId);
+	const { accessibleToolKeys } = await getToolAccessSummary(tenantId);
 	return accessibleToolKeys.includes(toolKey);
 }
 
@@ -181,28 +188,7 @@ export async function applyToolSelection(
 	now: Date,
 	requestedBillingPeriod: BillingPeriod
 ): Promise<void> {
-	const subscription =
-		(await readCurrentSubscription(transaction, tenantId, now)) ??
-		(await startSubscription(transaction, tenantId, now, requestedBillingPeriod));
-	if (subscription.endsAt) await resumeSubscriptionRow(transaction, subscription.subscriptionId);
-	await transaction
-		.update(tenantSubscriptions)
-		.set({ nextBillingPeriod: requestedBillingPeriod === subscription.billingPeriod ? null : requestedBillingPeriod })
-		.where(eq(tenantSubscriptions.id, subscription.subscriptionId));
-
-	for (const toolKey of desiredToolKeys) {
-		await transaction
-			.insert(tenantSubscriptionTools)
-			.values({ tenantId, subscriptionId: subscription.subscriptionId, toolKey, addedAt: now })
-			.onConflictDoUpdate({
-				target: [tenantSubscriptionTools.subscriptionId, tenantSubscriptionTools.toolKey],
-				set: { endsAt: null }
-			});
-	}
-	for (const subscribedTool of subscription.tools) {
-		if (desiredToolKeys.includes(subscribedTool.toolKey) || subscribedTool.endsAt) continue;
-		await endSubscribedTool(transaction, subscription.subscriptionId, subscribedTool.toolKey, subscription.currentPeriodEndsAt);
-	}
+	await selectOffersOfSubscription(transaction, tenantId, desiredToolKeys, requestedBillingPeriod, now);
 }
 
 /**
@@ -213,15 +199,16 @@ export async function applyToolSelection(
 export async function cancelSubscription(tenantId: string): Promise<SubscriptionCancellation> {
 	return runWithBillingAccess({ tenantId }, async (transaction) => {
 		const now = new Date();
+		await lockCurrentSubscriptionOfTenant(transaction, tenantId, now);
 		const subscription = await readCurrentSubscription(transaction, tenantId, now);
 		if (!subscription || subscription.endsAt) return { outcome: 'no-subscription' };
 
 		if (subscription.isMoneyBackGuaranteed) {
 			const refundedAmountCents = await creditInvoicesIssuedSince(tenantId, subscription.startedAt);
-			await endSubscription(transaction, subscription.subscriptionId, now, now);
+			await endSubscription(transaction, tenantId, subscription.subscriptionId, now, now);
 			return { outcome: 'refunded', refundedAmountCents };
 		}
-		await endSubscription(transaction, subscription.subscriptionId, now, subscription.currentPeriodEndsAt);
+		await endSubscription(transaction, tenantId, subscription.subscriptionId, now, subscription.currentPeriodEndsAt);
 		return { outcome: 'ends-at-period-end', endsAt: subscription.currentPeriodEndsAt };
 	});
 }
@@ -229,8 +216,10 @@ export async function cancelSubscription(tenantId: string): Promise<Subscription
 /** Annule une résiliation tant que l'abonnement court encore. */
 export async function resumeSubscription(tenantId: string): Promise<void> {
 	await runWithBillingAccess({ tenantId }, async (transaction) => {
-		const subscription = await readCurrentSubscription(transaction, tenantId, new Date());
-		if (subscription?.endsAt) await resumeSubscriptionRow(transaction, subscription.subscriptionId);
+		const now = new Date();
+		await lockCurrentSubscriptionOfTenant(transaction, tenantId, now);
+		const subscription = await readCurrentSubscription(transaction, tenantId, now);
+		if (subscription?.endsAt) await resumeSubscriptionRow(transaction, tenantId, subscription.subscriptionId);
 	});
 }
 
@@ -241,10 +230,11 @@ export async function resumeSubscription(tenantId: string): Promise<void> {
 export async function stopPayingForIncludedTools(tenantId: string): Promise<ToolKey[]> {
 	return runWithBillingAccess({ tenantId }, async (transaction) => {
 		const now = new Date();
+		await lockCurrentSubscriptionOfTenant(transaction, tenantId, now);
 		const toolAccess = await readToolAccessOfTenant(transaction, tenantId, now);
 		if (!toolAccess.subscription) return [];
 		const includedToolKeys = toolAccess.quote.toolQuotes
-			.filter((toolQuote) => toolQuote.isIncluded)
+			.filter((toolQuote) => toolQuote.isIncluded && toolQuote.listPriceCents > 0)
 			.map((toolQuote) => toolQuote.toolKey);
 		const nowIncludedSubscribedToolKeys = toolAccess.subscription.tools
 			.map((subscribedTool) => subscribedTool.toolKey)
@@ -252,17 +242,18 @@ export async function stopPayingForIncludedTools(tenantId: string): Promise<Tool
 		for (const toolKey of nowIncludedSubscribedToolKeys) {
 			await endSubscribedTool(transaction, toolAccess.subscription.subscriptionId, toolKey, now);
 		}
+		await finishSubscriptionEvent(transaction, tenantId, now, toolAccess.subscription.subscriptionId);
 		const hasToolLeftToPay = toolAccess.subscription.tools.some(
 			(subscribedTool) => !subscribedTool.endsAt && !nowIncludedSubscribedToolKeys.includes(subscribedTool.toolKey)
 		);
-		if (!hasToolLeftToPay) await endSubscription(transaction, toolAccess.subscription.subscriptionId, now, now);
+		if (!hasToolLeftToPay) await endSubscription(transaction, tenantId, toolAccess.subscription.subscriptionId, now, now);
 		return nowIncludedSubscribedToolKeys;
 	});
 }
 
 function keepToolsToPayFor(toolAccess: TenantToolAccess, requestedToolKeys: readonly ToolKey[]): ToolKey[] {
 	return toolAccess.quote.toolQuotes
-		.filter((toolQuote) => !toolQuote.isIncluded && requestedToolKeys.includes(toolQuote.toolKey))
+		.filter((toolQuote) => (!toolQuote.isIncluded || toolQuote.listPriceCents === 0) && requestedToolKeys.includes(toolQuote.toolKey))
 		.map((toolQuote) => toolQuote.toolKey);
 }
 
@@ -380,46 +371,21 @@ async function readCurrentSubscription(
 	};
 }
 
-async function startSubscription(
-	transaction: BillingTransaction,
-	tenantId: string,
-	now: Date,
-	billingPeriod: BillingPeriod
-): Promise<TenantSubscription> {
-	const subscriptionId = crypto.randomUUID();
-	const firstPeriodEnd = computePeriodEnd(now, billingPeriod);
-	await transaction
-		.insert(tenantSubscriptions)
-		.values({ id: subscriptionId, tenantId, startedAt: now, billedUntil: firstPeriodEnd, billingPeriod });
-	const moneyBackGuaranteeEndsAt = computeMoneyBackGuaranteeEnd(now);
-	return {
-		subscriptionId,
-		startedAt: now,
-		billingPeriod,
-		nextBillingPeriod: undefined,
-		currentPeriodStartedAt: now,
-		currentPeriodEndsAt: firstPeriodEnd,
-		endsAt: undefined,
-		moneyBackGuaranteeEndsAt,
-		isMoneyBackGuaranteed: true,
-		tools: []
-	};
-}
-
 async function endSubscribedTool(
 	transaction: BillingTransaction,
 	subscriptionId: string,
 	toolKey: ToolKey,
 	endsAt: Date
 ): Promise<void> {
-	await transaction
-		.update(tenantSubscriptionTools)
-		.set({ endsAt })
-		.where(and(eq(tenantSubscriptionTools.subscriptionId, subscriptionId), eq(tenantSubscriptionTools.toolKey, toolKey)));
+	for (const item of await listItemsOfSubscription(transaction, subscriptionId)) {
+		if (item.offerKey !== toolKey || item.endsAt) continue;
+		await transaction.update(tenantSubscriptionItems).set({ endsAt }).where(eq(tenantSubscriptionItems.id, item.id));
+	}
 }
 
 async function endSubscription(
 	transaction: BillingTransaction,
+	tenantId: string,
 	subscriptionId: string,
 	cancelledAt: Date,
 	endsAt: Date
@@ -427,17 +393,19 @@ async function endSubscription(
 	await transaction.update(tenantSubscriptions).set({ cancelledAt, endsAt }).where(eq(tenantSubscriptions.id, subscriptionId));
 	if (endsAt <= cancelledAt) {
 		await transaction
-			.update(tenantSubscriptionTools)
+			.update(tenantSubscriptionItems)
 			.set({ endsAt })
-			.where(and(eq(tenantSubscriptionTools.subscriptionId, subscriptionId), isNull(tenantSubscriptionTools.endsAt)));
+			.where(and(eq(tenantSubscriptionItems.subscriptionId, subscriptionId), isNull(tenantSubscriptionItems.endsAt)));
 	}
+	await finishSubscriptionEvent(transaction, tenantId, cancelledAt, subscriptionId);
 }
 
-async function resumeSubscriptionRow(transaction: BillingTransaction, subscriptionId: string): Promise<void> {
+async function resumeSubscriptionRow(transaction: BillingTransaction, tenantId: string, subscriptionId: string): Promise<void> {
 	await transaction
 		.update(tenantSubscriptions)
 		.set({ cancelledAt: null, endsAt: null })
-		.where(eq(tenantSubscriptions.id, subscriptionId));
+		.where(and(eq(tenantSubscriptions.id, subscriptionId), eq(tenantSubscriptions.status, 'active')));
+	await finishSubscriptionEvent(transaction, tenantId, new Date(), subscriptionId);
 }
 
 // Satisfait ou remboursé : chaque facture payée depuis le début de l'abonnement

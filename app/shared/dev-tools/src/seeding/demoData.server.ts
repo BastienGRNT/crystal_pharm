@@ -4,7 +4,9 @@ import {
 	findCustomerAccountIdByEmail
 } from '@crystal-pharm/auth';
 import {
+	acceptPharmacyInvitationAndRebuildToolAccess,
 	completeCheckout,
+	makeSubscriptionOverdueOfTenant,
 	requestToolSelection,
 	saveFlatRateOffers,
 	saveGroupContract,
@@ -15,7 +17,6 @@ import type { BillingPeriod, ToolKey } from '@crystal-pharm/billing-db/domain';
 import { clearDevelopmentOutbox, composeGroupMemberInvitationEmail, composePharmacyInvitationEmail, sendEmail } from '@crystal-pharm/email';
 import {
 	acceptGroupMemberInvitation,
-	acceptPharmacyInvitation,
 	createGroupArticle,
 	createPharmacyGroup,
 	deletePharmacyGroup,
@@ -152,6 +153,8 @@ async function seedDemoData(): Promise<void> {
 	await inviteGroupMemberByEmail(reseauSanteId, demoEmail('responsable'));
 
 	await subscribe('abonnee', requireTenantId(tenantIdsByPersonaKey, 'abonnee'), ['site'], 'yearly');
+	await subscribe('enretard', requireTenantId(tenantIdsByPersonaKey, 'enretard'), ['site'], 'monthly');
+	await makeSubscriptionOverdueOfTenant(requireTenantId(tenantIdsByPersonaKey, 'enretard'));
 	await subscribe('membre', requireTenantId(tenantIdsByPersonaKey, 'membre'), ['planning'], 'monthly');
 	await subscribe('pharmacien', requireTenantId(tenantIdsByPersonaKey, 'pharmacien'), ['site', 'planning'], 'monthly');
 	await addDemoTeam(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'));
@@ -174,6 +177,7 @@ function personaPharmacies(): Record<string, DemoPharmacy> {
 	return {
 		independante: demoPharmacyOf('independante', { name: 'Pharmacie Centrale', street: '12 place de la République', postalCode: '69002', city: 'Lyon' }),
 		abonnee: demoPharmacyOf('abonnee', { name: 'Pharmacie de la Gare', street: '3 avenue de la Gare', postalCode: '33000', city: 'Bordeaux' }),
+		enretard: demoPharmacyOf('enretard', { name: 'Pharmacie du Marché', street: '2 place du Marché', postalCode: '31000', city: 'Toulouse' }),
 		membre: demoPharmacyOf('membre', { name: 'Pharmacie du Port', street: '8 quai du Port', postalCode: '13002', city: 'Marseille' }),
 		pharmacien: demoPharmacyOf('pharmacien', { name: 'Pharmacie Saint-Louis', street: '14 rue Saint-Louis', postalCode: '67000', city: 'Strasbourg' }),
 		invitee: demoPharmacyOf('invitee', { name: 'Pharmacie des Tilleuls', street: '27 allée des Tilleuls', postalCode: '44000', city: 'Nantes' })
@@ -263,7 +267,7 @@ async function publishDemoGroupArticles(groupId: string): Promise<void> {
 async function joinGroup(groupId: string, accountEmail: string, tenantId: string): Promise<void> {
 	const invitations = await invitePharmacies(groupId, [{ email: accountEmail }]);
 	const sentInvitation = invitations.isSent ? invitations.sentInvitations[0] : undefined;
-	if (sentInvitation) await acceptPharmacyInvitation(tenantId, { invitationToken: sentInvitation.invitationToken });
+	if (sentInvitation) await acceptPharmacyInvitationAndRebuildToolAccess(tenantId, { invitationToken: sentInvitation.invitationToken });
 }
 
 async function invitePharmacyByEmail(groupId: string, email: string, pharmacyName: string): Promise<void> {
