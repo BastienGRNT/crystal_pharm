@@ -1,0 +1,1 @@
+ALTER TABLE "billing"."offers" ADD COLUMN "is_on_sale" boolean DEFAULT true NOT NULL;

@@ -4,7 +4,7 @@ import { and, desc, eq, gt, gte, isNull, or } from 'drizzle-orm';
 import { readToolCatalog } from '../catalog/toolCatalog.server';
 import { readGroupContract } from '../contracts/groupContracts.server';
 import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } from '../database/billingDatabase.server';
-import { invoices, tenantSubscriptionItems, tenantSubscriptions, tenantSubscriptionTools, tenantToolAccess } from '../database/billingTables';
+import { invoices, tenantSubscriptionItems, tenantSubscriptions, tenantToolAccess } from '../database/billingTables';
 import { getToolAccessSummary } from '../access/toolAccessReading.server';
 import { selectOffersOfSubscription } from '../events/offerSelection.server';
 import { finishSubscriptionEvent, listItemsOfSubscription, lockCurrentSubscriptionOfTenant } from '../events/subscriptionEventSupport.server';
@@ -18,7 +18,8 @@ import { computeAmountDueToday, priceForPeriod, spreadLinesOverPeriod } from '..
 import { quoteTools, type ToolCatalog, type ToolCoverage, type ToolsQuote } from '../pricing/toolPricing';
 import { findTool, type ToolKey } from '../tools/tools';
 import { readCurrentTermsAcceptance, recordCurrentTermsAcceptance } from '../terms/termsAcceptances.server';
-import { computeMoneyBackGuaranteeEnd, computePeriodEnd, computePeriodStart } from './subscriptionPeriod';
+import { readSubscribedToolLines } from './subscribedTools.server';
+import { computeMoneyBackGuaranteeEnd, computePeriodStart } from './subscriptionPeriod';
 
 export type SubscribedTool = {
 	toolKey: ToolKey;
@@ -242,7 +243,7 @@ export async function stopPayingForIncludedTools(tenantId: string): Promise<Tool
 		for (const toolKey of nowIncludedSubscribedToolKeys) {
 			await endSubscribedTool(transaction, toolAccess.subscription.subscriptionId, toolKey, now);
 		}
-		await finishSubscriptionEvent(transaction, tenantId, now, toolAccess.subscription.subscriptionId);
+		await finishSubscriptionEvent(transaction, tenantId, now);
 		const hasToolLeftToPay = toolAccess.subscription.tools.some(
 			(subscribedTool) => !subscribedTool.endsAt && !nowIncludedSubscribedToolKeys.includes(subscribedTool.toolKey)
 		);
@@ -347,15 +348,7 @@ async function readCurrentSubscription(
 		.limit(1);
 	if (!subscriptionRow) return undefined;
 
-	const toolRows = await transaction
-		.select()
-		.from(tenantSubscriptionTools)
-		.where(
-			and(
-				eq(tenantSubscriptionTools.subscriptionId, subscriptionRow.id),
-				or(isNull(tenantSubscriptionTools.endsAt), gt(tenantSubscriptionTools.endsAt, now))
-			)
-		);
+	const toolLines = await readSubscribedToolLines(transaction, [subscriptionRow.id], now);
 	const moneyBackGuaranteeEndsAt = computeMoneyBackGuaranteeEnd(subscriptionRow.startedAt);
 	return {
 		subscriptionId: subscriptionRow.id,
@@ -367,7 +360,7 @@ async function readCurrentSubscription(
 		endsAt: subscriptionRow.endsAt ?? undefined,
 		moneyBackGuaranteeEndsAt,
 		isMoneyBackGuaranteed: now < moneyBackGuaranteeEndsAt,
-		tools: toolRows.map((toolRow) => ({ toolKey: toolRow.toolKey, endsAt: toolRow.endsAt ?? undefined }))
+		tools: toolLines.map((toolLine) => ({ toolKey: toolLine.toolKey, endsAt: toolLine.endsAt }))
 	};
 }
 
@@ -397,7 +390,7 @@ async function endSubscription(
 			.set({ endsAt })
 			.where(and(eq(tenantSubscriptionItems.subscriptionId, subscriptionId), isNull(tenantSubscriptionItems.endsAt)));
 	}
-	await finishSubscriptionEvent(transaction, tenantId, cancelledAt, subscriptionId);
+	await finishSubscriptionEvent(transaction, tenantId, cancelledAt);
 }
 
 async function resumeSubscriptionRow(transaction: BillingTransaction, tenantId: string, subscriptionId: string): Promise<void> {
@@ -405,7 +398,7 @@ async function resumeSubscriptionRow(transaction: BillingTransaction, tenantId: 
 		.update(tenantSubscriptions)
 		.set({ cancelledAt: null, endsAt: null })
 		.where(and(eq(tenantSubscriptions.id, subscriptionId), eq(tenantSubscriptions.status, 'active')));
-	await finishSubscriptionEvent(transaction, tenantId, new Date(), subscriptionId);
+	await finishSubscriptionEvent(transaction, tenantId, new Date());
 }
 
 // Satisfait ou remboursé : chaque facture payée depuis le début de l'abonnement

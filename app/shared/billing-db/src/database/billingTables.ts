@@ -8,7 +8,7 @@ import {
 import { pharmacyGroups } from '@crystal-pharm/group-db/tables';
 import { tenants } from '@crystal-pharm/pharmacy-db/tables';
 import { sql } from 'drizzle-orm';
-import { check, index, integer, jsonb, pgPolicy, pgSchema, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, index, integer, jsonb, pgPolicy, pgSchema, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import type { ToolCoverage } from '../pricing/toolPricing';
 import type { ToolKey } from '../tools/tools';
 
@@ -29,30 +29,11 @@ const groupsKnownByActivePharmacy = sql`
 	select group_id from groups.pharmacy_memberships where tenant_id = ${activeTenantId}
 	union select group_id from groups.pharmacy_invitations where email = ${activeAccountEmail} or token_hash = ${activeInvitationTokenHash}`;
 
-/** Un Tool en vente : une ligne par Tool, absente tant qu'il n'a pas de prix. */
-export const toolPrices = billingSchema.table(
-	'tool_prices',
-	{
-		toolKey: text('tool_key').$type<ToolKey>().primaryKey(),
-		monthlyPriceCents: integer('monthly_price_cents').notNull(),
-		updatedAt: timestampWithTimeZone('updated_at')
-			.notNull()
-			.defaultNow()
-			.$onUpdate(() => new Date())
-	},
-	() => [
-		check('tool_prices_are_positive', sql`monthly_price_cents >= 0`),
-		pgPolicy('tool_prices_readable_by_everyone', { for: 'select', using: sql`true` }),
-		pgPolicy('tool_prices_written_by_platform', { for: 'all', using: isPlatform, withCheck: isPlatform })
-	]
-);
-
 /** Les réglages du catalogue : une seule ligne (`id` = 1). */
 export const catalogSettings = billingSchema.table(
 	'catalog_settings',
 	{
 		id: integer('id').primaryKey().default(1),
-		packMonthlyPriceCents: integer('pack_monthly_price_cents'),
 		/** Payé à l'année : ces mois-là ne sont pas facturés (2 : « 2 mois offerts »). */
 		annualFreeMonths: integer('annual_free_months').notNull().default(2),
 		updatedAt: timestampWithTimeZone('updated_at')
@@ -191,41 +172,14 @@ export const tenantSubscriptions = billingSchema.table(
 	]
 );
 
-/** Un Tool de l'abonnement ; retiré, il reste actif jusqu'à `ends_at`. */
-export const tenantSubscriptionTools = billingSchema.table(
-	'tenant_subscription_tools',
-	{
-		tenantId: uuid('tenant_id')
-			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
-		subscriptionId: uuid('subscription_id')
-			.notNull()
-			.references(() => tenantSubscriptions.id, { onDelete: 'cascade' }),
-		toolKey: text('tool_key').$type<ToolKey>().notNull(),
-		addedAt: timestampWithTimeZone('added_at').notNull().defaultNow(),
-		endsAt: timestampWithTimeZone('ends_at')
-	},
-	(table) => [
-		primaryKey({ columns: [table.subscriptionId, table.toolKey] }),
-		index('tenant_subscription_tools_tenant_id_index').on(table.tenantId),
-		pgPolicy('tenant_subscription_tools_of_active_tenant', {
-			for: 'all',
-			using: sql`tenant_id = ${activeTenantId} or ${isPlatform}`,
-			withCheck: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
-		}),
-		pgPolicy('tenant_subscription_tools_readable_by_their_group', {
-			for: 'select',
-			using: sql`tenant_id in (${tenantsCoveredByActiveGroup})`
-		})
-	]
-);
-
 /** Une offre vendue (un Tool seul, un pack…) : son identité ne change jamais, ses prix vivent dans ses versions. */
 export const offers = billingSchema.table(
 	'offers',
 	{
 		offerKey: text('offer_key').primaryKey(),
 		label: text('label').notNull(),
+		/** En vente : proposée aux nouveaux abonnés. Hors vente, elle reste servie à ceux qui l'ont. */
+		isOnSale: boolean('is_on_sale').notNull().default(true),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
 	},
 	() => [

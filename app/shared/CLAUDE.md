@@ -159,11 +159,11 @@ lui.
   d'un accès ; `provider_payment_reference` y est unique (idempotence).
 - Le renouvellement et les relances prennent leur abonnement `for update skip
   locked` : plusieurs instances peuvent tourner sans doublon.
-- Les anciennes tables (`tool_prices`, `catalog_settings`,
-  `tenant_subscription_tools`, `group_tool_coverages`) restent pour les zones
-  qui les lisent encore (`admin`, `group`, `site-manager`) ; `tenant_subscription_tools`
-  est un miroir réécrit à chaque événement. Une zone qui les lit migre vers les
-  nouvelles lectures dans son propre lot.
+- Le catalogue vendu, c'est `offers` (`is_on_sale`) et leur dernière
+  `offer_versions` ; `catalog_settings` ne garde que les mois offerts de
+  l'annuel. `readToolCatalog`/`saveToolCatalog` en donnent une vue par Tool
+  (admin) : enregistrer publie une version par offre dont le prix change.
+  Les abonnés se lisent par `tenant_subscription_items`, jamais par une copie.
 - Le paiement passe par l'interface `PaymentProvider` : le faux prestataire en
   dev (une page de paiement de test, et une carte refusée à volonté), Stripe
   plus tard, sans autre changement. `billing-db` envoie les emails de baisse de

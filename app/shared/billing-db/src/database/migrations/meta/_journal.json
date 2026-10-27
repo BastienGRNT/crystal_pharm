@@ -64,6 +64,27 @@
       "when": 1793121179923,
       "tag": "0008_migrate_tools_to_offers_and_build_tool_access",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793124928931,
+      "tag": "0009_add_offers_on_sale_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793124942096,
+      "tag": "0010_move_catalog_on_sale_flags_to_offers",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793125007571,
+      "tag": "0011_drop_legacy_tool_prices_and_subscription_tools",
+      "breakpoints": true
     }
   ]
 }

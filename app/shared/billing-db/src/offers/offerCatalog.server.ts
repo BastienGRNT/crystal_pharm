@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import type { BillingTransaction } from '../database/billingDatabase.server';
-import { catalogSettings, offers, offerVersions, offerVersionTools, toolPrices } from '../database/billingTables';
+import { offers, offerVersions, offerVersionTools } from '../database/billingTables';
 import type { ToolKey } from '../tools/tools';
 import { packOfferKey } from './offerKeys';
 
@@ -53,23 +53,11 @@ export async function readOfferLabels(transaction: BillingTransaction, offerKeys
 	return new Map(offerRows.map((offerRow) => [offerRow.offerKey, offerRow.label]));
 }
 
-/**
- * Les offres en vente, par leur dernière version. Une offre à un Tool est en
- * vente tant que ce Tool a un prix dans le catalogue de la Platform, le pack
- * tant que le catalogue a un prix de pack.
- */
+/** Les offres en vente, par leur dernière version. */
 export async function listOffersOnSale(transaction: BillingTransaction): Promise<CurrentOffer[]> {
-	const offerRows = await transaction.select().from(offers);
-	const pricedToolRows = await transaction.select({ toolKey: toolPrices.toolKey }).from(toolPrices);
-	const [settings] = await transaction.select().from(catalogSettings);
-	const isPackOnSale = settings?.packMonthlyPriceCents != null;
+	const offerRows = await transaction.select().from(offers).where(eq(offers.isOnSale, true));
 	const offersOnSale: CurrentOffer[] = [];
 	for (const offerRow of offerRows) {
-		const isOnSale =
-			offerRow.offerKey === packOfferKey
-				? isPackOnSale
-				: pricedToolRows.some((pricedToolRow) => pricedToolRow.toolKey === offerRow.offerKey);
-		if (!isOnSale) continue;
 		const latestOffer = await readLatestOfferVersion(transaction, offerRow.offerKey);
 		if (latestOffer) offersOnSale.push(latestOffer);
 	}

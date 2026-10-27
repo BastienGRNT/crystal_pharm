@@ -65,8 +65,8 @@ async function insertContractsAndSubscriptions(transaction: postgres.Transaction
 			values (${groupId}, 'site', 0, 100)`;
 		const [subscription] = await transaction`insert into billing.tenant_subscriptions (id, tenant_id)
 			values (gen_random_uuid(), ${tenantId}) returning id`;
-		await transaction`insert into billing.tenant_subscription_tools (tenant_id, subscription_id, tool_key)
-			values (${tenantId}, ${subscription?.id}, 'planning')`;
+		await transaction`insert into billing.tenant_tool_access (tenant_id, tool_key, starts_at, paid_until, ends_at, granted_by)
+			values (${tenantId}, 'planning', now(), now() + interval '1 month', now() + interval '1 month', 'subscription')`;
 		await transaction`insert into billing.terms_acceptances (id, tenant_id, terms_version, accepted_by_user_id, accepted_by_name, accepted_by_email)
 			values (gen_random_uuid(), ${tenantId}, '2026-10-24', 'probe-account', 'Probe', 'probe@example.test')`;
 		for (const payer of [{ tenantId, groupId: null }, { tenantId: null, groupId }]) {
@@ -120,11 +120,11 @@ describe('isolation des abonnements (Row-Level Security du schéma billing)', ()
 		await inRolledBackTransaction(async (transaction) => {
 			await setSetting(transaction, 'app.group_id', firstGroup.groupId);
 
-			const subscribedTools = await transaction`select tenant_id from billing.tenant_subscription_tools`;
-			const updatedTools = await transaction`update billing.tenant_subscription_tools set ends_at = now()`;
+			const toolAccessLines = await transaction`select tenant_id from billing.tenant_tool_access`;
+			const updatedLines = await transaction`update billing.tenant_tool_access set ends_at = now()`;
 
-			expect(subscribedTools.map(({ tenant_id }) => tenant_id)).toEqual([firstGroup.tenantId]);
-			expect(updatedTools.count).toBe(0);
+			expect(toolAccessLines.map(({ tenant_id }) => tenant_id)).toEqual([firstGroup.tenantId]);
+			expect(updatedLines.count).toBe(0);
 		});
 	});
 
@@ -134,7 +134,7 @@ describe('isolation des abonnements (Row-Level Security du schéma billing)', ()
 
 			const updatedCoverages = await transaction`update billing.group_tool_coverages set discount_percent = 100`;
 			await expect(
-				transaction`insert into billing.tool_prices (tool_key, monthly_price_cents) values ('site', 0)`
+				transaction`insert into billing.offers (offer_key, label) values ('isolation-probe-offer', 'Offre de test')`
 			).rejects.toThrow(/row-level security/);
 
 			expect(updatedCoverages.count).toBe(0);

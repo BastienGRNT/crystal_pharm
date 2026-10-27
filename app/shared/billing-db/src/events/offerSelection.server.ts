@@ -54,7 +54,7 @@ export async function selectOffersOfSubscription(
 			.where(eq(tenantSubscriptionItems.id, item.id));
 	}
 	await repriceItemsOfSubscription(transaction, subscription);
-	await finishSubscriptionEvent(transaction, tenantId, now, subscription.id);
+	await finishSubscriptionEvent(transaction, tenantId, now);
 }
 
 async function addItem(transaction: BillingTransaction, subscription: SubscriptionRow, offerKey: string, now: Date): Promise<void> {

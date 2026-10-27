@@ -36,11 +36,19 @@ async function inRolledBackTransaction(test: (transaction: postgres.TransactionS
 	}
 }
 
+async function createLegacyTables(transaction: postgres.TransactionSql): Promise<void> {
+	await transaction`create table billing.tool_prices (tool_key text primary key, monthly_price_cents integer not null)`;
+	await transaction`alter table billing.catalog_settings add column pack_monthly_price_cents integer`;
+	await transaction`create table billing.tenant_subscription_tools (
+		tenant_id uuid not null, subscription_id uuid not null, tool_key text not null,
+		added_at timestamptz not null default now(), ends_at timestamptz, primary key (subscription_id, tool_key))`;
+}
+
 async function writeOldCatalog(transaction: postgres.TransactionSql): Promise<void> {
+	await createLegacyTables(transaction);
 	await transaction`delete from billing.tenant_subscription_items`;
 	await transaction`delete from billing.offer_version_tools`;
 	await transaction`delete from billing.offer_versions`;
-	await transaction`delete from billing.tool_prices`;
 	for (const [toolKey, priceCents] of toolPriceCents) {
 		await transaction`insert into billing.tool_prices (tool_key, monthly_price_cents) values (${toolKey}, ${priceCents})`;
 	}

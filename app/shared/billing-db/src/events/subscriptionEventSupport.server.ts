@@ -4,14 +4,11 @@ import { rebuildToolAccessOfTenant } from '../access/rebuildToolAccessOfTenant.s
 import type { BillingTransaction } from '../database/billingDatabase.server';
 import {
 	offerVersions,
-	offerVersionTools,
 	priceAgreements,
 	tenantSubscriptionItems,
-	tenantSubscriptions,
-	tenantSubscriptionTools
+	tenantSubscriptions
 } from '../database/billingTables';
 import { computeBilledPriceCents, pickLowestAgreementPriceCents } from '../pricing/negotiatedPrice';
-import { isIncludedTool, type ToolKey } from '../tools/tools';
 
 export type SubscriptionRow = typeof tenantSubscriptions.$inferSelect;
 export type SubscriptionItemWithOffer = typeof tenantSubscriptionItems.$inferSelect & { offerKey: string };
@@ -115,40 +112,7 @@ export async function repriceItemsOfSubscription(
 	}
 }
 
-/** Garde l'ancienne table des Tools de l'abonnement à jour, pour les zones qui la lisent encore (admin, group). */
-export async function mirrorLegacySubscriptionTools(transaction: BillingTransaction, subscription: SubscriptionRow): Promise<void> {
-	const items = await listItemsOfSubscription(transaction, subscription.id);
-	const mirroredTools = new Map<ToolKey, Date | null>();
-	for (const item of items) {
-		const toolRows = await transaction
-			.select({ toolKey: offerVersionTools.toolKey })
-			.from(offerVersionTools)
-			.where(eq(offerVersionTools.offerVersionId, item.offerVersionId));
-		for (const { toolKey } of toolRows) {
-			if (isIncludedTool(toolKey)) continue;
-			const alreadyMirroredEnd = mirroredTools.get(toolKey);
-			const isLongerThanMirrored = alreadyMirroredEnd !== undefined && (item.endsAt === null || (alreadyMirroredEnd !== null && item.endsAt > alreadyMirroredEnd));
-			if (alreadyMirroredEnd === undefined || isLongerThanMirrored) mirroredTools.set(toolKey, item.endsAt);
-		}
-	}
-	await transaction.delete(tenantSubscriptionTools).where(eq(tenantSubscriptionTools.subscriptionId, subscription.id));
-	for (const [toolKey, endsAt] of mirroredTools) {
-		await transaction
-			.insert(tenantSubscriptionTools)
-			.values({ tenantId: subscription.tenantId, subscriptionId: subscription.id, toolKey, endsAt });
-	}
-}
-
 /** La fin de chaque événement : la projection des accès est refaite, dans la même transaction. */
-export async function finishSubscriptionEvent(
-	transaction: BillingTransaction,
-	tenantId: string,
-	now: Date,
-	subscriptionId?: string
-): Promise<void> {
-	if (subscriptionId) {
-		const [subscriptionRow] = await transaction.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.id, subscriptionId));
-		if (subscriptionRow) await mirrorLegacySubscriptionTools(transaction, subscriptionRow);
-	}
+export async function finishSubscriptionEvent(transaction: BillingTransaction, tenantId: string, now: Date): Promise<void> {
 	await rebuildToolAccessOfTenant(transaction, tenantId, now);
 }

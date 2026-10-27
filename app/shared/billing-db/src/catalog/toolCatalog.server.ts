@@ -1,11 +1,11 @@
 import type { FieldErrors, SaveResult } from '@crystal-pharm/pharmacy-db/domain';
-import { notInArray } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } from '../database/billingDatabase.server';
-import { catalogSettings, toolPrices } from '../database/billingTables';
+import { catalogSettings, offers } from '../database/billingTables';
 import { parseEurosToCents } from '../money/euroAmount';
 import type { ToolCatalog, ToolPrice } from '../pricing/toolPricing';
 import { publishOfferVersion, type OfferVersionPublication } from '../events/offerVersionPublication.server';
-import { packOfferKey, readLatestOfferVersion } from '../offers/offerCatalog.server';
+import { listOffersOnSale, packOfferKey, readLatestOfferVersion } from '../offers/offerCatalog.server';
 import { findTool, isIncludedTool, isToolKey, sellableToolKeys, type ToolKey } from '../tools/tools';
 
 export const packPriceFieldName = 'pack';
@@ -30,13 +30,16 @@ export function getToolCatalog(): Promise<ToolCatalog> {
 }
 
 export async function readToolCatalog(transaction: BillingTransaction): Promise<ToolCatalog> {
-	const priceRows = await transaction.select().from(toolPrices);
+	const offersOnSale = await listOffersOnSale(transaction);
 	const [settings] = await transaction.select().from(catalogSettings);
+	const packOffer = offersOnSale.find((offerOnSale) => offerOnSale.offerKey === packOfferKey);
 	return {
-		toolPrices: priceRows
-			.filter((priceRow) => isToolKey(priceRow.toolKey) && !isIncludedTool(priceRow.toolKey))
-			.map((priceRow): ToolPrice => ({ toolKey: priceRow.toolKey, monthlyPriceCents: priceRow.monthlyPriceCents })),
-		packMonthlyPriceCents: settings?.packMonthlyPriceCents ?? undefined,
+		toolPrices: offersOnSale.flatMap((offerOnSale): ToolPrice[] =>
+			isToolKey(offerOnSale.offerKey) && !isIncludedTool(offerOnSale.offerKey)
+				? [{ toolKey: offerOnSale.offerKey, monthlyPriceCents: offerOnSale.monthlyPriceCents }]
+				: []
+		),
+		packMonthlyPriceCents: packOffer?.monthlyPriceCents,
 		annualFreeMonths: settings?.annualFreeMonths ?? defaultAnnualFreeMonths
 	};
 }
@@ -67,26 +70,16 @@ export async function saveToolCatalog(catalogInput: ToolCatalogInput): Promise<S
 	}
 	if (Object.keys(fieldErrors).length > 0) return { isSaved: false, fieldErrors };
 
+	await publishChangedOfferVersions(pricesOnSale, packMonthlyPriceCents);
 	await runWithBillingAccess(platformBillingAccess, async (transaction) => {
-		const toolKeysOnSale = pricesOnSale.map((toolPrice) => toolPrice.toolKey);
-		await transaction
-			.delete(toolPrices)
-			.where(toolKeysOnSale.length > 0 ? notInArray(toolPrices.toolKey, toolKeysOnSale) : undefined);
-		for (const toolPrice of pricesOnSale) {
-			await transaction
-				.insert(toolPrices)
-				.values(toolPrice)
-				.onConflictDoUpdate({ target: toolPrices.toolKey, set: { monthlyPriceCents: toolPrice.monthlyPriceCents } });
-		}
+		const offerKeysOnSale: string[] = pricesOnSale.map((toolPrice) => toolPrice.toolKey);
+		if (packMonthlyPriceCents !== undefined) offerKeysOnSale.push(packOfferKey);
+		await transaction.update(offers).set({ isOnSale: inArray(offers.offerKey, offerKeysOnSale) });
 		await transaction
 			.insert(catalogSettings)
-			.values({ id: 1, packMonthlyPriceCents: packMonthlyPriceCents ?? null, annualFreeMonths })
-			.onConflictDoUpdate({
-				target: catalogSettings.id,
-				set: { packMonthlyPriceCents: packMonthlyPriceCents ?? null, annualFreeMonths }
-			});
+			.values({ id: 1, annualFreeMonths })
+			.onConflictDoUpdate({ target: catalogSettings.id, set: { annualFreeMonths } });
 	});
-	await publishChangedOfferVersions(pricesOnSale, packMonthlyPriceCents);
 	return { isSaved: true };
 }
 

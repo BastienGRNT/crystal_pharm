@@ -11,7 +11,6 @@ import {
 import {
 	groupContracts,
 	tenantSubscriptions,
-	tenantSubscriptionTools,
 	type BillingPeriod,
 	type InvoiceLine
 } from '../database/billingTables';
@@ -22,6 +21,7 @@ import { priceForPeriod, spreadLinesOverPeriod } from '../pricing/billingPeriodP
 import { computeGroupMonthlyCharge, type GroupCharge } from '../pricing/groupCharge';
 import { quoteTools, type ToolCatalog } from '../pricing/toolPricing';
 import { findTool, toolKeys, type ToolKey } from '../tools/tools';
+import { readSubscribedToolLines } from '../subscriptions/subscribedTools.server';
 import { computePeriodEnd } from '../subscriptions/subscriptionPeriod';
 
 /** Ce que coûte une pharmacie au groupement, et ce qu'elle utilise. */
@@ -203,22 +203,20 @@ async function readSubscribedToolKeys(
 	const subscribedToolKeysByTenantId = new Map<string, ToolKey[]>();
 	if (tenantIds.length === 0) return subscribedToolKeysByTenantId;
 	const now = new Date();
-	const toolRows = await transaction
-		.select({ tenantId: tenantSubscriptionTools.tenantId, toolKey: tenantSubscriptionTools.toolKey })
-		.from(tenantSubscriptionTools)
-		.innerJoin(tenantSubscriptions, eq(tenantSubscriptions.id, tenantSubscriptionTools.subscriptionId))
+	const subscriptionRows = await transaction
+		.select({ id: tenantSubscriptions.id, tenantId: tenantSubscriptions.tenantId })
+		.from(tenantSubscriptions)
 		.where(
 			and(
-				inArray(tenantSubscriptionTools.tenantId, [...tenantIds]),
-				or(isNull(tenantSubscriptionTools.endsAt), gt(tenantSubscriptionTools.endsAt, now)),
+				inArray(tenantSubscriptions.tenantId, [...tenantIds]),
 				or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, now))
 			)
 		);
-	for (const toolRow of toolRows) {
-		subscribedToolKeysByTenantId.set(toolRow.tenantId, [
-			...(subscribedToolKeysByTenantId.get(toolRow.tenantId) ?? []),
-			toolRow.toolKey
-		]);
+	const tenantIdBySubscriptionId = new Map(subscriptionRows.map((subscriptionRow) => [subscriptionRow.id, subscriptionRow.tenantId]));
+	for (const toolLine of await readSubscribedToolLines(transaction, [...tenantIdBySubscriptionId.keys()], now)) {
+		const tenantId = tenantIdBySubscriptionId.get(toolLine.subscriptionId);
+		if (tenantId === undefined) continue;
+		subscribedToolKeysByTenantId.set(tenantId, [...(subscribedToolKeysByTenantId.get(tenantId) ?? []), toolLine.toolKey]);
 	}
 	return subscribedToolKeysByTenantId;
 }

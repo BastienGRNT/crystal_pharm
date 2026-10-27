@@ -86,7 +86,7 @@ export async function publishOfferVersion(publication: OfferVersionPublication, 
 						)
 					);
 				await repriceItemsOfSubscription(transaction, subscription);
-				await finishSubscriptionEvent(transaction, tenantId, now, subscription.id);
+				await finishSubscriptionEvent(transaction, tenantId, now);
 				switchedTenantIds.push(tenantId);
 			}
 		}

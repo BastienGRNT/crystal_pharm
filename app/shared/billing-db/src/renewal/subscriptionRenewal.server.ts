@@ -168,7 +168,7 @@ async function chargePeriod(
 			nextRetryAt: null
 		})
 		.where(eq(tenantSubscriptions.id, subscription.id));
-	await finishSubscriptionEvent(transaction, subscription.tenantId, now, subscription.id);
+	await finishSubscriptionEvent(transaction, subscription.tenantId, now);
 	return 'renewed';
 }
 
@@ -220,6 +220,6 @@ async function recordPaymentFailure(
 		.update(tenantSubscriptions)
 		.set({ status: 'ended', failedAttempts: failedAttemptCount, nextRetryAt: null, cancelledAt: now, endsAt: subscription.billedUntil })
 		.where(eq(tenantSubscriptions.id, subscription.id));
-	await finishSubscriptionEvent(transaction, subscription.tenantId, now, subscription.id);
+	await finishSubscriptionEvent(transaction, subscription.tenantId, now);
 	return 'abandoned';
 }

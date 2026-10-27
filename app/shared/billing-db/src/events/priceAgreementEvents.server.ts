@@ -66,6 +66,6 @@ async function repriceTenants(
 		const subscription = await lockCurrentSubscriptionOfTenant(transaction, tenantId, now);
 		if (!subscription) continue;
 		await repriceItemsOfSubscription(transaction, subscription);
-		await finishSubscriptionEvent(transaction, tenantId, now, subscription.id);
+		await finishSubscriptionEvent(transaction, tenantId, now);
 	}
 }

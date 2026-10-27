@@ -9,7 +9,6 @@ const billingDateColumnsByTable: Record<string, string[]> = {
 	tenant_tool_access: ['starts_at', 'paid_until', 'ends_at'],
 	group_contract_versions: ['starts_at', 'ends_at'],
 	price_agreements: ['starts_at', 'ends_at'],
-	tenant_subscription_tools: ['added_at', 'ends_at'],
 	group_contracts: ['activated_at', 'billed_until'],
 	payments: ['paid_at', 'refunded_at'],
 	invoices: ['issued_at', 'period_start', 'period_end', 'paid_at'],
