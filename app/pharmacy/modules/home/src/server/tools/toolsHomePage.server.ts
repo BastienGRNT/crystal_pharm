@@ -3,12 +3,14 @@ import { getToolAccessOfTenant, previewGroupJoining } from '@crystal-pharm/billi
 import type { ToolKey } from '@crystal-pharm/billing-db/domain';
 import { findCurrentGroupOfTenant, listPendingInvitationsForAccountEmail } from '@crystal-pharm/group-db';
 import { getPharmacyProfile } from '@crystal-pharm/pharmacy-db';
+import { canManageSubscriptionAndAccess } from '@crystal-pharm/pharmacy-db/domain';
+import { keepToolsPermittedToMember } from '../../domain/toolResponsibilities';
 import { weekdays, type WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
 import { fail, redirect, type ActionFailure } from '@sveltejs/kit';
 import { describeToolCards } from '../../domain/toolCards';
 import { homePathnames } from '../../homePathnames';
 import type { ConfirmAppointmentFailure, ToolsHomePageData } from '../../pages/tools-home/toolsHomePageData';
-import { requireActiveTenantId, requireSignedInAccountId } from '../activeTenant.server';
+import { requireActiveTenantMember, requireSignedInAccountId } from '../activeTenant.server';
 import { appointmentIdFieldName, buildTodayOverview, type TodayOverviewInput } from './today/todayOverview';
 import type { TodaySources } from './today/todaySources';
 
@@ -22,17 +24,19 @@ export async function loadToolsHomePage(
 	{ locals }: ToolsHomeRequest,
 	todaySources: TodaySources
 ): Promise<ToolsHomePageData> {
-	const tenantId = await requireActiveTenantId(locals.user);
+	const memberAccess = await requireActiveTenantMember(locals.user);
+	const { tenantId } = memberAccess;
 	const accountEmail = locals.user?.email ?? '';
+	// Les invitations d'un groupement s'acceptent par un Owner : les autres ne les voient pas.
 	const [toolAccess, currentGroup, pendingInvitations, pharmacyProfile] = await Promise.all([
 		getToolAccessOfTenant(tenantId),
 		findCurrentGroupOfTenant(tenantId),
-		listPendingInvitationsForAccountEmail(accountEmail),
+		canManageSubscriptionAndAccess(memberAccess) ? listPendingInvitationsForAccountEmail(accountEmail) : [],
 		getPharmacyProfile(tenantId)
 	]);
 	const todayInput = await readToday(
 		{ accountId: requireSignedInAccountId(locals.user), tenantId },
-		toolAccess.accessibleToolKeys,
+		keepToolsPermittedToMember(toolAccess.accessibleToolKeys, memberAccess),
 		pharmacyProfile.weeklyOpeningSchedule,
 		todaySources
 	);
@@ -97,10 +101,14 @@ export async function confirmAppointmentFromToolsHome(
 	{ request, locals }: ToolsHomeRequest & { request: Request },
 	todaySources: TodaySources
 ): Promise<ActionFailure<ConfirmAppointmentFailure>> {
-	const tenantId = await requireActiveTenantId(locals.user);
+	const memberAccess = await requireActiveTenantMember(locals.user);
+	const { tenantId } = memberAccess;
 	const { accessibleToolKeys } = await getToolAccessOfTenant(tenantId);
 	if (!accessibleToolKeys.includes('booking')) {
 		return fail(403, { confirmationFailure: 'Les rendez-vous ne sont pas activés pour votre pharmacie.' });
+	}
+	if (!keepToolsPermittedToMember(accessibleToolKeys, memberAccess).includes('booking')) {
+		return fail(403, { confirmationFailure: 'Votre compte n’a pas accès aux rendez-vous.' });
 	}
 	const appointmentId = String((await request.formData()).get(appointmentIdFieldName) ?? '');
 	if (!uuidPattern.test(appointmentId)) return fail(400, { confirmationFailure: 'Ce rendez-vous est introuvable.' });

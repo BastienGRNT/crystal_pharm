@@ -3,7 +3,7 @@ import { completeCheckout, getCheckout, type CheckoutOutcome } from '@crystal-ph
 import { formatEuros } from '@crystal-pharm/billing-db/domain';
 import { error, fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import type { CheckoutPageData } from '../../pages/subscription/checkoutPageData';
-import { requireActiveTenantId } from '../activeTenant.server';
+import { requireOwner } from '../activeTenant.server';
 
 export const checkoutOutcomeFieldName = 'outcome';
 
@@ -15,7 +15,7 @@ export async function loadCheckoutPage({
 	locals: { user: AuthenticatedUser | null };
 	params: { checkoutId: string };
 }): Promise<CheckoutPageData> {
-	const tenantId = await requireActiveTenantId(locals.user);
+	const tenantId = (await requireOwner(locals.user)).tenantId;
 	const checkout = await getCheckout({ tenantId }, params.checkoutId);
 	if (!checkout) error(404, 'Ce paiement n’existe pas.');
 	if (checkout.status !== 'open') redirect(303, checkout.returnPathname);
@@ -33,7 +33,7 @@ export const checkoutPageActions = {
 		params,
 		request
 	}: RequestEvent<{ checkoutId: string }>): Promise<ActionFailure<{ failureMessage: string }>> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireOwner(locals.user)).tenantId;
 		const outcome: CheckoutOutcome = (await request.formData()).get(checkoutOutcomeFieldName) === 'paid' ? 'paid' : 'refused';
 		const completion = await completeCheckout({ tenantId }, params.checkoutId, outcome);
 		if (!completion.isCompleted) return fail(400, { failureMessage: completion.failureMessage });

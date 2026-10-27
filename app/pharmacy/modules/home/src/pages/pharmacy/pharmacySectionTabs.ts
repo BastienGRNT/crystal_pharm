@@ -8,20 +8,38 @@ const pharmacySectionTabs: ReadonlyArray<{ section: PharmacySection; label: stri
 	{ section: 'contactDetails', label: 'Coordonnées', href: homePathnames.pharmacy },
 	{ section: 'openingHours', label: 'Horaires', href: homePathnames.pharmacyOpeningHours },
 	{ section: 'team', label: 'Équipe', href: homePathnames.pharmacyTeam },
-	{ section: 'group', label: 'Groupement', href: homePathnames.pharmacyGroup }
+	{ section: 'group', label: 'Groupement', href: homePathnames.pharmacyGroup },
+	{ section: 'access', label: 'Comptes et accès', href: homePathnames.pharmacyAccess }
 ];
 
-const sectionsBySlug: Record<string, PharmacySection> = { horaires: 'openingHours', equipe: 'team', groupement: 'group' };
+const sectionsBySlug: Record<string, PharmacySection> = {
+	horaires: 'openingHours',
+	equipe: 'team',
+	groupement: 'group',
+	acces: 'access'
+};
 
-/** L'onglet demandé par `?onglet=` ; les coordonnées par défaut, si la valeur est inconnue ou sans groupement. */
-export function readSelectedPharmacySection(searchParams: URLSearchParams, hasGroup: boolean): PharmacySection {
+/** Les onglets qui n'existent pas toujours : le groupement (s'il y en a un), les accès (pour un Owner). */
+export type OptionalPharmacySections = { hasGroup: boolean; canManageAccess: boolean };
+
+/** L'onglet demandé par `?onglet=` ; les coordonnées par défaut, si la valeur est inconnue ou l'onglet absent. */
+export function readSelectedPharmacySection(
+	searchParams: URLSearchParams,
+	optionalSections: OptionalPharmacySections
+): PharmacySection {
 	const requestedSection = sectionsBySlug[searchParams.get(pharmacySectionQueryParameter) ?? ''];
-	if (requestedSection === undefined || (requestedSection === 'group' && !hasGroup)) return 'contactDetails';
+	if (requestedSection === undefined || !isSectionShown(requestedSection, optionalSections)) return 'contactDetails';
 	return requestedSection;
 }
 
-export function toPharmacySectionTabs(selectedSection: PharmacySection, hasGroup: boolean): FilterTab[] {
+export function toPharmacySectionTabs(selectedSection: PharmacySection, optionalSections: OptionalPharmacySections): FilterTab[] {
 	return pharmacySectionTabs
-		.filter(({ section }) => hasGroup || section !== 'group')
+		.filter(({ section }) => isSectionShown(section, optionalSections))
 		.map(({ section, label, href }) => ({ label, href, isCurrent: section === selectedSection }));
+}
+
+function isSectionShown(section: PharmacySection, { hasGroup, canManageAccess }: OptionalPharmacySections): boolean {
+	if (section === 'group') return hasGroup;
+	if (section === 'access') return canManageAccess;
+	return true;
 }

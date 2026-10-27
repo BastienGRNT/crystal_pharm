@@ -4,5 +4,5 @@ import type { LayoutServerLoad } from './$types';
 export const load: LayoutServerLoad = async ({ locals }) => {
 	if (!import.meta.env.DEV) return { developerToolbar: undefined };
 	const { loadDeveloperToolbarData } = await import('@crystal-pharm/dev-tools');
-	return { developerToolbar: loadDeveloperToolbarData({ space: 'pharmacy', signedInEmail: locals.user?.email }) };
+	return { developerToolbar: loadDeveloperToolbarData({ space: 'pharmacy', signedInEmail: locals.user?.email, signedInUsername: locals.user?.username }) };
 };

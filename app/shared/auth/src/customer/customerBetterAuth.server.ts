@@ -1,12 +1,13 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { jwt } from 'better-auth/plugins';
+import { jwt, username } from 'better-auth/plugins';
 import { toBetterAuthDrizzleSchema } from '../toolkit/betterAuthTables';
 import { personNameFields } from '../toolkit/personNameFields';
 import { connectToDatabase } from '../toolkit/databaseConnection.server';
 import { readRequiredEnvironmentVariable } from '../toolkit/environment.server';
 import { apiTokenAudience, apiTokenLifetime } from './customerApiTokenSettings';
 import { accounts, jsonWebKeys, sessions, users, verifications } from './customerAuthSchema';
+import { counterAccountUsernameLength } from './counterAccountUsername';
 
 function createCustomerBetterAuth(baseUrlEnvironmentVariable: string) {
 	const baseUrl = readRequiredEnvironmentVariable(baseUrlEnvironmentVariable);
@@ -20,6 +21,8 @@ function createCustomerBetterAuth(baseUrlEnvironmentVariable: string) {
 		emailAndPassword: { enabled: true },
 		user: { additionalFields: personNameFields },
 		plugins: [
+			// La connexion par identifiant du CounterAccount (cf. `counterAccounts`).
+			username({ minUsernameLength: counterAccountUsernameLength.minimum, maxUsernameLength: counterAccountUsernameLength.maximum }),
 			jwt({
 				// ES256 : le C# (Microsoft.IdentityModel) ne vérifie pas EdDSA, l'algorithme par défaut.
 				jwks: { keyPairConfig: { alg: 'ES256' } },

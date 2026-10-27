@@ -12,6 +12,8 @@ export type BetterAuthClientError = { status: number; code?: string | undefined 
 
 const failureReasonByBetterAuthErrorCode: Record<string, AuthenticationFailureReason> = {
 	INVALID_EMAIL_OR_PASSWORD: 'invalid-credentials',
+	INVALID_USERNAME_OR_PASSWORD: 'invalid-credentials',
+	INVALID_USERNAME: 'invalid-credentials',
 	USER_ALREADY_EXISTS: 'email-already-used',
 	USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: 'email-already-used',
 	EMAIL_NOT_ALLOWED: 'email-not-allowed',
@@ -23,7 +25,7 @@ const failureReasonByBetterAuthErrorCode: Record<string, AuthenticationFailureRe
 const tooManyRequestsStatus = 429;
 
 export const authenticationFailureMessages: Record<AuthenticationFailureReason, string> = {
-	'invalid-credentials': 'Email ou mot de passe incorrect. Vérifiez-les et réessayez.',
+	'invalid-credentials': 'Identifiants incorrects. Vérifiez-les et réessayez.',
 	'email-already-used': 'Un compte existe déjà avec cet email. Connectez-vous ou utilisez un autre email.',
 	'email-not-allowed': 'Cet email n’est pas autorisé à créer un compte ici.',
 	'invalid-email': 'Cet email n’est pas valide. Vérifiez son orthographe.',

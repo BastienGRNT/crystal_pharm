@@ -1,3 +1,5 @@
+import { eq } from 'drizzle-orm';
+import { connectToDatabase } from '../toolkit/databaseConnection.server';
 import {
 	deleteAccountsWithEmailEnding,
 	ensureEmailPasswordAccount,
@@ -19,4 +21,10 @@ export function deleteCustomerAccountsWithEmailEnding(emailEnding: string): Prom
 
 export function findCustomerAccountIdByEmail(email: string): Promise<string | undefined> {
 	return findAccountIdByEmail(customerTables, email);
+}
+
+/** Le CounterAccount de cet identifiant (outil de dev). */
+export async function findCustomerAccountIdByUsername(username: string): Promise<string | undefined> {
+	const [user] = await connectToDatabase().select({ id: users.id }).from(users).where(eq(users.username, username.toLowerCase()));
+	return user?.id;
 }

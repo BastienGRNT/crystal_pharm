@@ -1,6 +1,8 @@
 import { users } from '@crystal-pharm/auth/customer-tables';
 import { sql } from 'drizzle-orm';
-import { index, jsonb, pgPolicy, pgSchema, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { check, index, jsonb, pgPolicy, pgSchema, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import type { ResponsibilityKey } from '../members/responsibilities';
+import type { TenantMemberKind } from '../members/tenantMemberAccess';
 import type { WeeklyOpeningSchedule } from '../opening-hours/weeklyOpeningSchedule';
 
 export const pharmacySchema = pgSchema('pharmacy');
@@ -14,6 +16,7 @@ const readableTenantIds = sql.raw(
 	`string_to_array(nullif(current_setting('app.readable_tenant_ids', true), ''), ',')::uuid[]`
 );
 const isPlatform = sql.raw(`current_setting('app.is_platform', true) = 'on'`);
+const activeInvitationTokenHash = sql.raw(`nullif(current_setting('app.invitation_token_hash', true), '')`);
 
 const timestampWithTimeZone = (columnName: string) => timestamp(columnName, { withTimezone: true });
 
@@ -81,7 +84,10 @@ export const employees = pharmacySchema.table(
 	]
 );
 
-/** Un compte appartient à un ou plusieurs Tenants (un titulaire de plusieurs officines). */
+/**
+ * Un TenantMember : un compte qui appartient à un Tenant (un Owner de plusieurs officines
+ * appartient à plusieurs), avec son type et ses Responsibilities propres à ce Tenant.
+ */
 export const tenantMemberships = pharmacySchema.table(
 	'tenant_memberships',
 	{
@@ -91,14 +97,60 @@ export const tenantMemberships = pharmacySchema.table(
 		accountId: text('account_id')
 			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),
+		// 'owner' par défaut : chaque appartenance d'avant ce champ est celle du compte qui a créé la pharmacie.
+		memberKind: text('member_kind').$type<TenantMemberKind>().notNull().default('owner'),
+		/** Ignorées pour un Owner, qui les a toutes. */
+		responsibilityKeys: text('responsibility_keys').array().$type<ResponsibilityKey[]>().notNull().default(sql`'{}'`),
+		/** L'Employee de l'équipe relié au compte ; jamais pour le CounterAccount. */
+		employeeId: uuid('employee_id').references(() => employees.id, { onDelete: 'set null' }),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
 	},
 	(table) => [
 		primaryKey({ columns: [table.tenantId, table.accountId] }),
 		index('tenant_memberships_account_id_index').on(table.accountId),
+		uniqueIndex('tenant_memberships_one_counter_account_per_tenant')
+			.on(table.tenantId)
+			.where(sql`member_kind = 'counter'`),
+		uniqueIndex('tenant_memberships_one_account_per_employee')
+			.on(table.tenantId, table.employeeId)
+			.where(sql`employee_id is not null`),
+		check('tenant_memberships_known_member_kind', sql`member_kind in ('owner', 'employee', 'counter')`),
+		check('tenant_memberships_counter_without_employee', sql`member_kind <> 'counter' or employee_id is null`),
 		pgPolicy('tenant_memberships_of_active_tenant_or_account', {
 			for: 'all',
 			using: sql`tenant_id = ${activeTenantId} or account_id = ${activeAccountId} or ${isPlatform}`,
+			withCheck: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
+		})
+	]
+);
+
+/** L'invitation d'un Employee à créer son compte : nominative, à usage unique, elle expire et se révoque. */
+export const tenantMemberInvitations = pharmacySchema.table(
+	'tenant_member_invitations',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id')
+			.notNull()
+			.references(() => tenants.id, { onDelete: 'cascade' }),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'cascade' }),
+		/** En minuscules. */
+		email: text('email').notNull(),
+		/** Celles que le compte recevra en acceptant. */
+		responsibilityKeys: text('responsibility_keys').array().$type<ResponsibilityKey[]>().notNull(),
+		/** L'empreinte du jeton envoyé par email ; le jeton lui-même n'est jamais stocké. */
+		tokenHash: text('token_hash').notNull().unique(),
+		expiresAt: timestampWithTimeZone('expires_at').notNull(),
+		acceptedAt: timestampWithTimeZone('accepted_at'),
+		revokedAt: timestampWithTimeZone('revoked_at'),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('tenant_member_invitations_tenant_id_created_at_index').on(table.tenantId, table.createdAt),
+		pgPolicy('tenant_member_invitations_of_active_tenant_or_token', {
+			for: 'all',
+			using: sql`tenant_id = ${activeTenantId} or token_hash = ${activeInvitationTokenHash} or ${isPlatform}`,
 			withCheck: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
 		})
 	]

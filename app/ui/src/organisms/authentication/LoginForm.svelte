@@ -11,9 +11,11 @@
 		/** L'email déjà connu (une invitation) ; verrouillé, il ne peut plus être changé. */
 		initialEmail?: string;
 		isEmailLocked?: boolean;
+		/** Accepte aussi un identifiant sans `@` (un compte sans email), passé dans `email`. */
+		acceptsUsername?: boolean;
 	};
 
-	let { onSubmit, initialEmail = '', isEmailLocked = false }: LoginFormProps = $props();
+	let { onSubmit, initialEmail = '', isEmailLocked = false, acceptsUsername = false }: LoginFormProps = $props();
 
 	let email = $state(untrack(() => initialEmail));
 	let password = $state('');
@@ -29,9 +31,18 @@
 </script>
 
 <form class="grid gap-3" onsubmit={submitCredentials}>
-	<Field label="Email">
+	<Field label={acceptsUsername ? 'Email ou identifiant' : 'Email'}>
 		{#snippet control(controlAttributes)}
-			<Input {...controlAttributes} type="email" name="email" autocomplete="email" required readonly={isEmailLocked} bind:value={email} />
+			<Input
+				{...controlAttributes}
+				type={acceptsUsername ? 'text' : 'email'}
+				name="email"
+				autocomplete={acceptsUsername ? 'username' : 'email'}
+				autocapitalize="none"
+				required
+				readonly={isEmailLocked}
+				bind:value={email}
+			/>
 		{/snippet}
 	</Field>
 	<Field label="Mot de passe">

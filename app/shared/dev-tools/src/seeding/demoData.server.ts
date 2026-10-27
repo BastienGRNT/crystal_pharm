@@ -1,7 +1,8 @@
 import {
 	deleteCustomerAccountsWithEmailEnding,
 	ensureCustomerAccount,
-	findCustomerAccountIdByEmail
+	findCustomerAccountIdByEmail,
+	findCustomerAccountIdByUsername
 } from '@crystal-pharm/auth';
 import {
 	acceptPharmacyInvitationAndRebuildToolAccess,
@@ -25,15 +26,28 @@ import {
 	listPharmacyGroupIdsNamed
 } from '@crystal-pharm/group-db';
 import {
+	acceptTenantMemberInvitation,
 	addEmployee,
+	createCounterAccountOfTenant,
 	createTenantForAccount,
+	inviteEmployeeToCreateAccount,
+	listEmployees,
 	deleteTenant,
 	findActiveTenantIdOfAccount,
 	updateWeeklyOpeningSchedule
 } from '@crystal-pharm/pharmacy-db';
 import type { PharmacyContactDetailsInput, WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
 import { readAppUrl } from '../appUrls.server';
-import { demoEmail, demoEmailDomain, demoPassword, demoPersonas, findDemoPersona } from '../personas/demoPersonas';
+import {
+	demoCounterAccounts,
+	demoEmail,
+	demoEmailDomain,
+	demoPassword,
+	demoPersonas,
+	findDemoPersona,
+	type DemoPersona,
+	type DemoTeamRole
+} from '../personas/demoPersonas';
 
 const pharmaPlusName = 'Pharma+ (démo)';
 const reseauSanteName = 'Réseau Santé (démo)';
@@ -101,6 +115,9 @@ async function areAllCustomerPersonasSeeded(): Promise<boolean> {
 	for (const persona of demoPersonas.filter((candidate) => candidate.space !== 'admin')) {
 		if (!(await findCustomerAccountIdByEmail(persona.email))) return false;
 	}
+	for (const counterAccount of demoCounterAccounts) {
+		if (!(await findCustomerAccountIdByUsername(counterAccount.username))) return false;
+	}
 	return true;
 }
 
@@ -158,6 +175,24 @@ async function seedDemoData(): Promise<void> {
 	await subscribe('membre', requireTenantId(tenantIdsByPersonaKey, 'membre'), ['planning'], 'monthly');
 	await subscribe('pharmacien', requireTenantId(tenantIdsByPersonaKey, 'pharmacien'), ['site', 'planning'], 'monthly');
 	await addDemoTeam(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'));
+	await giveDemoTeamTheirAccounts(tenantIdsByPersonaKey);
+}
+
+/** Les comptes de l'équipe, déclarés par leur persona : un par rôle à tester. */
+async function giveDemoTeamTheirAccounts(tenantIdsByPersonaKey: ReadonlyMap<string, string>): Promise<void> {
+	for (const persona of demoPersonas) {
+		if (persona.teamRole) {
+			await giveDemoEmployeeAnAccount(requireTenantId(tenantIdsByPersonaKey, persona.teamRole.ownerPersonaKey), persona, persona.teamRole);
+		}
+	}
+	for (const counterAccount of demoCounterAccounts) {
+		const creation = await createCounterAccountOfTenant(requireTenantId(tenantIdsByPersonaKey, counterAccount.ownerPersonaKey), {
+			usernameInput: counterAccount.username,
+			password: demoPassword,
+			responsibilityKeyInputs: counterAccount.responsibilityKeys
+		});
+		if (!creation.isCreated) throw new Error(`The demo counter account ${counterAccount.username} was refused: ${creation.failureMessage}`);
+	}
 }
 
 async function seedCatalog(): Promise<void> {
@@ -229,6 +264,23 @@ async function addDemoTeam(tenantId: string): Promise<void> {
 		const addition = await addEmployee(tenantId, teamMember, { kind: 'unchanged' });
 		if (!addition.isSaved) throw new Error(`The demo employee ${teamMember.firstName} was refused.`);
 	}
+}
+
+/** Par le parcours d'un Owner : l'invitation de l'Employee du même nom, acceptée par son compte. */
+async function giveDemoEmployeeAnAccount(tenantId: string, persona: DemoPersona, teamRole: DemoTeamRole): Promise<void> {
+	const accountId = await findCustomerAccountIdByEmail(persona.email);
+	const employee = (await listEmployees(tenantId)).find(
+		(candidate) => candidate.firstName.toDisplayFormat() === persona.firstName && candidate.lastName.toDisplayFormat() === persona.lastName
+	);
+	if (!accountId || !employee) throw new Error(`The demo employee ${persona.personaKey} does not exist.`);
+
+	const invitation = await inviteEmployeeToCreateAccount(tenantId, {
+		employeeId: employee.employeeId,
+		emailInput: persona.email,
+		responsibilityKeyInputs: teamRole.responsibilityKeys
+	});
+	if (!invitation.isSent) throw new Error(`The demo employee ${persona.personaKey} was not invited: ${invitation.failureMessage}`);
+	await acceptTenantMemberInvitation(invitation.invitationToken, { accountId, email: persona.email });
 }
 
 async function createDemoGroup(
@@ -308,7 +360,7 @@ async function subscribe(personaKey: string, tenantId: string, toolKeys: ToolKey
 	await completeCheckout({ tenantId }, checkoutId, 'paid');
 }
 
-function requireTenantId(tenantIdsByPersonaKey: Map<string, string>, personaKey: string): string {
+function requireTenantId(tenantIdsByPersonaKey: ReadonlyMap<string, string>, personaKey: string): string {
 	const tenantId = tenantIdsByPersonaKey.get(personaKey);
 	if (!tenantId) throw new Error(`The demo pharmacy of ${personaKey} was not created.`);
 	return tenantId;

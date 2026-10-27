@@ -21,7 +21,7 @@ import type {
 	InvitationReference,
 	PublicInvitationPageData
 } from '../../pages/group/groupInvitationPageData';
-import { requireActiveTenantId, requireSignedInAccountId } from '../activeTenant.server';
+import { requireOwner, requireSignedInAccountId } from '../activeTenant.server';
 
 const invitationTokenFieldName = 'jeton';
 const invitationIdFieldName = 'id';
@@ -59,7 +59,7 @@ export async function loadGroupInvitationPage({ locals, url }: InvitationEvent &
 	const invitation = await findPharmacyInvitation(proof);
 	if (!invitation) error(404, 'Cette invitation n’existe pas, ou elle n’est pas adressée à votre compte.');
 
-	const tenantId = await requireActiveTenantId(locals.user);
+	const tenantId = (await requireOwner(locals.user)).tenantId;
 	const [preview, toolAccess, currentGroup] = await Promise.all([
 		previewGroupJoining(tenantId, invitation.groupId, proof),
 		getToolAccessOfTenant(tenantId),
@@ -95,7 +95,7 @@ export async function loadGroupInvitationPage({ locals, url }: InvitationEvent &
 
 export const groupInvitationPageActions = {
 	accept: async ({ locals, request }: RequestEvent): Promise<ActionFailure<GroupInvitationActionFailure>> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireOwner(locals.user)).tenantId;
 		const proof = await readSubmittedProof(request, locals.user);
 		const acceptance = await acceptPharmacyInvitationAndRebuildToolAccess(tenantId, proof);
 		if (!acceptance.isAnswered) return fail(400, { failureMessage: acceptance.failureMessage });

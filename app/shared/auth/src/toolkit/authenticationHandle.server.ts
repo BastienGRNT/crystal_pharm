@@ -10,7 +10,7 @@ export type BetterAuthForHandle = {
 	api: {
 		getSession: (context: {
 			headers: Headers;
-		}) => Promise<{ user: { id: string; name: string; email: string } } | null>;
+		}) => Promise<{ user: { id: string; name: string; email: string; username?: string | null } } | null>;
 	};
 };
 
@@ -59,7 +59,7 @@ async function findAuthenticatedUser(
 	if (!authenticatedSession) return null;
 
 	const { user } = authenticatedSession;
-	return { userId: user.id, name: user.name, email: user.email };
+	return { userId: user.id, name: user.name, email: user.email, username: user.username ?? undefined };
 }
 
 function redirectByAuthenticationState({

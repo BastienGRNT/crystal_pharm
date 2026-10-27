@@ -8,9 +8,9 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 async function loadDemoCredentials(personaKey: string) {
-	const { demoPassword, ensureDemoData, findDemoPersona } = await import('@crystal-pharm/dev-tools');
-	const persona = findDemoPersona(personaKey);
-	if (!persona || persona.space !== 'pharmacy') error(404, 'Ce compte de démo n’existe pas dans cet espace.');
+	const { ensureDemoData, findPharmacyDemoSignIn } = await import('@crystal-pharm/dev-tools');
+	const demoSignIn = findPharmacyDemoSignIn(personaKey);
+	if (!demoSignIn) error(404, 'Ce compte de démo n’existe pas dans cet espace.');
 	await ensureDemoData();
-	return { accountLabel: persona.label, credentials: { email: persona.email, password: demoPassword } };
+	return demoSignIn;
 }

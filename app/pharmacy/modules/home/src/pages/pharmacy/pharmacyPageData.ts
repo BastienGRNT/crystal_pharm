@@ -1,4 +1,5 @@
 import type {
+	ResponsibilityKey,
 	EmployeeFieldName,
 	EmployeeIdentityInput,
 	FieldErrors,
@@ -7,7 +8,7 @@ import type {
 	WeeklyOpeningSchedule
 } from '@crystal-pharm/pharmacy-db/domain';
 
-export type PharmacySection = 'contactDetails' | 'openingHours' | 'team' | 'group';
+export type PharmacySection = 'contactDetails' | 'openingHours' | 'team' | 'group' | 'access';
 
 export type ContactDetailsFailure = {
 	failedSection: 'contactDetails';
@@ -28,7 +29,48 @@ export type EmployeeFailure = {
 	fieldErrors: FieldErrors<EmployeeFieldName>;
 };
 
-export type PharmacySectionSaved = { savedSection: PharmacySection };
+export type PharmacySectionSaved = {
+	savedSection: PharmacySection;
+	/** Ce qui vient d'être fait, quand l'onglet en montre plusieurs (les comptes et accès). */
+	savedMessage?: string;
+};
+
+/** Le panneau des comptes et accès ouvert par l'URL : inviter, créer le compte comptoir, ou modifier un compte. */
+export type AccessPanel = { kind: 'invitation' } | { kind: 'counter-account' } | { kind: 'member'; accountId: string };
+
+export type AccessFieldName = 'email' | 'employeeId' | 'username' | 'password';
+
+export type AccessFailure = {
+	failedSection: 'access';
+	accessPanel: AccessPanel | undefined;
+	failureMessage: string;
+	failedFieldName: AccessFieldName | undefined;
+};
+
+/** Un compte de la pharmacie, tel que la liste des accès le montre. */
+export type AccessMember = {
+	accountId: string;
+	name: string;
+	/** L'email, ou l'identifiant du compte comptoir. */
+	detail: string;
+	kindLabel: string;
+	isOwner: boolean;
+	isCounterAccount: boolean;
+	isSignedInAccount: boolean;
+	responsibilityKeys: readonly ResponsibilityKey[];
+	editHref: string;
+};
+
+export type AccessInvitation = { invitationId: string; employeeFullName: string; email: string; expiresAt: Date };
+
+/** Les comptes et accès : seulement pour un Owner. */
+export type AccessSection = {
+	members: AccessMember[];
+	pendingInvitations: AccessInvitation[];
+	/** Les Employees sans compte ni invitation en attente : ceux qu'on peut inviter. */
+	invitableEmployees: { employeeId: string; fullName: string }[];
+	hasCounterAccount: boolean;
+};
 
 /** Le groupement de la pharmacie : membre, ou parti avec une prise en charge qui court encore. */
 export type PharmacyGroupSection = {
@@ -60,9 +102,22 @@ export type PharmacyPageData = {
 	team: TeamMember[];
 	employeePanel: EmployeePanel | undefined;
 	group: PharmacyGroupSection | undefined;
+	/** Quitter le groupement : réservé aux Owners. */
+	canLeaveGroup: boolean;
+	/** `undefined` pour qui n'est pas Owner : l'onglet n'existe pas. */
+	access: AccessSection | undefined;
+	accessPanel: AccessPanel | undefined;
 };
 
-export type PharmacyPageFormResult = ContactDetailsFailure | OpeningHoursFailure | EmployeeFailure | PharmacySectionSaved;
+export type PharmacyPageFormResult =
+	| ContactDetailsFailure
+	| OpeningHoursFailure
+	| EmployeeFailure
+	| AccessFailure
+	| PharmacySectionSaved;
+
+/** Le nom des cases à cocher des Responsibilities, une par Responsibility cochée. */
+export const responsibilityFieldName = 'responsibilityKey';
 
 export const emptyContactDetails: PharmacyContactDetailsInput = {
 	name: '',

@@ -12,7 +12,7 @@ import {
 	updateWeeklyOpeningSchedule,
 	type Employee
 } from '@crystal-pharm/pharmacy-db';
-import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
+import { canManageSubscriptionAndAccess, formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import { fail, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import { employeePanelPathname, employeePhotoPathname } from '../../homePathnames';
 import { readRequestedEmployeePanel } from '../../pages/pharmacy/employeePanel';
@@ -26,8 +26,9 @@ import type {
 	TeamMember
 } from '../../pages/pharmacy/pharmacyPageData';
 import { readSelectedPharmacySection } from '../../pages/pharmacy/pharmacySectionTabs';
-import { requireActiveTenantId } from '../activeTenant.server';
+import { requireOwner, requireResponsibility } from '../activeTenant.server';
 import { openingHoursRefusedMessage } from '../onboarding/openingHoursStep.server';
+import { accessSectionActions, loadAccessSection } from './accessSection.server';
 import {
 	readContactDetailsInput,
 	readEmployeeId,
@@ -43,16 +44,22 @@ export async function loadPharmacyPage({
 	locals: { user: AuthenticatedUser | null };
 	url: URL;
 }): Promise<PharmacyPageData> {
-	const tenantId = await requireActiveTenantId(locals.user);
-	const [pharmacyProfile, group, employees] = await Promise.all([
+	const memberAccess = await requireResponsibility(locals.user, 'edit-pharmacy-profile');
+	const { tenantId } = memberAccess;
+	const canManageAccess = canManageSubscriptionAndAccess(memberAccess);
+	const [pharmacyProfile, group, employees, accessSection] = await Promise.all([
 		getPharmacyProfile(tenantId),
 		loadPharmacyGroupSection(tenantId),
-		listEmployees(tenantId)
+		listEmployees(tenantId),
+		canManageAccess ? loadAccessSection(tenantId, memberAccess.accountId, url.searchParams) : undefined
 	]);
 	const team = employees.map(toTeamMember);
 	return {
-		selectedSection: readSelectedPharmacySection(url.searchParams, group !== undefined),
+		selectedSection: readSelectedPharmacySection(url.searchParams, { hasGroup: group !== undefined, canManageAccess }),
 		group,
+		canLeaveGroup: canManageAccess,
+		access: accessSection?.access,
+		accessPanel: accessSection?.accessPanel,
 		contactDetails: {
 			name: pharmacyProfile.name,
 			street: pharmacyProfile.street,
@@ -96,11 +103,13 @@ async function loadPharmacyGroupSection(tenantId: string): Promise<PharmacyGroup
 }
 
 export const pharmacyPageActions = {
+	...accessSectionActions,
+
 	contactDetails: async ({
 		locals,
 		request
 	}: RequestEvent): Promise<PharmacySectionSaved | ActionFailure<ContactDetailsFailure>> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireResponsibility(locals.user, 'edit-pharmacy-profile')).tenantId;
 		const submittedContactDetails = readContactDetailsInput(await request.formData());
 		const contactDetailsUpdate = await updatePharmacyContactDetails(tenantId, submittedContactDetails);
 		if (!contactDetailsUpdate.isSaved) {
@@ -117,7 +126,7 @@ export const pharmacyPageActions = {
 		locals,
 		request
 	}: RequestEvent): Promise<PharmacySectionSaved | ActionFailure<OpeningHoursFailure>> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireResponsibility(locals.user, 'edit-pharmacy-profile')).tenantId;
 		const scheduleUpdate = await updateWeeklyOpeningSchedule(
 			tenantId,
 			readWeeklyOpeningScheduleInput(await request.formData())
@@ -129,7 +138,7 @@ export const pharmacyPageActions = {
 	},
 
 	addEmployee: async ({ locals, request }: RequestEvent): Promise<PharmacySectionSaved | ActionFailure<EmployeeFailure>> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireResponsibility(locals.user, 'edit-pharmacy-profile')).tenantId;
 		const formData = await request.formData();
 		const submittedIdentity = readEmployeeIdentityInput(formData);
 		const employeeAddition = await addEmployee(tenantId, submittedIdentity, readEmployeePhotoChange(formData));
@@ -140,7 +149,7 @@ export const pharmacyPageActions = {
 	},
 
 	updateEmployee: async ({ locals, request }: RequestEvent): Promise<PharmacySectionSaved | ActionFailure<EmployeeFailure>> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireResponsibility(locals.user, 'edit-pharmacy-profile')).tenantId;
 		const formData = await request.formData();
 		const employeeId = readEmployeeId(formData);
 		const submittedIdentity = readEmployeeIdentityInput(formData);
@@ -152,13 +161,13 @@ export const pharmacyPageActions = {
 	},
 
 	removeEmployee: async ({ locals, request }: RequestEvent): Promise<PharmacySectionSaved> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireResponsibility(locals.user, 'edit-pharmacy-profile')).tenantId;
 		await removeEmployee(tenantId, readEmployeeId(await request.formData()));
 		return { savedSection: 'team' };
 	},
 
 	leaveGroup: async ({ locals }: RequestEvent): Promise<PharmacySectionSaved> => {
-		await leaveGroupAndRebuildToolAccess(await requireActiveTenantId(locals.user));
+		await leaveGroupAndRebuildToolAccess((await requireOwner(locals.user)).tenantId);
 		return { savedSection: 'group' };
 	}
 };
