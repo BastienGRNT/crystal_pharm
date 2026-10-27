@@ -14,7 +14,7 @@ export type TenantCreationResult =
 	| { isSaved: true; tenantId: string }
 	| { isSaved: false; fieldErrors: FieldErrors<PharmacyContactDetailsFieldName> };
 
-/** Crée la pharmacie et en fait membre le compte qui l'a créée. */
+/** Crée la pharmacie et en fait Owner le compte qui l'a créée. */
 export async function createTenantForAccount(
 	accountId: string,
 	contactDetailsInput: PharmacyContactDetailsInput
@@ -27,7 +27,7 @@ export async function createTenantForAccount(
 	const tenantId = crypto.randomUUID();
 	await runAsTenant(tenantId, async (transaction) => {
 		await transaction.insert(tenants).values({ id: tenantId, ...toContactDetailsColumns(validation.output) });
-		await transaction.insert(tenantMemberships).values({ tenantId, accountId });
+		await transaction.insert(tenantMemberships).values({ tenantId, accountId, memberKind: 'owner' });
 	});
 	return { isSaved: true, tenantId };
 }

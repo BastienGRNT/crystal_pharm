@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { signOutAndOpen } from '@crystal-pharm/auth/client';
-	import { keepAccessibleLinks } from '@crystal-pharm/home';
+	import { keepAccessibleLinks, keepPermittedAccountLinks } from '@crystal-pharm/home';
 	import { AppShell } from '@crystal-pharm/ui';
 	import { accountLinks, toolLinks } from '$lib/toolLinks';
 	import type { LayoutData } from './$types';
@@ -12,9 +12,9 @@
 
 <AppShell
 	navigationLinks={keepAccessibleLinks(toolLinks, data.accessibleToolKeys)}
-	{accountLinks}
+	accountLinks={keepPermittedAccountLinks(accountLinks, data)}
 	currentPathname={page.url.pathname}
-	signedInUser={data.signedInManager}
+	signedInUser={data.signedInMember}
 	spaceLabel={data.pharmacyName}
 	hrefsNeedingAttention={data.hrefsNeedingAttention}
 	onSignOut={() => signOutAndOpen('/login')}

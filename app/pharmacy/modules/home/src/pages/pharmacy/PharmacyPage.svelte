@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { Alert, Button, Card, ConfirmButton, EmptyState, FilterTabs, PageHeader, SidePanel } from '@crystal-pharm/ui';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
-	import { employeePanelPathname, homePathnames } from '../../homePathnames';
+	import { accessPanelPathname, employeePanelPathname, homePathnames } from '../../homePathnames';
+	import AccessInvitationList from '../../components/organisms/access/AccessInvitationList.svelte';
+	import AccessMemberList from '../../components/organisms/access/AccessMemberList.svelte';
+	import CounterAccountForm from '../../components/organisms/access/CounterAccountForm.svelte';
+	import MemberAccessForm from '../../components/organisms/access/MemberAccessForm.svelte';
+	import TeamInvitationForm from '../../components/organisms/access/TeamInvitationForm.svelte';
 	import EmployeeForm from '../../components/organisms/EmployeeForm.svelte';
 	import EmployeeList from '../../components/organisms/EmployeeList.svelte';
 	import OpeningHoursForm from '../../components/organisms/OpeningHoursForm.svelte';
@@ -20,18 +25,22 @@
 		contactDetails: 'Vos coordonnées sont enregistrées.',
 		openingHours: 'Vos horaires d’ouverture sont enregistrés.',
 		team: 'Votre équipe est à jour.',
-		group: 'Vous avez quitté le groupement.'
+		group: 'Vous avez quitté le groupement.',
+		access: 'Les accès sont à jour.'
 	};
 	const contactDetailsFailure = $derived(form && 'failedSection' in form && form.failedSection === 'contactDetails' ? form : undefined);
 	const openingHoursFailure = $derived(form && 'failedSection' in form && form.failedSection === 'openingHours' ? form : undefined);
 	const employeeFailure = $derived(form && 'failedSection' in form && form.failedSection === 'team' ? form : undefined);
+	const accessFailure = $derived(form && 'failedSection' in form && form.failedSection === 'access' ? form : undefined);
 	const savedSection = $derived(form && 'savedSection' in form ? form.savedSection : undefined);
+	const savedMessage = $derived(form && 'savedSection' in form ? (form.savedMessage ?? savedMessages[form.savedSection]) : undefined);
 	// Après un envoi, l'URL de l'action a perdu `?onglet=` : on rouvre l'onglet du formulaire envoyé.
 	const selectedSection = $derived(
 		savedSection ??
 			contactDetailsFailure?.failedSection ??
 			openingHoursFailure?.failedSection ??
 			employeeFailure?.failedSection ??
+			accessFailure?.failedSection ??
 			data.selectedSection
 	);
 	// Un envoi refusé garde son panneau ouvert ; un envoi réussi le ferme.
@@ -39,6 +48,11 @@
 		employeeFailure ? { employeeId: employeeFailure.employeeId } : savedSection ? undefined : data.employeePanel
 	);
 	const editedTeamMember = $derived(data.team.find((teamMember) => teamMember.employeeId === employeePanel?.employeeId));
+	const accessPanel = $derived(accessFailure ? accessFailure.accessPanel : savedSection ? undefined : data.accessPanel);
+	const editedAccessMember = $derived(
+		accessPanel?.kind === 'member' ? data.access?.members.find((member) => member.accountId === accessPanel.accountId) : undefined
+	);
+	const optionalSections = $derived({ hasGroup: data.group !== undefined, canManageAccess: data.access !== undefined });
 </script>
 
 <svelte:head>
@@ -55,7 +69,7 @@
 		</Alert>
 	{/if}
 
-	<FilterTabs label="Informations de la pharmacie" tabs={toPharmacySectionTabs(selectedSection, data.group !== undefined)} />
+	<FilterTabs label="Informations de la pharmacie" tabs={toPharmacySectionTabs(selectedSection, optionalSections)} />
 
 	{#if selectedSection === 'contactDetails'}
 		<section aria-labelledby="coordonnees-titre" class="max-w-3xl">
@@ -117,6 +131,42 @@
 				</div>
 			</Card>
 		</section>
+	{:else if selectedSection === 'access' && data.access}
+		<section aria-labelledby="acces-titre" class="grid max-w-3xl gap-3.5">
+			{#if savedSection === 'access'}
+				<Alert tone="success">{savedMessage}</Alert>
+			{/if}
+			{#if accessFailure && !accessPanel}
+				<Alert tone="danger">{accessFailure.failureMessage}</Alert>
+			{/if}
+			<Card>
+				<div class="grid gap-4">
+					<div class="flex flex-wrap items-center justify-between gap-3">
+						<h2 id="acces-titre" class="title-2 text-ink">Comptes et accès</h2>
+						<div class="flex flex-wrap gap-2">
+							{#if !data.access.hasCounterAccount}
+								<Button href={accessPanelPathname({ kind: 'counter-account' })} variant="secondary" icon="storefront">
+									Créer le compte comptoir
+								</Button>
+							{/if}
+							<Button href={accessPanelPathname({ kind: 'invitation' })} icon="envelope-simple">Inviter un membre</Button>
+						</div>
+					</div>
+					<p class="text-small text-ink-muted">
+						Les titulaires ont tous les droits. Les autres comptes n’ouvrent que les responsabilités que vous leur donnez.
+					</p>
+					<AccessMemberList members={data.access.members} />
+				</div>
+			</Card>
+			{#if data.access.pendingInvitations.length > 0}
+				<Card>
+					<div class="grid gap-4">
+						<h3 class="body-strong text-ink">Invitations en attente</h3>
+						<AccessInvitationList invitations={data.access.pendingInvitations} revokeAction="?/revokeInvitation" />
+					</div>
+				</Card>
+			{/if}
+		</section>
 	{:else}
 		<section aria-labelledby="groupement-titre" data-module="grp" class="max-w-3xl">
 			<Card>
@@ -143,6 +193,7 @@
 							{/if}
 							<p class="text-small text-ink-muted">Il voit le nom et la ville de votre pharmacie, et les modules que vous utilisez.</p>
 						</div>
+						{#if data.canLeaveGroup}
 						<form method="POST" action="?/leaveGroup">
 							<ConfirmButton
 								label="Quitter le groupement"
@@ -153,6 +204,7 @@
 								isDestructive
 							/>
 						</form>
+						{/if}
 					{/if}
 				</div>
 			</Card>
@@ -172,4 +224,26 @@
 			cancelHref={homePathnames.pharmacyTeam}
 		/>
 	</SidePanel>
+{/if}
+
+{#if selectedSection === 'access' && data.access && accessPanel}
+	{#if accessPanel.kind === 'invitation'}
+		<SidePanel title="Inviter un membre de l’équipe" closeHref={homePathnames.pharmacyAccess}>
+			<TeamInvitationForm
+				formAction="?/inviteEmployee"
+				invitableEmployees={data.access.invitableEmployees}
+				failure={accessFailure}
+				cancelHref={homePathnames.pharmacyAccess}
+				teamHref={homePathnames.pharmacyTeam}
+			/>
+		</SidePanel>
+	{:else if accessPanel.kind === 'counter-account'}
+		<SidePanel title="Créer le compte comptoir" closeHref={homePathnames.pharmacyAccess}>
+			<CounterAccountForm formAction="?/createCounterAccount" failure={accessFailure} cancelHref={homePathnames.pharmacyAccess} />
+		</SidePanel>
+	{:else if editedAccessMember}
+		<SidePanel title={editedAccessMember.name} closeHref={homePathnames.pharmacyAccess}>
+			<MemberAccessForm member={editedAccessMember} failure={accessFailure} cancelHref={homePathnames.pharmacyAccess} />
+		</SidePanel>
+	{/if}
 {/if}

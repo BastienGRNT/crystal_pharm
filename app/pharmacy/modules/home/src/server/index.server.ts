@@ -10,6 +10,7 @@ export { loadPharmacyPage, pharmacyPageActions } from './pharmacy/pharmacyPage.s
 export { checkoutPageActions, loadCheckoutPage } from './subscription/checkoutPage.server';
 export { downloadInvoicePdf } from './subscription/invoicePdfDownload.server';
 export { loadSubscriptionPage, subscriptionPageActions } from './subscription/subscriptionPage.server';
+export { loadTeamInvitationPage, teamInvitationPageActions } from './team-invitation/teamInvitationPage.server';
 export { createToolAccessHandle, type ProtectedTool } from './tools/toolAccessHandle.server';
 export { confirmAppointmentFromToolsHome, loadToolsHomePage } from './tools/toolsHomePage.server';
 export type { TodayAppointmentsSummary, TodayManager, TodaySources, TodayTeamSummary } from './tools/today/todaySources';

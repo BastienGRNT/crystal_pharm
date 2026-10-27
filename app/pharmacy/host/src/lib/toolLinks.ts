@@ -1,6 +1,5 @@
 import type { ProtectedTool } from '@crystal-pharm/home/server';
-import type { ToolNavigationLink } from '@crystal-pharm/home';
-import type { NavigationLink } from '@crystal-pharm/ui';
+import type { AccountNavigationLink, ToolNavigationLink } from '@crystal-pharm/home';
 
 /** Le menu des outils ; un lien avec `toolKey` n'apparaît qu'aux pharmacies qui ont activé ce module. */
 export const toolLinks: readonly ToolNavigationLink[] = [
@@ -12,9 +11,9 @@ export const toolLinks: readonly ToolNavigationLink[] = [
 ];
 
 /** Les pages de la pharmacie elle-même, qui ne sont pas des modules : au-dessus de l'avatar. */
-export const accountLinks: readonly NavigationLink[] = [
-	{ label: 'Pharmacie', href: '/pharmacie', icon: 'storefront', module: 'accueil' },
-	{ label: 'Abonnement', href: '/abonnement', icon: 'credit-card', module: 'accueil' }
+export const accountLinks: readonly AccountNavigationLink[] = [
+	{ label: 'Pharmacie', href: '/pharmacie', icon: 'storefront', module: 'accueil', responsibilityKey: 'edit-pharmacy-profile' },
+	{ label: 'Abonnement', href: '/abonnement', icon: 'credit-card', module: 'accueil', isReservedToOwners: true }
 ];
 
 /** Les pages (et l'API mobile) de chaque module, fermées tant qu'il n'est pas activé. */

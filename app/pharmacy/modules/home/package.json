@@ -17,6 +17,7 @@
 	"dependencies": {
 		"@crystal-pharm/auth": "workspace:*",
 		"@crystal-pharm/billing-db": "workspace:*",
+		"@crystal-pharm/email": "workspace:*",
 		"@crystal-pharm/group-db": "workspace:*",
 		"@crystal-pharm/pharmacy-db": "workspace:*",
 		"@crystal-pharm/ui": "workspace:*",

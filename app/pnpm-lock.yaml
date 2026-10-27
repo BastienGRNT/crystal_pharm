@@ -310,6 +310,9 @@ importers:
       '@crystal-pharm/billing-db':
         specifier: workspace:*
         version: link:../../../shared/billing-db
+      '@crystal-pharm/email':
+        specifier: workspace:*
+        version: link:../../../shared/email
       '@crystal-pharm/group-db':
         specifier: workspace:*
         version: link:../../../shared/group-db

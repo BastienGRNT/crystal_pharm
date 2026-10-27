@@ -2,7 +2,10 @@ export { runDevelopmentAction } from './actions/developmentActions.server';
 export {
 	demoPassword,
 	demoPersonas,
+	demoCounterAccounts,
 	findDemoPersona,
+	findPharmacyDemoSignIn,
+	type DemoCounterAccount,
 	type DemoPersona,
 	type DemoSpace
 } from './personas/demoPersonas';

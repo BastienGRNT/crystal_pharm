@@ -3,19 +3,19 @@ import { getPharmacyProfile, updateWeeklyOpeningSchedule } from '@crystal-pharm/
 import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import { homePathnames } from '../../homePathnames';
 import type { OpeningHoursFailure } from '../../pages/pharmacy/pharmacyPageData';
-import { requireActiveTenantId } from '../activeTenant.server';
+import { requireResponsibility } from '../activeTenant.server';
 import { readWeeklyOpeningScheduleInput } from '../pharmacy/pharmacyFormSubmissions.server';
 
 export const openingHoursRefusedMessage = 'Ces horaires n’ont pas pu être enregistrés : vérifiez-les puis réessayez.';
 
 export async function loadOpeningHoursStep({ locals }: { locals: { user: AuthenticatedUser | null } }): Promise<void> {
-	const { weeklyOpeningSchedule } = await getPharmacyProfile(await requireActiveTenantId(locals.user));
+	const { weeklyOpeningSchedule } = await getPharmacyProfile((await requireResponsibility(locals.user, 'edit-pharmacy-profile')).tenantId);
 	if (weeklyOpeningSchedule) redirect(303, homePathnames.toolsHome);
 }
 
 export const openingHoursStepActions = {
 	default: async ({ locals, request }: RequestEvent): Promise<ActionFailure<OpeningHoursFailure>> => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const tenantId = (await requireResponsibility(locals.user, 'edit-pharmacy-profile')).tenantId;
 		const scheduleUpdate = await updateWeeklyOpeningSchedule(
 			tenantId,
 			readWeeklyOpeningScheduleInput(await request.formData())

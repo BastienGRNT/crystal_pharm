@@ -43,3 +43,29 @@ export function composeGroupMemberInvitationEmail({ to, groupName, invitationUrl
 		actionLinks: [{ label: 'Accéder à l’espace groupement', url: invitationUrl }]
 	};
 }
+
+type TenantMemberInvitationEmailContent = {
+	to: string;
+	employeeFirstName: string;
+	pharmacyName: string;
+	invitationUrl: string;
+};
+
+/** Un Owner invite un Employee de son équipe à créer son compte. */
+export function composeTenantMemberInvitationEmail({
+	to,
+	employeeFirstName,
+	pharmacyName,
+	invitationUrl
+}: TenantMemberInvitationEmailContent): Email {
+	return {
+		to,
+		subject: `${pharmacyName} vous invite sur Crystal Pharm`,
+		text: [
+			`Bonjour ${employeeFirstName},`,
+			`${pharmacyName} vous invite à créer votre compte sur Crystal Pharm, les outils en ligne de la pharmacie.`,
+			'Créez votre compte (ou connectez-vous) depuis le lien ci-dessous. Il est valable 14 jours.'
+		].join('\n\n'),
+		actionLinks: [{ label: 'Créer mon compte', url: invitationUrl }]
+	};
+}

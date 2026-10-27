@@ -1,4 +1,4 @@
-import { boolean, index, text, timestamp, type PgSchema } from 'drizzle-orm/pg-core';
+import { boolean, index, text, timestamp, type PgColumnBuilderBase, type PgSchema } from 'drizzle-orm/pg-core';
 
 const timestampWithTimeZone = (columnName: string) => timestamp(columnName, { withTimezone: true });
 
@@ -11,9 +11,14 @@ const createdAndUpdatedTimestamps = () => ({
 });
 
 // Les tables du cœur de Better Auth, posées dans le schéma de l'identité qui
-// les possède (`auth` pour les clients, `platform_auth` pour la Platform).
-export function defineBetterAuthTables(databaseSchema: PgSchema) {
+// les possède (`auth` pour les clients, `platform_auth` pour la Platform) ; une
+// identité y ajoute les colonnes de ses plugins (`extraUserColumns`).
+export function defineBetterAuthTables<ExtraUserColumns extends Record<string, PgColumnBuilderBase> = {}>(
+	databaseSchema: PgSchema,
+	extraUserColumns: ExtraUserColumns = {} as ExtraUserColumns
+) {
 	const users = databaseSchema.table('users', {
+		...extraUserColumns,
 		id: text('id').primaryKey(),
 		name: text('name').notNull(),
 		// Vides pour les comptes créés avant leur ajout ; obligatoires à l'inscription.
