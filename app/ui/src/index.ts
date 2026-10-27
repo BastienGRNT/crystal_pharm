@@ -55,6 +55,7 @@ export type { FieldControlAttributes } from './molecules/fields/field';
 export { default as PageHeader } from './molecules/PageHeader.svelte';
 export { default as PersonLabel } from './molecules/PersonLabel.svelte';
 export { default as PriceLabel } from './molecules/PriceLabel.svelte';
+export { default as PlanCard } from './molecules/PlanCard.svelte';
 export { default as ProgressBar } from './atoms/ProgressBar.svelte';
 export { default as SegmentedControl } from './molecules/navigation/SegmentedControl.svelte';
 export type { SegmentedControlOption } from './molecules/navigation/segmentedControl';

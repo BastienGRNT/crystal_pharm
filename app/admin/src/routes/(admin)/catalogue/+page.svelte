@@ -35,6 +35,20 @@
 	const annualFreeMonths = $derived(Number(values.annualFreeMonthsInput) || 0);
 	const exampleMonthlyCents = $derived(packPriceCents ?? paidTotalCents);
 
+	type PlanPreview = { planLabel: string; monthlyCents: number; isFeatured: boolean };
+	// Ce que voit une pharmacie sans groupement : un module seul chacun, et le pack au milieu quand il fait économiser.
+	const planPreviews = $derived.by((): PlanPreview[] => {
+		const singlePlans = sellableTools
+			.map((tool) => ({ planLabel: tool.label, monthlyCents: parseEurosToCents(values.toolPriceInputs[tool.toolKey] ?? '') ?? 0, isFeatured: false }))
+			.filter((plan) => plan.monthlyCents > 0)
+			.toSorted((first, second) => first.monthlyCents - second.monthlyCents);
+		const isPackWorthShowing = packPriceCents !== undefined && singlePlans.length >= 2 && packPriceCents < paidTotalCents;
+		if (!isPackWorthShowing) return singlePlans;
+		const packPlan = { planLabel: singlePlans.map((plan) => plan.planLabel).join(' + '), monthlyCents: packPriceCents, isFeatured: true };
+		const middleIndex = Math.floor(singlePlans.length / 2);
+		return [...singlePlans.slice(0, middleIndex), packPlan, ...singlePlans.slice(middleIndex)];
+	});
+
 	function addFlatRateOffer(): void {
 		flatRateOfferInputs.push({ offerId: '', label: '', pharmacyQuotaInput: '', priceInput: '' });
 	}
@@ -100,7 +114,7 @@
 	<Card>
 		<div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_190px] sm:items-center">
 			<div class="min-w-0">
-				<h2 class="title-2 text-ink">Le pack « tous les modules »</h2>
+				<h2 class="title-2 text-ink">Le pack « tous les modules » (la formule du milieu)</h2>
 				<p class="text-small text-ink-muted">
 					Pour une pharmacie sans groupement qui prend tous les modules vendus. Pris un par un : {formatEuros(paidTotalCents)} HT / mois.
 					{#if packSavingPercent !== undefined && packSavingPercent > 0}Le pack fait économiser {packSavingPercent} %.{/if}
@@ -119,6 +133,35 @@
 					/>
 				{/snippet}
 			</Field>
+		</div>
+	</Card>
+
+	<Card>
+		<div class="grid gap-3">
+			<div class="grid gap-1">
+				<h2 class="title-2 text-ink">Ce que voient les pharmacies</h2>
+				<p class="text-small text-ink-muted">
+					Les formules proposées à une pharmacie sans groupement, de la moins chère à la plus chère ; le pack, au milieu, est mis en avant.
+				</p>
+			</div>
+			{#if planPreviews.length === 0}
+				<p class="text-small text-ink-subtle">Aucun module n’a de prix : rien n’est en vente.</p>
+			{:else}
+				<ul class="grid gap-3 {planPreviews.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}">
+					{#each planPreviews as plan (plan.planLabel)}
+						<li class="grid content-start gap-1 rounded-md border p-3 {plan.isFeatured ? 'border-accent bg-accent-soft' : 'border-line'}">
+							<span class="body-strong text-ink">{plan.planLabel}</span>
+							{#if plan.isFeatured}<span><Tag tone="accent">Recommandé</Tag></span>{/if}
+							<span class="tabular-nums text-ink">{formatEuros(plan.monthlyCents)} HT / mois</span>
+							{#if annualFreeMonths > 0}
+								<span class="text-small tabular-nums text-ink-muted">
+									ou {formatEuros(priceForPeriod(plan.monthlyCents, 'yearly', annualFreeMonths))} HT / an
+								</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		</div>
 	</Card>
 

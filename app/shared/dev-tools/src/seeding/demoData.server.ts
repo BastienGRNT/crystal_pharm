@@ -197,8 +197,8 @@ async function giveDemoTeamTheirAccounts(tenantIdsByPersonaKey: ReadonlyMap<stri
 
 async function seedCatalog(): Promise<void> {
 	await saveToolCatalog({
-		toolPriceInputs: { site: '29', planning: '19' },
-		packPriceInput: '39',
+		toolPriceInputs: { site: '24,99', planning: '9,99' },
+		packPriceInput: '29,99',
 		annualFreeMonthsInput: '2'
 	});
 	await saveFlatRateOffers([

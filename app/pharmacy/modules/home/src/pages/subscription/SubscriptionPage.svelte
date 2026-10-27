@@ -80,7 +80,6 @@
 <ToolSubscriptionForm
 	catalog={data.catalog}
 	coverages={data.coverages}
-	toolCards={data.toolCards}
 	paidToolKeys={data.paidToolKeys}
 	subscription={data.subscription}
 	groupName={data.groupName}

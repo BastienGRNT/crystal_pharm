@@ -6,23 +6,21 @@
 		monthlyEquivalentOfYearlyPrice,
 		priceForPeriod,
 		quoteTools,
-		sellableToolKeys,
 		type BillingPeriod,
 		type ToolCatalog,
 		type ToolCoverage,
 		type ToolKey
 	} from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Checkbox, CheckList, ChoiceGroup, Icon, PriceLabel, Tag, TextLink, ToggleCard, type CheckListItem } from '@crystal-pharm/ui';
+	import { Alert, Button, Checkbox, ChoiceGroup, PlanCard, Tag, TextLink } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
-	import { formatDay, formatLastDayBefore } from '../../dateFormats';
-	import type { ToolCard } from '../../domain/toolCards';
+	import { formatDay } from '../../dateFormats';
+	import { buildSubscriptionPlans, findPlanOfToolKeys, listPlanFeatures, type SubscriptionPlan } from '../../domain/subscriptionPlans';
 	import { homePathnames } from '../../homePathnames';
 	import type { SubscriptionSummary } from '../../pages/subscription/subscriptionPageData';
 
 	type ToolSubscriptionFormProps = {
 		catalog: ToolCatalog;
 		coverages: ToolCoverage[];
-		toolCards: ToolCard[];
 		paidToolKeys: ToolKey[];
 		subscription: SubscriptionSummary | undefined;
 		groupName: string | undefined;
@@ -32,40 +30,32 @@
 		failureMessage: string | undefined;
 	};
 
-	let {
-		catalog,
-		coverages,
-		toolCards,
-		paidToolKeys,
-		subscription,
-		groupName,
-		highlightedToolKey,
-		mustAcceptTerms,
-		failureMessage
-	}: ToolSubscriptionFormProps = $props();
+	let { catalog, coverages, paidToolKeys, subscription, groupName, highlightedToolKey, mustAcceptTerms, failureMessage }: ToolSubscriptionFormProps =
+		$props();
 
-	// Le choix part de ce qui est payé aujourd'hui, puis vit sa vie : la page est rechargée après chaque envoi.
-	const selection = $state<Record<ToolKey, boolean>>(
-		untrack(() => Object.fromEntries(sellableToolKeys.map((toolKey) => [toolKey, paidToolKeys.includes(toolKey)])) as Record<ToolKey, boolean>)
+	const plans = $derived(buildSubscriptionPlans(catalog, coverages));
+	// Le choix part de ce qui est payé aujourd'hui (ou du module demandé), puis vit sa vie : la page est rechargée après chaque envoi.
+	let selectedPlanKey = $state(
+		untrack(
+			() =>
+				findPlanOfToolKeys(plans, paidToolKeys)?.planKey ??
+				plans.find((plan) => plan.planKey === highlightedToolKey && !plan.isAlreadyIncluded)?.planKey ??
+				''
+		)
 	);
 	const plannedBillingPeriod: BillingPeriod = untrack(() => subscription?.nextBillingPeriod ?? subscription?.billingPeriod ?? 'monthly');
 	let billingPeriod = $state<BillingPeriod>(plannedBillingPeriod);
 
 	const freeMonths = $derived(catalog.annualFreeMonths);
 	const isYearly = $derived(billingPeriod === 'yearly');
-	const selectedToolKeys = $derived(sellableToolKeys.filter((toolKey) => selection[toolKey]));
+	const selectedPlan = $derived(plans.find((plan) => plan.planKey === selectedPlanKey));
+	// Sans choix de formule, on garde l'abonnement tel qu'il est (par exemple après l'arrivée d'un groupement).
+	const selectedToolKeys = $derived(selectedPlan ? selectedPlan.toolKeys : paidToolKeys);
 	const selectionQuote = $derived(quoteTools({ catalog, coverages, selectedToolKeys }));
 	const currentQuote = $derived(quoteTools({ catalog, coverages, selectedToolKeys: paidToolKeys }));
-	const everyToolQuote = $derived(quoteTools({ catalog, coverages, selectedToolKeys: sellableToolKeys }));
-	// Le prix de chaque module pris seul : le pack ne s'affiche que dans le total.
-	const singleToolQuote = $derived(quoteTools({ catalog: { ...catalog, packMonthlyPriceCents: undefined }, coverages, selectedToolKeys: [] }));
-
-	const sellableToolCards = $derived(toolCards.filter((toolCard) => sellableToolKeys.includes(toolCard.toolKey)));
-	const packOfferLabels = $derived(sellableToolCards.filter((toolCard) => toolCard.status !== 'unavailable').map((toolCard) => toolCard.offerLabel));
-	const selectableToolCards = $derived(sellableToolCards.filter((toolCard) => toolCard.status !== 'included' && toolCard.status !== 'unavailable'));
 
 	const addedToolKeys = $derived(selectedToolKeys.filter((toolKey) => !paidToolKeys.includes(toolKey)));
-	const removedToolKeys = $derived(paidToolKeys.filter((toolKey) => !selection[toolKey]));
+	const removedToolKeys = $derived(paidToolKeys.filter((toolKey) => !selectedToolKeys.includes(toolKey)));
 	const isPeriodChanged = $derived(subscription !== undefined && billingPeriod !== plannedBillingPeriod);
 	const isChanged = $derived(addedToolKeys.length > 0 || removedToolKeys.length > 0 || isPeriodChanged);
 	const amountDueTodayCents = $derived(
@@ -85,8 +75,6 @@
 				})
 	);
 	const amountDueToday = $derived(addVat(amountDueTodayCents));
-	const isPackWorthShowing = $derived(everyToolQuote.isPackApplied && !selectionQuote.isPackApplied);
-	const packSavingsMonthlyCents = $derived(everyToolQuote.listMonthlyTotalCents - everyToolQuote.pharmacyMonthlyTotalCents);
 	const isTermsCheckboxShown = $derived(mustAcceptTerms && addedToolKeys.length > 0);
 
 	const billingPeriodOptions = $derived([
@@ -94,44 +82,29 @@
 		{ value: 'yearly', label: freeMonths > 0 ? `À l’année · ${freeMonths} mois offerts` : 'À l’année' }
 	]);
 
-	function selectEveryTool(): void {
-		for (const toolCard of selectableToolCards) selection[toolCard.toolKey] = true;
-	}
-
-	function findSingleToolPrice(toolKey: ToolKey): { pharmacyPriceCents: number; listPriceCents: number } {
-		const toolQuote = singleToolQuote.toolQuotes.find((candidate) => candidate.toolKey === toolKey);
-		return { pharmacyPriceCents: toolQuote?.pharmacyPriceCents ?? 0, listPriceCents: toolQuote?.listPriceCents ?? 0 };
-	}
-
 	function formatPeriodPrice(monthlyCents: number): string {
 		return formatEuros(priceForPeriod(monthlyCents, billingPeriod, freeMonths));
 	}
 
-	// Ramené au jour, le prix se compare à un café plutôt qu'à un autre abonnement.
-	function formatDailyPrice(monthlyCents: number): string {
-		const yearlyCents = isYearly ? priceForPeriod(monthlyCents, 'yearly', freeMonths) : monthlyCents * 12;
-		return formatEuros(Math.round(yearlyCents / 365));
+	// Barré : ce que coûterait la formule sans la remise (pack, groupement) ou sans les mois offerts de l'année.
+	function findPreviousAmountLabel(plan: SubscriptionPlan): string | undefined {
+		const previousCents = isYearly ? Math.max(plan.listMonthlyPriceCents, plan.pharmacyMonthlyPriceCents) * 12 : plan.listMonthlyPriceCents;
+		const currentCents = priceForPeriod(plan.pharmacyMonthlyPriceCents, billingPeriod, freeMonths);
+		return previousCents > currentCents ? formatEuros(previousCents) : undefined;
 	}
 
-	function listIncludedFeatures(toolCard: ToolCard): CheckListItem[] {
-		return toolCard.includedToolKeys
-			.map((includedToolKey) => toolCards.find((candidate) => candidate.toolKey === includedToolKey))
-			.filter((includedToolCard) => includedToolCard !== undefined)
-			.map((includedToolCard) => ({ title: `${includedToolCard.label} en ligne`, description: includedToolCard.pitch }));
+	function describePriceNote(plan: SubscriptionPlan): string | undefined {
+		if (plan.pharmacyMonthlyPriceCents === 0) return undefined;
+		if (!isYearly) return `soit ${formatEuros(Math.round((plan.pharmacyMonthlyPriceCents * 12) / 365))} HT par jour`;
+		return `soit ${formatEuros(monthlyEquivalentOfYearlyPrice(plan.pharmacyMonthlyPriceCents, freeMonths))} HT par mois`;
 	}
 </script>
 
-{#snippet includedFeatureList(includedFeatures: CheckListItem[])}
-	{#if includedFeatures.length > 0}
-		<span class="mt-2 grid gap-2 border-t border-line-soft pt-3">
-			<span class="text-label text-ink-subtle">Compris, sans rien payer de plus</span>
-			<CheckList items={includedFeatures} />
-		</span>
-	{/if}
-{/snippet}
-
-<form method="POST" action="?/selectTools" class="grid gap-4">
+<form method="POST" action="?/selectTools" class="grid gap-6">
 	<input type="hidden" name="billingPeriod" value={billingPeriod} />
+	{#each selectedToolKeys as toolKey (toolKey)}
+		<input type="hidden" name="toolKeys" value={toolKey} />
+	{/each}
 
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<ChoiceGroup name="choice-billingPeriod" legend="Rythme de paiement" options={billingPeriodOptions} bind:value={billingPeriod} />
@@ -140,81 +113,39 @@
 		{/if}
 	</div>
 
-	{#if isPackWorthShowing}
-		<div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent bg-accent-soft px-4 py-3">
-			<p class="flex items-start gap-2 text-body text-ink">
-				<Icon name="package" size={20} class="mt-0.5 flex-none text-accent-text" />
-				<span class="grid gap-0.5">
-					<span class="flex flex-wrap items-center gap-2">
-						<strong class="font-semibold">{packOfferLabels.join(' + ')}</strong>
-						<Tag tone="accent">Recommandé</Tag>
-					</span>
-					<span>
-						<strong class="font-semibold tabular-nums">{formatPeriodPrice(everyToolQuote.pharmacyMonthlyTotalCents)} HT {isYearly ? 'par an' : 'par mois'}</strong>
-						au lieu de <s class="tabular-nums">{formatPeriodPrice(everyToolQuote.listMonthlyTotalCents)}</s> : vous économisez
-						{formatPeriodPrice(packSavingsMonthlyCents)} HT {isYearly ? 'par an' : 'par mois'}.
-					</span>
-				</span>
-			</p>
-			<Button variant="secondary" icon="check" onclick={selectEveryTool}>Tout prendre</Button>
-		</div>
-	{/if}
-
-	<section id="modules" aria-labelledby="modules-titre" class="grid scroll-mt-20 gap-2">
-		<h2 id="modules-titre" class="title-2 text-ink">Vos modules</h2>
-		<div class="grid gap-3 lg:grid-cols-2">
-			{#each sellableToolCards as toolCard (toolCard.toolKey)}
-				{@const toolPrice = findSingleToolPrice(toolCard.toolKey)}
-				{@const includedFeatures = listIncludedFeatures(toolCard)}
-				{#if toolCard.status === 'included'}
-					<ToggleCard name="includedTools" value={toolCard.toolKey} checked disabled title={toolCard.offerLabel} description={toolCard.pitch}>
-						{#snippet aside()}<Tag tone="success">{groupName ? `Offert par ${groupName}` : 'Inclus'}</Tag>{/snippet}
-						{#snippet footer()}
-							{@render includedFeatureList(includedFeatures)}
-						{/snippet}
-					</ToggleCard>
-				{:else if toolCard.status === 'unavailable'}
-					<ToggleCard name="unavailableTools" value={toolCard.toolKey} disabled title={toolCard.offerLabel} description={toolCard.pitch}>
-						{#snippet aside()}<Tag>Bientôt disponible</Tag>{/snippet}
-						{#snippet footer()}
-							{@render includedFeatureList(includedFeatures)}
-						{/snippet}
-					</ToggleCard>
-				{:else}
-					<ToggleCard
-						name="toolKeys"
-						value={toolCard.toolKey}
-						bind:checked={selection[toolCard.toolKey]}
-						isHighlighted={highlightedToolKey === toolCard.toolKey || toolCard.includedToolKeys.some((toolKey) => toolKey === highlightedToolKey)}
-						title={toolCard.offerLabel}
-						description={toolCard.pitch}
-					>
-						{#snippet aside()}
-							<PriceLabel
-								amountLabel={formatPeriodPrice(toolPrice.pharmacyPriceCents)}
-								periodLabel={isYearly ? 'HT / an' : 'HT / mois'}
-								previousAmountLabel={toolPrice.pharmacyPriceCents < toolPrice.listPriceCents ? formatPeriodPrice(toolPrice.listPriceCents) : undefined}
-							/>
-						{/snippet}
-						{#snippet footer()}
-							{@render includedFeatureList(includedFeatures)}
-							<span class="mt-1 flex flex-wrap items-center gap-1.5">
-								{#if toolPrice.pharmacyPriceCents > 0}
-									<span class="text-small text-ink-subtle">
-										soit {#if isYearly}{formatEuros(monthlyEquivalentOfYearlyPrice(toolPrice.pharmacyPriceCents, freeMonths))} HT par mois,{/if}
-										{formatDailyPrice(toolPrice.pharmacyPriceCents)} HT par jour
-									</span>
-								{/if}
-								{#if toolCard.coverageSummary && groupName}<Tag tone="accent">{toolCard.coverageSummary} avec {groupName}</Tag>{/if}
-								{#if toolCard.status === 'ending' && toolCard.endsAt}
-									<Tag tone="warning">Retiré : actif jusqu’au {formatLastDayBefore(toolCard.endsAt)}</Tag>
-								{:else if toolCard.status === 'subscribed'}
-									<Tag tone="success">Dans votre abonnement</Tag>
-								{/if}
-							</span>
-						{/snippet}
-					</ToggleCard>
-				{/if}
+	<section id="modules" aria-labelledby="modules-titre" class="grid scroll-mt-20 gap-3">
+		<h2 id="modules-titre" class="title-2 text-ink">Choisissez votre formule</h2>
+		<div class="grid items-stretch gap-4 pt-3 {plans.length >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}">
+			{#each plans as plan (plan.planKey)}
+				<PlanCard
+					name="planKey"
+					value={plan.planKey}
+					bind:selectedValue={selectedPlanKey}
+					disabled={plan.isAlreadyIncluded}
+					featuredLabel={plan.isFeatured ? 'Recommandé · le plus avantageux' : undefined}
+					title={plan.title}
+					description={plan.description}
+					amountLabel={formatPeriodPrice(plan.pharmacyMonthlyPriceCents)}
+					periodLabel={isYearly ? 'HT / an' : 'HT / mois'}
+					previousAmountLabel={plan.isAlreadyIncluded ? undefined : findPreviousAmountLabel(plan)}
+					priceNote={plan.isAlreadyIncluded ? undefined : describePriceNote(plan)}
+					features={listPlanFeatures(plan)}
+				>
+					{#snippet status()}
+						{#if plan.isAlreadyIncluded}
+							<Tag tone="success">{groupName ? `Déjà offert par ${groupName}` : 'Déjà inclus'}</Tag>
+						{:else if plan.coverageSummary && groupName}
+							<Tag tone="accent">{plan.coverageSummary} avec {groupName}</Tag>
+						{/if}
+					{/snippet}
+					{#snippet footer()}
+						{#if plan.planKey === 'pack' && plan.listMonthlyPriceCents > plan.pharmacyMonthlyPriceCents}
+							<Tag tone="success">
+								Vous économisez {formatPeriodPrice(plan.listMonthlyPriceCents - plan.pharmacyMonthlyPriceCents)} HT {isYearly ? 'par an' : 'par mois'}
+							</Tag>
+						{/if}
+					{/snippet}
+				</PlanCard>
 			{/each}
 		</div>
 	</section>
@@ -238,7 +169,7 @@
 				</p>
 				<p class="text-small text-ink-muted">
 					{#if !isChanged}
-						{subscription ? 'Votre abonnement actuel.' : 'Cochez les modules que vous voulez activer.'}
+						{subscription ? 'Votre abonnement actuel.' : 'Choisissez une formule.'}
 					{:else if amountDueTodayCents > 0}
 						À payer aujourd’hui : {formatEuros(amountDueToday.totalCents)} TTC ({formatEuros(amountDueToday.subtotalCents)} HT + TVA){subscription &&
 						subscription.billingPeriod === 'yearly'
