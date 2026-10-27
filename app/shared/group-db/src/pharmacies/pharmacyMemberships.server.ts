@@ -104,10 +104,6 @@ export function listCoveredTenantIdsOfGroup(access: GroupAccess, groupId: string
 }
 
 /** La pharmacie quitte son groupement ; la prise en charge court jusqu'à la fin du mois. */
-export function leaveGroup(tenantId: string): Promise<CoveringGroupOfTenant | undefined> {
-	return runWithGroupAccess({ tenantId }, (transaction) => leaveGroupInTransaction(transaction, tenantId));
-}
-
 /** Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction. */
 export function leaveGroupInTransaction(
 	transaction: GroupTransaction,
@@ -117,12 +113,6 @@ export function leaveGroupInTransaction(
 }
 
 /** Le groupement retire une de ses pharmacies ; la prise en charge court jusqu'à la fin du mois. */
-export function removePharmacyFromGroup(groupId: string, membershipId: string): Promise<CoveringGroupOfTenant | undefined> {
-	return runWithGroupAccess({ groupId }, (transaction) =>
-		removePharmacyFromGroupInTransaction(transaction, groupId, membershipId)
-	);
-}
-
 /** Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction. */
 export function removePharmacyFromGroupInTransaction(
 	transaction: GroupTransaction,

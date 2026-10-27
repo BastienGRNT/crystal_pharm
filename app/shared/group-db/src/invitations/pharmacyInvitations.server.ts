@@ -184,12 +184,6 @@ export async function findPharmacyInvitation(proof: InvitationProof): Promise<Ph
 }
 
 /** La pharmacie accepte : le groupement voit désormais ses données et prend en charge ce que prévoit son contrat. */
-export function acceptPharmacyInvitation(tenantId: string, proof: InvitationProof): Promise<PharmacyInvitationAnswer> {
-	return runWithGroupAccess(toAcceptanceAccess(tenantId, proof), (transaction) =>
-		acceptPharmacyInvitationInTransaction(transaction, tenantId, proof)
-	);
-}
-
 /** L'accès sous lequel une pharmacie accepte : celui de l'invitation, et la pharmacie elle-même. */
 export function toAcceptanceAccess(tenantId: string, proof: InvitationProof): GroupAccess {
 	return { ...toInvitationAccess(proof), tenantId };

@@ -1,11 +1,10 @@
-import { getGroupBillingOverview, getGroupContract } from '@crystal-pharm/billing-db';
+import { getGroupBillingOverview, getGroupContract, removePharmacyFromGroupAndRebuildToolAccess } from '@crystal-pharm/billing-db';
 import { computeOverageUnitPrice, type ToolKey } from '@crystal-pharm/billing-db/domain';
 import {
 	getPharmacyGroup,
 	invitePharmacies,
 	listMemberPharmacies,
 	listPendingPharmacyInvitations,
-	removePharmacyFromGroup,
 	renewPharmacyInvitation,
 	revokePharmacyInvitation,
 	type PendingPharmacyInvitation,
@@ -112,7 +111,7 @@ export const pharmaciesPageActions = {
 	removePharmacy: async ({ locals, request }: GroupRequestEvent): Promise<PharmaciesActionResult> => {
 		const groupId = await requireActiveGroupId(locals.user);
 		const membershipId = String((await request.formData()).get('membershipId') ?? '');
-		const endedCoverage = await removePharmacyFromGroup(groupId, membershipId);
+		const endedCoverage = await removePharmacyFromGroupAndRebuildToolAccess(groupId, membershipId, new Date());
 		return { succeededAction: 'removePharmacy', coverageEndsAt: endedCoverage?.coverageEndsAt };
 	}
 };

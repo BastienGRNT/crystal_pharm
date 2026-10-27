@@ -46,7 +46,6 @@ export {
 	type PendingGroupMemberInvitation
 } from './members/groupMembers.server';
 export {
-	acceptPharmacyInvitation,
 	acceptPharmacyInvitationInTransaction,
 	toAcceptanceAccess,
 	declinePharmacyInvitation,
@@ -71,11 +70,9 @@ export {
 	findCoveringGroupOfTenant,
 	readCoveringGroupOfTenant,
 	findCurrentGroupOfTenant,
-	leaveGroup,
 	leaveGroupInTransaction,
 	listCoveredTenantIdsOfGroup,
 	listMemberPharmacies,
-	removePharmacyFromGroup,
 	removePharmacyFromGroupInTransaction,
 	shiftGroupDatesBackOneMonth,
 	type CoveringGroupOfTenant,
