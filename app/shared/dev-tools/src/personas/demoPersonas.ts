@@ -1,4 +1,13 @@
+import type { ResponsibilityKey } from '@crystal-pharm/pharmacy-db/domain';
+
 export type DemoSpace = 'pharmacy' | 'group' | 'admin';
+
+/** Un compte de l'équipe d'une pharmacie de démo, avec ses Responsibilities. */
+export type DemoTeamRole = {
+	/** La pharmacie : celle du persona qui en est Owner. */
+	ownerPersonaKey: string;
+	responsibilityKeys: readonly ResponsibilityKey[];
+};
 
 export type DemoPersona = {
 	personaKey: string;
@@ -9,6 +18,16 @@ export type DemoPersona = {
 	email: string;
 	firstName: string;
 	lastName: string;
+	/** Un Employee de l'équipe de démo du même nom, invité par l'Owner avec ces Responsibilities. */
+	teamRole?: DemoTeamRole;
+};
+
+/** Le CounterAccount d'une pharmacie de démo : il se connecte par son identifiant, sans email. */
+export type DemoCounterAccount = DemoTeamRole & {
+	personaKey: string;
+	label: string;
+	description: string;
+	username: string;
 };
 
 /** Toutes les démos finissent ainsi : une réinitialisation ne touche qu'elles. */
@@ -57,20 +76,51 @@ export const demoPersonas: readonly DemoPersona[] = [
 	{
 		personaKey: 'pharmacien',
 		space: 'pharmacy',
-		label: 'Pharmacie Saint-Louis · tout activé',
-		description: 'Pharmacienne titulaire : site, rendez-vous, ordonnances et planning, avec son équipe.',
+		label: 'Saint-Louis · titulaire',
+		description: 'Tous les droits, abonnement et accès compris. Tout est activé, avec son équipe et ses comptes.',
 		email: demoEmail('pharmacien'),
 		firstName: 'Léa',
 		lastName: 'Garcia'
 	},
 	{
+		personaKey: 'adjoint',
+		space: 'pharmacy',
+		label: 'Saint-Louis · pharmacien adjoint',
+		description: 'Responsabilité « Planning de l’équipe » seulement.',
+		email: demoEmail('adjoint'),
+		firstName: 'Thomas',
+		lastName: 'Lambert',
+		teamRole: { ownerPersonaKey: 'pharmacien', responsibilityKeys: ['manage-team-planning'] }
+	},
+	{
 		personaKey: 'preparatrice',
 		space: 'pharmacy',
-		label: 'Pharmacie Saint-Louis · préparatrice',
-		description: 'Membre de l’équipe : seulement les rendez-vous et les ordonnances, ni le site, ni le planning, ni l’abonnement.',
+		label: 'Saint-Louis · préparatrice',
+		description: 'Responsabilités « Rendez-vous » et « Ordonnances ».',
 		email: demoEmail('preparatrice'),
 		firstName: 'Camille',
-		lastName: 'Fontaine'
+		lastName: 'Fontaine',
+		teamRole: { ownerPersonaKey: 'pharmacien', responsibilityKeys: ['handle-appointments', 'handle-prescriptions'] }
+	},
+	{
+		personaKey: 'preparateur',
+		space: 'pharmacy',
+		label: 'Saint-Louis · préparateur',
+		description: 'Responsabilités « Site » et « Fiche de la pharmacie ».',
+		email: demoEmail('preparateur'),
+		firstName: 'Julien',
+		lastName: 'Mercier',
+		teamRole: { ownerPersonaKey: 'pharmacien', responsibilityKeys: ['edit-site', 'edit-pharmacy-profile'] }
+	},
+	{
+		personaKey: 'apprentie',
+		space: 'pharmacy',
+		label: 'Saint-Louis · apprentie',
+		description: 'Membre de l’équipe sans aucune responsabilité.',
+		email: demoEmail('apprentie'),
+		firstName: 'Emma',
+		lastName: 'Chevalier',
+		teamRole: { ownerPersonaKey: 'pharmacien', responsibilityKeys: [] }
 	},
 	{
 		personaKey: 'invitee',
@@ -110,10 +160,40 @@ export const demoPersonas: readonly DemoPersona[] = [
 	}
 ];
 
+export const demoCounterAccounts: readonly DemoCounterAccount[] = [
+	{
+		personaKey: 'comptoir',
+		label: 'Saint-Louis · compte comptoir',
+		description: 'Partagé, sans email : « Rendez-vous » et « Ordonnances ».',
+		username: 'comptoir.saintlouis',
+		ownerPersonaKey: 'pharmacien',
+		responsibilityKeys: ['handle-appointments', 'handle-prescriptions']
+	}
+];
+
 export function findDemoPersona(personaKey: string): DemoPersona | undefined {
 	return demoPersonas.find((persona) => persona.personaKey === personaKey);
 }
 
 export function findDemoPersonaByEmail(email: string | undefined): DemoPersona | undefined {
 	return demoPersonas.find((persona) => persona.email === email?.toLowerCase());
+}
+
+export function findDemoCounterAccount(personaKey: string): DemoCounterAccount | undefined {
+	return demoCounterAccounts.find((counterAccount) => counterAccount.personaKey === personaKey);
+}
+
+export function findDemoCounterAccountByUsername(username: string | undefined): DemoCounterAccount | undefined {
+	return demoCounterAccounts.find((counterAccount) => counterAccount.username === username);
+}
+
+/** Ce que l'écran de connexion de démo de `pharmacy` envoie : l'email, ou l'identifiant du CounterAccount. */
+export function findPharmacyDemoSignIn(
+	personaKey: string
+): { accountLabel: string; credentials: { email: string; password: string } } | undefined {
+	const persona = findDemoPersona(personaKey);
+	if (persona?.space === 'pharmacy') return { accountLabel: persona.label, credentials: { email: persona.email, password: demoPassword } };
+	const counterAccount = findDemoCounterAccount(personaKey);
+	if (counterAccount) return { accountLabel: counterAccount.label, credentials: { email: counterAccount.username, password: demoPassword } };
+	return undefined;
 }
