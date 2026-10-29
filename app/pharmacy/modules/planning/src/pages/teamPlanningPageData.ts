@@ -7,6 +7,7 @@ import type {
 	PlanningTimelineRow
 } from '../components/organisms/day/planningTimeline';
 import type { PlanningGridDay, PlanningGridRow, PlanningGridSummary } from '../components/organisms/week/planningGrid';
+import type { PlanningIssueSeverity } from '../domain/issues/planningIssues';
 import type { Employee } from '../domain/planning';
 
 export type PeriodNavigation = {
@@ -26,10 +27,37 @@ export type AddShiftPanel = {
 	closeHref: string;
 };
 
+export type EditShiftPanel = {
+	closeHref: string;
+	shiftId: string;
+	values: Record<'employeeId' | 'date' | 'startTime' | 'endTime', string>;
+};
+
 export type FormActions = {
 	addShiftPanel: AddShiftPanel;
+	/** Le créneau en cours de modification ; absent quand aucun n'est ouvert. */
+	editShiftPanel: EditShiftPanel | undefined;
 	addShiftFormAction: string;
+	/** Le début du lien qui ouvre un créneau : on y ajoute son identifiant. */
+	editShiftHrefPrefix: string;
+	updateShiftFormAction: string;
 	deleteShiftFormAction: string;
+	publishWeekFormAction: string;
+	returnWeekToDraftFormAction: string;
+};
+
+export type WeekStatusSummary = {
+	isDraft: boolean;
+	/** Le lundi de la semaine concernée, que les actions de publication reçoivent. */
+	mondayDate: string;
+};
+
+export type PlanningIssueView = {
+	key: string;
+	severity: PlanningIssueSeverity;
+	message: string;
+	/** La journée concernée, dans la vue journée. */
+	dayHref: string;
 };
 
 export type CommonPlanningPageData = FormActions & {
@@ -39,6 +67,9 @@ export type CommonPlanningPageData = FormActions & {
 	context: string;
 	defaultShiftDate: string;
 	employees: Employee[];
+	weekStatus: WeekStatusSummary;
+	issues: PlanningIssueView[];
+	settingsHref: string;
 };
 
 export type WeekViewData = CommonPlanningPageData & {

@@ -1,5 +1,5 @@
-import { formatMinuteRange, listCoverageGaps } from '../../domain/coverage';
-import { buildPlanningRows, toMinutesSinceMidnight } from '../../domain/planning';
+import { formatMinuteRange, listCoverageGaps } from '../../../domain/coverage/coverage';
+import { buildPlanningRows, toMinutesSinceMidnight } from '../../../domain/planning';
 import { computePharmacistCoverage } from './pharmacistCoverageService';
 import { getWeekPlanning, listOpeningPeriodsByDate } from './teamPlanningService';
 

@@ -1,15 +1,22 @@
 import { getPharmacyProfile, listEmployees, type Employee as PharmacyEmployee } from '@crystal-pharm/pharmacy-db';
 import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import * as v from 'valibot';
-import { listOpeningPeriodsOfDate, type OpeningHours } from '../../domain/coverage';
+import { listOpeningPeriodsOfDate, type OpeningHours } from '../../../domain/coverage/coverage';
 import {
 	findOverlappingShift,
 	formatShiftHours,
 	isPharmacistJobTitle,
 	type Employee,
 	type WeekPlanning
-} from '../../domain/planning';
-import { deleteShift, insertShift, listAbsences, listShifts, type NewShift } from '../repositories/planningRepository';
+} from '../../../domain/planning';
+import {
+	deleteShift,
+	insertShift,
+	listAbsences,
+	listShifts,
+	updateShiftRow,
+	type NewShift
+} from '../../repositories/planningRepository';
 
 export type ShiftSubmission = Record<keyof NewShift, string>;
 
@@ -65,6 +72,29 @@ export async function addShift(tenantId: string, submission: ShiftSubmission): P
 	}
 
 	await insertShift(tenantId, newShift);
+	return { isSaved: true };
+}
+
+/** Modifie un créneau : sa durée, son jour, ou la personne qui le tient. Toujours possible, même sur la journée en cours. */
+export async function updateShift(tenantId: string, shiftId: string, submission: ShiftSubmission): Promise<ShiftSaveResult> {
+	if (!v.is(UuidSchema, shiftId)) return { isSaved: false, message: 'Créneau introuvable.' };
+	const validation = v.safeParse(ShiftSubmissionSchema, submission);
+	if (!validation.success) return { isSaved: false, message: validation.issues[0].message };
+	const changes = validation.output;
+
+	const { employees, shifts } = await getWeekPlanning(tenantId, changes.date, changes.date);
+	const employee = employees.find((candidate) => candidate.id === changes.employeeId);
+	if (!employee) return { isSaved: false, message: 'Cet employé ne fait plus partie de l’équipe.' };
+
+	const overlappingShift = findOverlappingShift(shifts, changes, shiftId);
+	if (overlappingShift) {
+		return {
+			isSaved: false,
+			message: `${employee.fullName} travaille déjà ce jour-là sur ${formatShiftHours(overlappingShift)}.`
+		};
+	}
+
+	await updateShiftRow(tenantId, shiftId, changes);
 	return { isSaved: true };
 }
 

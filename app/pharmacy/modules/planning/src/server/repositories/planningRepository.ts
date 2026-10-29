@@ -54,3 +54,12 @@ export async function deleteShift(tenantId: string, shiftId: string): Promise<vo
 		transaction.delete(shifts).where(and(eq(shifts.tenantId, tenantId), eq(shifts.id, shiftId)))
 	);
 }
+
+export async function updateShiftRow(tenantId: string, shiftId: string, changes: NewShift): Promise<void> {
+	await runAsTenant(tenantId, (transaction) =>
+		transaction
+			.update(shifts)
+			.set(changes)
+			.where(and(eq(shifts.tenantId, tenantId), eq(shifts.id, shiftId)))
+	);
+}

@@ -11,6 +11,8 @@ export type PlanningTimelineBar = {
 	startPercent: number;
 	widthPercent: number;
 	tone: ShiftChipTone;
+	/** Ouvre le créneau pour le modifier. */
+	editHref?: string;
 };
 
 export type PlanningTimelineRow = {

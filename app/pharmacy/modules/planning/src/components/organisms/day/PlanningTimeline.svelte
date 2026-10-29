@@ -103,7 +103,7 @@
 							<p class="text-small absolute top-1/2 left-2 z-10 -translate-y-1/2 text-ink-subtle">Pas de créneau</p>
 						{:else}
 							{#each row.bars as bar (bar.id)}
-								<ShiftChip label={bar.label} tone={bar.tone} timelinePosition={bar}>
+								<ShiftChip label={bar.label} tone={bar.tone} timelinePosition={bar} editHref={bar.editHref}>
 									<span class="sr-only">{row.personName}, </span>
 								</ShiftChip>
 							{/each}

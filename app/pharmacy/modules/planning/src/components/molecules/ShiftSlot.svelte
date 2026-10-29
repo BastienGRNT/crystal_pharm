@@ -9,12 +9,13 @@
 		tone: ShiftChipTone;
 		/** Action du formulaire de suppression ; reçoit le champ `slotId`. Sans elle, pas de bouton. */
 		deleteSlotFormAction?: string;
+		editHref?: string;
 	};
 
-	let { slotId, label, tone, deleteSlotFormAction }: ShiftSlotProps = $props();
+	let { slotId, label, tone, deleteSlotFormAction, editHref }: ShiftSlotProps = $props();
 </script>
 
-<ShiftChip {label} {tone}>
+<ShiftChip {label} {tone} {editHref}>
 	{#if deleteSlotFormAction}
 		<form method="POST" action={deleteSlotFormAction} class="contents">
 			<input type="hidden" name="slotId" value={slotId} />

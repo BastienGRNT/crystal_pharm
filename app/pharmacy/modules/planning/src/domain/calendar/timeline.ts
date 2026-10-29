@@ -1,5 +1,5 @@
-import type { OpeningHours } from './coverage';
-import { toMinutesSinceMidnight, type Shift } from './planning';
+import type { OpeningHours } from '../coverage/coverage';
+import { toMinutesSinceMidnight, type Shift } from '../planning';
 
 export type TimelineRange = {
 	startMinutes: number;

@@ -57,10 +57,18 @@ export function formatShiftHours(shift: Shift): string {
 	return `${shift.startTime}–${shift.endTime}`;
 }
 
-/** Le créneau du même employé, le même jour, qui empiète sur celui-ci ; deux créneaux qui se touchent ne se chevauchent pas. */
-export function findOverlappingShift(existingShifts: Shift[], newShift: Omit<Shift, 'id'>): Shift | undefined {
+/**
+ * Le créneau du même employé, le même jour, qui empiète sur celui-ci ; deux créneaux qui se touchent ne se chevauchent pas.
+ * Un créneau qu'on déplace ne se chevauche pas lui-même : `ignoredShiftId` l'écarte.
+ */
+export function findOverlappingShift(
+	existingShifts: Shift[],
+	newShift: Omit<Shift, 'id'>,
+	ignoredShiftId?: string
+): Shift | undefined {
 	return existingShifts.find(
 		(existingShift) =>
+			existingShift.id !== ignoredShiftId &&
 			existingShift.employeeId === newShift.employeeId &&
 			existingShift.date === newShift.date &&
 			existingShift.startTime < newShift.endTime &&

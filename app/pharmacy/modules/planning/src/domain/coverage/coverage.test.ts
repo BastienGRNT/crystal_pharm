@@ -8,7 +8,7 @@ import {
 	listOpeningPeriodsOfDate,
 	spanOpeningPeriods
 } from './coverage';
-import type { Shift } from './planning';
+import type { Shift } from '../planning';
 
 const shift = (startTime: string, endTime: string): Shift => ({
 	id: `${startTime}-${endTime}`,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Shift } from './planning';
+import type { Shift } from '../planning';
 import { computeTimelineRange, listTimelineHours, toTimelineBarPosition, toTimelinePercent } from './timeline';
 
 const shift = (startTime: string, endTime: string): Shift => ({

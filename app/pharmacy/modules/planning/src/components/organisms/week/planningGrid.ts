@@ -15,6 +15,8 @@ export type PlanningGridSlot = {
 	id: string;
 	label: string;
 	tone: ShiftChipTone;
+	/** Ouvre le créneau pour le modifier. */
+	editHref?: string;
 };
 
 export type PlanningGridCell = {

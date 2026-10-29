@@ -9,7 +9,7 @@ import {
 	spanOpeningPeriods,
 	type CoverageSegment,
 	type OpeningHours
-} from '../domain/coverage';
+} from '../domain/coverage/coverage';
 import {
 	buildPlanningRows,
 	formatDuration,
@@ -17,6 +17,7 @@ import {
 	sumPlannedMinutes,
 	toMinutesSinceMidnight,
 	type PlanningRow,
+	type Shift,
 	type WeekPlanning
 } from '../domain/planning';
 import {
@@ -25,7 +26,7 @@ import {
 	toTimelineBarPosition,
 	toTimelinePercent,
 	type TimelineRange
-} from '../domain/timeline';
+} from '../domain/calendar/timeline';
 import {
 	addDays,
 	formatDayName,
@@ -39,24 +40,31 @@ import {
 	parseWeekParameter,
 	toCalendarDay,
 	toIsoDate
-} from '../domain/week';
+} from '../domain/calendar/week';
 import type { Actions } from '@sveltejs/kit';
+import type { PlanningIssue } from '../domain/issues/planningIssues';
 import type {
 	AddShiftFailure,
+	CommonPlanningPageData,
 	DayViewData,
 	FormActions,
+	PlanningIssueView,
 	PlanningPageData,
 	WeekViewData
 } from '../pages/teamPlanningPageData';
 import { requireActiveTenantId } from './activeTenant.server';
-import { computePharmacistCoverage } from './services/pharmacistCoverageService';
+import { computePharmacistCoverage } from './services/team/pharmacistCoverageService';
 import {
 	addShift,
 	getWeekPlanning,
 	listOpeningPeriodsByDate,
 	removeShift,
+	updateShift,
 	type ShiftSubmission
-} from './services/teamPlanningService';
+} from './services/team/teamPlanningService';
+import { findPlanningRules } from './services/settings/planningSettingsService';
+import { listWeekIssues } from './services/week/weekIssuesService';
+import { getWeekStatus, publishWeek, returnWeekToDraft } from './services/week/weekStatusService';
 
 const shiftFieldNames = ['employeeId', 'date', 'startTime', 'endTime'] as const;
 
@@ -67,7 +75,7 @@ const dayHref = (day: Date): string => `?view=day&day=${toIsoDate(day)}`;
 function readPageQuery(url: URL): URLSearchParams {
 	const pageQuery = new URLSearchParams(url.searchParams);
 	for (const key of [...pageQuery.keys()]) {
-		if (key === 'add' || key.startsWith('/')) pageQuery.delete(key);
+		if (key === 'add' || key === 'edit' || key.startsWith('/')) pageQuery.delete(key);
 	}
 	return pageQuery;
 }
@@ -86,6 +94,9 @@ function buildFormActions(url: URL): FormActions {
 	const pageQuery = readPageQuery(url);
 	const pageQueryWithPanel = new URLSearchParams(pageQuery);
 	pageQueryWithPanel.set('add', '1');
+	const editedShiftId = url.searchParams.get('edit');
+	const pageQueryWithEdit = new URLSearchParams(pageQuery);
+	if (editedShiftId) pageQueryWithEdit.set('edit', editedShiftId);
 
 	return {
 		addShiftPanel: {
@@ -93,9 +104,17 @@ function buildFormActions(url: URL): FormActions {
 			openHref: toPageHref(url, pageQueryWithPanel),
 			closeHref: toPageHref(url, pageQuery)
 		},
+		// Les valeurs du créneau ouvert sont posées par la vue, qui connaît ceux de la période.
+		editShiftPanel: editedShiftId
+			? { closeHref: toPageHref(url, pageQuery), shiftId: editedShiftId, values: { employeeId: '', date: '', startTime: '', endTime: '' } }
+			: undefined,
 		// Un ajout refusé garde le panneau ouvert avec son message ; un envoi réussi revient à la vue affichée.
 		addShiftFormAction: toActionHref(pageQueryWithPanel, 'addShift'),
-		deleteShiftFormAction: toActionHref(pageQuery, 'deleteShift')
+		editShiftHrefPrefix: toPageHref(url, new URLSearchParams([...pageQuery, ['edit', '']])),
+		updateShiftFormAction: toActionHref(pageQueryWithEdit, 'updateShift'),
+		deleteShiftFormAction: toActionHref(pageQuery, 'deleteShift'),
+		publishWeekFormAction: toActionHref(pageQuery, 'publishWeek'),
+		returnWeekToDraftFormAction: toActionHref(pageQuery, 'returnWeekToDraft')
 	};
 }
 
@@ -104,23 +123,65 @@ type PlanningRequest = {
 	locals: { user: AuthenticatedUser | null };
 };
 
+// La journée est la vue par défaut ; un ancien lien `?week=` sans `view` ouvre encore la semaine.
+function isWeekViewRequested(url: URL): boolean {
+	return url.searchParams.get('view') === 'week' || (!url.searchParams.has('view') && url.searchParams.has('week'));
+}
+
+/** Le lundi de la semaine affichée, que la vue soit une semaine ou une journée. */
+function readMondayOfDisplayedWeek(url: URL): Date {
+	const today = toCalendarDay(new Date());
+	return isWeekViewRequested(url)
+		? parseWeekParameter(url.searchParams.get('week'), today)
+		: getMondayOfWeek(parseDayParameter(url.searchParams.get('day'), today));
+}
+
 export async function load({ url, locals }: PlanningRequest): Promise<PlanningPageData> {
 	const tenantId = await requireActiveTenantId(locals.user);
 	const now = new Date();
 	const today = toCalendarDay(now);
 	const formActions = buildFormActions(url);
 
-	// La journée est la vue par défaut ; un ancien lien `?week=` sans `view` ouvre encore la semaine.
-	const isWeekView =
-		url.searchParams.get('view') === 'week' || (!url.searchParams.has('view') && url.searchParams.has('week'));
+	const isWeekView = isWeekViewRequested(url);
 
 	if (isWeekView) {
 		const monday = parseWeekParameter(url.searchParams.get('week'), today);
-		return { ...(await loadWeekView(tenantId, monday, today)), ...formActions };
+		return loadWeekView(tenantId, monday, today, formActions);
 	}
 
 	const day = parseDayParameter(url.searchParams.get('day'), today);
-	return { ...(await loadDayView(tenantId, day, today, now)), ...formActions };
+	return loadDayView(tenantId, day, today, now, formActions);
+}
+
+/** Le panneau de modification s'ouvre sur les valeurs du créneau ; un créneau supprimé entre-temps le referme. */
+function withEditedShiftValues(formActions: FormActions, shifts: Shift[]): FormActions {
+	const { editShiftPanel } = formActions;
+	if (!editShiftPanel) return formActions;
+	const editedShift = shifts.find((shift) => shift.id === editShiftPanel.shiftId);
+	if (!editedShift) return { ...formActions, editShiftPanel: undefined };
+	const { employeeId, date, startTime, endTime } = editedShift;
+	return { ...formActions, editShiftPanel: { ...editShiftPanel, values: { employeeId, date, startTime, endTime } } };
+}
+
+type WeekContext = Pick<CommonPlanningPageData, 'weekStatus' | 'settingsHref'> & { issues: PlanningIssue[] };
+
+/** Ce qui vaut pour toute la semaine, qu'on regarde la semaine ou une de ses journées. */
+async function loadWeekContext(tenantId: string, monday: Date): Promise<WeekContext> {
+	const [status, issues] = await Promise.all([getWeekStatus(tenantId, monday), listWeekIssues(tenantId, monday)]);
+	return {
+		weekStatus: { isDraft: status === 'draft', mondayDate: toIsoDate(monday) },
+		settingsHref: '/planning/parametres',
+		issues
+	};
+}
+
+function toIssueView(issue: PlanningIssue): PlanningIssueView {
+	return {
+		key: issue.key,
+		severity: issue.severity,
+		message: issue.message,
+		dayHref: dayHref(new Date(`${issue.date}T00:00:00Z`))
+	};
 }
 
 function buildViewOptions(currentView: 'week' | 'day', monday: Date, dayInWeek: Date): SegmentedControlOption[] {
@@ -133,19 +194,25 @@ function buildViewOptions(currentView: 'week' | 'day', monday: Date, dayInWeek: 
 async function loadWeekView(
 	tenantId: string,
 	monday: Date,
-	today: Date
-): Promise<Omit<WeekViewData, keyof FormActions>> {
+	today: Date,
+	formActions: FormActions
+): Promise<WeekViewData> {
 	const weekDays = listWeekDays(monday);
 	const weekDates = weekDays.map(toIsoDate);
-	const [weekPlanning, openingPeriodsByDay] = await Promise.all([
+	const [weekPlanning, openingPeriodsByDay, rules, weekContext] = await Promise.all([
 		getWeekPlanning(tenantId, weekDates[0] ?? '', weekDates[6] ?? ''),
-		listOpeningPeriodsByDate(tenantId, weekDates)
+		listOpeningPeriodsByDate(tenantId, weekDates),
+		findPlanningRules(tenantId),
+		loadWeekContext(tenantId, monday)
 	]);
 	const planningRows = buildPlanningRows(weekPlanning, weekDates);
 	const todayIsInWeek = weekDates.includes(toIsoDate(today));
 
 	return {
 		view: 'week',
+		...withEditedShiftValues(formActions, weekPlanning.shifts),
+		...weekContext,
+		issues: weekContext.issues.map(toIssueView),
 		viewOptions: buildViewOptions('week', monday, todayIsInWeek ? today : monday),
 		periodNavigation: {
 			label: formatWeekLabel(monday),
@@ -168,8 +235,8 @@ async function loadWeekView(
 			detail: formatStaffCount(countPresentEmployees(planningRows, dayIndex)),
 			href: dayHref(day)
 		})),
-		rows: planningRows.map((planningRow) => toPlanningGridRow(planningRow, weekPlanning)),
-		pharmacistCoverage: buildWeekPharmacistCoverage(planningRows, weekDates, openingPeriodsByDay)
+		rows: planningRows.map((planningRow) => toPlanningGridRow(planningRow, weekPlanning, formActions.editShiftHrefPrefix)),
+		pharmacistCoverage: buildWeekPharmacistCoverage(planningRows, weekDates, openingPeriodsByDay, rules.minimumPharmacistsPresent)
 	};
 }
 
@@ -177,12 +244,15 @@ async function loadDayView(
 	tenantId: string,
 	day: Date,
 	today: Date,
-	now: Date
-): Promise<Omit<DayViewData, keyof FormActions>> {
+	now: Date,
+	formActions: FormActions
+): Promise<DayViewData> {
 	const date = toIsoDate(day);
-	const [dayPlanning, [openingPeriods = []]] = await Promise.all([
+	const [dayPlanning, [openingPeriods = []], rules, weekContext] = await Promise.all([
 		getWeekPlanning(tenantId, date, date),
-		listOpeningPeriodsByDate(tenantId, [date])
+		listOpeningPeriodsByDate(tenantId, [date]),
+		findPlanningRules(tenantId),
+		loadWeekContext(tenantId, getMondayOfWeek(day))
 	]);
 	const planningRows = buildPlanningRows(dayPlanning, [date]);
 	const openingHours = spanOpeningPeriods(openingPeriods);
@@ -193,6 +263,9 @@ async function loadDayView(
 
 	return {
 		view: 'day',
+		...withEditedShiftValues(formActions, dayPlanning.shifts),
+		...weekContext,
+		issues: weekContext.issues.filter((issue) => issue.date === date).map(toIssueView),
 		viewOptions: buildViewOptions('day', getMondayOfWeek(day), day),
 		periodNavigation: {
 			label: `${formatDayName(day)} ${day.getUTCDate()}`,
@@ -224,6 +297,7 @@ async function loadDayView(
 					id: shift.id,
 					label: formatShiftHours(shift),
 					tone: employee.isPharmacist ? 'strong' : 'soft',
+					editHref: `${formActions.editShiftHrefPrefix}${shift.id}`,
 					...toTimelineBarPosition(shift, timelineRange)
 				}))
 			};
@@ -234,14 +308,21 @@ async function loadDayView(
 		},
 		pharmacistCoverage:
 			openingHours &&
-			buildDayPharmacistCoverage(computePharmacistCoverage(planningRows, 0, openingPeriods), timelineRange),
+			buildDayPharmacistCoverage(
+				computePharmacistCoverage(planningRows, 0, openingPeriods, rules.minimumPharmacistsPresent),
+				timelineRange
+			),
 		now: isToday
 			? { percent: toTimelinePercent(toMinutesSinceMidnight(currentTime), timelineRange), label: currentTime }
 			: undefined
 	};
 }
 
-function toPlanningGridRow({ employee, cells }: PlanningRow, weekPlanning: WeekPlanning): PlanningGridRow {
+function toPlanningGridRow(
+	{ employee, cells }: PlanningRow,
+	weekPlanning: WeekPlanning,
+	editShiftHrefPrefix: string
+): PlanningGridRow {
 	const employeeShifts = weekPlanning.shifts.filter((shift) => shift.employeeId === employee.id);
 	return {
 		key: employee.id,
@@ -255,7 +336,8 @@ function toPlanningGridRow({ employee, cells }: PlanningRow, weekPlanning: WeekP
 			slots: cell.shifts.map((shift) => ({
 				id: shift.id,
 				label: formatShiftHours(shift),
-				tone: employee.isPharmacist ? 'strong' : 'soft'
+				tone: employee.isPharmacist ? 'strong' : 'soft',
+				editHref: `${editShiftHrefPrefix}${shift.id}`
 			}))
 		}))
 	};
@@ -266,14 +348,15 @@ const pharmacistCoverageLabel = 'Pharmacien présent';
 function buildWeekPharmacistCoverage(
 	planningRows: PlanningRow[],
 	weekDates: string[],
-	openingPeriodsByDay: OpeningHours[][]
+	openingPeriodsByDay: OpeningHours[][],
+	minimumPharmacistsPresent: number
 ): PlanningGridSummary {
 	return {
 		label: pharmacistCoverageLabel,
 		cells: weekDates.map((date, dayIndex) => {
 			const openingPeriods = openingPeriodsByDay[dayIndex] ?? [];
 			if (openingPeriods.length === 0) return { key: date, tone: 'neutral', text: 'Fermé' };
-			const gaps = listCoverageGaps(computePharmacistCoverage(planningRows, dayIndex, openingPeriods));
+			const gaps = listCoverageGaps(computePharmacistCoverage(planningRows, dayIndex, openingPeriods, minimumPharmacistsPresent));
 			const [firstGap] = gaps;
 			if (!firstGap) return { key: date, tone: 'success', text: 'Toute la journée' };
 			const otherGapsCount = gaps.length - 1;
@@ -338,6 +421,38 @@ export const actions = {
 
 		const saveResult = await addShift(tenantId, values);
 		if (!saveResult.isSaved) return fail(400, { message: saveResult.message, values } satisfies AddShiftFailure);
+		redirect(303, toPageHref(url, readPageQuery(url)));
+	},
+
+	updateShift: async ({ request, url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
+		const formData = await request.formData();
+		const values = Object.fromEntries(
+			shiftFieldNames.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? '')])
+		) as ShiftSubmission;
+		const shiftId = String(formData.get('shiftId') ?? '');
+
+		if (shiftFieldNames.some((fieldName) => values[fieldName] === '')) {
+			return fail(400, {
+				message: 'Renseignez l’employé, le jour, le début et la fin du créneau.',
+				values
+			} satisfies AddShiftFailure);
+		}
+
+		const saveResult = await updateShift(tenantId, shiftId, values);
+		if (!saveResult.isSaved) return fail(400, { message: saveResult.message, values } satisfies AddShiftFailure);
+		redirect(303, toPageHref(url, readPageQuery(url)));
+	},
+
+	publishWeek: async ({ url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
+		await publishWeek(tenantId, readMondayOfDisplayedWeek(url));
+		redirect(303, toPageHref(url, readPageQuery(url)));
+	},
+
+	returnWeekToDraft: async ({ url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
+		await returnWeekToDraft(tenantId, readMondayOfDisplayedWeek(url));
 		redirect(303, toPageHref(url, readPageQuery(url)));
 	},
 

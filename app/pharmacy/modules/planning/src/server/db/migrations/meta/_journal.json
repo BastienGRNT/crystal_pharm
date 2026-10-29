@@ -8,6 +8,13 @@
       "when": 1792834714142,
       "tag": "0000_create_planning_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793236107410,
+      "tag": "0001_planning_rules_terms_and_week_status",
+      "breakpoints": true
     }
   ]
 }

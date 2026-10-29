@@ -60,7 +60,7 @@
 						{:else}
 							<td class="{dayCellClasses} {rowSeparatorClasses} p-[5px] align-top">
 								{#each cell.slots as slot (slot.id)}
-									<ShiftSlot slotId={slot.id} label={slot.label} tone={slot.tone} {deleteSlotFormAction} />
+									<ShiftSlot slotId={slot.id} label={slot.label} tone={slot.tone} editHref={slot.editHref} {deleteSlotFormAction} />
 								{/each}
 							</td>
 						{/if}
