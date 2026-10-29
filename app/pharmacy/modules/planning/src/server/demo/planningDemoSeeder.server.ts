@@ -55,7 +55,7 @@ const demoAvailabilityRulesByFirstName = (currentMonday: Date): Record<string, O
 	Thomas: [{ kind: 'unavailable', weekday: thursday, date: undefined, startTime: '17:00', endTime: '19:30', status: 'approved', note: '' }]
 });
 
-/** Le planning de démo d'un Tenant : la semaine passée, celle-ci (avec un congé) et la suivante en brouillon. */
+/** Le planning de démo d'un Tenant : la semaine passée et celle-ci (avec un congé) posées, la suivante vide en brouillon pour la générer. */
 export async function seedPlanningDemoData(tenantId: string): Promise<void> {
 	const employees = await listEmployees(tenantId);
 	const currentMonday = getMondayOfWeek(new Date());
@@ -73,7 +73,7 @@ export async function seedPlanningDemoData(tenantId: string): Promise<void> {
 			});
 		}
 
-		for (const weekOffset of [-1, 0, 1]) {
+		for (const weekOffset of [-1, 0]) {
 			const weekMonday = addDays(currentMonday, weekOffset * 7);
 			for (const template of demoWeekByFirstName[firstName] ?? []) {
 				await insertShift(tenantId, {
