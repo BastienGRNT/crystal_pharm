@@ -7,9 +7,11 @@
     "build": "vite build",
     "check": "tsc --project tsconfig.json",
     "start": "node .output/server/index.mjs",
-    "test": "vitest run"
+    "test": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run integration"
   },
   "dependencies": {
+    "@crystal-pharm/billing-db": "workspace:*",
     "@crystal-pharm/content-db": "workspace:*",
     "@crystal-pharm/group-db": "workspace:*",
     "@crystal-pharm/layouts": "workspace:*",
@@ -20,6 +22,7 @@
     "@solidjs/router": "0.16.3",
     "@solidjs/start": "2.0.6",
     "nitro": "3.0.260903-beta",
+    "postgres": "^3.4.9",
     "solid-js": "^1.9.17",
     "valibot": "^1.5.0"
   },

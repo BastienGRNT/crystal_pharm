@@ -680,6 +680,9 @@ importers:
 
   site:
     dependencies:
+      '@crystal-pharm/billing-db':
+        specifier: workspace:*
+        version: link:../shared/billing-db
       '@crystal-pharm/content-db':
         specifier: workspace:*
         version: link:../shared/content-db
@@ -710,6 +713,9 @@ importers:
       nitro:
         specifier: 3.0.260903-beta
         version: 3.0.260903-beta
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
       solid-js:
         specifier: ^1.9.17
         version: 1.9.17

@@ -29,7 +29,7 @@ export const handle = sequence(
 		loginPathname: '/login',
 		signedInHomePathname: '/',
 		anonymousOnlyPathnames: ['/login', '/register'],
-		publicPathnamePrefixes: ['/__dev/', '/invitation/', '/rejoindre/', '/conditions/', '/internal/']
+		publicPathnamePrefixes: ['/__dev/', '/invitation/', '/rejoindre/', '/conditions/']
 	}),
 	createToolAccessHandle(protectedTools),
 	preventCachingOfHealthData

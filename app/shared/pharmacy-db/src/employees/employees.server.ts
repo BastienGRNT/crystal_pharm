@@ -1,4 +1,5 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { connectToDatabase } from '@crystal-pharm/auth/toolkit';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import * as v from 'valibot';
 import { runAsTenant } from '../database/pharmacyDatabase.server';
 import { employees } from '../database/pharmacyTables';
@@ -41,6 +42,25 @@ export async function listEmployees(tenantId: string): Promise<Employee[]> {
 	);
 	return employeeRows.map((employeeRow) => ({
 		employeeId: employeeRow.id,
+		firstName: FirstName.fromStorageFormat(employeeRow.firstName),
+		lastName: LastName.fromStorageFormat(employeeRow.lastName),
+		jobTitle: JobTitle.fromStorageFormat(employeeRow.jobTitle),
+		photoId: employeeRow.photoId ?? undefined
+	}));
+}
+
+type EmployeeRow = { employeeId: string; firstName: string; lastName: string; jobTitle: string; photoId: string | null };
+
+/**
+ * La même équipe en une seule instruction, sans transaction explicite :
+ * `pharmacy.read_employees_for_site` pose elle-même le contexte de la Row-Level Security.
+ */
+export async function listEmployeesInOneStatement(tenantId: string): Promise<Employee[]> {
+	const [row] = await connectToDatabase().execute<{ employees: EmployeeRow[] }>(
+		sql`select pharmacy.read_employees_for_site(${tenantId}::uuid) as employees`
+	);
+	return (row?.employees ?? []).map((employeeRow) => ({
+		employeeId: employeeRow.employeeId,
 		firstName: FirstName.fromStorageFormat(employeeRow.firstName),
 		lastName: LastName.fromStorageFormat(employeeRow.lastName),
 		jobTitle: JobTitle.fromStorageFormat(employeeRow.jobTitle),

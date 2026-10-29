@@ -1,7 +1,6 @@
 import { existsSync } from 'node:fs';
 import postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { findSiteOfSubdomain } from './siteSubdomains.server';
 
 // Se lance avec `pnpm --filter @crystal-pharm/content-db test:integration`,
 // Postgres démarré (`make start`) et migré (`make migrate`).
@@ -61,7 +60,7 @@ describe('adresses des sites (Row-Level Security)', () => {
 		});
 	});
 
-	it('ne montre à la passerelle que l’adresse demandée', async () => {
+	it('ne montre à la lecture d’une adresse que l’adresse demandée', async () => {
 		await asOrdinaryRole(async (transaction) => {
 			await transaction`select set_config('app.requested_subdomain', ${`${testSubdomainPrefix}port`}, true)`;
 
@@ -77,30 +76,5 @@ describe('adresses des sites (Row-Level Security)', () => {
 
 			await expect(insertSubdomain(transaction, `${testSubdomainPrefix}gare`, firstTenantId, false)).rejects.toThrow(/duplicate key/);
 		});
-	});
-});
-
-describe('findSiteOfSubdomain', () => {
-	it('trouve le Tenant d’une adresse', async () => {
-		await insertSubdomain(database, `${testSubdomainPrefix}centrale`, firstTenantId, true);
-
-		expect(await findSiteOfSubdomain(`${testSubdomainPrefix}centrale`)).toEqual({
-			tenantId: firstTenantId,
-			currentSubdomain: `${testSubdomainPrefix}centrale`
-		});
-	});
-
-	it('donne l’adresse actuelle quand on demande une ancienne adresse', async () => {
-		await insertSubdomain(database, `${testSubdomainPrefix}ancienne`, secondTenantId, false);
-		await insertSubdomain(database, `${testSubdomainPrefix}nouvelle`, secondTenantId, true);
-
-		expect(await findSiteOfSubdomain(`${testSubdomainPrefix}ancienne`)).toEqual({
-			tenantId: secondTenantId,
-			currentSubdomain: `${testSubdomainPrefix}nouvelle`
-		});
-	});
-
-	it('ne trouve rien à une adresse inconnue', async () => {
-		expect(await findSiteOfSubdomain(`${testSubdomainPrefix}inconnue`)).toBeUndefined();
 	});
 });

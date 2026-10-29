@@ -25,7 +25,14 @@ design system dans `app/ui/` (ses tokens : `app/ui/src/tokens/theme.css`).
 ```bash
 git config core.hooksPath .githooks   # une fois : retire les trailers d'outil des commits
 cp .env.example .env                  # une fois : en local, rien à changer
-make start                            # Postgres et la passerelle Caddy (les sites et l'aperçu)
+make dev                              # tout : Postgres, Caddy, pnpm install, migrations, API C# et apps
+```
+
+`make dev` libère d'abord les ports de dev (un serveur resté d'avant garderait son
+ancien code), et Ctrl+C arrête tout. Les étapes une à une, si besoin :
+
+```bash
+make start                            # Postgres et Caddy (les sites et l'aperçu)
 (cd app && pnpm install)              # les dépendances JS
 make migrate                          # les migrations Drizzle, à relancer après chaque pull
 make api                              # l'API C# (rendez-vous), dans son propre terminal

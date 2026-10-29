@@ -69,5 +69,5 @@ export type {
 	InvoicePaymentMethod,
 	InvoiceStatus
 } from './database/billingTables';
-export type { OverduePayment, ToolAccessSummary } from './access/toolAccessSummary';
+export { summarizeToolAccess, type OverduePayment, type ToolAccessLine, type ToolAccessSummary } from './access/toolAccessSummary';
 export { packOfferKey } from './offers/offerKeys';

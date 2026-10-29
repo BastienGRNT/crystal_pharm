@@ -1,5 +1,5 @@
-import { findTenantIdOfRequest, tenantIdHeaderName } from '../requestTenant';
-
+// Le contrat du C# : le Tenant lui est donné dans cet en-tête, par ce serveur seul.
+const tenantIdHeaderName = 'x-tenant-id';
 const idempotencyKeyHeaderName = 'idempotency-key';
 
 function readRequiredEnvironmentVariable(name: string): string {
@@ -14,11 +14,10 @@ function respondWith(status: number, body: Record<string, string>): Response {
 
 /**
  * Transmet l'envoi du Visitor au C# sans le lire ni le garder : le corps passe en flux.
- * Le Tenant vient de la passerelle, jamais du navigateur. Ni le corps ni la réponse du C#
+ * Le Tenant vient du Host, résolu en base par le middleware, jamais d'un en-tête du navigateur. Ni le corps ni la réponse du C#
  * ne sont relus, journalisés ou renvoyés : ils peuvent contenir des données de santé.
  */
-export async function forwardPrescription(request: Request): Promise<Response> {
-  const tenantId = findTenantIdOfRequest(request);
+export async function forwardPrescription(request: Request, tenantId: string | undefined): Promise<Response> {
   if (!tenantId) return respondWith(404, { error: 'unknownSite' });
 
   const idempotencyKey = request.headers.get(idempotencyKeyHeaderName);

@@ -22,6 +22,13 @@
       "when": 1792855235757,
       "tag": "0002_add_site_subdomains",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793233106555,
+      "tag": "0003_notify_site_changes_and_read_site_in_one_statement",
+      "breakpoints": true
     }
   ]
 }
