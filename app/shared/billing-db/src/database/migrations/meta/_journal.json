@@ -85,6 +85,13 @@
       "when": 1793125007571,
       "tag": "0011_drop_legacy_tool_prices_and_subscription_tools",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793233111562,
+      "tag": "0012_notify_site_changes_on_tool_access",
+      "breakpoints": true
     }
   ]
 }

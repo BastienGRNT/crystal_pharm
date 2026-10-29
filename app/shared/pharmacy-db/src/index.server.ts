@@ -1,6 +1,7 @@
 export {
 	addEmployee,
 	listEmployees,
+	listEmployeesInOneStatement,
 	readEmployeePhoto,
 	removeEmployee,
 	updateEmployee,
@@ -9,6 +10,7 @@ export {
 export {
 	clearWeeklyOpeningSchedule,
 	getPharmacyProfile,
+	getPharmacyProfileInOneStatement,
 	updatePharmacyContactDetails,
 	updateWeeklyOpeningSchedule,
 	type PharmacyProfile

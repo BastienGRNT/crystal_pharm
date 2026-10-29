@@ -29,6 +29,13 @@
       "when": 1793119265723,
       "tag": "0003_add_tenant_member_access",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793233108195,
+      "tag": "0004_notify_site_changes_and_read_site_in_one_statement",
+      "breakpoints": true
     }
   ]
 }

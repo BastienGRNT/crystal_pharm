@@ -1,4 +1,4 @@
 export { runAsTenant, type ContentTransaction } from './database/contentDatabase.server';
-export { readTenantSiteContent, type TenantSiteContent } from './tenant-sites/tenantSiteContent.server';
+export { readTenantSiteContent, readTenantSiteContentInOneStatement, type TenantSiteContent } from './tenant-sites/tenantSiteContent.server';
 export { newsSources, type NewsSource } from './database/contentTables';
 export { findCurrentSiteSubdomain, findSiteOfSubdomain, type SiteOfSubdomain } from './site-addresses/siteSubdomains.server';

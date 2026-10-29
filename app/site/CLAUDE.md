@@ -5,8 +5,11 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 
 ## Rendu
 
-- Il reçoit un `tenantId` de la passerelle et ne voit **jamais** un nom de
-  domaine.
+- Le Tenant se déduit du seul Host de la requête, résolu en base (premier
+  aller-retour : `content.find_site_of_subdomain` composée avec
+  `billing.read_tool_access`). Tout en-tête `X-Tenant-Id` ou `X-Site-Version`
+  est ignoré. Le `tenantId` ne quitte pas le serveur : le moteur ne voit
+  **jamais** un nom de domaine.
 - Il lit le site dans `content` via `shared/content-db`, la fiche de la
   pharmacie (nom, adresse, téléphone) dans `shared/pharmacy-db`, et son
   groupement (fiche, modules imposés, actualités) dans `shared/group-db`. Un
@@ -16,11 +19,27 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
   affiche la page obtenue. Une seule route attrape-tout pour les pages ; à
   côté, seulement des routes techniques préfixées `__` : `__media/*` (les
   images) et `__preview` (dont ses images, `__preview/media/*`).
-- Le cache est celui de la passerelle : sa clé contient **toujours** le
-  `tenantId` et la version du site (l'empreinte de ce qu'il affiche), posés
-  par la passerelle. Seule une page `GET` réussie d'un Tenant se garde
-  (`public, s-maxage=60`) ; tout le reste est `no-store`, et rien de ce
-  qu'envoie un Visitor n'y entre jamais.
+- `app/site` répond lui-même quand il n'y a pas de page : 404 « site
+  introuvable » (adresse inconnue), 503 « site indisponible » (Tool `site`
+  inactif), 301 vers l'adresse actuelle (un chemin `//` revient à l'accueil).
+  Aucun log de l'adresse ni du chemin.
+- Une page non cachée coûte deux allers-retours Postgres, en une instruction
+  chacun, sans BEGIN/COMMIT : l'adresse et le droit, puis le contenu, la
+  fiche, l'équipe et le groupement en parallèle (une fonction SQL par
+  propriétaire, cf. `app/shared/CLAUDE.md`).
+- Le cache est en mémoire, propre à chaque instance, borné (nombre d'entrées
+  et octets, LRU). Sa clé est « adresse + chemin » ; chaque entrée retient son
+  `tenantId` et le `groupId` affiché. Seule une réponse 200 en `GET` se garde :
+  jamais `/__preview`, `/__media`, `/api`, ni rien venu d'un envoi du Visitor.
+- Il est vidé par Postgres : chaque table affichée notifie `tenant_site_changed`
+  (`tenant:<uuid>` ou `group:<uuid>`) après COMMIT. Chaque instance tient une
+  connexion LISTEN dédiée, **jamais derrière pgbouncer en mode transaction**
+  (la session de l'écoute n'y survit pas) ; à chaque (re)connexion tout le cache
+  est vidé, et tant qu'elle n'est pas établie rien n'est gardé.
+- Une page expire au plus tôt de : la fin de l'accès au Tool `site`, la
+  prochaine ouverture ou fermeture de la pharmacie, 1 h.
+- Le navigateur ne garde rien de partagé : `Cache-Control: private, max-age=0`
+  pour une page, `no-store` pour le reste.
 - Il n'écrit jamais dans `content`.
 
 ## L'aperçu (`/__preview`)
@@ -40,7 +59,7 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 
 - Les fonctions d'envoi données au moteur (`submitPrescription`…) sont des
   adapters : formulaire validé → appel au C#, côté serveur, avec l'identité de
-  service `site` et le `tenantId` de la passerelle.
+  service `site` et le `tenantId` du Host.
 - Le fichier passe en flux vers le C#, sans jamais toucher le disque (pas de
   fichier temporaire du parseur multipart).
 - Une clé d'idempotence par envoi (un double clic ne crée pas deux envois),

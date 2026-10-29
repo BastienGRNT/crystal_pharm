@@ -127,9 +127,9 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 - Le C# n'est **jamais exposé à Internet**. Il n'accepte que deux appelants
   identifiés : un TenantMember (JWT court de Better Auth, vérifié par sa clé
   publique) ou le service `site` (identité de service).
-- Le `tenantId` vient de la session (ou de son JWT) pour un TenantMember, de la
-  passerelle pour un Visitor (elle écrase tout en-tête tenant venu du
-  navigateur). Le `groupId` vient de la session d'un GroupMember. Jamais d'un
+- Le `tenantId` vient de la session (ou de son JWT) pour un TenantMember, du
+  Host de la requête pour un Visitor, résolu en base par `app/site` : jamais
+  d'un en-tête, même posé par la passerelle. Le `groupId` vient de la session d'un GroupMember. Jamais d'un
   paramètre, d'une URL ou d'un champ de formulaire.
 - Chaque processus n'a que ses propres secrets : le C# n'a ni le secret de
   Better Auth ni accès aux schémas `auth` et `platform_auth`.
@@ -158,7 +158,7 @@ Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
 | `pharmacy/modules/site-manager` | en plus : l'export sans Solid de `layouts` (`/manifest`) |
 | `group` | `ui`, `shared/*` |
 | `admin` | `ui`, `shared/*` — de `shared/auth`, seulement `/toolkit`, `/tables` et `/client` (sauf par `shared/dev-tools`, en dev) |
-| `app/site` | `engine/*`, `shared/content-db`, `shared/pharmacy-db`, `shared/group-db`, `shared/api-client` |
+| `app/site` | `engine/*`, `shared/content-db`, `shared/pharmacy-db`, `shared/group-db`, `shared/api-client`, `shared/billing-db` (seulement la lecture des droits) |
 | `ui` | rien d'autre que Svelte |
 | `shared/*` | voir `app/shared/CLAUDE.md` |
 | `engine/*` | entre eux seulement : `layouts → renderer → schema` |

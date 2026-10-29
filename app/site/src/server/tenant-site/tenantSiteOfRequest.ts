@@ -1,6 +1,6 @@
 import { query } from '@solidjs/router';
 import { getRequestEvent } from 'solid-js/web';
-import { findTenantIdOfRequest } from '../requestTenant';
+import { findSiteRequest } from '../site-request/siteRequest';
 import type { TenantSiteReading } from './readTenantSite.server';
 
 export type TenantSiteOfRequest = (TenantSiteReading & { status: 'missing' | 'invalid' }) | {
@@ -10,15 +10,30 @@ export type TenantSiteOfRequest = (TenantSiteReading & { status: 'missing' | 'in
   renderedAt: string;
 };
 
-/** Le site que la passerelle demande de servir ; le tenant ne vient que de son en-tête. */
+/** Le site de l'adresse demandée ; le tenant ne vient que du Host, résolu en base par le middleware. */
 export const getTenantSiteOfRequest = query(async (): Promise<TenantSiteOfRequest> => {
   'use server';
-  const request = getRequestEvent()?.request;
-  const tenantId = request && findTenantIdOfRequest(request);
-  if (!tenantId) return { status: 'missing' };
+  const event = getRequestEvent();
+  const siteRequest = findSiteRequest(event?.locals);
+  if (!event || !siteRequest) return { status: 'missing' };
 
-  const { readTenantSite } = await import('./readTenantSite.server');
-  const reading = await readTenantSite(tenantId);
+  const [{ readTenantSite }, { computePageCacheExpiry }, { setPageCacheContext }] = await Promise.all([
+    import('./readTenantSite.server'),
+    import('../cache/pageCacheExpiry'),
+    import('../site-request/siteRequest'),
+  ]);
+  const reading = await readTenantSite(siteRequest.tenantId);
   if (reading.status !== 'ready') return reading;
-  return { ...reading, renderedAt: new Date().toISOString() };
+
+  const renderedAt = new Date();
+  const openingHours = reading.tenantSite.modules.openingHours;
+  setPageCacheContext(event.locals, {
+    displayedGroupId: reading.displayedGroupId,
+    expiresAt: computePageCacheExpiry({
+      now: renderedAt,
+      siteAccessEndsAt: siteRequest.siteAccessEndsAt,
+      weeklyOpeningSchedule: openingHours.enabled ? openingHours.data.weeklySchedule : undefined,
+    }),
+  });
+  return { status: 'ready', tenantSite: reading.tenantSite, renderedAt: renderedAt.toISOString() };
 }, 'tenant-site-of-request');

@@ -220,10 +220,21 @@ corrige dans le C#, puis on régénère.
   `site-manager` et vérifié par `app/site`, avec `SITE_PREVIEW_MEDIA_SECRET`.
 - Les adresses des sites (`site_subdomains`) : une adresse actuelle par
   Tenant, les anciennes gardées pour la redirection et réservées à leur
-  Tenant. La passerelle trouve un site par son adresse avec
-  `runAsSiteGateway` (la RLS ne montre que l'adresse demandée) ; les
-  écritures vivent dans `site-manager`.
+  Tenant. `app/site` trouve un site par son adresse avec
+  `content.find_site_of_subdomain` (la RLS ne montre que l'adresse demandée) ;
+  les écritures vivent dans `site-manager`.
 - Chaque requête passe par la Row-Level Security (cf. racine, « Base de
   données »).
 - Les infos de la pharmacie ne sont pas ici : `app/site` les lit dans
   `pharmacy-db`.
+
+## Ce que le site affiche — notification et lecture
+
+- Toute table dont `app/site` affiche des données a son trigger AFTER
+  INSERT/UPDATE/DELETE qui appelle `pg_notify('tenant_site_changed',
+  'tenant:<uuid>' | 'group:<uuid>')` (fonction `notify_tenant_site_changed` du
+  schéma). Une table affichée sans trigger laisse des pages périmées en cache :
+  la liste exacte est dans le test d'intégration d'`app/site`.
+- Chaque package lu par le site expose une fonction SQL de lecture qui pose
+  elle-même son contexte RLS, et une fonction TS (suffixe `InOneStatement`) qui
+  l'appelle en une instruction : `app/site` n'ouvre jamais de transaction.

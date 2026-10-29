@@ -15,12 +15,17 @@ function createContentDatabase() {
 
 let sharedContentDatabase: ContentDatabase | undefined;
 
+/** Pour une instruction unique : les fonctions SQL de lecture posent elles-mêmes leur contexte de Row-Level Security. */
+export function connectToContentDatabase(): ContentDatabase {
+	sharedContentDatabase ??= createContentDatabase();
+	return sharedContentDatabase;
+}
+
 function runWithSettings<Result>(
 	settings: Record<string, string>,
 	work: (transaction: ContentTransaction) => Promise<Result>
 ): Promise<Result> {
-	sharedContentDatabase ??= createContentDatabase();
-	return sharedContentDatabase.transaction(async (transaction) => {
+	return connectToContentDatabase().transaction(async (transaction) => {
 		for (const [settingName, value] of Object.entries(settings)) {
 			await transaction.execute(sql`select set_config(${settingName}, ${value}, true)`);
 		}

@@ -1,6 +1,6 @@
-import { readTenantSiteContent } from '@crystal-pharm/content-db';
-import { findGroupSiteProfileOfTenant } from '@crystal-pharm/group-db';
-import { getPharmacyProfile, listEmployees } from '@crystal-pharm/pharmacy-db';
+import { readTenantSiteContentInOneStatement } from '@crystal-pharm/content-db';
+import { findGroupSiteProfileOfTenantInOneStatement } from '@crystal-pharm/group-db';
+import { getPharmacyProfileInOneStatement, listEmployeesInOneStatement } from '@crystal-pharm/pharmacy-db';
 import { TenantSiteSchema, type TenantSite } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import { toTenantSiteInput } from './toTenantSiteInput';
@@ -8,18 +8,27 @@ import { toTenantSiteInput } from './toTenantSiteInput';
 export type TenantSiteReading =
   | { status: 'missing' }
   | { status: 'invalid' }
-  | { status: 'ready'; tenantSite: TenantSite };
+  | {
+      status: 'ready';
+      tenantSite: TenantSite;
+      /** Le groupement dont la page affiche des données. */
+      displayedGroupId: string | undefined;
+    };
 
-/** Le site d'un Tenant, tel que le moteur l'attend : `missing` tant qu'il ne l'a pas créé. */
+/**
+ * Le site d'un Tenant, tel que le moteur l'attend : `missing` tant qu'il ne l'a pas créé.
+ * Le deuxième aller-retour : le contenu, la fiche, l'équipe et le groupement se lisent
+ * en parallèle, chacun en une seule instruction, et on décide ensuite.
+ */
 export async function readTenantSite(tenantId: string): Promise<TenantSiteReading> {
-  const content = await readTenantSiteContent(tenantId);
+  const [content, pharmacyProfile, employees, group] = await Promise.all([
+    readTenantSiteContentInOneStatement(tenantId),
+    getPharmacyProfileInOneStatement(tenantId),
+    listEmployeesInOneStatement(tenantId),
+    findGroupSiteProfileOfTenantInOneStatement(tenantId),
+  ]);
   if (!content) return { status: 'missing' };
 
-  const [pharmacyProfile, employees, group] = await Promise.all([
-    getPharmacyProfile(tenantId),
-    listEmployees(tenantId),
-    findGroupSiteProfileOfTenant(tenantId),
-  ]);
   const { tenantSiteInput, unavailableMandatoryModules, isGroupNewsMissing } = toTenantSiteInput({ tenantId, content, pharmacyProfile, employees, group });
   if (unavailableMandatoryModules.length > 0) {
     console.warn(`Site du tenant ${tenantId} : modules imposés sans données, masqués : ${unavailableMandatoryModules.join(', ')}.`);
@@ -33,5 +42,5 @@ export async function readTenantSite(tenantId: string): Promise<TenantSiteReadin
     console.error(`Site du tenant ${tenantId} : données invalides.`, v.flatten(validation.issues));
     return { status: 'invalid' };
   }
-  return { status: 'ready', tenantSite: validation.output };
+  return { status: 'ready', tenantSite: validation.output, displayedGroupId: group?.groupId };
 }
