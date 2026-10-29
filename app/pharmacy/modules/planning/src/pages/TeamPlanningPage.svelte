@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { Button, PageHeader, SegmentedControl, SidePanel, WeekNav } from '@crystal-pharm/ui';
+	import { Alert, Button, PageHeader, SegmentedControl, SidePanel, WeekNav } from '@crystal-pharm/ui';
 	import PlanningLegend from '../components/molecules/PlanningLegend.svelte';
 	import type { PlanningLegendItem } from '../components/molecules/planningLegend';
 	import PendingAvailabilityRequestsPanel from '../components/organisms/availability/PendingAvailabilityRequestsPanel.svelte';
 	import PlanningIssuesPanel from '../components/organisms/issues/PlanningIssuesPanel.svelte';
+	import SaveWeekTemplateForm from '../components/organisms/templates/SaveWeekTemplateForm.svelte';
+	import ApplyWeekTemplateForm from '../components/organisms/templates/ApplyWeekTemplateForm.svelte';
 	import ShiftForm from '../components/organisms/ShiftForm.svelte';
 	import WeekStatusBar from '../components/molecules/week-status/WeekStatusBar.svelte';
 	import PlanningTimeline from '../components/organisms/day/PlanningTimeline.svelte';
@@ -12,7 +14,7 @@
 
 	type TeamPlanningPageProps = {
 		data: PlanningPageData;
-		form: AddShiftFailure | { message: string } | null | undefined;
+		form: AddShiftFailure | { message: string; isSuccess?: boolean } | null | undefined;
 	};
 
 	let { data, form }: TeamPlanningPageProps = $props();
@@ -44,6 +46,8 @@
 <div class="flex flex-wrap items-center gap-3">
 	<SegmentedControl label="Vue du planning" options={data.viewOptions} />
 	<Button href={data.addShiftPanel.openHref} icon="plus">Ajouter un créneau</Button>
+	<Button href={data.applyTemplatePanel.openHref} variant="secondary" icon="calendar-dots">Appliquer une semaine type</Button>
+	<Button href={data.saveTemplatePanel.openHref} variant="ghost" icon="check">Enregistrer comme semaine type</Button>
 	<Button href={data.settingsHref} variant="ghost" icon="wrench">Règles et contrats</Button>
 	<div class="ml-auto">
 		<WeekNav
@@ -57,6 +61,10 @@
 		/>
 	</div>
 </div>
+
+{#if form && 'isSuccess' in form && form.isSuccess}
+	<Alert tone="success" title="Semaine type appliquée">{form.message}</Alert>
+{/if}
 
 <PendingAvailabilityRequestsPanel
 	requests={data.pendingAvailabilityRequests}
@@ -101,6 +109,31 @@
 			errorMessage={form && 'message' in form ? form.message : undefined}
 			submittedValues={form && 'values' in form ? form.values : undefined}
 		/>
+	</SidePanel>
+{/if}
+
+{#if data.saveTemplatePanel.isOpen}
+	<SidePanel title="Enregistrer comme semaine type" closeHref={data.saveTemplatePanel.closeHref}>
+		<SaveWeekTemplateForm
+			formAction={data.saveTemplateFormAction}
+			cancelHref={data.saveTemplatePanel.closeHref}
+			errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
+		/>
+	</SidePanel>
+{/if}
+
+{#if data.applyTemplatePanel.isOpen}
+	<SidePanel title="Appliquer une semaine type" closeHref={data.applyTemplatePanel.closeHref}>
+		{#if data.templates.length === 0}
+			<p class="text-body text-ink-muted">Aucune semaine type pour l’instant. Posez une semaine, puis « Enregistrer comme semaine type ».</p>
+		{:else}
+			<ApplyWeekTemplateForm
+				formAction={data.applyTemplateFormAction}
+				cancelHref={data.applyTemplatePanel.closeHref}
+				templates={data.templates}
+				errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
+			/>
+		{/if}
 	</SidePanel>
 {/if}
 

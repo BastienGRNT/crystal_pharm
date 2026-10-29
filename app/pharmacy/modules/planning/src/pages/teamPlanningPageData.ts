@@ -9,6 +9,7 @@ import type {
 import type { PlanningGridDay, PlanningGridRow, PlanningGridSummary } from '../components/organisms/week/planningGrid';
 import type { PlanningIssueSeverity } from '../domain/issues/planningIssues';
 import type { Employee } from '../domain/planning';
+import type { WeekTemplateView } from './planningSettingsPageData';
 
 export type PeriodNavigation = {
 	label: string;
@@ -43,6 +44,10 @@ export type FormActions = {
 	updateShiftFormAction: string;
 	deleteShiftFormAction: string;
 	decideAvailabilityFormAction: string;
+	saveTemplatePanel: AddShiftPanel;
+	applyTemplatePanel: AddShiftPanel;
+	saveTemplateFormAction: string;
+	applyTemplateFormAction: string;
 	publishWeekFormAction: string;
 	returnWeekToDraftFormAction: string;
 };
@@ -79,6 +84,7 @@ export type CommonPlanningPageData = FormActions & {
 	issues: PlanningIssueView[];
 	pendingAvailabilityRequests: PendingAvailabilityRequestView[];
 	settingsHref: string;
+	templates: WeekTemplateView[];
 };
 
 export type WeekViewData = CommonPlanningPageData & {
@@ -98,6 +104,9 @@ export type DayViewData = CommonPlanningPageData & {
 };
 
 export type PlanningPageData = WeekViewData | DayViewData;
+
+/** Résultat d'une action de la semaine qui ne redirige pas, pour en afficher le message. */
+export type WeekActionFeedback = { message: string; isSuccess?: boolean };
 
 export type AddShiftFailure = {
 	message: string;

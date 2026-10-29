@@ -3,6 +3,8 @@ import { addDays, getMondayOfWeek, toIsoDate } from '../../domain/calendar/week'
 import { insertAvailabilityRule, type NewAvailabilityRule } from '../repositories/availabilityRuleRepository';
 import { insertAbsence, insertShift } from '../repositories/planningRepository';
 import { savePlannedWeekStatus } from '../repositories/plannedWeekRepository';
+import { insertPeakWindow } from '../repositories/peakWindowRepository';
+import { insertWeekTemplate } from '../repositories/weekTemplateRepository';
 import { saveEmployeeTerms } from '../repositories/employeeTermsRepository';
 
 type DemoShiftTemplate = { weekdayIndex: number; startTime: string; endTime: string };
@@ -96,6 +98,21 @@ export async function seedPlanningDemoData(tenantId: string): Promise<void> {
 			});
 		}
 	}
+
+	for (const weekday of [monday, tuesday, wednesday, thursday, friday]) {
+		await insertPeakWindow(tenantId, { weekday, startTime: '17:00', endTime: '19:30', requiredCount: 3 });
+	}
+	await insertPeakWindow(tenantId, { weekday: saturday, startTime: '10:00', endTime: '12:00', requiredCount: 3 });
+
+	const employeeIdByFirstName = new Map(employees.map((employee) => [employee.firstName.toDisplayFormat(), employee.employeeId]));
+	await insertWeekTemplate(tenantId, {
+		name: 'Semaine normale',
+		rotation: undefined,
+		shifts: Object.entries(demoWeekByFirstName).flatMap(([firstName, templates]) => {
+			const employeeId = employeeIdByFirstName.get(firstName);
+			return employeeId ? templates.map(({ weekdayIndex, startTime, endTime }) => ({ employeeId, weekday: weekdayIndex, startTime, endTime })) : [];
+		})
+	});
 
 	await savePlannedWeekStatus(tenantId, toIsoDate(addDays(currentMonday, 7)), 'draft');
 }

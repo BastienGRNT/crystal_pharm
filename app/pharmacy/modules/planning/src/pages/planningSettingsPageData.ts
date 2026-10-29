@@ -19,12 +19,18 @@ export type EmployeeTermsFormRow = {
 	availabilityValidation: AvailabilityValidation;
 };
 
+export type PeakWindowView = { id: string; label: string };
+
+export type WeekTemplateView = { id: string; name: string; rotationLabel: string; shiftCount: number };
+
 export type PlanningSettingsPageData = {
 	planningHref: string;
+	peakWindows: PeakWindowView[];
+	templates: WeekTemplateView[];
 	rules: PlanningRulesFormValues;
 	employees: EmployeeTermsFormRow[];
 };
 
 export type PlanningSettingsActionResult =
-	| { savedSection: 'rules' | 'terms'; employeeId?: string }
-	| { failedSection: 'rules' | 'terms'; employeeId?: string; message: string };
+	| { savedSection: 'rules' | 'terms' | 'peaks'; employeeId?: string }
+	| { failedSection: 'rules' | 'terms' | 'peaks'; employeeId?: string; message: string };

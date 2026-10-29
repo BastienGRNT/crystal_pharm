@@ -64,6 +64,8 @@ import {
 } from './services/team/teamPlanningService';
 import { findPlanningRules } from './services/settings/planningSettingsService';
 import { decideAvailabilityRule, listPendingAvailabilityRequests } from './services/availability/availabilityService';
+import { applyWeekTemplate, findWeekTemplates, saveWeekAsTemplate } from './services/templates/weekTemplateService';
+import { rotationLabels } from '../domain/templates/weekTemplates';
 import { listWeekIssues } from './services/week/weekIssuesService';
 import { getWeekStatus, publishWeek, returnWeekToDraft } from './services/week/weekStatusService';
 
@@ -76,7 +78,7 @@ const dayHref = (day: Date): string => `?view=day&day=${toIsoDate(day)}`;
 function readPageQuery(url: URL): URLSearchParams {
 	const pageQuery = new URLSearchParams(url.searchParams);
 	for (const key of [...pageQuery.keys()]) {
-		if (key === 'add' || key === 'edit' || key.startsWith('/')) pageQuery.delete(key);
+		if (key === 'add' || key === 'edit' || key === 'template' || key.startsWith('/')) pageQuery.delete(key);
 	}
 	return pageQuery;
 }
@@ -99,7 +101,25 @@ function buildFormActions(url: URL): FormActions {
 	const pageQueryWithEdit = new URLSearchParams(pageQuery);
 	if (editedShiftId) pageQueryWithEdit.set('edit', editedShiftId);
 
+	const templatePanel = (panel: 'save' | 'apply') => {
+		const pageQueryWithTemplate = new URLSearchParams(pageQuery);
+		pageQueryWithTemplate.set('template', panel);
+		return {
+			isOpen: url.searchParams.get('template') === panel,
+			openHref: toPageHref(url, pageQueryWithTemplate),
+			closeHref: toPageHref(url, pageQuery)
+		};
+	};
+	const pageQueryWithSavePanel = new URLSearchParams(pageQuery);
+	pageQueryWithSavePanel.set('template', 'save');
+	const pageQueryWithApplyPanel = new URLSearchParams(pageQuery);
+	pageQueryWithApplyPanel.set('template', 'apply');
+
 	return {
+		saveTemplatePanel: templatePanel('save'),
+		applyTemplatePanel: templatePanel('apply'),
+		saveTemplateFormAction: toActionHref(pageQueryWithSavePanel, 'saveTemplate'),
+		applyTemplateFormAction: toActionHref(pageQuery, 'applyTemplate'),
 		addShiftPanel: {
 			isOpen: url.searchParams.get('add') === '1',
 			openHref: toPageHref(url, pageQueryWithPanel),
@@ -165,18 +185,25 @@ function withEditedShiftValues(formActions: FormActions, shifts: Shift[]): FormA
 	return { ...formActions, editShiftPanel: { ...editShiftPanel, values: { employeeId, date, startTime, endTime } } };
 }
 
-type WeekContext = Pick<CommonPlanningPageData, 'weekStatus' | 'settingsHref' | 'pendingAvailabilityRequests'> & {
+type WeekContext = Pick<CommonPlanningPageData, 'weekStatus' | 'settingsHref' | 'pendingAvailabilityRequests' | 'templates'> & {
 	issues: PlanningIssue[];
 };
 
 /** Ce qui vaut pour toute la semaine, qu'on regarde la semaine ou une de ses journées. */
 async function loadWeekContext(tenantId: string, monday: Date): Promise<WeekContext> {
-	const [status, issues, pendingRequests] = await Promise.all([
+	const [status, issues, pendingRequests, templates] = await Promise.all([
 		getWeekStatus(tenantId, monday),
 		listWeekIssues(tenantId, monday),
-		listPendingAvailabilityRequests(tenantId)
+		listPendingAvailabilityRequests(tenantId),
+		findWeekTemplates(tenantId)
 	]);
 	return {
+		templates: templates.map((template) => ({
+			id: template.id,
+			name: template.name,
+			rotationLabel: rotationLabels[template.rotation ?? 'none'],
+			shiftCount: template.shifts.length
+		})),
 		pendingAvailabilityRequests: pendingRequests.map(({ rule, employeeName, summary }) => ({
 			ruleId: rule.id,
 			employeeName,
@@ -478,6 +505,27 @@ export const actions = {
 
 		await decideAvailabilityRule(tenantId, String(formData.get('ruleId') ?? ''), decision);
 		redirect(303, toPageHref(url, readPageQuery(url)));
+	},
+
+	saveTemplate: async ({ request, url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
+		const formData = await request.formData();
+		const result = await saveWeekAsTemplate(
+			tenantId,
+			readMondayOfDisplayedWeek(url),
+			String(formData.get('name') ?? ''),
+			String(formData.get('rotation') ?? 'none')
+		);
+		if (!result.isSaved) return fail(400, { message: result.message });
+		redirect(303, toPageHref(url, readPageQuery(url)));
+	},
+
+	applyTemplate: async ({ request, url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
+		const formData = await request.formData();
+		const result = await applyWeekTemplate(tenantId, readMondayOfDisplayedWeek(url), String(formData.get('templateId') ?? ''));
+		if (!result.isSaved) return fail(400, { message: result.message });
+		return { message: result.message ?? '', isSuccess: true };
 	},
 
 	deleteShift: async ({ request, url, locals }) => {

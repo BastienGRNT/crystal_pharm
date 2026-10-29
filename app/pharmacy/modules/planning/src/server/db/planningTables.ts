@@ -211,3 +211,65 @@ export const planningNotices = planningSchema.table(
 		ofActiveTenant('planning_notices_of_active_tenant')
 	]
 );
+
+/** Une heure de pointe qui revient chaque semaine : l'effectif demandé y monte. */
+export const peakWindows = planningSchema.table(
+	'peak_windows',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id').notNull(),
+		weekday: smallint('weekday').notNull(),
+		startTime: time('start_time').notNull(),
+		endTime: time('end_time').notNull(),
+		requiredCount: integer('required_count').notNull(),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('peak_windows_tenant_id_weekday_index').on(table.tenantId, table.weekday),
+		check('peak_windows_weekday_is_valid', sql`${table.weekday} between 0 and 6`),
+		check('peak_windows_ends_after_start', sql`${table.startTime} < ${table.endTime}`),
+		check('peak_windows_required_count_positive', sql`${table.requiredCount} > 0`),
+		ofActiveTenant('peak_windows_of_active_tenant')
+	]
+);
+
+/** Une semaine type nommée ; `rotation` la réserve aux semaines A ou B. */
+export const weekTemplates = planningSchema.table(
+	'week_templates',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id').notNull(),
+		name: text('name').notNull(),
+		rotation: text('rotation').$type<'A' | 'B'>(),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('week_templates_tenant_id_index').on(table.tenantId),
+		check('week_templates_rotation_is_known', sql`${table.rotation} is null or ${table.rotation} in ('A', 'B')`),
+		ofActiveTenant('week_templates_of_active_tenant')
+	]
+);
+
+/** Un créneau d'une semaine type, rattaché à un jour de la semaine plutôt qu'à une date. */
+export const weekTemplateShifts = planningSchema.table(
+	'week_template_shifts',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id').notNull(),
+		templateId: uuid('template_id')
+			.notNull()
+			.references(() => weekTemplates.id, { onDelete: 'cascade' }),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'cascade' }),
+		weekday: smallint('weekday').notNull(),
+		startTime: time('start_time').notNull(),
+		endTime: time('end_time').notNull()
+	},
+	(table) => [
+		index('week_template_shifts_tenant_id_template_id_index').on(table.tenantId, table.templateId),
+		check('week_template_shifts_weekday_is_valid', sql`${table.weekday} between 0 and 6`),
+		check('week_template_shifts_ends_after_start', sql`${table.startTime} < ${table.endTime}`),
+		ofActiveTenant('week_template_shifts_of_active_tenant')
+	]
+);
