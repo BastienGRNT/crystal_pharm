@@ -1,14 +1,9 @@
 import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import { fail, redirect } from '@sveltejs/kit';
 import type { SegmentedControlOption } from '@crystal-pharm/ui';
-import type { PlanningTimelineCoverage, PlanningTimelineRow } from '../components/organisms/day/planningTimeline';
-import type { PlanningGridRow, PlanningGridSummary } from '../components/organisms/week/planningGrid';
+import type { PlanningTimelineRow } from '../components/organisms/day/planningTimeline';
 import {
-	formatMinuteRange,
-	listCoverageGaps,
-	spanOpeningPeriods,
-	type CoverageSegment,
-	type OpeningHours
+	spanOpeningPeriods
 } from '../domain/coverage/coverage';
 import {
 	buildPlanningRows,
@@ -42,19 +37,16 @@ import {
 	toIsoDate
 } from '../domain/calendar/week';
 import type { Actions } from '@sveltejs/kit';
-import type { PlanningIssue } from '../domain/issues/planningIssues';
 import type {
 	AddShiftFailure,
 	CommonPlanningPageData,
 	DayViewData,
 	FormActions,
-	PlanningIssueView,
 	PlanningPageData,
 	WeekGenerationFeedback,
 	WeekViewData
 } from '../pages/teamPlanningPageData';
 import { requireActiveTenantId } from './activeTenant.server';
-import { computePharmacistCoverage } from './services/team/pharmacistCoverageService';
 import {
 	addShift,
 	getWeekPlanning,
@@ -63,12 +55,11 @@ import {
 	updateShift,
 	type ShiftSubmission
 } from './services/team/teamPlanningService';
-import { findPlanningRules } from './services/settings/planningSettingsService';
 import { decideAvailabilityRule, listPendingAvailabilityRequests } from './services/availability/availabilityService';
 import { applyWeekTemplate, findWeekTemplates, saveWeekAsTemplate } from './services/templates/weekTemplateService';
 import { rotationLabels } from '../domain/templates/weekTemplates';
 import { generateWeekPlanning } from './services/generation/weekGenerationService';
-import { listWeekIssues } from './services/week/weekIssuesService';
+import { loadLiveWeekInput } from './services/week/weekIssuesService';
 import { getWeekStatus, publishWeek, returnWeekToDraft } from './services/week/weekStatusService';
 
 const shiftFieldNames = ['employeeId', 'date', 'startTime', 'endTime'] as const;
@@ -188,15 +179,16 @@ function withEditedShiftValues(formActions: FormActions, shifts: Shift[]): FormA
 	return { ...formActions, editShiftPanel: { ...editShiftPanel, values: { employeeId, date, startTime, endTime } } };
 }
 
-type WeekContext = Pick<CommonPlanningPageData, 'weekStatus' | 'settingsHref' | 'pendingAvailabilityRequests' | 'templates'> & {
-	issues: PlanningIssue[];
-};
+type WeekContext = Pick<
+	CommonPlanningPageData,
+	'weekStatus' | 'settingsHref' | 'pendingAvailabilityRequests' | 'templates' | 'live' | 'dayHrefPrefix'
+>;
 
 /** Ce qui vaut pour toute la semaine, qu'on regarde la semaine ou une de ses journées. */
 async function loadWeekContext(tenantId: string, monday: Date): Promise<WeekContext> {
-	const [status, issues, pendingRequests, templates] = await Promise.all([
+	const [status, live, pendingRequests, templates] = await Promise.all([
 		getWeekStatus(tenantId, monday),
-		listWeekIssues(tenantId, monday),
+		loadLiveWeekInput(tenantId, monday),
 		listPendingAvailabilityRequests(tenantId),
 		findWeekTemplates(tenantId)
 	]);
@@ -215,16 +207,8 @@ async function loadWeekContext(tenantId: string, monday: Date): Promise<WeekCont
 		})),
 		weekStatus: { isDraft: status === 'draft', mondayDate: toIsoDate(monday) },
 		settingsHref: '/planning/parametres',
-		issues
-	};
-}
-
-function toIssueView(issue: PlanningIssue): PlanningIssueView {
-	return {
-		key: issue.key,
-		severity: issue.severity,
-		message: issue.message,
-		dayHref: dayHref(new Date(`${issue.date}T00:00:00Z`))
+		live,
+		dayHrefPrefix: dayHref(new Date(0)).replace(/day=.*/, 'day=')
 	};
 }
 
@@ -243,20 +227,16 @@ async function loadWeekView(
 ): Promise<WeekViewData> {
 	const weekDays = listWeekDays(monday);
 	const weekDates = weekDays.map(toIsoDate);
-	const [weekPlanning, openingPeriodsByDay, rules, weekContext] = await Promise.all([
+	const [weekPlanning, weekContext] = await Promise.all([
 		getWeekPlanning(tenantId, weekDates[0] ?? '', weekDates[6] ?? ''),
-		listOpeningPeriodsByDate(tenantId, weekDates),
-		findPlanningRules(tenantId),
 		loadWeekContext(tenantId, monday)
 	]);
-	const planningRows = buildPlanningRows(weekPlanning, weekDates);
 	const todayIsInWeek = weekDates.includes(toIsoDate(today));
 
 	return {
 		view: 'week',
 		...withEditedShiftValues(formActions, weekPlanning.shifts),
 		...weekContext,
-		issues: weekContext.issues.map(toIssueView),
 		viewOptions: buildViewOptions('week', monday, todayIsInWeek ? today : monday),
 		periodNavigation: {
 			label: formatWeekLabel(monday),
@@ -271,16 +251,7 @@ async function loadWeekView(
 		context: `${formatDuration(sumPlannedMinutes(weekPlanning.shifts))} planifiées`,
 		defaultShiftDate: toIsoDate(monday),
 		employees: weekPlanning.employees,
-		days: weekDays.map((day, dayIndex) => ({
-			key: toIsoDate(day),
-			dayName: formatDayName(day),
-			dayNumber: day.getUTCDate(),
-			isToday: toIsoDate(day) === toIsoDate(today),
-			detail: formatStaffCount(countPresentEmployees(planningRows, dayIndex)),
-			href: dayHref(day)
-		})),
-		rows: planningRows.map((planningRow) => toPlanningGridRow(planningRow, weekPlanning, formActions.editShiftHrefPrefix)),
-		pharmacistCoverage: buildWeekPharmacistCoverage(planningRows, weekDates, openingPeriodsByDay, rules.minimumPharmacistsPresent)
+		todayDate: toIsoDate(today)
 	};
 }
 
@@ -292,10 +263,9 @@ async function loadDayView(
 	formActions: FormActions
 ): Promise<DayViewData> {
 	const date = toIsoDate(day);
-	const [dayPlanning, [openingPeriods = []], rules, weekContext] = await Promise.all([
+	const [dayPlanning, [openingPeriods = []], weekContext] = await Promise.all([
 		getWeekPlanning(tenantId, date, date),
 		listOpeningPeriodsByDate(tenantId, [date]),
-		findPlanningRules(tenantId),
 		loadWeekContext(tenantId, getMondayOfWeek(day))
 	]);
 	const planningRows = buildPlanningRows(dayPlanning, [date]);
@@ -309,7 +279,6 @@ async function loadDayView(
 		view: 'day',
 		...withEditedShiftValues(formActions, dayPlanning.shifts),
 		...weekContext,
-		issues: weekContext.issues.filter((issue) => issue.date === date).map(toIssueView),
 		viewOptions: buildViewOptions('day', getMondayOfWeek(day), day),
 		periodNavigation: {
 			label: `${formatDayName(day)} ${day.getUTCDate()}`,
@@ -355,86 +324,9 @@ async function loadDayView(
 			startPercent: toTimelinePercent(toMinutesSinceMidnight(openingHours.opensAt), timelineRange),
 			endPercent: toTimelinePercent(toMinutesSinceMidnight(openingHours.closesAt), timelineRange)
 		},
-		pharmacistCoverage:
-			openingHours &&
-			buildDayPharmacistCoverage(
-				computePharmacistCoverage(planningRows, 0, openingPeriods, rules.minimumPharmacistsPresent),
-				timelineRange
-			),
 		now: isToday
 			? { percent: toTimelinePercent(toMinutesSinceMidnight(currentTime), timelineRange), label: currentTime }
 			: undefined
-	};
-}
-
-function toPlanningGridRow(
-	{ employee, cells }: PlanningRow,
-	weekPlanning: WeekPlanning,
-	editShiftHrefPrefix: string
-): PlanningGridRow {
-	const employeeShifts = weekPlanning.shifts.filter((shift) => shift.employeeId === employee.id);
-	return {
-		key: employee.id,
-		employeeId: employee.id,
-		personName: employee.fullName,
-		personDetail: employee.jobTitle,
-		personHours: formatDuration(sumPlannedMinutes(employeeShifts)),
-		personTag: employee.isPharmacist ? 'Ph' : undefined,
-		cells: cells.map((cell) => ({
-			key: cell.date,
-			absence: cell.absenceKind ? { label: 'Absent', detail: cell.absenceKind } : undefined,
-			slots: cell.shifts.map((shift) => ({
-				id: shift.id,
-				label: formatShiftHours(shift),
-				tone: employee.isPharmacist ? 'strong' : 'soft',
-				startTime: shift.startTime,
-				endTime: shift.endTime,
-				editHref: `${editShiftHrefPrefix}${shift.id}`
-			}))
-		}))
-	};
-}
-
-const pharmacistCoverageLabel = 'Pharmacien présent';
-
-function buildWeekPharmacistCoverage(
-	planningRows: PlanningRow[],
-	weekDates: string[],
-	openingPeriodsByDay: OpeningHours[][],
-	minimumPharmacistsPresent: number
-): PlanningGridSummary {
-	return {
-		label: pharmacistCoverageLabel,
-		cells: weekDates.map((date, dayIndex) => {
-			const openingPeriods = openingPeriodsByDay[dayIndex] ?? [];
-			if (openingPeriods.length === 0) return { key: date, tone: 'neutral', text: 'Fermé' };
-			const gaps = listCoverageGaps(computePharmacistCoverage(planningRows, dayIndex, openingPeriods, minimumPharmacistsPresent));
-			const [firstGap] = gaps;
-			if (!firstGap) return { key: date, tone: 'success', text: 'Toute la journée' };
-			const otherGapsCount = gaps.length - 1;
-			const otherGapsText = otherGapsCount > 0 ? ` +${otherGapsCount}` : '';
-			return { key: date, tone: 'danger', text: `Manque ${formatMinuteRange(firstGap)}${otherGapsText}` };
-		})
-	};
-}
-
-function buildDayPharmacistCoverage(
-	coverageSegments: CoverageSegment[],
-	timelineRange: TimelineRange
-): PlanningTimelineCoverage {
-	return {
-		label: pharmacistCoverageLabel,
-		uncoveredLabel: 'Aucun pharmacien',
-		segments: coverageSegments.map((segment) => {
-			const startPercent = toTimelinePercent(segment.startMinutes, timelineRange);
-			return {
-				key: String(segment.startMinutes),
-				startPercent,
-				widthPercent: toTimelinePercent(segment.endMinutes, timelineRange) - startPercent,
-				isCovered: segment.isCovered,
-				label: segment.isCovered ? 'Présent' : formatMinuteRange(segment)
-			};
-		})
 	};
 }
 

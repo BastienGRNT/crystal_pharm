@@ -1,4 +1,4 @@
-import type { OpeningHours } from '../coverage/coverage';
+import { spanOpeningPeriods, type OpeningHours } from '../coverage/coverage';
 import { toMinutesSinceMidnight, type Shift } from '../planning';
 
 export type TimelineRange = {
@@ -46,4 +46,16 @@ export function toTimelineBarPosition(shift: Shift, range: TimelineRange): Timel
 	const startPercent = toTimelinePercent(toMinutesSinceMidnight(shift.startTime), range);
 	const endPercent = toTimelinePercent(toMinutesSinceMidnight(shift.endTime), range);
 	return { startPercent, widthPercent: endPercent - startPercent };
+}
+
+/** L'axe commun aux sept jours : assez large pour le jour qui ouvre le plus tôt, ferme le plus tard ou déborde. */
+export function computeWeekTimelineRange(shifts: Shift[], openingPeriodsByDate: OpeningHours[][]): TimelineRange {
+	const ranges = [
+		computeTimelineRange(shifts),
+		...openingPeriodsByDate.map((openingPeriods) => computeTimelineRange([], spanOpeningPeriods(openingPeriods)))
+	];
+	return {
+		startMinutes: Math.min(...ranges.map((range) => range.startMinutes)),
+		endMinutes: Math.max(...ranges.map((range) => range.endMinutes))
+	};
 }

@@ -4,7 +4,9 @@
 	import EmployeeIdentity from '../../molecules/EmployeeIdentity.svelte';
 	import { formatMinutesAsTime, moveSpan, resizeSpan, spanBetween, minimumDraggedShiftMinutes, type MinuteSpan } from '../../../domain/calendar/shiftDragging';
 	import { toTimelinePercent, type TimelineRange } from '../../../domain/calendar/timeline';
+	import type { DayStatus, EmployeeHoursStatus, ShiftPreview } from '../../../domain/live/liveWeek';
 	import { toMinutesSinceMidnight } from '../../../domain/planning';
+	import { dayStatusClasses } from '../week/weekCalendar';
 	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
 	import type {
@@ -24,10 +26,14 @@
 		/** L'heure actuelle, seulement quand le jour affiché est aujourd'hui. */
 		now?: PlanningTimelineNow;
 		/** Pour glisser, étirer et tracer des créneaux : l'axe en minutes, le jour affiché et ce qu'il faut faire d'un geste. */
-		dragging?: { range: TimelineRange; date: string; onShiftChange: (change: ShiftChange) => void };
+		dragging?: { range: TimelineRange; date: string; onShiftChange: (change: ShiftChange) => void; onPreview: (preview: ShiftPreview | undefined) => void };
+		/** L'état de la journée en direct : vert quand tout tient, rouge quand il manque quelqu'un. */
+		status?: DayStatus;
+		/** Les heures de chaque employé jugées en direct : en rouge quand il lui en manque ou qu'il en a trop. */
+		hoursStatusByEmployee?: Map<string, EmployeeHoursStatus>;
 	};
 
-	let { hours, rows, opening, coverage, now, dragging }: PlanningTimelineProps = $props();
+	let { hours, rows, opening, coverage, now, dragging, status, hoursStatusByEmployee }: PlanningTimelineProps = $props();
 
 	type Gesture = { barId: string | undefined; employeeId: string; span: MinuteSpan };
 	let gesture = $state<Gesture>();
@@ -51,21 +57,22 @@
 		const measure = readMinutesPerPixel(event);
 		if (!dragging || !measure) return;
 		event.stopPropagation();
-		const { range, date, onShiftChange } = dragging;
+		const { range, date, onShiftChange, onPreview } = dragging;
 		const original: MinuteSpan = { startMinutes: toMinutesSinceMidnight(bar.startTime), endMinutes: toMinutesSinceMidnight(bar.endTime) };
 		trackPointerDrag(event, {
 			onMove: (deltaX, _deltaY, moveEvent) => {
 				const deltaMinutes = deltaX * measure.minutesPerPixel;
 				const span = mode === 'move' ? moveSpan(original, deltaMinutes, range) : resizeSpan(original, mode, deltaMinutes, range);
 				gesture = { barId: bar.id, employeeId: mode === 'move' ? findEmployeeIdAt(moveEvent.clientX, moveEvent.clientY, employeeId) : employeeId, span };
+				onPreview({ shiftId: bar.id, employeeId: gesture.employeeId, date, startTime: toTimeOfDay(span.startMinutes), endTime: toTimeOfDay(span.endMinutes) });
 			},
 			onEnd: (_deltaX, _deltaY, _endEvent, wasDragged) => {
 				const finished = gesture;
 				gesture = undefined;
-				if (!wasDragged || !finished) return;
 				const hasChanged =
-					finished.employeeId !== employeeId || finished.span.startMinutes !== original.startMinutes || finished.span.endMinutes !== original.endMinutes;
-				if (!hasChanged) return;
+					finished !== undefined &&
+					(finished.employeeId !== employeeId || finished.span.startMinutes !== original.startMinutes || finished.span.endMinutes !== original.endMinutes);
+				if (!wasDragged || !finished || !hasChanged) return onPreview(undefined);
 				onShiftChange({ shiftId: bar.id, employeeId: finished.employeeId, date, startTime: toTimeOfDay(finished.span.startMinutes), endTime: toTimeOfDay(finished.span.endMinutes) });
 			}
 		});
@@ -74,16 +81,17 @@
 	function startCreationGesture(event: PointerEvent, employeeId: string): void {
 		const measure = readMinutesPerPixel(event);
 		if (!dragging || !measure) return;
-		const { range, date, onShiftChange } = dragging;
+		const { range, date, onShiftChange, onPreview } = dragging;
 		const anchorMinutes = range.startMinutes + (event.clientX - measure.trackLeft) * measure.minutesPerPixel;
 		trackPointerDrag(event, {
 			onMove: (deltaX) => {
 				gesture = { barId: undefined, employeeId, span: spanBetween(anchorMinutes, anchorMinutes + deltaX * measure.minutesPerPixel, range) };
+				onPreview({ employeeId, date, startTime: toTimeOfDay(gesture.span.startMinutes), endTime: toTimeOfDay(gesture.span.endMinutes) });
 			},
 			onEnd: (_deltaX, _deltaY, _endEvent, wasDragged) => {
 				const finished = gesture;
 				gesture = undefined;
-				if (!wasDragged || !finished || finished.span.endMinutes - finished.span.startMinutes < minimumDraggedShiftMinutes) return;
+				if (!wasDragged || !finished || finished.span.endMinutes - finished.span.startMinutes < minimumDraggedShiftMinutes) return onPreview(undefined);
 				onShiftChange({ employeeId, date, startTime: toTimeOfDay(finished.span.startMinutes), endTime: toTimeOfDay(finished.span.endMinutes) });
 			}
 		});
@@ -116,6 +124,11 @@
 {/snippet}
 
 <div class="overflow-auto rounded-md border border-line bg-surface shadow-card">
+	{#if status}
+		<p class="px-4 py-2 text-small font-semibold {dayStatusClasses[status]}" aria-live="polite">
+			{status === 'ok' ? 'Journée couverte' : status === 'alert' ? 'Il manque du monde sur cette journée' : status === 'notice' ? 'Journée à regarder' : status === 'closed' ? 'Pharmacie fermée' : 'Journée passée'}
+		</p>
+	{/if}
 	<div class="min-w-[840px]">
 		<div class="flex border-b border-line bg-surface-subtle text-[12px] leading-4 font-semibold text-ink-muted">
 			<div class="w-[190px] flex-none px-4 py-[9px]">Employé</div>
@@ -165,7 +178,7 @@
 			{#each rows as row (row.key)}
 				<li class="flex border-line-soft not-last:border-b" data-timeline-employee-id={dragging ? row.employeeId : undefined}>
 					<div class="w-[190px] flex-none px-4 py-2">
-						<EmployeeIdentity name={row.personName} detail={row.personDetail} tag={row.personTag} hours={row.personHours} />
+						<EmployeeIdentity name={row.personName} detail={row.personDetail} tag={row.personTag} hours={row.personHours} hoursStatus={hoursStatusByEmployee?.get(row.employeeId)} />
 					</div>
 
 					<!-- svelte-ignore a11y_no_static_element_interactions -->

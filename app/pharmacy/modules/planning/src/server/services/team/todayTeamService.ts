@@ -1,6 +1,6 @@
 import { formatMinuteRange, listCoverageGaps } from '../../../domain/coverage/coverage';
 import { buildPlanningRows, toMinutesSinceMidnight } from '../../../domain/planning';
-import { computePharmacistCoverage } from './pharmacistCoverageService';
+import { computePharmacistCoverage } from '../../../domain/coverage/pharmacistCoverage';
 import { getWeekPlanning, listOpeningPeriodsByDate } from './teamPlanningService';
 
 export type TodayTeamShift = {

@@ -1,13 +1,11 @@
 import type { SegmentedControlOption } from '@crystal-pharm/ui';
 import type {
-	PlanningTimelineCoverage,
 	PlanningTimelineHour,
 	PlanningTimelineNow,
 	PlanningTimelineOpening,
 	PlanningTimelineRow
 } from '../components/organisms/day/planningTimeline';
-import type { PlanningGridDay, PlanningGridRow, PlanningGridSummary } from '../components/organisms/week/planningGrid';
-import type { PlanningIssueSeverity } from '../domain/issues/planningIssues';
+import type { LiveWeekInput } from '../domain/live/liveWeek';
 import type { Employee } from '../domain/planning';
 import type { WeekTemplateView } from './planningSettingsPageData';
 
@@ -66,14 +64,6 @@ export type PendingAvailabilityRequestView = {
 	note: string;
 };
 
-export type PlanningIssueView = {
-	key: string;
-	severity: PlanningIssueSeverity;
-	message: string;
-	/** La journée concernée, dans la vue journée. */
-	dayHref: string;
-};
-
 export type CommonPlanningPageData = FormActions & {
 	viewOptions: SegmentedControlOption[];
 	periodNavigation: PeriodNavigation;
@@ -82,7 +72,10 @@ export type CommonPlanningPageData = FormActions & {
 	defaultShiftDate: string;
 	employees: Employee[];
 	weekStatus: WeekStatusSummary;
-	issues: PlanningIssueView[];
+	/** Toute la semaine : le navigateur y rejoue chaque geste pour juger le résultat avant l'enregistrement. */
+	live: LiveWeekInput;
+	/** Le début du lien vers une journée : on y ajoute sa date. */
+	dayHrefPrefix: string;
 	pendingAvailabilityRequests: PendingAvailabilityRequestView[];
 	settingsHref: string;
 	templates: WeekTemplateView[];
@@ -90,9 +83,7 @@ export type CommonPlanningPageData = FormActions & {
 
 export type WeekViewData = CommonPlanningPageData & {
 	view: 'week';
-	days: PlanningGridDay[];
-	rows: PlanningGridRow[];
-	pharmacistCoverage: PlanningGridSummary;
+	todayDate: string;
 };
 
 export type DayViewData = CommonPlanningPageData & {
@@ -103,7 +94,6 @@ export type DayViewData = CommonPlanningPageData & {
 	date: string;
 	rows: PlanningTimelineRow[];
 	opening: PlanningTimelineOpening | undefined;
-	pharmacistCoverage: PlanningTimelineCoverage | undefined;
 	now: PlanningTimelineNow | undefined;
 };
 

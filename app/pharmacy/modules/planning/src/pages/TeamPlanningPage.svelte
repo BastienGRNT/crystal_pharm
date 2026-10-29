@@ -10,8 +10,10 @@
 	import ShiftForm from '../components/organisms/ShiftForm.svelte';
 	import WeekStatusBar from '../components/molecules/week-status/WeekStatusBar.svelte';
 	import PlanningTimeline from '../components/organisms/day/PlanningTimeline.svelte';
-	import PlanningGrid from '../components/organisms/week/PlanningGrid.svelte';
+	import WeekCalendar from '../components/organisms/week/WeekCalendar.svelte';
+	import { assessWeek, type ShiftPreview } from '../domain/live/liveWeek';
 	import { submitShiftChange, type ShiftChange } from '../components/shift-dragging/submitShiftChange';
+	import { buildDayCoverage } from '../components/organisms/day/planningTimeline';
 	import type { AddShiftFailure, PlanningPageData, WeekGenerationFeedback } from './teamPlanningPageData';
 
 	type TeamPlanningPageProps = {
@@ -22,13 +24,27 @@
 	let { data, form }: TeamPlanningPageProps = $props();
 
 	let dragFailureMessage = $state<string>();
+	// Le geste en cours, ou le dernier tant que l'enregistrement n'est pas revenu : le jugement ne saute pas en arrière.
+	let previewChange = $state<ShiftPreview>();
+
+	const assessment = $derived(assessWeek(data.live, previewChange));
+	const displayedIssues = $derived(data.view === 'day' ? assessment.issues.filter((issue) => issue.date === data.date) : assessment.issues);
 
 	async function saveDraggedShift(change: ShiftChange): Promise<void> {
+		previewChange = change;
 		dragFailureMessage = await submitShiftChange(
 			{ updateShiftAction: data.updateShiftFormAction, addShiftAction: data.addShiftFormAction },
 			change
 		);
+		previewChange = undefined;
 	}
+
+	const dayIndex = $derived(data.view === 'day' ? data.live.weekDates.indexOf(data.date) : -1);
+	const dayStatus = $derived(assessment.days[dayIndex]?.status);
+	const dayCoverage = $derived(
+		data.view === 'day' && data.opening ? buildDayCoverage(assessment.days[dayIndex]?.pharmacistCoverage ?? [], data.timelineMinutes) : undefined
+	);
+	const hoursStatusByEmployee = $derived(new Map(assessment.employees.map((employee) => [employee.employeeId, employee.status])));
 
 	const slotLegendItems: PlanningLegendItem[] = [
 		{ label: 'Pharmacien', swatch: 'shiftStrong' },
@@ -99,14 +115,21 @@
 	returnToDraftFormAction={data.returnWeekToDraftFormAction}
 />
 
-<PlanningIssuesPanel issues={data.issues} linksToDay={data.view === 'week'} />
+<PlanningIssuesPanel
+	issues={displayedIssues}
+	linksToDay={data.view === 'week'}
+	dayHrefPrefix={data.dayHrefPrefix}
+	adaptFormAction={data.generateWeekFormAction}
+/>
 
 {#if data.view === 'week'}
-	<PlanningGrid
-		days={data.days}
-		rows={data.rows}
-		summary={data.pharmacistCoverage}
-		deleteSlotFormAction={data.deleteShiftFormAction}
+	<WeekCalendar
+		live={data.live}
+		{assessment}
+		todayDate={data.todayDate}
+		editHrefPrefix={data.editShiftHrefPrefix}
+		dayHrefPrefix={data.dayHrefPrefix}
+		onPreview={(preview) => (previewChange = preview)}
 		onShiftChange={saveDraggedShift}
 	/>
 {:else}
@@ -114,9 +137,11 @@
 		hours={data.hours}
 		rows={data.rows}
 		opening={data.opening}
-		coverage={data.pharmacistCoverage}
+		coverage={dayCoverage}
+		status={dayStatus}
+		{hoursStatusByEmployee}
 		now={data.now}
-		dragging={{ range: data.timelineMinutes, date: data.date, onShiftChange: saveDraggedShift }}
+		dragging={{ range: data.timelineMinutes, date: data.date, onShiftChange: saveDraggedShift, onPreview: (preview) => (previewChange = preview) }}
 	/>
 {/if}
 

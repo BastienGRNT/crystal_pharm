@@ -1,17 +1,16 @@
-import { addDays, listWeekDays, toIsoDate } from '../../../domain/calendar/week';
-import { detectPlanningIssues, type PlanningIssue } from '../../../domain/issues/planningIssues';
-import { indexTermsByEmployee } from '../../../domain/rules/employeeTerms';
+import { addDays, listWeekDays, toCalendarDay, toIsoDate } from '../../../domain/calendar/week';
 import { listRequirementWindowsOfDate } from '../../../domain/coverage/peakWindows';
-import { listPeakWindows } from '../../repositories/peakWindowRepository';
+import type { LiveWeekInput } from '../../../domain/live/liveWeek';
 import { listAvailabilityRules } from '../../repositories/availabilityRuleRepository';
 import { listEmployeeTerms } from '../../repositories/employeeTermsRepository';
+import { listPeakWindows } from '../../repositories/peakWindowRepository';
 import { findPlanningRules } from '../../repositories/planningSettingsRepository';
 import { getWeekPlanning, listOpeningPeriodsByDate } from '../team/teamPlanningService';
 
-/** Ce qui cloche dans la semaine du lundi donné, selon les règles de la pharmacie. */
-export async function listWeekIssues(tenantId: string, monday: Date): Promise<PlanningIssue[]> {
+/** Tout ce qu'il faut pour juger la semaine du lundi donné, y compris dans le navigateur pendant un glissement. */
+export async function loadLiveWeekInput(tenantId: string, monday: Date): Promise<LiveWeekInput> {
 	const weekDates = listWeekDays(monday).map(toIsoDate);
-	const [weekPlanning, openingPeriodsByDate, rules, savedTerms, availabilityRules, peakWindows] = await Promise.all([
+	const [weekPlanning, openingPeriodsByDate, rules, terms, availabilityRules, peakWindows] = await Promise.all([
 		getWeekPlanning(tenantId, toIsoDate(monday), toIsoDate(addDays(monday, 6))),
 		listOpeningPeriodsByDate(tenantId, weekDates),
 		findPlanningRules(tenantId),
@@ -19,16 +18,16 @@ export async function listWeekIssues(tenantId: string, monday: Date): Promise<Pl
 		listAvailabilityRules(tenantId, ['approved']),
 		listPeakWindows(tenantId)
 	]);
-	return detectPlanningIssues({
-		weekPlanning,
+	return {
 		weekDates,
+		firstEditableDate: toIsoDate(toCalendarDay(new Date())),
+		employees: weekPlanning.employees,
+		shifts: weekPlanning.shifts,
+		absences: weekPlanning.absences,
 		openingPeriodsByDate,
 		requirementWindowsByDate: weekDates.map((date) => listRequirementWindowsOfDate(peakWindows, date)),
 		rules,
-		termsByEmployee: indexTermsByEmployee(
-			weekPlanning.employees.map((employee) => employee.id),
-			savedTerms
-		),
+		terms,
 		availabilityRules
-	});
+	};
 }

@@ -1,5 +1,5 @@
-import { computeCoverageOfOpeningPeriods, type CoverageSegment, type OpeningHours } from '../../../domain/coverage/coverage';
-import type { PlanningRow } from '../../../domain/planning';
+import { computeCoverageOfOpeningPeriods, type CoverageSegment, type OpeningHours } from './coverage';
+import type { PlanningRow } from '../planning';
 
 /**
  * La règle « un pharmacien présent pendant toute l'ouverture » : seuls comptent les
