@@ -46,7 +46,7 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 
 ```
 ├─ CLAUDE.md  README.md  Makefile  compose.yml  .env
-├─ docker/                  Caddy : passerelle de dev
+├─ docker/                  Caddy : relais de dev devant app/site
 └─ app/
    ├─ pharmacy/             l'espace des pharmacies
    │  ├─ host/              SvelteKit : monte les modules, sert l'auth et l'API mobile

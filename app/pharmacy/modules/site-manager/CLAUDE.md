@@ -16,10 +16,6 @@ Monté sur `/site-manager` par `pharmacy/host`.
 - L'adresse du site (`<adresse>.` + le domaine de `SITE_URL`) : proposée depuis le nom
   de la pharmacie au premier enregistrement, changée sur `/adresse`. Une
   ancienne adresse redirige (301) vers l'actuelle.
-- L'accès de la passerelle (`/internal/site-access`, jeton
-  `SITE_GATEWAY_TOKEN`) : trouve le Tenant d'une adresse, vérifie son
-  abonnement au Tool `site` et donne la version du site (l'empreinte de tout
-  ce qu'il affiche), clé du cache avec le `tenantId`.
 - La fiche de la pharmacie (nom, adresse, téléphone) ne se saisit pas ici :
   elle vient de `shared/pharmacy-db` et s'édite dans `home`.
 - Aucune donnée de santé ici.

@@ -40,11 +40,3 @@ export function runAsTenant<Result>(
 ): Promise<Result> {
 	return runWithSettings({ 'app.tenant_id': tenantId }, work);
 }
-
-/** Une transaction de la passerelle : elle ne voit que l'adresse demandée, pas encore le Tenant. */
-export function runAsSiteGateway<Result>(
-	requestedSubdomain: string,
-	work: (transaction: ContentTransaction) => Promise<Result>
-): Promise<Result> {
-	return runWithSettings({ 'app.requested_subdomain': requestedSubdomain }, work);
-}

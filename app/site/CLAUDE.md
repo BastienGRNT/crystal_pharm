@@ -7,8 +7,8 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 
 - Le Tenant se déduit du seul Host de la requête, résolu en base (premier
   aller-retour : `content.find_site_of_subdomain` composée avec
-  `billing.read_tool_access`). Tout en-tête `X-Tenant-Id` ou `X-Site-Version`
-  est ignoré. Le `tenantId` ne quitte pas le serveur : le moteur ne voit
+  `billing.read_tool_access`). Tout en-tête `X-Tenant-Id` venu du
+  navigateur est ignoré. Le `tenantId` ne quitte pas le serveur : le moteur ne voit
   **jamais** un nom de domaine.
 - Il lit le site dans `content` via `shared/content-db`, la fiche de la
   pharmacie (nom, adresse, téléphone) dans `shared/pharmacy-db`, et son
