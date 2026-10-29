@@ -114,6 +114,7 @@ export const employeeTerms = planningSchema.table(
 		weeklyContractMinutes: integer('weekly_contract_minutes'),
 		hourlyRateCents: integer('hourly_rate_cents'),
 		isStudent: boolean('is_student').notNull().default(false),
+		isPlannedManually: boolean('is_planned_manually').notNull().default(false),
 		availabilityValidation: text('availability_validation').$type<AvailabilityValidation>().notNull().default('manual'),
 		updatedAt: timestampWithTimeZone('updated_at').notNull().defaultNow()
 	},

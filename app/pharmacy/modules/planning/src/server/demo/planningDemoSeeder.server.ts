@@ -30,7 +30,7 @@ const demoWeekByFirstName: Record<string, DemoShiftTemplate[]> = {
 	Emma: [morning(tuesday), morning(friday), morning(saturday)]
 };
 
-const demoTermsByFirstName: Record<string, { weeklyContractHours: number; hourlyRateEuros: number; isStudent: boolean }> = {
+const demoTermsByFirstName: Record<string, { weeklyContractHours: number; hourlyRateEuros: number; isStudent: boolean; isPlannedManually?: boolean }> = {
 	Léa: { weeklyContractHours: 35, hourlyRateEuros: 32, isStudent: false },
 	Thomas: { weeklyContractHours: 28, hourlyRateEuros: 26, isStudent: false },
 	Camille: { weeklyContractHours: 35, hourlyRateEuros: 16.5, isStudent: false },
@@ -69,6 +69,7 @@ export async function seedPlanningDemoData(tenantId: string): Promise<void> {
 				weeklyContractMinutes: terms.weeklyContractHours * 60,
 				hourlyRateCents: Math.round(terms.hourlyRateEuros * 100),
 				isStudent: terms.isStudent,
+					isPlannedManually: terms.isPlannedManually ?? false,
 				availabilityValidation: terms.isStudent ? 'manual' : 'automatic'
 			});
 		}

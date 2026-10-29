@@ -16,6 +16,7 @@ export type EmployeeTermsFormRow = {
 	weeklyContractHours: string;
 	hourlyRateEuros: string;
 	isStudent: boolean;
+	isPlannedManually: boolean;
 	availabilityValidation: AvailabilityValidation;
 };
 

@@ -16,6 +16,7 @@ const person = (id: string, overrides: Partial<GenerationEmployee> = {}): Genera
 	fullName: id,
 	isPharmacist: false,
 	isStudent: false,
+	isPlannedManually: false,
 	weeklyContractMinutes: undefined,
 	hourlyRateCents: 1500,
 	...overrides
@@ -23,6 +24,7 @@ const person = (id: string, overrides: Partial<GenerationEmployee> = {}): Genera
 
 const buildInput = (employees: GenerationEmployee[], overrides: Partial<GenerationInput> = {}): GenerationInput => ({
 	weekDates,
+	firstEditableDate: weekDates[0] ?? '',
 	openingPeriodsByDate: weekDates.map((_, index) => (index < 5 ? workingDay : [])),
 	requirementWindowsByDate: weekDates.map(() => []),
 	rules: defaultPlanningRules,
@@ -146,5 +148,27 @@ describe('generateWeek', () => {
 		const { proposedShifts } = generateWeek(buildInput(team));
 		expect(proposedShifts.length).toBeGreaterThan(0);
 		expect(proposedShifts.every((shift) => shift.reason.includes(':'))).toBe(true);
+	});
+});
+
+describe('semaine en cours', () => {
+	it('ne touche à aucun jour déjà passé', () => {
+		const team = [person('pharmacien-1', { isPharmacist: true, weeklyContractMinutes: 35 * 60 }), person('salarie', { weeklyContractMinutes: 20 * 60 })];
+		const { proposedShifts, extendedShifts } = generateWeek(buildInput(team, { firstEditableDate: '2026-10-28' }));
+		expect(proposedShifts.length).toBeGreaterThan(0);
+		expect([...proposedShifts, ...extendedShifts].every((shift) => shift.date >= '2026-10-28')).toBe(true);
+	});
+
+	it('ne place jamais quelqu’un qui pose ses horaires lui-même', () => {
+		const team = [person('titulaire', { isPharmacist: true, isPlannedManually: true, weeklyContractMinutes: 35 * 60 }), person('adjoint', { isPharmacist: true })];
+		const { proposedShifts } = generateWeek(buildInput(team));
+		expect(proposedShifts.some((shift) => shift.employeeId === 'titulaire')).toBe(false);
+	});
+
+	it('allonge un créneau existant plutôt que d’en ajouter un', () => {
+		const team = [person('pharmacien-1', { isPharmacist: true, weeklyContractMinutes: 30 * 60 })];
+		const existingShifts = [{ id: 'existant', employeeId: 'pharmacien-1', date: '2026-10-26', startTime: '14:00', endTime: '17:30' }];
+		const { extendedShifts } = generateWeek(buildInput(team, { existingShifts }));
+		expect(extendedShifts.some((shift) => shift.shiftId === 'existant' && shift.endTime > '17:30')).toBe(true);
 	});
 });

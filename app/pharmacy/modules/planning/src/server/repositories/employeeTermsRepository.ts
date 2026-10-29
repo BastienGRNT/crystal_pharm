@@ -12,6 +12,7 @@ export async function listEmployeeTerms(tenantId: string): Promise<EmployeeTerms
 		weeklyContractMinutes: termsRow.weeklyContractMinutes ?? undefined,
 		hourlyRateCents: termsRow.hourlyRateCents ?? undefined,
 		isStudent: termsRow.isStudent,
+		isPlannedManually: termsRow.isPlannedManually,
 		availabilityValidation: termsRow.availabilityValidation
 	}));
 }
@@ -22,6 +23,7 @@ export async function saveEmployeeTerms(tenantId: string, terms: EmployeeTerms):
 		weeklyContractMinutes: values.weeklyContractMinutes ?? null,
 		hourlyRateCents: values.hourlyRateCents ?? null,
 		isStudent: values.isStudent,
+		isPlannedManually: values.isPlannedManually,
 		availabilityValidation: values.availabilityValidation
 	};
 	await runAsTenant(tenantId, (transaction) =>

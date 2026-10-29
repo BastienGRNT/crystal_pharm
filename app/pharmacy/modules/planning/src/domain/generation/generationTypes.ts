@@ -9,6 +9,8 @@ export type GenerationEmployee = {
 	fullName: string;
 	isPharmacist: boolean;
 	isStudent: boolean;
+	/** Hors de la proposition automatique : ses créneaux comptent, mais on ne lui en propose jamais. */
+	isPlannedManually: boolean;
 	/** `undefined` : pas de minimum au contrat, chaque heure posée est payée en plus. */
 	weeklyContractMinutes: number | undefined;
 	hourlyRateCents: number | undefined;
@@ -17,6 +19,8 @@ export type GenerationEmployee = {
 export type GenerationInput = {
 	/** Les sept jours de la semaine, du lundi au dimanche. */
 	weekDates: string[];
+	/** Les jours avant celui-ci sont derrière nous : la génération n'y touche pas. */
+	firstEditableDate: string;
 	openingPeriodsByDate: OpeningHours[][];
 	requirementWindowsByDate: RequirementWindow[][];
 	rules: PlanningRules;
@@ -37,6 +41,16 @@ export type ProposedShift = {
 	reason: string;
 };
 
+/** Un créneau déjà posé que la génération allonge au lieu d'en ajouter un autre. */
+export type ExtendedShift = {
+	shiftId: string;
+	employeeId: string;
+	date: string;
+	startTime: string;
+	endTime: string;
+	reason: string;
+};
+
 export type GenerationGapKind = 'pharmacist' | 'people';
 
 /** Une plage que personne ne peut tenir : le titulaire doit trancher. */
@@ -50,6 +64,7 @@ export type GenerationGap = {
 
 export type GenerationResult = {
 	proposedShifts: ProposedShift[];
+	extendedShifts: ExtendedShift[];
 	gaps: GenerationGap[];
 };
 

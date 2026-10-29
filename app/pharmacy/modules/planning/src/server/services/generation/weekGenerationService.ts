@@ -1,4 +1,4 @@
-import { addDays, formatDayTitle, toIsoDate } from '../../../domain/calendar/week';
+import { addDays, formatDayTitle, toCalendarDay, toIsoDate } from '../../../domain/calendar/week';
 import { listRequirementWindowsOfDate } from '../../../domain/coverage/peakWindows';
 import { generateWeek } from '../../../domain/generation/weekGenerator';
 import type { GenerationEmployee } from '../../../domain/generation/generationTypes';
@@ -7,7 +7,7 @@ import { listAvailabilityRules } from '../../repositories/availabilityRuleReposi
 import { listEmployeeTerms } from '../../repositories/employeeTermsRepository';
 import { listPeakWindows } from '../../repositories/peakWindowRepository';
 import { findPlannedWeekStatus, savePlannedWeekStatus } from '../../repositories/plannedWeekRepository';
-import { insertShift } from '../../repositories/planningRepository';
+import { insertShift, updateShiftRow } from '../../repositories/planningRepository';
 import { findPlanningRules } from '../../repositories/planningSettingsRepository';
 import { getWeekPlanning, listOpeningPeriodsByDate } from '../team/teamPlanningService';
 
@@ -45,6 +45,7 @@ export async function generateWeekPlanning(tenantId: string, monday: Date): Prom
 			fullName: employee.fullName,
 			isPharmacist: employee.isPharmacist,
 			isStudent: terms?.isStudent ?? false,
+			isPlannedManually: terms?.isPlannedManually ?? false,
 			weeklyContractMinutes: terms?.weeklyContractMinutes,
 			hourlyRateCents: terms?.hourlyRateCents
 		};
@@ -52,6 +53,7 @@ export async function generateWeekPlanning(tenantId: string, monday: Date): Prom
 
 	const result = generateWeek({
 		weekDates,
+		firstEditableDate: toIsoDate(toCalendarDay(new Date())),
 		openingPeriodsByDate,
 		requirementWindowsByDate: weekDates.map((date) => listRequirementWindowsOfDate(peakWindows, date)),
 		rules,
@@ -62,13 +64,14 @@ export async function generateWeekPlanning(tenantId: string, monday: Date): Prom
 	});
 
 	for (const { reason: _reason, ...shift } of result.proposedShifts) await insertShift(tenantId, shift);
+	for (const { shiftId, reason: _reason, ...shift } of result.extendedShifts) await updateShiftRow(tenantId, shiftId, shift);
 	if (status === 'published' && weekPlanning.shifts.length === 0 && result.proposedShifts.length > 0) {
 		await savePlannedWeekStatus(tenantId, weekDates[0] ?? '', 'draft');
 	}
 
 	return {
-		addedCount: result.proposedShifts.length,
-		explanations: result.proposedShifts.map(
+		addedCount: result.proposedShifts.length + result.extendedShifts.length,
+		explanations: [...result.proposedShifts, ...result.extendedShifts].map(
 			(shift) => `${formatDayTitle(new Date(`${shift.date}T00:00:00Z`))}, ${shift.startTime}–${shift.endTime} · ${shift.reason}`
 		),
 		unfilledGaps: result.gaps.map((gap) => `${formatDayTitle(new Date(`${gap.date}T00:00:00Z`))} : ${gap.message}`)

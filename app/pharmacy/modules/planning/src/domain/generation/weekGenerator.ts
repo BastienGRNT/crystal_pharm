@@ -17,6 +17,9 @@ type WorkingShift = {
 	endMinutes: number;
 	reasons: string[];
 	isProposed: boolean;
+	/** Pour un créneau déjà posé : de quoi le retrouver en base, et savoir s'il a été allongé. */
+	existingShiftId?: string;
+	isExtended?: boolean;
 };
 
 type Period = { startMinutes: number; endMinutes: number };
@@ -42,11 +45,22 @@ const { slotMinutes } = generationLimits;
 export function generateWeek(input: GenerationInput): GenerationResult {
 	const state: GenerationState = { input, shifts: listExistingWorkingShifts(input), gaps: [] };
 	input.weekDates.forEach((_, dayIndex) => {
+		if (isFrozenDay(state, dayIndex)) return;
 		fillDeficits(state, dayIndex, 'pharmacist');
 		fillDeficits(state, dayIndex, 'people');
 	});
 	topUpContracts(state);
 	return {
+		extendedShifts: state.shifts
+			.filter((shift) => shift.isExtended && shift.existingShiftId !== undefined)
+			.map((shift) => ({
+				shiftId: shift.existingShiftId ?? '',
+				employeeId: shift.employeeId,
+				date: input.weekDates[shift.dayIndex] ?? '',
+				startTime: formatTimeOfDay(shift.startMinutes),
+				endTime: formatTimeOfDay(shift.endMinutes),
+				reason: describeReason(state, shift)
+			})),
 		proposedShifts: state.shifts
 			.filter((shift) => shift.isProposed)
 			.sort((first, second) => first.dayIndex - second.dayIndex || first.startMinutes - second.startMinutes)
@@ -72,7 +86,8 @@ function listExistingWorkingShifts({ existingShifts, weekDates }: GenerationInpu
 				startMinutes: toMinutesSinceMidnight(shift.startTime),
 				endMinutes: toMinutesSinceMidnight(shift.endTime),
 				reasons: [],
-				isProposed: false
+				isProposed: false,
+				existingShiftId: shift.id
 			}
 		];
 	});
@@ -86,6 +101,10 @@ function describeReason(state: GenerationState, shift: WorkingShift): string {
 
 function findEmployee(state: GenerationState, employeeId: string): GenerationEmployee | undefined {
 	return state.input.employees.find((employee) => employee.id === employeeId);
+}
+
+function isFrozenDay(state: GenerationState, dayIndex: number): boolean {
+	return (state.input.weekDates[dayIndex] ?? '') < state.input.firstEditableDate;
 }
 
 function listPeriods(state: GenerationState, dayIndex: number): Period[] {
@@ -164,12 +183,16 @@ function findDeficitRunEnd(
 
 function recordGap(state: GenerationState, dayIndex: number, kind: GenerationGapKind, startMinutes: number, endMinutes: number): void {
 	const missing = kind === 'pharmacist' ? 'Aucun pharmacien disponible' : 'Personne de disponible';
+	const manualPharmacistNames = state.input.employees
+		.filter((employee) => employee.isPlannedManually && (kind === 'people' || employee.isPharmacist) && !isAbsent(state, employee.id, dayIndex))
+		.map((employee) => employee.fullName);
+	const manualHint = manualPharmacistNames.length > 0 ? ` Seuls ${manualPharmacistNames.join(', ')} (horaires posés par le titulaire) pourraient le tenir.` : '';
 	state.gaps.push({
 		date: state.input.weekDates[dayIndex] ?? '',
 		kind,
 		startMinutes,
 		endMinutes,
-		message: `${missing} de ${formatTimeOfDay(startMinutes)} à ${formatTimeOfDay(endMinutes)}.`
+		message: `${missing} de ${formatTimeOfDay(startMinutes)} à ${formatTimeOfDay(endMinutes)}.${manualHint}`
 	});
 }
 
@@ -181,7 +204,9 @@ function chooseBestCandidate(
 	startMinute: number,
 	runEnd: number
 ): Candidate | undefined {
-	const eligibleEmployees = state.input.employees.filter((employee) => kind === 'people' || employee.isPharmacist);
+	const eligibleEmployees = state.input.employees.filter(
+		(employee) => !employee.isPlannedManually && (kind === 'people' || employee.isPharmacist)
+	);
 	const candidates = eligibleEmployees.flatMap((employee) => {
 		const candidate = buildCandidate(state, employee, dayIndex, kind, period, startMinute, runEnd);
 		return candidate ? [candidate] : [];
@@ -216,7 +241,7 @@ function buildCandidate(
 
 	const mergedInto = state.shifts.find(
 		(shift) =>
-			shift.isProposed && shift.employeeId === employee.id && shift.dayIndex === dayIndex && shift.endMinutes === start &&
+			shift.employeeId === employee.id && shift.dayIndex === dayIndex && shift.endMinutes === start &&
 			end - shift.startMinutes <= generationLimits.maximumContinuousMinutes
 	);
 	if (!respectsHardLimits(state, employee, dayIndex, start, end, mergedInto !== undefined)) return undefined;
@@ -257,12 +282,13 @@ function respectsHardLimits(
 	dayIndex: number,
 	start: number,
 	end: number,
-	isMerged: boolean
+	isMerged: boolean,
+	isContractTopUp = false
 ): boolean {
 	const { rules } = state.input;
 	const dayShifts = listEmployeeShifts(state, employee.id, dayIndex);
 	const added = end - start;
-	if (!isMerged && dayShifts.length + 1 > rules.maximumShiftsPerDay) return false;
+	if (!isMerged && !isContractTopUp && dayShifts.length + 1 > rules.maximumShiftsPerDay) return false;
 	if (sumEmployeeMinutes(dayShifts) + added > generationLimits.maximumDailyMinutes) return false;
 	const weekMinutes = sumEmployeeMinutes(state.shifts.filter((shift) => shift.employeeId === employee.id));
 	if (weekMinutes + added > generationLimits.maximumWeeklyMinutes) return false;
@@ -330,6 +356,10 @@ function scoreCandidate(
 function placeCandidate(state: GenerationState, dayIndex: number, candidate: Candidate): void {
 	if (candidate.mergedInto) {
 		candidate.mergedInto.endMinutes = candidate.endMinutes;
+		if (!candidate.mergedInto.isProposed) {
+			candidate.mergedInto.isExtended = true;
+			candidate.mergedInto.reasons.push(...candidate.reasons, 'prolonge son créneau');
+		}
 		return;
 	}
 	state.shifts.push({
@@ -342,22 +372,53 @@ function placeCandidate(state: GenerationState, dayIndex: number, candidate: Can
 	});
 }
 
-/** Les heures du contrat que les trous n'ont pas suffi à donner : on les pose là où l'équipe est la plus mince. */
+/** Les heures du contrat que les trous n'ont pas suffi à donner : un employé doit faire ses heures, on les pose donc quoi qu'il arrive. */
 function topUpContracts(state: GenerationState): void {
 	const { rules } = state.input;
 	const employeesByDeficit = state.input.employees
-		.filter((employee) => employee.weeklyContractMinutes !== undefined)
+		.filter((employee) => !employee.isPlannedManually && employee.weeklyContractMinutes !== undefined)
 		.sort((first, second) => deficitOf(state, second) - deficitOf(state, first));
 
 	for (const employee of employeesByDeficit) {
 		let remaining = deficitOf(state, employee);
-		while (remaining >= rules.minimumShiftMinutes) {
-			const placement = findLeastStaffedPlacement(state, employee, remaining);
+		while (remaining > 0) {
+			const wantedMinutes = Math.ceil(remaining / slotMinutes) * slotMinutes;
+			const extension = findShiftExtension(state, employee, wantedMinutes);
+			if (extension) {
+				extension.shift.endMinutes += extension.addedMinutes;
+				extension.shift.reasons.push('complète son contrat');
+				if (!extension.shift.isProposed) extension.shift.isExtended = true;
+				remaining -= extension.addedMinutes;
+				continue;
+			}
+			const placement = findLeastStaffedPlacement(state, employee, Math.max(wantedMinutes, rules.minimumShiftMinutes));
 			if (!placement) break;
 			state.shifts.push({ ...placement, employeeId: employee.id, reasons: ['complète son contrat'], isProposed: true });
 			remaining -= placement.endMinutes - placement.startMinutes;
 		}
 	}
+}
+
+/** Allonger une plage déjà là vaut mieux qu'en ouvrir une autre : moins de coupures dans la journée. */
+function findShiftExtension(
+	state: GenerationState,
+	employee: GenerationEmployee,
+	wantedMinutes: number
+): { shift: WorkingShift; addedMinutes: number } | undefined {
+	const employeeShifts = state.shifts.filter((shift) => shift.employeeId === employee.id);
+	for (const shift of employeeShifts) {
+		if (isFrozenDay(state, shift.dayIndex)) continue;
+		const period = listPeriods(state, shift.dayIndex).find((candidate) => candidate.startMinutes <= shift.startMinutes && shift.endMinutes <= candidate.endMinutes);
+		if (!period) continue;
+		const room = Math.min(wantedMinutes, period.endMinutes - shift.endMinutes, generationLimits.maximumContinuousMinutes - (shift.endMinutes - shift.startMinutes));
+		const addedMinutes = Math.floor(room / slotMinutes) * slotMinutes;
+		if (addedMinutes <= 0) continue;
+		const newEnd = shift.endMinutes + addedMinutes;
+		if (isRangeFree(state, employee, shift.dayIndex, shift.endMinutes, newEnd) && respectsHardLimits(state, employee, shift.dayIndex, shift.endMinutes, newEnd, true, true)) {
+			return { shift, addedMinutes };
+		}
+	}
+	return undefined;
 }
 
 function deficitOf(state: GenerationState, employee: GenerationEmployee): number {
@@ -373,7 +434,7 @@ function findLeastStaffedPlacement(
 	const { rules } = state.input;
 	const length = Math.min(remainingMinutes, 4 * 60, generationLimits.maximumContinuousMinutes);
 	const options = state.input.weekDates.flatMap((_, dayIndex) =>
-		isAbsent(state, employee.id, dayIndex)
+		isAbsent(state, employee.id, dayIndex) || isFrozenDay(state, dayIndex)
 			? []
 			: listPeriods(state, dayIndex).flatMap((period) => {
 					const periodLength = period.endMinutes - period.startMinutes;
@@ -384,7 +445,7 @@ function findLeastStaffedPlacement(
 						.filter(
 							(option) =>
 								isRangeFree(state, employee, dayIndex, option.startMinutes, option.endMinutes) &&
-								respectsHardLimits(state, employee, dayIndex, option.startMinutes, option.endMinutes, false)
+								respectsHardLimits(state, employee, dayIndex, option.startMinutes, option.endMinutes, false, true)
 						);
 				})
 	);

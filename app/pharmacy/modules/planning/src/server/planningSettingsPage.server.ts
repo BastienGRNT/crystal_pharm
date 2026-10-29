@@ -54,6 +54,7 @@ export async function load({ locals }: SettingsRequest): Promise<PlanningSetting
 			weeklyContractHours: row.weeklyContractMinutes === undefined ? '' : formatMinutesAsHoursInput(row.weeklyContractMinutes),
 			hourlyRateEuros: row.hourlyRateCents === undefined ? '' : formatCentsAsEurosInput(row.hourlyRateCents),
 			isStudent: row.isStudent,
+			isPlannedManually: row.isPlannedManually,
 			availabilityValidation: row.availabilityValidation
 		}))
 	};
@@ -124,6 +125,7 @@ export const actions = {
 			weeklyContractMinutes,
 			hourlyRateCents,
 			isStudent: formData.get('isStudent') === 'on',
+			isPlannedManually: formData.get('isPlannedManually') === 'on',
 			availabilityValidation: readText(formData, 'availabilityValidation')
 		});
 		if (!result.isSaved) return fail(400, { failedSection: 'terms', employeeId, message: result.message } satisfies PlanningSettingsActionResult);

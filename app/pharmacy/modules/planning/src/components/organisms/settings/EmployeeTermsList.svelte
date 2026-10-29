@@ -45,6 +45,9 @@
 					<div class="flex items-end pb-1.5">
 						<Checkbox name="isStudent" checked={employee.isStudent}>Étudiant (placé en priorité sur les pics)</Checkbox>
 					</div>
+					<div class="flex items-end pb-1.5">
+						<Checkbox name="isPlannedManually" checked={employee.isPlannedManually}>Ne pas le placer automatiquement (je pose ses horaires moi-même)</Checkbox>
+					</div>
 				</div>
 				<div class="flex items-center gap-3">
 					<Button type="submit" variant="secondary" icon="check">Enregistrer</Button>

@@ -9,6 +9,8 @@ export type EmployeeTerms = {
 	/** En centimes par heure, hors charges ; `undefined` tant qu'il n'est pas renseigné. */
 	hourlyRateCents: number | undefined;
 	isStudent: boolean;
+	/** Hors de la proposition automatique : la personne pose ses horaires elle-même, mais ils comptent dans l'effectif. */
+	isPlannedManually: boolean;
 	availabilityValidation: AvailabilityValidation;
 };
 
@@ -18,6 +20,7 @@ export function buildDefaultEmployeeTerms(employeeId: string): EmployeeTerms {
 		weeklyContractMinutes: undefined,
 		hourlyRateCents: undefined,
 		isStudent: false,
+		isPlannedManually: false,
 		availabilityValidation: 'manual'
 	};
 }

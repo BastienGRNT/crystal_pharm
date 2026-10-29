@@ -1,0 +1,1 @@
+ALTER TABLE "planning"."employee_terms" ADD COLUMN "is_planned_manually" boolean DEFAULT false NOT NULL;

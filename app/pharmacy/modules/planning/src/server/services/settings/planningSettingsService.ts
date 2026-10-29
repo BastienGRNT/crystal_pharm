@@ -60,6 +60,7 @@ const EmployeeTermsSchema = v.object({
 		v.pipe(v.number('Taux horaire invalide.'), v.integer(), v.minValue(0, 'Le taux horaire ne peut pas être négatif.'), v.maxValue(100_000, 'Taux horaire trop élevé.'))
 	),
 	isStudent: v.boolean(),
+	isPlannedManually: v.boolean(),
 	availabilityValidation: v.picklist(['automatic', 'manual'], 'Choisissez une validation.')
 });
 
@@ -68,6 +69,7 @@ export type EmployeeTermsSubmission = {
 	weeklyContractMinutes: number | null;
 	hourlyRateCents: number | null;
 	isStudent: boolean;
+	isPlannedManually: boolean;
 	availabilityValidation: string;
 };
 
