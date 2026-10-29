@@ -4,7 +4,9 @@
 	import DayHeading from '../../molecules/DayHeading.svelte';
 	import EmployeeIdentity from '../../molecules/EmployeeIdentity.svelte';
 	import ShiftSlot from '../../molecules/ShiftSlot.svelte';
-	import type { PlanningGridDay, PlanningGridRow, PlanningGridSummary } from './planningGrid';
+	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
+	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
+	import type { PlanningGridDay, PlanningGridRow, PlanningGridSlot, PlanningGridSummary } from './planningGrid';
 
 	type PlanningGridProps = {
 		days: PlanningGridDay[];
@@ -13,9 +15,30 @@
 		summary?: PlanningGridSummary;
 		/** Action du formulaire de suppression ; reçoit le champ `slotId`. Sans elle, pas de bouton. */
 		deleteSlotFormAction?: string;
+		/** Appelée quand on dépose un créneau dans une autre case ; sans elle, les créneaux ne se glissent pas. */
+		onShiftChange?: (change: ShiftChange) => void;
 	};
 
-	let { days, rows, summary, deleteSlotFormAction }: PlanningGridProps = $props();
+	let { days, rows, summary, deleteSlotFormAction, onShiftChange }: PlanningGridProps = $props();
+
+	let draggedSlot = $state<{ slotId: string; offsetX: number; offsetY: number }>();
+
+	function startDraggingSlot(event: PointerEvent, slot: PlanningGridSlot, sourceEmployeeId: string, sourceDate: string): void {
+		trackPointerDrag(event, {
+			onMove: (deltaX, deltaY) => (draggedSlot = { slotId: slot.id, offsetX: deltaX, offsetY: deltaY }),
+			onEnd: (_deltaX, _deltaY, endEvent, wasDragged) => {
+				draggedSlot = undefined;
+				if (!wasDragged) return;
+				const dropCell = document
+					.elementsFromPoint(endEvent.clientX, endEvent.clientY)
+					.find((element): element is HTMLElement => element instanceof HTMLElement && element.dataset.dropEmployeeId !== undefined);
+				const employeeId = dropCell?.dataset.dropEmployeeId;
+				const date = dropCell?.dataset.dropDate;
+				if (!employeeId || !date || (employeeId === sourceEmployeeId && date === sourceDate)) return;
+				onShiftChange?.({ shiftId: slot.id, employeeId, date, startTime: slot.startTime, endTime: slot.endTime });
+			}
+		});
+	}
 
 	const dayCellClasses = 'border-l border-line';
 	const rowSeparatorClasses = '[tr:not(:last-child)>&]:border-b [tr:not(:last-child)>&]:border-line-soft';
@@ -58,9 +81,22 @@
 								tableCellClasses="{dayCellClasses} {rowSeparatorClasses}"
 							/>
 						{:else}
-							<td class="{dayCellClasses} {rowSeparatorClasses} p-[5px] align-top">
+							<td
+								class="{dayCellClasses} {rowSeparatorClasses} p-[5px] align-top"
+								data-drop-employee-id={onShiftChange ? row.employeeId : undefined}
+								data-drop-date={onShiftChange ? cell.key : undefined}
+							>
 								{#each cell.slots as slot (slot.id)}
-									<ShiftSlot slotId={slot.id} label={slot.label} tone={slot.tone} editHref={slot.editHref} {deleteSlotFormAction} />
+									<ShiftSlot
+										slotId={slot.id}
+										label={slot.label}
+										tone={slot.tone}
+										editHref={slot.editHref}
+										{deleteSlotFormAction}
+										onDragStart={onShiftChange ? (event) => startDraggingSlot(event, slot, row.employeeId, cell.key) : undefined}
+										dragOffset={draggedSlot?.slotId === slot.id ? { x: draggedSlot.offsetX, y: draggedSlot.offsetY } : undefined}
+										isDragged={draggedSlot?.slotId === slot.id}
+									/>
 								{/each}
 							</td>
 						{/if}

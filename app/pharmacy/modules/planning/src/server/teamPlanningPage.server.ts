@@ -50,6 +50,7 @@ import type {
 	FormActions,
 	PlanningIssueView,
 	PlanningPageData,
+	WeekGenerationFeedback,
 	WeekViewData
 } from '../pages/teamPlanningPageData';
 import { requireActiveTenantId } from './activeTenant.server';
@@ -66,6 +67,7 @@ import { findPlanningRules } from './services/settings/planningSettingsService';
 import { decideAvailabilityRule, listPendingAvailabilityRequests } from './services/availability/availabilityService';
 import { applyWeekTemplate, findWeekTemplates, saveWeekAsTemplate } from './services/templates/weekTemplateService';
 import { rotationLabels } from '../domain/templates/weekTemplates';
+import { generateWeekPlanning } from './services/generation/weekGenerationService';
 import { listWeekIssues } from './services/week/weekIssuesService';
 import { getWeekStatus, publishWeek, returnWeekToDraft } from './services/week/weekStatusService';
 
@@ -118,6 +120,7 @@ function buildFormActions(url: URL): FormActions {
 	return {
 		saveTemplatePanel: templatePanel('save'),
 		applyTemplatePanel: templatePanel('apply'),
+		generateWeekFormAction: toActionHref(pageQuery, 'generateWeek'),
 		saveTemplateFormAction: toActionHref(pageQueryWithSavePanel, 'saveTemplate'),
 		applyTemplateFormAction: toActionHref(pageQuery, 'applyTemplate'),
 		addShiftPanel: {
@@ -321,6 +324,8 @@ async function loadDayView(
 		context: `${formatStaffCount(presentEmployeeCount)} · ${formatDuration(sumPlannedMinutes(dayPlanning.shifts))} planifiées`,
 		defaultShiftDate: date,
 		employees: dayPlanning.employees,
+		timelineMinutes: timelineRange,
+		date,
 		hours: listTimelineHours(timelineRange).map((hour) => ({
 			label: `${hour}:00`,
 			percent: toTimelinePercent(hour * 60, timelineRange)
@@ -329,6 +334,7 @@ async function loadDayView(
 			const cell = cells[0];
 			return {
 				key: employee.id,
+				employeeId: employee.id,
 				personName: employee.fullName,
 				personDetail: employee.jobTitle,
 				personHours: formatDuration(sumPlannedMinutes(cell?.shifts ?? [])),
@@ -338,6 +344,8 @@ async function loadDayView(
 					id: shift.id,
 					label: formatShiftHours(shift),
 					tone: employee.isPharmacist ? 'strong' : 'soft',
+					startTime: shift.startTime,
+					endTime: shift.endTime,
 					editHref: `${formActions.editShiftHrefPrefix}${shift.id}`,
 					...toTimelineBarPosition(shift, timelineRange)
 				}))
@@ -367,6 +375,7 @@ function toPlanningGridRow(
 	const employeeShifts = weekPlanning.shifts.filter((shift) => shift.employeeId === employee.id);
 	return {
 		key: employee.id,
+		employeeId: employee.id,
 		personName: employee.fullName,
 		personDetail: employee.jobTitle,
 		personHours: formatDuration(sumPlannedMinutes(employeeShifts)),
@@ -378,6 +387,8 @@ function toPlanningGridRow(
 				id: shift.id,
 				label: formatShiftHours(shift),
 				tone: employee.isPharmacist ? 'strong' : 'soft',
+				startTime: shift.startTime,
+				endTime: shift.endTime,
 				editHref: `${editShiftHrefPrefix}${shift.id}`
 			}))
 		}))
@@ -505,6 +516,12 @@ export const actions = {
 
 		await decideAvailabilityRule(tenantId, String(formData.get('ruleId') ?? ''), decision);
 		redirect(303, toPageHref(url, readPageQuery(url)));
+	},
+
+	generateWeek: async ({ url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
+		const generationReport = await generateWeekPlanning(tenantId, readMondayOfDisplayedWeek(url));
+		return { generationReport, closeHref: toPageHref(url, readPageQuery(url)) } satisfies WeekGenerationFeedback;
 	},
 
 	saveTemplate: async ({ request, url, locals }) => {

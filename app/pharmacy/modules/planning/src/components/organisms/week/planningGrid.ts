@@ -15,6 +15,8 @@ export type PlanningGridSlot = {
 	id: string;
 	label: string;
 	tone: ShiftChipTone;
+	startTime: string;
+	endTime: string;
 	/** Ouvre le créneau pour le modifier. */
 	editHref?: string;
 };
@@ -27,6 +29,7 @@ export type PlanningGridCell = {
 
 export type PlanningGridRow = {
 	key: string;
+	employeeId: string;
 	personName: string;
 	personDetail: string;
 	/** Une étiquette courte après le nom (« Ph » pour un pharmacien). */

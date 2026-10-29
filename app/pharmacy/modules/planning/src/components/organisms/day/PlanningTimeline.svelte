@@ -2,9 +2,15 @@
 	import AbsenceBlock from '../../atoms/AbsenceBlock.svelte';
 	import ShiftChip from '../../atoms/ShiftChip.svelte';
 	import EmployeeIdentity from '../../molecules/EmployeeIdentity.svelte';
+	import { formatMinutesAsTime, moveSpan, resizeSpan, spanBetween, minimumDraggedShiftMinutes, type MinuteSpan } from '../../../domain/calendar/shiftDragging';
+	import { toTimelinePercent, type TimelineRange } from '../../../domain/calendar/timeline';
+	import { toMinutesSinceMidnight } from '../../../domain/planning';
+	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
+	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
 	import type {
 		PlanningTimelineCoverage,
 		PlanningTimelineHour,
+		PlanningTimelineBar,
 		PlanningTimelineNow,
 		PlanningTimelineOpening,
 		PlanningTimelineRow
@@ -17,9 +23,77 @@
 		coverage?: PlanningTimelineCoverage;
 		/** L'heure actuelle, seulement quand le jour affiché est aujourd'hui. */
 		now?: PlanningTimelineNow;
+		/** Pour glisser, étirer et tracer des créneaux : l'axe en minutes, le jour affiché et ce qu'il faut faire d'un geste. */
+		dragging?: { range: TimelineRange; date: string; onShiftChange: (change: ShiftChange) => void };
 	};
 
-	let { hours, rows, opening, coverage, now }: PlanningTimelineProps = $props();
+	let { hours, rows, opening, coverage, now, dragging }: PlanningTimelineProps = $props();
+
+	type Gesture = { barId: string | undefined; employeeId: string; span: MinuteSpan };
+	let gesture = $state<Gesture>();
+
+	const toTimeOfDay = (minutes: number): string => formatMinutesAsTime(minutes);
+	const percentOf = (minutes: number): number => (dragging ? toTimelinePercent(minutes, dragging.range) : 0);
+
+	function readMinutesPerPixel(event: PointerEvent): { minutesPerPixel: number; trackLeft: number } | undefined {
+		const track = (event.currentTarget as HTMLElement).closest<HTMLElement>('[data-timeline-track]');
+		if (!dragging || !track) return undefined;
+		const { left, width } = track.getBoundingClientRect();
+		return { minutesPerPixel: (dragging.range.endMinutes - dragging.range.startMinutes) / width, trackLeft: left };
+	}
+
+	function findEmployeeIdAt(clientX: number, clientY: number, fallbackEmployeeId: string): string {
+		const rowElement = document.elementsFromPoint(clientX, clientY).find((element) => element instanceof HTMLElement && element.dataset.timelineEmployeeId);
+		return (rowElement as HTMLElement | undefined)?.dataset.timelineEmployeeId ?? fallbackEmployeeId;
+	}
+
+	function startBarGesture(event: PointerEvent, bar: PlanningTimelineBar, employeeId: string, mode: 'move' | 'start' | 'end'): void {
+		const measure = readMinutesPerPixel(event);
+		if (!dragging || !measure) return;
+		event.stopPropagation();
+		const { range, date, onShiftChange } = dragging;
+		const original: MinuteSpan = { startMinutes: toMinutesSinceMidnight(bar.startTime), endMinutes: toMinutesSinceMidnight(bar.endTime) };
+		trackPointerDrag(event, {
+			onMove: (deltaX, _deltaY, moveEvent) => {
+				const deltaMinutes = deltaX * measure.minutesPerPixel;
+				const span = mode === 'move' ? moveSpan(original, deltaMinutes, range) : resizeSpan(original, mode, deltaMinutes, range);
+				gesture = { barId: bar.id, employeeId: mode === 'move' ? findEmployeeIdAt(moveEvent.clientX, moveEvent.clientY, employeeId) : employeeId, span };
+			},
+			onEnd: (_deltaX, _deltaY, _endEvent, wasDragged) => {
+				const finished = gesture;
+				gesture = undefined;
+				if (!wasDragged || !finished) return;
+				const hasChanged =
+					finished.employeeId !== employeeId || finished.span.startMinutes !== original.startMinutes || finished.span.endMinutes !== original.endMinutes;
+				if (!hasChanged) return;
+				onShiftChange({ shiftId: bar.id, employeeId: finished.employeeId, date, startTime: toTimeOfDay(finished.span.startMinutes), endTime: toTimeOfDay(finished.span.endMinutes) });
+			}
+		});
+	}
+
+	function startCreationGesture(event: PointerEvent, employeeId: string): void {
+		const measure = readMinutesPerPixel(event);
+		if (!dragging || !measure) return;
+		const { range, date, onShiftChange } = dragging;
+		const anchorMinutes = range.startMinutes + (event.clientX - measure.trackLeft) * measure.minutesPerPixel;
+		trackPointerDrag(event, {
+			onMove: (deltaX) => {
+				gesture = { barId: undefined, employeeId, span: spanBetween(anchorMinutes, anchorMinutes + deltaX * measure.minutesPerPixel, range) };
+			},
+			onEnd: (_deltaX, _deltaY, _endEvent, wasDragged) => {
+				const finished = gesture;
+				gesture = undefined;
+				if (!wasDragged || !finished || finished.span.endMinutes - finished.span.startMinutes < minimumDraggedShiftMinutes) return;
+				onShiftChange({ employeeId, date, startTime: toTimeOfDay(finished.span.startMinutes), endTime: toTimeOfDay(finished.span.endMinutes) });
+			}
+		});
+	}
+
+	function positionOf(bar: PlanningTimelineBar, employeeId: string): { startPercent: number; widthPercent: number } {
+		if (gesture?.barId !== bar.id || gesture.employeeId !== employeeId) return bar;
+		const startPercent = percentOf(gesture.span.startMinutes);
+		return { startPercent, widthPercent: percentOf(gesture.span.endMinutes) - startPercent };
+	}
 
 	// Une heure de l'axe trop proche du repère « maintenant » serait recouverte par lui.
 	const minimumPercentFromNow = 4;
@@ -89,21 +163,47 @@
 
 		<ul>
 			{#each rows as row (row.key)}
-				<li class="flex border-line-soft not-last:border-b">
+				<li class="flex border-line-soft not-last:border-b" data-timeline-employee-id={dragging ? row.employeeId : undefined}>
 					<div class="w-[190px] flex-none px-4 py-2">
 						<EmployeeIdentity name={row.personName} detail={row.personDetail} tag={row.personTag} hours={row.personHours} />
 					</div>
 
-					<div class="relative mr-6 ml-3 min-h-14 flex-1">
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						class="relative mr-6 ml-3 min-h-14 flex-1 {dragging && !row.absence ? 'touch-none' : ''}"
+						data-timeline-track
+						onpointerdown={dragging && !row.absence ? (event) => startCreationGesture(event, row.employeeId) : undefined}
+					>
 						{@render trackBackground()}
 
 						{#if row.absence}
 							<AbsenceBlock label={row.absence.label} detail={row.absence.detail} placement="timeline" />
 						{:else if row.bars.length === 0}
-							<p class="text-small absolute top-1/2 left-2 z-10 -translate-y-1/2 text-ink-subtle">Pas de créneau</p>
-						{:else}
+							<p class="text-small pointer-events-none absolute top-1/2 left-2 z-10 -translate-y-1/2 text-ink-subtle">
+								{dragging ? 'Pas de créneau · glissez pour en tracer un' : 'Pas de créneau'}
+							</p>
+						{/if}
+						{#if gesture && gesture.barId === undefined && gesture.employeeId === row.employeeId}
+							<div
+								aria-hidden="true"
+								class="absolute inset-y-2.5 z-10 flex items-center rounded-xs bg-accent-soft px-2 text-slot whitespace-nowrap text-accent-text shadow-[inset_0_0_0_1px_var(--accent)]"
+								style:left="{percentOf(gesture.span.startMinutes)}%"
+								style:width="{percentOf(gesture.span.endMinutes) - percentOf(gesture.span.startMinutes)}%"
+							>
+								{toTimeOfDay(gesture.span.startMinutes)} – {toTimeOfDay(gesture.span.endMinutes)}
+							</div>
+						{/if}
+						{#if !row.absence}
 							{#each row.bars as bar (bar.id)}
-								<ShiftChip label={bar.label} tone={bar.tone} timelinePosition={bar} editHref={bar.editHref}>
+								<ShiftChip
+									label={gesture?.barId === bar.id && gesture.employeeId === row.employeeId ? `${toTimeOfDay(gesture.span.startMinutes)} – ${toTimeOfDay(gesture.span.endMinutes)}` : bar.label}
+									tone={bar.tone}
+									timelinePosition={positionOf(bar, row.employeeId)}
+									editHref={bar.editHref}
+									isDragged={gesture?.barId === bar.id}
+									onDragStart={dragging ? (event) => startBarGesture(event, bar, row.employeeId, 'move') : undefined}
+									onResizeStart={dragging ? (edge, event) => startBarGesture(event, bar, row.employeeId, edge) : undefined}
+								>
 									<span class="sr-only">{row.personName}, </span>
 								</ShiftChip>
 							{/each}

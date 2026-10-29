@@ -46,6 +46,7 @@ export type FormActions = {
 	decideAvailabilityFormAction: string;
 	saveTemplatePanel: AddShiftPanel;
 	applyTemplatePanel: AddShiftPanel;
+	generateWeekFormAction: string;
 	saveTemplateFormAction: string;
 	applyTemplateFormAction: string;
 	publishWeekFormAction: string;
@@ -97,6 +98,9 @@ export type WeekViewData = CommonPlanningPageData & {
 export type DayViewData = CommonPlanningPageData & {
 	view: 'day';
 	hours: PlanningTimelineHour[];
+	/** L'axe en minutes depuis minuit, pour convertir un geste en heures. */
+	timelineMinutes: { startMinutes: number; endMinutes: number };
+	date: string;
 	rows: PlanningTimelineRow[];
 	opening: PlanningTimelineOpening | undefined;
 	pharmacistCoverage: PlanningTimelineCoverage | undefined;
@@ -104,6 +108,10 @@ export type DayViewData = CommonPlanningPageData & {
 };
 
 export type PlanningPageData = WeekViewData | DayViewData;
+
+export type WeekGenerationReportView = { addedCount: number; explanations: string[]; unfilledGaps: string[] };
+
+export type WeekGenerationFeedback = { generationReport: WeekGenerationReportView; closeHref: string };
 
 /** Résultat d'une action de la semaine qui ne redirige pas, pour en afficher le message. */
 export type WeekActionFeedback = { message: string; isSuccess?: boolean };

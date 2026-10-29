@@ -11,12 +11,15 @@ export type PlanningTimelineBar = {
 	startPercent: number;
 	widthPercent: number;
 	tone: ShiftChipTone;
+	startTime: string;
+	endTime: string;
 	/** Ouvre le créneau pour le modifier. */
 	editHref?: string;
 };
 
 export type PlanningTimelineRow = {
 	key: string;
+	employeeId: string;
 	personName: string;
 	personDetail: string;
 	personTag?: string;

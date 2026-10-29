@@ -4,20 +4,31 @@
 	import type { PlanningLegendItem } from '../components/molecules/planningLegend';
 	import PendingAvailabilityRequestsPanel from '../components/organisms/availability/PendingAvailabilityRequestsPanel.svelte';
 	import PlanningIssuesPanel from '../components/organisms/issues/PlanningIssuesPanel.svelte';
+	import GenerationReportPanel from '../components/organisms/generation/GenerationReportPanel.svelte';
 	import SaveWeekTemplateForm from '../components/organisms/templates/SaveWeekTemplateForm.svelte';
 	import ApplyWeekTemplateForm from '../components/organisms/templates/ApplyWeekTemplateForm.svelte';
 	import ShiftForm from '../components/organisms/ShiftForm.svelte';
 	import WeekStatusBar from '../components/molecules/week-status/WeekStatusBar.svelte';
 	import PlanningTimeline from '../components/organisms/day/PlanningTimeline.svelte';
 	import PlanningGrid from '../components/organisms/week/PlanningGrid.svelte';
-	import type { AddShiftFailure, PlanningPageData } from './teamPlanningPageData';
+	import { submitShiftChange, type ShiftChange } from '../components/shift-dragging/submitShiftChange';
+	import type { AddShiftFailure, PlanningPageData, WeekGenerationFeedback } from './teamPlanningPageData';
 
 	type TeamPlanningPageProps = {
 		data: PlanningPageData;
-		form: AddShiftFailure | { message: string; isSuccess?: boolean } | null | undefined;
+		form: AddShiftFailure | WeekGenerationFeedback | { message: string; isSuccess?: boolean } | null | undefined;
 	};
 
 	let { data, form }: TeamPlanningPageProps = $props();
+
+	let dragFailureMessage = $state<string>();
+
+	async function saveDraggedShift(change: ShiftChange): Promise<void> {
+		dragFailureMessage = await submitShiftChange(
+			{ updateShiftAction: data.updateShiftFormAction, addShiftAction: data.addShiftFormAction },
+			change
+		);
+	}
 
 	const slotLegendItems: PlanningLegendItem[] = [
 		{ label: 'Pharmacien', swatch: 'shiftStrong' },
@@ -45,7 +56,10 @@
 
 <div class="flex flex-wrap items-center gap-3">
 	<SegmentedControl label="Vue du planning" options={data.viewOptions} />
-	<Button href={data.addShiftPanel.openHref} icon="plus">Ajouter un créneau</Button>
+	<form method="POST" action={data.generateWeekFormAction}>
+		<Button type="submit" icon="sparkle">Proposer la semaine</Button>
+	</form>
+	<Button href={data.addShiftPanel.openHref} variant="secondary" icon="plus">Ajouter un créneau</Button>
 	<Button href={data.applyTemplatePanel.openHref} variant="secondary" icon="calendar-dots">Appliquer une semaine type</Button>
 	<Button href={data.saveTemplatePanel.openHref} variant="ghost" icon="check">Enregistrer comme semaine type</Button>
 	<Button href={data.settingsHref} variant="ghost" icon="wrench">Règles et contrats</Button>
@@ -62,8 +76,16 @@
 	</div>
 </div>
 
+{#if form && 'generationReport' in form}
+	<GenerationReportPanel report={form.generationReport} closeHref={form.closeHref} />
+{/if}
+
 {#if form && 'isSuccess' in form && form.isSuccess}
 	<Alert tone="success" title="Semaine type appliquée">{form.message}</Alert>
+{/if}
+
+{#if dragFailureMessage}
+	<Alert tone="danger" title="Créneau non modifié">{dragFailureMessage}</Alert>
 {/if}
 
 <PendingAvailabilityRequestsPanel
@@ -85,6 +107,7 @@
 		rows={data.rows}
 		summary={data.pharmacistCoverage}
 		deleteSlotFormAction={data.deleteShiftFormAction}
+		onShiftChange={saveDraggedShift}
 	/>
 {:else}
 	<PlanningTimeline
@@ -93,6 +116,7 @@
 		opening={data.opening}
 		coverage={data.pharmacistCoverage}
 		now={data.now}
+		dragging={{ range: data.timelineMinutes, date: data.date, onShiftChange: saveDraggedShift }}
 	/>
 {/if}
 
@@ -106,7 +130,7 @@
 			cancelHref={data.addShiftPanel.closeHref}
 			employees={data.employees}
 			defaultDate={data.defaultShiftDate}
-			errorMessage={form && 'message' in form ? form.message : undefined}
+			errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
 			submittedValues={form && 'values' in form ? form.values : undefined}
 		/>
 	</SidePanel>
@@ -147,7 +171,7 @@
 			cancelHref={data.editShiftPanel.closeHref}
 			employees={data.employees}
 			defaultDate={data.defaultShiftDate}
-			errorMessage={form && 'message' in form ? form.message : undefined}
+			errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
 			submittedValues={form && 'values' in form ? form.values : data.editShiftPanel.values}
 		/>
 	</SidePanel>
