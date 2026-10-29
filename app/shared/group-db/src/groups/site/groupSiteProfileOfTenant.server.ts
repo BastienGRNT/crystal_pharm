@@ -1,4 +1,5 @@
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { connectToDatabase } from '@crystal-pharm/auth/toolkit';
+import { and, eq, isNull, or, sql } from 'drizzle-orm';
 import * as v from 'valibot';
 import { runWithGroupAccess } from '../../database/groupDatabase.server';
 import { pharmacyGroups, pharmacyMemberships } from '../../database/groupTables';
@@ -50,6 +51,32 @@ export async function findGroupSiteProfileOfTenant(tenantId: string): Promise<Gr
 			articles: await listGroupArticles(transaction, group.groupId)
 		};
 	});
+}
+
+type GroupSiteProfileRow = Omit<GroupSiteProfileOfTenant, 'logoId' | 'loyaltyCardImageId' | 'loyaltyCardUrl' | 'loyaltyCardMessage'> & {
+	logoId: string | null;
+	loyaltyCardImageId: string | null;
+	loyaltyCardUrl: string | null;
+	loyaltyCardMessage: string | null;
+};
+
+/**
+ * Le même profil en une seule instruction, sans transaction explicite :
+ * `groups.read_group_site_profile_of_tenant` pose elle-même le contexte de la Row-Level Security.
+ */
+export async function findGroupSiteProfileOfTenantInOneStatement(tenantId: string): Promise<GroupSiteProfileOfTenant | undefined> {
+	const [row] = await connectToDatabase().execute<{ profile: GroupSiteProfileRow | null }>(
+		sql`select groups.read_group_site_profile_of_tenant(${tenantId}::uuid) as profile`
+	);
+	if (!row?.profile) return undefined;
+	const { profile } = row;
+	return {
+		...profile,
+		logoId: profile.logoId ?? undefined,
+		loyaltyCardImageId: profile.loyaltyCardImageId ?? undefined,
+		loyaltyCardUrl: profile.loyaltyCardUrl ?? undefined,
+		loyaltyCardMessage: profile.loyaltyCardMessage ?? undefined
+	};
 }
 
 /** Une image du groupement actuel de la pharmacie, seulement si c'est son logo ou sa carte de fidélité. */

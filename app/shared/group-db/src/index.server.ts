@@ -19,6 +19,7 @@ export {
 export type { PharmacyGroupImage } from './groups/profile/PharmacyGroupImage';
 export {
 	findGroupSiteProfileOfTenant,
+	findGroupSiteProfileOfTenantInOneStatement,
 	readGroupImageOfTenant,
 	type GroupSiteProfileOfTenant
 } from './groups/site/groupSiteProfileOfTenant.server';

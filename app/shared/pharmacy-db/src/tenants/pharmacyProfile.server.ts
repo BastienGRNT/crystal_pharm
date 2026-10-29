@@ -1,4 +1,5 @@
-import { eq } from 'drizzle-orm';
+import { connectToDatabase } from '@crystal-pharm/auth/toolkit';
+import { eq, sql } from 'drizzle-orm';
 import * as v from 'valibot';
 import { PhoneNumber } from '../contact-details/PhoneNumber';
 import {
@@ -47,6 +48,34 @@ export async function getPharmacyProfile(tenantId: string): Promise<PharmacyProf
 		phoneNumber: PhoneNumber.fromStorageFormat(tenant.phoneNumber),
 		email: tenant.email ?? undefined,
 		weeklyOpeningSchedule: tenant.weeklyOpeningSchedule ?? undefined
+	};
+}
+
+type PharmacyProfileRow = Omit<PharmacyContactDetails, 'phoneNumber' | 'email'> & {
+	phoneNumber: string;
+	email: string | null;
+	weeklyOpeningSchedule: WeeklyOpeningSchedule | null;
+};
+
+/**
+ * La même fiche en une seule instruction, sans transaction explicite :
+ * `pharmacy.read_pharmacy_profile_for_site` pose elle-même le contexte de la Row-Level Security.
+ */
+export async function getPharmacyProfileInOneStatement(tenantId: string): Promise<PharmacyProfile> {
+	const [row] = await connectToDatabase().execute<{ profile: PharmacyProfileRow | null }>(
+		sql`select pharmacy.read_pharmacy_profile_for_site(${tenantId}::uuid) as profile`
+	);
+	if (!row?.profile) throw new Error(`The tenant ${tenantId} does not exist.`);
+	const { profile } = row;
+
+	return {
+		name: profile.name,
+		street: profile.street,
+		postalCode: profile.postalCode,
+		city: profile.city,
+		phoneNumber: PhoneNumber.fromStorageFormat(profile.phoneNumber),
+		email: profile.email ?? undefined,
+		weeklyOpeningSchedule: profile.weeklyOpeningSchedule ?? undefined
 	};
 }
 

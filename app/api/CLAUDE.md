@@ -35,7 +35,7 @@ app/api/
 
 - Un seul `ITenantContext`, rempli par un middleware à partir de **deux
   sources exclusives** : le JWT de Better Auth d'un TenantMember, ou l'identité de
-  service de `site` (qui transmet le `tenantId` de la passerelle).
+  service de `site` (qui transmet le `tenantId` résolu du Host).
 - Chaque endpoint d'un TenantMember exige la Responsibility qui le couvre
   (dans les claims du JWT) : le C# la revérifie, même si `pharmacy` l'a fait.
 - Le C# n'émet aucun token et ne connaît aucun compte. Il vérifie le JWT par

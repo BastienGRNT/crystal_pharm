@@ -1,6 +1,6 @@
 import type { ModuleName, NewsModuleData, ServicesModuleData } from '@crystal-pharm/schema';
-import { desc, eq } from 'drizzle-orm';
-import { runAsTenant } from '../database/contentDatabase.server';
+import { desc, eq, sql } from 'drizzle-orm';
+import { connectToContentDatabase, runAsTenant } from '../database/contentDatabase.server';
 import { articles, tenantSites, type NewsSource } from '../database/contentTables';
 
 /** Ce que le Tenant a saisi pour son site ; le reste vient de sa fiche et de son groupement. */
@@ -44,6 +44,21 @@ export async function readTenantSiteContent(tenantId: string): Promise<TenantSit
 			}))
 		};
 	});
+}
+
+type TenantSiteContentRow = Omit<TenantSiteContent, 'prescriptionIntroduction'> & { prescriptionIntroduction: string | null };
+
+/**
+ * Le même contenu en une seule instruction, sans transaction explicite :
+ * `content.read_tenant_site_content` pose elle-même le contexte de la Row-Level Security.
+ */
+export async function readTenantSiteContentInOneStatement(tenantId: string): Promise<TenantSiteContent | undefined> {
+	const [row] = await connectToContentDatabase().execute<{ content: TenantSiteContentRow | null }>(
+		sql`select content.read_tenant_site_content(${tenantId}::uuid) as content`
+	);
+	if (!row?.content) return undefined;
+	const { prescriptionIntroduction, ...content } = row.content;
+	return { ...content, prescriptionIntroduction: prescriptionIntroduction ?? undefined };
 }
 
 // `engine/schema` attend une date sans heure (`2026-10-24`) : le jour de publication à Paris.
