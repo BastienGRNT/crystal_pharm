@@ -1,3 +1,4 @@
+import { findBlockingRule, describeAvailabilityRule, type AvailabilityRule } from '../availability/availabilityRules';
 import { formatTimeOfDay, type OpeningHours } from '../coverage/coverage';
 import {
 	buildPlanningRows,
@@ -21,6 +22,7 @@ export type PlanningIssueKind =
 	| 'shift-too-short'
 	| 'too-many-shifts'
 	| 'employee-on-absence'
+	| 'shift-on-unavailability'
 	| 'contract-hours-short';
 
 export type PlanningIssue = {
@@ -40,6 +42,7 @@ export type PlanningIssueInput = {
 	requirementWindowsByDate: RequirementWindow[][];
 	rules: PlanningRules;
 	termsByEmployee: Map<string, EmployeeTerms>;
+	availabilityRules: readonly AvailabilityRule[];
 };
 
 /** Tout ce que le titulaire doit regarder dans la semaine, du plus grave au moins grave, jour par jour. */
@@ -98,7 +101,7 @@ function detectStaffingIssues(input: PlanningIssueInput, date: string, dayIndex:
 	];
 }
 
-function detectShiftIssues({ weekPlanning, weekDates, rules }: PlanningIssueInput): PlanningIssue[] {
+function detectShiftIssues({ weekPlanning, weekDates, rules, availabilityRules }: PlanningIssueInput): PlanningIssue[] {
 	return buildPlanningRows(weekPlanning, weekDates).flatMap(({ employee, cells }) =>
 		cells.flatMap((cell): PlanningIssue[] => {
 			const dayTitle = formatDayTitle(new Date(`${cell.date}T00:00:00Z`));
@@ -124,6 +127,17 @@ function detectShiftIssues({ weekPlanning, weekDates, rules }: PlanningIssueInpu
 				});
 			}
 			for (const shift of cell.shifts) {
+				const blockingRule = findBlockingRule(availabilityRules, employee.id, cell.date, shift.startTime, shift.endTime);
+				if (blockingRule) {
+					issues.push({
+						key: `unavailable-${shift.id}`,
+						kind: 'shift-on-unavailability',
+						severity: 'alert',
+						date: cell.date,
+						employeeId: employee.id,
+						message: `${employee.fullName}, ${dayTitle.toLocaleLowerCase('fr')} : plage de ${shift.startTime} à ${shift.endTime} sur une indisponibilité (${describeAvailabilityRule(blockingRule).toLocaleLowerCase('fr')}).`
+					});
+				}
 				const durationMinutes = sumPlannedMinutes([shift]);
 				if (durationMinutes >= rules.minimumShiftMinutes) continue;
 				issues.push({

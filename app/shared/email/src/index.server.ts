@@ -1,3 +1,4 @@
+export { composeAvailabilityDecisionEmail, composeAvailabilityRequestEmail } from './messages/availabilityEmails';
 export {
 	composeGroupMemberInvitationEmail,
 	composePharmacyInvitationEmail,

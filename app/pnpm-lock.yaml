@@ -350,6 +350,12 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../../../shared/auth
+      '@crystal-pharm/billing-db':
+        specifier: workspace:*
+        version: link:../../../shared/billing-db
+      '@crystal-pharm/email':
+        specifier: workspace:*
+        version: link:../../../shared/email
       '@crystal-pharm/pharmacy-db':
         specifier: workspace:*
         version: link:../../../shared/pharmacy-db

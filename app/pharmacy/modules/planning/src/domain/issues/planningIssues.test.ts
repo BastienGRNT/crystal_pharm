@@ -27,7 +27,8 @@ function buildInput(weekPlanning: WeekPlanning, termsList: EmployeeTerms[] = [])
 		openingPeriodsByDate: openOnMondayFrom9To19,
 		requirementWindowsByDate: weekDates.map(() => []),
 		rules: { ...defaultPlanningRules, minimumPeoplePresent: 2 },
-		termsByEmployee: new Map(termsList.map((terms) => [terms.employeeId, terms]))
+		termsByEmployee: new Map(termsList.map((terms) => [terms.employeeId, terms])),
+		availabilityRules: []
 	};
 }
 

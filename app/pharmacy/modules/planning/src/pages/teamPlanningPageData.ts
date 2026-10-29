@@ -42,6 +42,7 @@ export type FormActions = {
 	editShiftHrefPrefix: string;
 	updateShiftFormAction: string;
 	deleteShiftFormAction: string;
+	decideAvailabilityFormAction: string;
 	publishWeekFormAction: string;
 	returnWeekToDraftFormAction: string;
 };
@@ -50,6 +51,13 @@ export type WeekStatusSummary = {
 	isDraft: boolean;
 	/** Le lundi de la semaine concernée, que les actions de publication reçoivent. */
 	mondayDate: string;
+};
+
+export type PendingAvailabilityRequestView = {
+	ruleId: string;
+	employeeName: string;
+	summary: string;
+	note: string;
 };
 
 export type PlanningIssueView = {
@@ -69,6 +77,7 @@ export type CommonPlanningPageData = FormActions & {
 	employees: Employee[];
 	weekStatus: WeekStatusSummary;
 	issues: PlanningIssueView[];
+	pendingAvailabilityRequests: PendingAvailabilityRequestView[];
 	settingsHref: string;
 };
 

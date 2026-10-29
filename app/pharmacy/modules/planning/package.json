@@ -22,6 +22,8 @@
 	},
 	"dependencies": {
 		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/billing-db": "workspace:*",
+		"@crystal-pharm/email": "workspace:*",
 		"@crystal-pharm/pharmacy-db": "workspace:*",
 		"@crystal-pharm/ui": "workspace:*",
 		"drizzle-orm": "^0.45.4",

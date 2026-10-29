@@ -63,6 +63,7 @@ import {
 	type ShiftSubmission
 } from './services/team/teamPlanningService';
 import { findPlanningRules } from './services/settings/planningSettingsService';
+import { decideAvailabilityRule, listPendingAvailabilityRequests } from './services/availability/availabilityService';
 import { listWeekIssues } from './services/week/weekIssuesService';
 import { getWeekStatus, publishWeek, returnWeekToDraft } from './services/week/weekStatusService';
 
@@ -113,6 +114,7 @@ function buildFormActions(url: URL): FormActions {
 		editShiftHrefPrefix: toPageHref(url, new URLSearchParams([...pageQuery, ['edit', '']])),
 		updateShiftFormAction: toActionHref(pageQueryWithEdit, 'updateShift'),
 		deleteShiftFormAction: toActionHref(pageQuery, 'deleteShift'),
+		decideAvailabilityFormAction: toActionHref(pageQuery, 'decideAvailability'),
 		publishWeekFormAction: toActionHref(pageQuery, 'publishWeek'),
 		returnWeekToDraftFormAction: toActionHref(pageQuery, 'returnWeekToDraft')
 	};
@@ -163,12 +165,24 @@ function withEditedShiftValues(formActions: FormActions, shifts: Shift[]): FormA
 	return { ...formActions, editShiftPanel: { ...editShiftPanel, values: { employeeId, date, startTime, endTime } } };
 }
 
-type WeekContext = Pick<CommonPlanningPageData, 'weekStatus' | 'settingsHref'> & { issues: PlanningIssue[] };
+type WeekContext = Pick<CommonPlanningPageData, 'weekStatus' | 'settingsHref' | 'pendingAvailabilityRequests'> & {
+	issues: PlanningIssue[];
+};
 
 /** Ce qui vaut pour toute la semaine, qu'on regarde la semaine ou une de ses journées. */
 async function loadWeekContext(tenantId: string, monday: Date): Promise<WeekContext> {
-	const [status, issues] = await Promise.all([getWeekStatus(tenantId, monday), listWeekIssues(tenantId, monday)]);
+	const [status, issues, pendingRequests] = await Promise.all([
+		getWeekStatus(tenantId, monday),
+		listWeekIssues(tenantId, monday),
+		listPendingAvailabilityRequests(tenantId)
+	]);
 	return {
+		pendingAvailabilityRequests: pendingRequests.map(({ rule, employeeName, summary }) => ({
+			ruleId: rule.id,
+			employeeName,
+			summary,
+			note: rule.note
+		})),
 		weekStatus: { isDraft: status === 'draft', mondayDate: toIsoDate(monday) },
 		settingsHref: '/planning/parametres',
 		issues
@@ -453,6 +467,16 @@ export const actions = {
 	returnWeekToDraft: async ({ url, locals }) => {
 		const tenantId = await requireActiveTenantId(locals.user);
 		await returnWeekToDraft(tenantId, readMondayOfDisplayedWeek(url));
+		redirect(303, toPageHref(url, readPageQuery(url)));
+	},
+
+	decideAvailability: async ({ request, url, locals }) => {
+		const tenantId = await requireActiveTenantId(locals.user);
+		const formData = await request.formData();
+		const decision = String(formData.get('decision') ?? '');
+		if (decision !== 'approved' && decision !== 'declined') return fail(400, { message: 'Décision inconnue.' });
+
+		await decideAvailabilityRule(tenantId, String(formData.get('ruleId') ?? ''), decision);
 		redirect(303, toPageHref(url, readPageQuery(url)));
 	},
 

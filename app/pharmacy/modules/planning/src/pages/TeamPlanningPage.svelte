@@ -2,6 +2,7 @@
 	import { Button, PageHeader, SegmentedControl, SidePanel, WeekNav } from '@crystal-pharm/ui';
 	import PlanningLegend from '../components/molecules/PlanningLegend.svelte';
 	import type { PlanningLegendItem } from '../components/molecules/planningLegend';
+	import PendingAvailabilityRequestsPanel from '../components/organisms/availability/PendingAvailabilityRequestsPanel.svelte';
 	import PlanningIssuesPanel from '../components/organisms/issues/PlanningIssuesPanel.svelte';
 	import ShiftForm from '../components/organisms/ShiftForm.svelte';
 	import WeekStatusBar from '../components/molecules/week-status/WeekStatusBar.svelte';
@@ -56,6 +57,11 @@
 		/>
 	</div>
 </div>
+
+<PendingAvailabilityRequestsPanel
+	requests={data.pendingAvailabilityRequests}
+	decideFormAction={data.decideAvailabilityFormAction}
+/>
 
 <WeekStatusBar
 	isDraft={data.weekStatus.isDraft}

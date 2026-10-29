@@ -8,6 +8,7 @@ import {
 	integer,
 	pgPolicy,
 	pgSchema,
+	smallint,
 	primaryKey,
 	text,
 	time,
@@ -15,6 +16,7 @@ import {
 	uuid
 } from 'drizzle-orm/pg-core';
 import type { AbsenceKind } from '../../domain/planning';
+import type { AvailabilityKind, AvailabilityStatus } from '../../domain/availability/availabilityRules';
 import type { AvailabilityValidation } from '../../domain/rules/employeeTerms';
 import { defaultPlanningRules } from '../../domain/rules/planningRules';
 
@@ -148,5 +150,64 @@ export const plannedWeeks = planningSchema.table(
 		primaryKey({ columns: [table.tenantId, table.mondayDate] }),
 		check('planned_weeks_status_is_known', sql.raw(`status in (${plannedWeekStatuses.map((status) => `'${status}'`).join(', ')})`)),
 		ofActiveTenant('planned_weeks_of_active_tenant')
+	]
+);
+
+const availabilityKinds = ['unavailable', 'course', 'available'] as const satisfies readonly AvailabilityKind[];
+const availabilityStatuses = ['pending', 'approved', 'declined'] as const satisfies readonly AvailabilityStatus[];
+const quoted = (values: readonly string[]) => values.map((value) => `'${value}'`).join(', ');
+
+/** Une indisponibilité, un cours ou une disponibilité d'un Employee : chaque semaine (`weekday`) ou un jour précis (`date`). */
+export const availabilityRules = planningSchema.table(
+	'availability_rules',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id').notNull(),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'cascade' }),
+		kind: text('kind').$type<AvailabilityKind>().notNull(),
+		weekday: smallint('weekday'),
+		date: date('date', { mode: 'string' }),
+		startTime: time('start_time').notNull(),
+		endTime: time('end_time').notNull(),
+		status: text('status').$type<AvailabilityStatus>().notNull(),
+		note: text('note').notNull().default(''),
+		decidedAt: timestampWithTimeZone('decided_at'),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('availability_rules_tenant_id_employee_id_index').on(table.tenantId, table.employeeId),
+		index('availability_rules_tenant_id_status_index').on(table.tenantId, table.status),
+		check('availability_rules_kind_is_known', sql.raw(`kind in (${quoted(availabilityKinds)})`)),
+		check('availability_rules_status_is_known', sql.raw(`status in (${quoted(availabilityStatuses)})`)),
+		check('availability_rules_weekday_or_date', sql`(${table.weekday} is null) <> (${table.date} is null)`),
+		check('availability_rules_weekday_is_valid', sql`${table.weekday} is null or ${table.weekday} between 0 and 6`),
+		check('availability_rules_ends_after_start', sql`${table.startTime} < ${table.endTime}`),
+		ofActiveTenant('availability_rules_of_active_tenant')
+	]
+);
+
+export type PlanningNoticeKind = 'availability-requested' | 'availability-decided';
+
+const planningNoticeKinds = ['availability-requested', 'availability-decided'] as const satisfies readonly PlanningNoticeKind[];
+
+/** Une notification dans l'application, pour un compte du Tenant (sans clé étrangère : le compte vit dans un autre schéma). */
+export const planningNotices = planningSchema.table(
+	'planning_notices',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id').notNull(),
+		recipientAccountId: uuid('recipient_account_id').notNull(),
+		kind: text('kind').$type<PlanningNoticeKind>().notNull(),
+		message: text('message').notNull(),
+		linkPathname: text('link_pathname').notNull(),
+		readAt: timestampWithTimeZone('read_at'),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('planning_notices_tenant_id_recipient_created_index').on(table.tenantId, table.recipientAccountId, table.createdAt),
+		check('planning_notices_kind_is_known', sql.raw(`kind in (${quoted(planningNoticeKinds)})`)),
+		ofActiveTenant('planning_notices_of_active_tenant')
 	]
 );

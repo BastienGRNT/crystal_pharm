@@ -15,6 +15,13 @@
       "when": 1793236107410,
       "tag": "0001_planning_rules_terms_and_week_status",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793238305644,
+      "tag": "0002_availability_rules_and_notices",
+      "breakpoints": true
     }
   ]
 }

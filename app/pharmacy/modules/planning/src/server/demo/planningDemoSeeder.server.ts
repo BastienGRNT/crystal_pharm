@@ -1,5 +1,6 @@
 import { listEmployees } from '@crystal-pharm/pharmacy-db';
 import { addDays, getMondayOfWeek, toIsoDate } from '../../domain/calendar/week';
+import { insertAvailabilityRule, type NewAvailabilityRule } from '../repositories/availabilityRuleRepository';
 import { insertAbsence, insertShift } from '../repositories/planningRepository';
 import { savePlannedWeekStatus } from '../repositories/plannedWeekRepository';
 import { saveEmployeeTerms } from '../repositories/employeeTermsRepository';
@@ -35,6 +36,23 @@ const demoTermsByFirstName: Record<string, { weeklyContractHours: number; hourly
 	Emma: { weeklyContractHours: 12, hourlyRateEuros: 9.5, isStudent: true }
 };
 
+const demoAvailabilityRulesByFirstName = (currentMonday: Date): Record<string, Omit<NewAvailabilityRule, 'employeeId'>[]> => ({
+	Emma: [
+		{ kind: 'course', weekday: monday, date: undefined, startTime: '14:00', endTime: '18:00', status: 'approved', note: 'Cours de pharmacie' },
+		{ kind: 'course', weekday: wednesday, date: undefined, startTime: '08:30', endTime: '12:30', status: 'approved', note: '' },
+		{
+			kind: 'unavailable',
+			weekday: undefined,
+			date: toIsoDate(addDays(currentMonday, 8 + friday)),
+			startTime: '08:00',
+			endTime: '19:30',
+			status: 'pending',
+			note: 'Partiels'
+		}
+	],
+	Thomas: [{ kind: 'unavailable', weekday: thursday, date: undefined, startTime: '17:00', endTime: '19:30', status: 'approved', note: '' }]
+});
+
 /** Le planning de démo d'un Tenant : la semaine passée, celle-ci (avec un congé) et la suivante en brouillon. */
 export async function seedPlanningDemoData(tenantId: string): Promise<void> {
 	const employees = await listEmployees(tenantId);
@@ -63,6 +81,10 @@ export async function seedPlanningDemoData(tenantId: string): Promise<void> {
 					endTime: template.endTime
 				});
 			}
+		}
+
+		for (const rule of demoAvailabilityRulesByFirstName(currentMonday)[firstName] ?? []) {
+			await insertAvailabilityRule(tenantId, { ...rule, employeeId: employee.employeeId });
 		}
 
 		if (firstName === 'Julien') {
