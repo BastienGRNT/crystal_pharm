@@ -10,6 +10,7 @@ export {
 	type DemoSpace
 } from './personas/demoPersonas';
 export { ensureDemoData, resetDemoData } from './seeding/demoData.server';
+export { registerPharmacyDemoSeeder } from './seeding/pharmacyDemoSeeders.server';
 export {
 	developmentActionPathname,
 	loadDeveloperToolbarData,

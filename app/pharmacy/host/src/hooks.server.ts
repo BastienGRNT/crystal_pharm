@@ -4,6 +4,14 @@ import { createCustomerAuthenticationHandle } from '@crystal-pharm/auth';
 import { createToolAccessHandle } from '@crystal-pharm/home/server';
 import { protectedTools } from '$lib/toolLinks';
 
+if (import.meta.env.DEV) {
+	const [{ registerPharmacyDemoSeeder }, { seedPlanningDemoData }] = await Promise.all([
+		import('@crystal-pharm/dev-tools'),
+		import('@crystal-pharm/planning/server')
+	]);
+	registerPharmacyDemoSeeder(seedPlanningDemoData);
+}
+
 const healthDataPathnamePrefixes = ['/booking', '/prescriptions'];
 
 const preventCachingOfHealthData: Handle = async ({ event, resolve }) => {

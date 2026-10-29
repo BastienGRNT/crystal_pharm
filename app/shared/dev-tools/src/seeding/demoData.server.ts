@@ -38,6 +38,7 @@ import {
 } from '@crystal-pharm/pharmacy-db';
 import type { PharmacyContactDetailsInput, WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
 import { readAppUrl } from '../appUrls.server';
+import { runPharmacyDemoSeeders } from './pharmacyDemoSeeders.server';
 import {
 	demoCounterAccounts,
 	demoEmail,
@@ -176,6 +177,7 @@ async function seedDemoData(): Promise<void> {
 	await subscribe('pharmacien', requireTenantId(tenantIdsByPersonaKey, 'pharmacien'), ['site', 'planning'], 'monthly');
 	await addDemoTeam(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'));
 	await giveDemoTeamTheirAccounts(tenantIdsByPersonaKey);
+	await runPharmacyDemoSeeders(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'));
 }
 
 /** Les comptes de l'équipe, déclarés par leur persona : un par rôle à tester. */

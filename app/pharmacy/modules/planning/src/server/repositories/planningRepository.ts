@@ -4,6 +4,7 @@ import { runAsTenant } from '../db/planningDatabase.server';
 import { absences, shifts } from '../db/planningTables';
 
 export type NewShift = Omit<Shift, 'id'>;
+export type NewAbsence = Omit<Absence, 'id'>;
 
 // Postgres rend une heure en « 08:30:00 » : le planning n'en garde que « 08:30 ».
 const toHoursAndMinutes = (storedTime: string): string => storedTime.slice(0, 5);
@@ -46,6 +47,12 @@ export async function listAbsences(tenantId: string, firstDate: string, lastDate
 export async function insertShift(tenantId: string, newShift: NewShift): Promise<void> {
 	await runAsTenant(tenantId, (transaction) =>
 		transaction.insert(shifts).values({ id: crypto.randomUUID(), tenantId, ...newShift })
+	);
+}
+
+export async function insertAbsence(tenantId: string, newAbsence: NewAbsence): Promise<void> {
+	await runAsTenant(tenantId, (transaction) =>
+		transaction.insert(absences).values({ id: crypto.randomUUID(), tenantId, ...newAbsence })
 	);
 }
 
