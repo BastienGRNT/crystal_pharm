@@ -21,13 +21,22 @@ public static class SiteServiceAuthentication
     public const string CallerId = "site-service";
 
     private const int MinimumKeyLength = 32;
+    private static readonly string[] ExampleKeyMarkers = ["dev-only-", "change-me"];
 
-    public static IServiceCollection AddSiteServiceAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSiteServiceAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         var apiKey = configuration["SiteService:ApiKey"];
         if (apiKey is null || apiKey.Length < MinimumKeyLength)
         {
             throw new InvalidOperationException($"SiteService__ApiKey is missing from the environment, or shorter than {MinimumKeyLength} characters.");
+        }
+
+        if (!environment.IsDevelopment() && ExampleKeyMarkers.Any(marker => apiKey.Contains(marker, StringComparison.Ordinal)))
+        {
+            throw new InvalidOperationException("SiteService__ApiKey is still an example value: refusing to start outside Development.");
         }
 
         services.AddAuthentication().AddScheme<SiteServiceOptions, SiteServiceHandler>(SchemeName, options => options.ApiKey = apiKey);
