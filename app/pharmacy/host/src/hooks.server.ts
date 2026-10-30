@@ -1,6 +1,7 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, ServerInit } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { createCustomerAuthenticationHandle } from '@crystal-pharm/auth';
+import { assertProductionSecretsAreStrong } from '@crystal-pharm/auth/toolkit';
 import { createToolAccessHandle } from '@crystal-pharm/home/server';
 import { protectedTools } from '$lib/toolLinks';
 
@@ -11,6 +12,10 @@ if (import.meta.env.DEV) {
 	]);
 	registerPharmacyDemoSeeder(seedPlanningDemoData);
 }
+
+export const init: ServerInit = () => {
+	assertProductionSecretsAreStrong(['BETTER_AUTH_SECRET', 'SITE_PREVIEW_MEDIA_SECRET']);
+};
 
 const healthDataPathnamePrefixes = ['/booking', '/prescriptions'];
 
