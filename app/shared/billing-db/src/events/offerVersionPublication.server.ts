@@ -1,9 +1,9 @@
 import { sendEmail } from '@crystal-pharm/email';
 import { listOwnerEmailsOfTenant } from '@crystal-pharm/pharmacy-db';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { platformBillingAccess, runWithBillingAccess } from '../database/billingDatabase.server';
 import { offers, offerVersions, offerVersionTools, tenantSubscriptionItems, tenantSubscriptions } from '../database/billingTables';
-import { readOfferVersion } from '../offers/offerCatalog.server';
+import { readLatestOfferVersion } from '../offers/offerCatalog.server';
 import { isPriceDrop, type OfferVersionTerms } from '../offers/offerPublication';
 import {
 	finishSubscriptionEvent,
@@ -31,16 +31,10 @@ export async function publishOfferVersion(publication: OfferVersionPublication, 
 			.insert(offers)
 			.values({ offerKey: publication.offerKey, label: publication.label })
 			.onConflictDoUpdate({ target: offers.offerKey, set: { label: publication.label } });
-		const [latestVersionRow] = await transaction
-			.select()
-			.from(offerVersions)
-			.where(eq(offerVersions.offerKey, publication.offerKey))
-			.orderBy(desc(offerVersions.versionNumber))
-			.limit(1);
-		const previousVersion = latestVersionRow && (await readOfferVersion(transaction, latestVersionRow.id));
+		const previousVersion = await readLatestOfferVersion(transaction, publication.offerKey);
 
 		const offerVersionId = crypto.randomUUID();
-		const versionNumber = (latestVersionRow?.versionNumber ?? 0) + 1;
+		const versionNumber = (previousVersion?.versionNumber ?? 0) + 1;
 		await transaction.insert(offerVersions).values({
 			id: offerVersionId,
 			offerKey: publication.offerKey,

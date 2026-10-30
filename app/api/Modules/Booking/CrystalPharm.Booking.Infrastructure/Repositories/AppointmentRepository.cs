@@ -10,29 +10,20 @@ internal sealed class AppointmentRepository(BookingDbContext context) : IAppoint
 {
     public async Task<IReadOnlyList<Appointment>> ListOfDaysAsync(
         IReadOnlyCollection<DateOnly> days,
-        CancellationToken cancellationToken)
-    {
-        // Une lecture seule ne crée pas de transaction : on en ouvre une pour que la
-        // Row-Level Security connaisse le Tenant (cf. TenantTransactionInterceptor).
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        var appointments = await context.Appointments
-            .AsNoTracking()
-            .Where(appointment => days.Contains(appointment.Day))
-            .OrderBy(appointment => appointment.Day)
-            .ThenBy(appointment => appointment.StartTime)
-            .ToListAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return appointments;
-    }
+        CancellationToken cancellationToken) =>
+        await context.ReadInTenantTransactionAsync(
+            () => context.Appointments
+                .AsNoTracking()
+                .Where(appointment => days.Contains(appointment.Day))
+                .OrderBy(appointment => appointment.Day)
+                .ThenBy(appointment => appointment.StartTime)
+                .ToListAsync(cancellationToken),
+            cancellationToken);
 
-    public async Task<Appointment?> FindAsync(Guid appointmentId, CancellationToken cancellationToken)
-    {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        var appointment = await context.Appointments
-            .SingleOrDefaultAsync(candidate => candidate.Id == appointmentId, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return appointment;
-    }
+    public Task<Appointment?> FindAsync(Guid appointmentId, CancellationToken cancellationToken) =>
+        context.ReadInTenantTransactionAsync(
+            () => context.Appointments.SingleOrDefaultAsync(candidate => candidate.Id == appointmentId, cancellationToken),
+            cancellationToken);
 
     public void Add(Appointment appointment)
     {

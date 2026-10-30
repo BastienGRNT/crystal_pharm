@@ -1,9 +1,10 @@
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { BillingTransaction } from '../database/billingDatabase.server';
 import { tenantSubscriptionItems, tenantSubscriptions, type BillingPeriod } from '../database/billingTables';
 import { readLatestOfferVersion } from '../offers/offerCatalog.server';
 import { computePeriodEnd } from '../subscriptions/subscriptionPeriod';
 import {
+	clearCancellation,
 	computeBilledPriceOfOffer,
 	finishSubscriptionEvent,
 	listItemsOfSubscription,
@@ -83,11 +84,4 @@ async function startSubscription(
 		.returning();
 	if (!subscriptionRow) throw new Error('The subscription could not be created.');
 	return subscriptionRow;
-}
-
-async function clearCancellation(transaction: BillingTransaction, subscriptionId: string): Promise<void> {
-	await transaction
-		.update(tenantSubscriptions)
-		.set({ cancelledAt: null, endsAt: null })
-		.where(and(eq(tenantSubscriptions.id, subscriptionId), eq(tenantSubscriptions.status, 'active')));
 }

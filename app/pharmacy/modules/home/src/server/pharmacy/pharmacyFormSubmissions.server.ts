@@ -8,7 +8,7 @@ import {
 } from '@crystal-pharm/pharmacy-db/domain';
 import { employeePhotoRemovalFieldName } from '../../pages/pharmacy/pharmacyPageData';
 
-export const weeklyOpeningScheduleFieldName = 'weeklyOpeningSchedule';
+const weeklyOpeningScheduleFieldName = 'weeklyOpeningSchedule';
 const employeeIdFieldName = 'employeeId';
 
 export function readContactDetailsInput(formData: FormData): PharmacyContactDetailsInput {
@@ -43,7 +43,7 @@ export function readEmployeeId(formData: FormData): string {
 	return readText(formData, employeeIdFieldName);
 }
 
-function readText(formData: FormData, fieldName: string): string {
+export function readText(formData: FormData, fieldName: string): string {
 	const value = formData.get(fieldName);
 	return typeof value === 'string' ? value : '';
 }

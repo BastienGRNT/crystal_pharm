@@ -1,7 +1,7 @@
-import { and, desc, eq, gt, isNull, or } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { runWithBillingAccess } from '../database/billingDatabase.server';
 import { offerVersions, priceAgreements, tenantSubscriptions } from '../database/billingTables';
-import { listItemsOfSubscription } from '../events/subscriptionEventSupport.server';
+import { isSubscriptionNotEndedAt, listItemsOfSubscription } from '../events/subscriptionEventSupport.server';
 import { readOfferLabels } from './offerCatalog.server';
 
 export type SubscribedOffer = {
@@ -32,7 +32,7 @@ export function readSubscribedOffers(tenantId: string): Promise<SubscribedOffers
 		const [subscription] = await transaction
 			.select()
 			.from(tenantSubscriptions)
-			.where(and(eq(tenantSubscriptions.tenantId, tenantId), or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, now))))
+			.where(and(eq(tenantSubscriptions.tenantId, tenantId), isSubscriptionNotEndedAt(now)))
 			.orderBy(desc(tenantSubscriptions.startedAt))
 			.limit(1);
 		if (!subscription) return undefined;

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Email, SentEmail } from './email';
@@ -14,7 +14,6 @@ export function storeInDevelopmentOutbox(email: Email): void {
 
 /** Les derniers emails « envoyés » en dev, du plus récent au plus ancien. */
 export function readDevelopmentOutbox(): SentEmail[] {
-	if (!existsSync(developmentOutboxPath)) return [];
 	try {
 		return JSON.parse(readFileSync(developmentOutboxPath, 'utf8')) as SentEmail[];
 	} catch {

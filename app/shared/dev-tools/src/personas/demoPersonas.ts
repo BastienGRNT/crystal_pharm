@@ -188,7 +188,7 @@ export function findDemoPersonaByEmail(email: string | undefined): DemoPersona |
 	return demoPersonas.find((persona) => persona.email === email?.toLowerCase());
 }
 
-export function findDemoCounterAccount(personaKey: string): DemoCounterAccount | undefined {
+function findDemoCounterAccount(personaKey: string): DemoCounterAccount | undefined {
 	return demoCounterAccounts.find((counterAccount) => counterAccount.personaKey === personaKey);
 }
 

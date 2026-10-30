@@ -1,9 +1,9 @@
 using CrystalPharm.Booking.Application.Interfaces;
 using CrystalPharm.Booking.Application.Services;
 using CrystalPharm.Booking.Infrastructure.Persistence;
-using CrystalPharm.SharedKernel.Persistence.Tenancy;
 using CrystalPharm.Booking.Infrastructure.Repositories;
 using CrystalPharm.Booking.Infrastructure.Services;
+using CrystalPharm.SharedKernel.Persistence.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,15 +23,7 @@ public static class BookingModuleRegistration
         var connectionString = configuration.GetConnectionString(ConnectionStringName)
             ?? throw new InvalidOperationException($"ConnectionStrings__{ConnectionStringName} is missing from the environment.");
 
-        services.AddScoped<TenantOwnershipInterceptor>();
-        services.AddScoped<TenantTransactionInterceptor>();
-        services.AddDbContext<BookingDbContext>((serviceProvider, options) =>
-        {
-            ConfigureBookingDatabase(options, connectionString);
-            options.AddInterceptors(
-                serviceProvider.GetRequiredService<TenantOwnershipInterceptor>(),
-                serviceProvider.GetRequiredService<TenantTransactionInterceptor>());
-        });
+        services.AddTenantScopedDbContext<BookingDbContext>(options => ConfigureBookingDatabase(options, connectionString));
         services.AddScoped<IAppointmentRepository, AppointmentRepository>();
         services.AddScoped<IHealthDataAccessLog, HealthDataAccessLog>();
         services.AddScoped<IAppointmentService, AppointmentService>();

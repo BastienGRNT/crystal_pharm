@@ -16,7 +16,7 @@
 	import SitePreviewFrame from '../components/organisms/SitePreviewFrame.svelte';
 	import { toLayoutSettings, toLayoutSettingsFormValues, type LayoutSettingsFormValues } from '../domain/layoutSettingsForm';
 	import { isArticleDraftIncomplete, isServiceDraftIncomplete } from '../domain/siteContentLists';
-	import { collectAvailableModuleData, listDisplayableMandatoryModules, toTenantSiteInput } from '../domain/siteDraft';
+	import { toTenantSiteInput } from '../domain/siteDraft';
 	import { listSiteModuleChoices, type SiteModuleChoice } from '../domain/siteModuleChoices';
 	import {
 		articlesFieldName,
@@ -94,16 +94,14 @@
 				})
 			: undefined
 	);
-	const unavailableMandatoryModuleTitles = $derived.by(() => {
-		const displayableMandatoryModules = listDisplayableMandatoryModules(data.base, collectAvailableModuleData(data.base, contentDraft));
-		return moduleChoices
+	const unavailableMandatoryModuleTitles = $derived(
+		moduleChoices
 			.filter(
 				(moduleChoice) =>
-					data.base.group?.mandatoryModules.includes(moduleChoice.moduleName) &&
-					!displayableMandatoryModules.includes(moduleChoice.moduleName)
+					moduleChoice.state.kind === 'unavailable' && data.base.group?.mandatoryModules.includes(moduleChoice.moduleName)
 			)
-			.map((moduleChoice) => moduleChoice.title);
-	});
+			.map((moduleChoice) => moduleChoice.title)
+	);
 	const hasIncompleteItem = $derived(services.some(isServiceDraftIncomplete) || articles.some(isArticleDraftIncomplete));
 	const canSave = $derived(layoutSettingsReading?.success === true && !hasIncompleteItem && !isSaving);
 	const hasUnsavedChanges = $derived(fingerprintEdition() !== savedFingerprint);
@@ -137,7 +135,7 @@
 
 	// Les panneaux restent montés, cachés : leurs champs partent avec le formulaire.
 	let selectedPanelId = $state('services');
-	let mobileView = $state<MobileView>('edition' as MobileView);
+	let mobileView = $state<MobileView>('edition');
 
 	function selectPanel(panelId: string): void {
 		selectedPanelId = panelId;
@@ -176,6 +174,23 @@
 			? `Celles de ${data.base.group.name}`
 			: countLabel(articles.length, 'Aucune actualité', 'actualité', 'actualités')
 	);
+
+	function describeEditorPanel(moduleChoice: SiteModuleChoice): string {
+		if (moduleChoice.moduleName === 'services') return servicesSummary;
+		if (moduleChoice.moduleName === 'news') return newsSummary;
+		return moduleChoice.description;
+	}
+
+	function hasIncompleteItemIn(moduleName: ModuleName): boolean {
+		if (moduleName === 'services') return services.some(isServiceDraftIncomplete);
+		if (moduleName === 'news') return articles.some(isArticleDraftIncomplete);
+		return false;
+	}
+
+	function railStatusOf(moduleChoice: SiteModuleChoice): 'attention' | 'visible' | 'hidden' {
+		if (moduleChoice.state.kind === 'unavailable' || hasIncompleteItemIn(moduleChoice.moduleName)) return 'attention';
+		return isModuleChecked(moduleChoice) ? 'visible' : 'hidden';
+	}
 
 	const saveWithoutReloading: SubmitFunction = () => {
 		isSaving = true;
@@ -299,13 +314,7 @@
 						icon={railIconByPanelId[moduleChoice.moduleName as 'services' | 'news']}
 						label={moduleChoice.title}
 						isSelected={selectedPanelId === moduleChoice.moduleName}
-						status={moduleChoice.state.kind === 'unavailable' ||
-						(moduleChoice.moduleName === 'services' && services.some(isServiceDraftIncomplete)) ||
-						(moduleChoice.moduleName === 'news' && articles.some(isArticleDraftIncomplete))
-							? 'attention'
-							: isModuleChecked(moduleChoice)
-								? 'visible'
-								: 'hidden'}
+						status={railStatusOf(moduleChoice)}
 						onselect={() => selectPanel(moduleChoice.moduleName)}
 					/>
 				{/each}
@@ -334,7 +343,7 @@
 						id={moduleChoice.moduleName === 'news' ? 'actualites' : moduleChoice.moduleName}
 						class="grid scroll-mt-16 content-start gap-4 {selectedPanelId === moduleChoice.moduleName ? '' : 'hidden'}"
 					>
-						{@render panelHeader(moduleChoice.title, moduleChoice.moduleName === 'services' ? servicesSummary : moduleChoice.moduleName === 'news' ? newsSummary : moduleChoice.description, moduleChoice)}
+						{@render panelHeader(moduleChoice.title, describeEditorPanel(moduleChoice), moduleChoice)}
 						{#if moduleChoice.moduleName === 'services'}
 							<ServiceListEditor bind:services onserviceadded={() => enableModule('services')} />
 						{:else if moduleChoice.moduleName === 'news'}

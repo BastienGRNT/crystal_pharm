@@ -1,15 +1,10 @@
-import { addDays, formatDayTitle, toCalendarDay, toIsoDate } from '../../../domain/calendar/week';
-import { listRequirementWindowsOfDate } from '../../../domain/coverage/peakWindows';
+import { formatDayTitle, toIsoDate } from '../../../domain/calendar/week';
 import { generateWeek } from '../../../domain/generation/weekGenerator';
 import type { GenerationEmployee } from '../../../domain/generation/generationTypes';
 import { indexTermsByEmployee } from '../../../domain/rules/employeeTerms';
-import { listAvailabilityRules } from '../../repositories/availabilityRuleRepository';
-import { listEmployeeTerms } from '../../repositories/employeeTermsRepository';
-import { listPeakWindows } from '../../repositories/peakWindowRepository';
 import { findPlannedWeekStatus, savePlannedWeekStatus } from '../../repositories/plannedWeekRepository';
 import { insertShift, updateShiftRow } from '../../repositories/planningRepository';
-import { findPlanningRules } from '../../repositories/planningSettingsRepository';
-import { getWeekPlanning, listOpeningPeriodsByDate } from '../team/teamPlanningService';
+import { loadLiveWeekInput } from '../week/weekIssuesService';
 
 export type WeekGenerationReport = {
 	addedCount: number;
@@ -24,21 +19,13 @@ export type WeekGenerationReport = {
  * Une semaine encore vide passe en brouillon : le titulaire la relit avant que l'équipe la voie.
  */
 export async function generateWeekPlanning(tenantId: string, monday: Date): Promise<WeekGenerationReport> {
-	const weekDates = Array.from({ length: 7 }, (_, offset) => toIsoDate(addDays(monday, offset)));
-	const [weekPlanning, openingPeriodsByDate, rules, savedTerms, availabilityRules, peakWindows, status] = await Promise.all([
-		getWeekPlanning(tenantId, weekDates[0] ?? '', weekDates[6] ?? ''),
-		listOpeningPeriodsByDate(tenantId, weekDates),
-		findPlanningRules(tenantId),
-		listEmployeeTerms(tenantId),
-		listAvailabilityRules(tenantId, ['approved']),
-		listPeakWindows(tenantId),
-		findPlannedWeekStatus(tenantId, weekDates[0] ?? '')
-	]);
+	const mondayDate = toIsoDate(monday);
+	const [week, status] = await Promise.all([loadLiveWeekInput(tenantId, monday), findPlannedWeekStatus(tenantId, mondayDate)]);
 	const termsByEmployee = indexTermsByEmployee(
-		weekPlanning.employees.map((employee) => employee.id),
-		savedTerms
+		week.employees.map((employee) => employee.id),
+		week.terms
 	);
-	const employees = weekPlanning.employees.map((employee): GenerationEmployee => {
+	const employees = week.employees.map((employee): GenerationEmployee => {
 		const terms = termsByEmployee.get(employee.id);
 		return {
 			id: employee.id,
@@ -52,21 +39,21 @@ export async function generateWeekPlanning(tenantId: string, monday: Date): Prom
 	});
 
 	const result = generateWeek({
-		weekDates,
-		firstEditableDate: toIsoDate(toCalendarDay(new Date())),
-		openingPeriodsByDate,
-		requirementWindowsByDate: weekDates.map((date) => listRequirementWindowsOfDate(peakWindows, date)),
-		rules,
+		weekDates: week.weekDates,
+		firstEditableDate: week.firstEditableDate,
+		openingPeriodsByDate: week.openingPeriodsByDate,
+		requirementWindowsByDate: week.requirementWindowsByDate,
+		rules: week.rules,
 		employees,
-		absences: weekPlanning.absences,
-		availabilityRules,
-		existingShifts: weekPlanning.shifts
+		absences: week.absences,
+		availabilityRules: week.availabilityRules,
+		existingShifts: week.shifts
 	});
 
 	for (const { reason: _reason, ...shift } of result.proposedShifts) await insertShift(tenantId, shift);
 	for (const { shiftId, reason: _reason, ...shift } of result.extendedShifts) await updateShiftRow(tenantId, shiftId, shift);
-	if (status === 'published' && weekPlanning.shifts.length === 0 && result.proposedShifts.length > 0) {
-		await savePlannedWeekStatus(tenantId, weekDates[0] ?? '', 'draft');
+	if (status === 'published' && week.shifts.length === 0 && result.proposedShifts.length > 0) {
+		await savePlannedWeekStatus(tenantId, mondayDate, 'draft');
 	}
 
 	return {

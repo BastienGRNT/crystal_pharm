@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeBilledPriceCents, isPriceAgreementInForce, pickLowestAgreementPriceCents } from './negotiatedPrice';
+import { computeBilledPriceCents, pickLowestAgreementPriceCents } from './negotiatedPrice';
 
 describe('computeBilledPriceCents', () => {
 	it('charges the version price without an agreement', () => {
@@ -20,19 +20,6 @@ describe('computeBilledPriceCents', () => {
 
 	it('accepts a free negotiated price', () => {
 		expect(computeBilledPriceCents({ offerVersionPriceCents: 2900, priceAgreementPriceCents: 0 })).toBe(0);
-	});
-});
-
-describe('isPriceAgreementInForce', () => {
-	const now = new Date('2026-06-15T10:00:00Z');
-
-	it('is in force for life without an end date', () => {
-		expect(isPriceAgreementInForce({ startsAt: new Date('2025-01-01'), endsAt: undefined }, now)).toBe(true);
-	});
-
-	it('is not in force before it starts or after it ends', () => {
-		expect(isPriceAgreementInForce({ startsAt: new Date('2026-07-01'), endsAt: undefined }, now)).toBe(false);
-		expect(isPriceAgreementInForce({ startsAt: new Date('2025-01-01'), endsAt: new Date('2026-06-15T10:00:00Z') }, now)).toBe(false);
 	});
 });
 

@@ -1,3 +1,4 @@
+import { computeInvitationExpiry, generateInvitationToken, hashInvitationToken } from '@crystal-pharm/auth/toolkit';
 import { and, desc, eq, gt, isNull } from 'drizzle-orm';
 import { runWithGroupAccess, type GroupAccess, type GroupTransaction } from '../database/groupDatabase.server';
 import { pharmacyGroups, pharmacyInvitations, pharmacyMemberships } from '../database/groupTables';
@@ -5,7 +6,6 @@ import { countUsedPlaces } from '../groups/pharmacyGroups.server';
 import { invitationUnavailableMessages } from '../members/groupMembers.server';
 import type { InvitationListEntry } from './invitationList';
 import { describeInvitationStatus, type InvitationStatus } from './invitationStatus';
-import { computeInvitationExpiry, generateInvitationToken, hashInvitationToken } from './invitationTokens.server';
 
 export type PendingPharmacyInvitation = {
 	invitationId: string;
@@ -183,13 +183,15 @@ export async function findPharmacyInvitation(proof: InvitationProof): Promise<Ph
 	});
 }
 
-/** La pharmacie accepte : le groupement voit désormais ses données et prend en charge ce que prévoit son contrat. */
 /** L'accès sous lequel une pharmacie accepte : celui de l'invitation, et la pharmacie elle-même. */
 export function toAcceptanceAccess(tenantId: string, proof: InvitationProof): GroupAccess {
 	return { ...toInvitationAccess(proof), tenantId };
 }
 
-/** Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction. */
+/**
+ * La pharmacie accepte : le groupement voit désormais ses données et prend en charge ce que prévoit son contrat.
+ * Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction.
+ */
 export async function acceptPharmacyInvitationInTransaction(
 	transaction: GroupTransaction,
 	tenantId: string,

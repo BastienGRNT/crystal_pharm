@@ -1,5 +1,5 @@
 import { getPharmacyGroupForPlatform, listCoveredTenantIdsOfGroup } from '@crystal-pharm/group-db';
-import { and, eq, gt, inArray, isNull, or } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { readToolCatalog } from '../catalog/toolCatalog.server';
 import { readGroupContract, writeGroupContractStatus, type GroupContract } from '../contracts/groupContracts.server';
 import {
@@ -16,6 +16,7 @@ import {
 } from '../database/billingTables';
 import { addVat } from '../invoicing/vatAmounts';
 import { formatEuros } from '../money/euroAmount';
+import { isSubscriptionNotEndedAt } from '../events/subscriptionEventSupport.server';
 import { openCheckout } from '../payments/checkoutSessions.server';
 import { priceForPeriod, spreadLinesOverPeriod } from '../pricing/billingPeriodPricing';
 import { computeGroupMonthlyCharge, type GroupCharge } from '../pricing/groupCharge';
@@ -207,10 +208,7 @@ async function readSubscribedToolKeys(
 		.select({ id: tenantSubscriptions.id, tenantId: tenantSubscriptions.tenantId })
 		.from(tenantSubscriptions)
 		.where(
-			and(
-				inArray(tenantSubscriptions.tenantId, [...tenantIds]),
-				or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, now))
-			)
+			and(inArray(tenantSubscriptions.tenantId, [...tenantIds]), isSubscriptionNotEndedAt(now))
 		);
 	const tenantIdBySubscriptionId = new Map(subscriptionRows.map((subscriptionRow) => [subscriptionRow.id, subscriptionRow.tenantId]));
 	for (const toolLine of await readSubscribedToolLines(transaction, [...tenantIdBySubscriptionId.keys()], now)) {

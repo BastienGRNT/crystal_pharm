@@ -6,7 +6,7 @@ export function priceForPeriod(monthlyPriceCents: number, billingPeriod: Billing
 	return monthlyPriceCents * countBilledMonths(billingPeriod, annualFreeMonths);
 }
 
-export function countBilledMonths(billingPeriod: BillingPeriod, annualFreeMonths: number): number {
+function countBilledMonths(billingPeriod: BillingPeriod, annualFreeMonths: number): number {
 	return billingPeriod === 'yearly' ? monthsInBillingPeriod.yearly - annualFreeMonths : 1;
 }
 

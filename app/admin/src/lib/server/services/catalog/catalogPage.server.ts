@@ -60,12 +60,14 @@ export const catalogPageActions = {
 	saveFlatRateOffers: async ({ request }: RequestEvent): Promise<CatalogActionResult | ActionFailure<CatalogActionResult>> => {
 		const formData = await request.formData();
 		const readColumn = (fieldName: string) => formData.getAll(fieldName).map(String);
-		const labels = readColumn('offerLabel');
-		const flatRateOfferInputs = labels.map((label, offerIndex) => ({
-			offerId: readColumn('offerId')[offerIndex] ?? '',
+		const offerIds = readColumn('offerId');
+		const pharmacyQuotaInputs = readColumn('offerQuota');
+		const priceInputs = readColumn('offerPrice');
+		const flatRateOfferInputs = readColumn('offerLabel').map((label, offerIndex) => ({
+			offerId: offerIds[offerIndex] ?? '',
 			label,
-			pharmacyQuotaInput: readColumn('offerQuota')[offerIndex] ?? '',
-			priceInput: readColumn('offerPrice')[offerIndex] ?? ''
+			pharmacyQuotaInput: pharmacyQuotaInputs[offerIndex] ?? '',
+			priceInput: priceInputs[offerIndex] ?? ''
 		}));
 		const offersSave = await saveFlatRateOffers(flatRateOfferInputs);
 		if (!offersSave.isSaved) {

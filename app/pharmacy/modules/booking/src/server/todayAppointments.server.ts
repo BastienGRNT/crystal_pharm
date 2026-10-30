@@ -1,5 +1,6 @@
+import { toMinutesSinceMidnight } from '../domain/agenda';
 import { sortAppointmentsByStartTime, type AppointmentStatus } from '../domain/appointment';
-import { getMondayOfWeek, listWeekDays, toIsoDate } from '../domain/day';
+import { fromIsoDate, getMondayOfWeek, listWeekDays, toIsoDate } from '../domain/day';
 import { listAppointmentsOfDays } from './api/appointmentsApi.server';
 import type { BookingCaller } from './api/bookingApiClient.server';
 import { statusParameters } from './appointmentsPageQuery';
@@ -38,16 +39,11 @@ export type TodayAppointments = {
 	newAppointmentQuery: string;
 };
 
-const toMinutesSinceMidnight = (time: string): number => {
-	const [hours = 0, minutes = 0] = time.split(':').map(Number);
-	return hours * 60 + minutes;
-};
-
 /** Les rendez-vous du jour (sans les annulés) et ceux qui attendent une confirmation, tels que l'accueil les résume. */
 export async function getTodayAppointments(caller: BookingCaller, todayIsoDate: string): Promise<TodayAppointments> {
-	const today = new Date(`${todayIsoDate}T00:00:00Z`);
-	const weekDays = listWeekDays(getMondayOfWeek(today)).map(toIsoDate);
+	const weekDays = listWeekDays(getMondayOfWeek(fromIsoDate(todayIsoDate))).map(toIsoDate);
 	const weekAppointments = sortAppointmentsByStartTime(await listAppointmentsOfDays(caller, weekDays));
+	const pendingAppointments = weekAppointments.filter((appointment) => appointment.status === 'pending');
 
 	return {
 		appointments: weekAppointments.flatMap((appointment) =>
@@ -65,16 +61,14 @@ export async function getTodayAppointments(caller: BookingCaller, todayIsoDate: 
 					]
 				: []
 		),
-		pendingAppointments: weekAppointments
-			.filter((appointment) => appointment.status === 'pending')
-			.map((appointment) => ({
-				id: appointment.id,
-				day: appointment.day,
-				startTime: appointment.startTime,
-				reason: appointment.reason,
-				detailQuery: `?${new URLSearchParams({ jour: appointment.day, rdv: appointment.id })}`
-			})),
-		pendingCount: weekAppointments.filter((appointment) => appointment.status === 'pending').length,
+		pendingAppointments: pendingAppointments.map((appointment) => ({
+			id: appointment.id,
+			day: appointment.day,
+			startTime: appointment.startTime,
+			reason: appointment.reason,
+			detailQuery: `?${new URLSearchParams({ jour: appointment.day, rdv: appointment.id })}`
+		})),
+		pendingCount: pendingAppointments.length,
 		pendingQuery: `?${new URLSearchParams({ jour: todayIsoDate, vue: 'semaine', statut: statusParameters.pending })}`,
 		newAppointmentQuery: `?${new URLSearchParams({ jour: todayIsoDate, nouveau: '1' })}`
 	};

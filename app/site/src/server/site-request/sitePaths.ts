@@ -4,7 +4,7 @@ const apiPath = '/api';
 const serverFunctionPath = '/_server';
 const builtAssetsPath = '/_build';
 
-export function isUnderPath(url: URL, path: string): boolean {
+function isUnderPath(url: URL, path: string): boolean {
   return url.pathname === path || url.pathname.startsWith(`${path}/`);
 }
 

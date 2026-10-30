@@ -3,7 +3,7 @@ const clickMovementThresholdPixels = 4;
 export type PointerDragHandlers = {
 	onMove: (deltaX: number, deltaY: number, event: PointerEvent) => void;
 	/** `wasDragged` est faux pour un simple clic, qui doit suivre son lien. */
-	onEnd: (deltaX: number, deltaY: number, event: PointerEvent, wasDragged: boolean) => void;
+	onEnd: (wasDragged: boolean) => void;
 };
 
 /** Suit la souris ou le doigt depuis `startEvent` jusqu'au relâchement, même hors de l'élément. */
@@ -27,18 +27,18 @@ export function trackPointerDrag(startEvent: PointerEvent, handlers: PointerDrag
 		window.removeEventListener('pointercancel', onPointerCancel);
 	};
 
-	const onPointerUp = (event: PointerEvent): void => {
+	const onPointerUp = (): void => {
 		stopTracking();
 		if (wasDragged) {
 			// Le relâchement sur un lien déclencherait sinon son clic.
 			window.addEventListener('click', (clickEvent) => clickEvent.preventDefault(), { capture: true, once: true });
 		}
-		handlers.onEnd(event.clientX - originX, event.clientY - originY, event, wasDragged);
+		handlers.onEnd(wasDragged);
 	};
 
-	const onPointerCancel = (event: PointerEvent): void => {
+	const onPointerCancel = (): void => {
 		stopTracking();
-		handlers.onEnd(0, 0, event, false);
+		handlers.onEnd(false);
 	};
 
 	window.addEventListener('pointermove', onPointerMove);

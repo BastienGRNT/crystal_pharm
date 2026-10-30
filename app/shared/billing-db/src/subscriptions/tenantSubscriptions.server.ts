@@ -1,13 +1,19 @@
 import type { AuthenticatedUser } from '@crystal-pharm/auth/toolkit';
 import { readCoveringGroupOfTenant } from '@crystal-pharm/group-db';
-import { and, desc, eq, gt, gte, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, gt, gte, isNull } from 'drizzle-orm';
 import { readToolCatalog } from '../catalog/toolCatalog.server';
 import { readGroupContract } from '../contracts/groupContracts.server';
 import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } from '../database/billingDatabase.server';
 import { invoices, tenantSubscriptionItems, tenantSubscriptions, tenantToolAccess } from '../database/billingTables';
 import { getToolAccessSummary } from '../access/toolAccessReading.server';
 import { selectOffersOfSubscription } from '../events/offerSelection.server';
-import { finishSubscriptionEvent, listItemsOfSubscription, lockCurrentSubscriptionOfTenant } from '../events/subscriptionEventSupport.server';
+import {
+	clearCancellation,
+	finishSubscriptionEvent,
+	isSubscriptionNotEndedAt,
+	listItemsOfSubscription,
+	lockCurrentSubscriptionOfTenant
+} from '../events/subscriptionEventSupport.server';
 import { creditInvoice } from '../invoicing/invoices.server';
 import { addVat } from '../invoicing/vatAmounts';
 import type { UpcomingCharge } from '../overview/groupBilling.server';
@@ -144,8 +150,7 @@ export async function requestToolSelection(
 
 		const coverages = toolAccess.coveringGroup?.coverages ?? [];
 		const desiredQuote = quoteTools({ catalog: toolAccess.catalog, coverages, selectedToolKeys: desiredToolKeys });
-		const currentlyPaidToolKeys =
-			toolAccess.subscription?.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey) ?? [];
+		const currentlyPaidToolKeys = listContinuingToolKeys(toolAccess.subscription);
 		const currentQuote = quoteTools({ catalog: toolAccess.catalog, coverages, selectedToolKeys: currentlyPaidToolKeys });
 		const lines = describeAmountDueLines({
 			subscription: toolAccess.subscription,
@@ -160,7 +165,7 @@ export async function requestToolSelection(
 		const amountDueCents = Math.max(0, lines.reduce((total, line) => total + line.amountCents, 0));
 
 		if (addedToolKeys.length === 0 || amountDueCents === 0) {
-			await applyToolSelection(transaction, tenantId, desiredToolKeys, now, requestedBillingPeriod);
+			await selectOffersOfSubscription(transaction, tenantId, desiredToolKeys, requestedBillingPeriod, now);
 			return { outcome: 'applied' };
 		}
 
@@ -179,17 +184,6 @@ export async function requestToolSelection(
 		);
 		return { outcome: 'checkout', checkoutLocation };
 	});
-}
-
-/** Le paiement est fait (ou rien n'était dû) : l'abonnement prend exactement ces Tools, et cette période. */
-export async function applyToolSelection(
-	transaction: BillingTransaction,
-	tenantId: string,
-	desiredToolKeys: readonly ToolKey[],
-	now: Date,
-	requestedBillingPeriod: BillingPeriod
-): Promise<void> {
-	await selectOffersOfSubscription(transaction, tenantId, desiredToolKeys, requestedBillingPeriod, now);
 }
 
 /**
@@ -220,7 +214,9 @@ export async function resumeSubscription(tenantId: string): Promise<void> {
 		const now = new Date();
 		await lockCurrentSubscriptionOfTenant(transaction, tenantId, now);
 		const subscription = await readCurrentSubscription(transaction, tenantId, now);
-		if (subscription?.endsAt) await resumeSubscriptionRow(transaction, tenantId, subscription.subscriptionId);
+		if (!subscription?.endsAt) return;
+		await clearCancellation(transaction, subscription.subscriptionId);
+		await finishSubscriptionEvent(transaction, tenantId, now);
 	});
 }
 
@@ -303,7 +299,13 @@ function describeAmountDueLines(request: AmountDueRequest): InvoiceLine[] {
 }
 
 /** Un mois, module par module ; au prix du pack, une seule ligne (jamais de prix répartis sur une facture). */
-export function describeMonthlyToolLines(quote: ToolsQuote, toolKeys: readonly ToolKey[]): InvoiceLine[] {
+/** Les Tools que l'abonnement garde au-delà de la période en cours (ceux qui ne sont pas retirés). */
+export function listContinuingToolKeys(subscription: TenantSubscription | undefined): ToolKey[] {
+	if (!subscription) return [];
+	return subscription.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey);
+}
+
+function describeMonthlyToolLines(quote: ToolsQuote, toolKeys: readonly ToolKey[]): InvoiceLine[] {
 	if (quote.isPackApplied) {
 		const packLabels = quote.toolQuotes
 			.filter((toolQuote) => !toolQuote.isIncludedWithAnotherTool && toolQuote.listPriceCents > 0)
@@ -338,12 +340,7 @@ async function readCurrentSubscription(
 	const [subscriptionRow] = await transaction
 		.select()
 		.from(tenantSubscriptions)
-		.where(
-			and(
-				eq(tenantSubscriptions.tenantId, tenantId),
-				or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, now))
-			)
-		)
+		.where(and(eq(tenantSubscriptions.tenantId, tenantId), isSubscriptionNotEndedAt(now)))
 		.orderBy(desc(tenantSubscriptions.startedAt))
 		.limit(1);
 	if (!subscriptionRow) return undefined;
@@ -393,14 +390,6 @@ async function endSubscription(
 	await finishSubscriptionEvent(transaction, tenantId, cancelledAt);
 }
 
-async function resumeSubscriptionRow(transaction: BillingTransaction, tenantId: string, subscriptionId: string): Promise<void> {
-	await transaction
-		.update(tenantSubscriptions)
-		.set({ cancelledAt: null, endsAt: null })
-		.where(and(eq(tenantSubscriptions.id, subscriptionId), eq(tenantSubscriptions.status, 'active')));
-	await finishSubscriptionEvent(transaction, tenantId, new Date());
-}
-
 // Satisfait ou remboursé : chaque facture payée depuis le début de l'abonnement
 // est annulée par un avoir, et la carte recréditée.
 async function creditInvoicesIssuedSince(tenantId: string, since: Date): Promise<number> {
@@ -423,7 +412,7 @@ function describeUpcomingCharge(
 	subscription: TenantSubscription | undefined
 ): UpcomingCharge | undefined {
 	if (!subscription || subscription.endsAt) return undefined;
-	const continuingToolKeys = subscription.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey);
+	const continuingToolKeys = listContinuingToolKeys(subscription);
 	const nextQuote = quoteTools({ catalog, coverages, selectedToolKeys: continuingToolKeys });
 	if (nextQuote.pharmacyMonthlyTotalCents === 0) return undefined;
 	const billingPeriod = subscription.nextBillingPeriod ?? subscription.billingPeriod;

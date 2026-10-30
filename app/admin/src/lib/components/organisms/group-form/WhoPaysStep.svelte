@@ -46,6 +46,8 @@
 		{ value: 'per-tool', label: 'Module par module' }
 	];
 
+	const sellableTools = tools.filter((tool) => sellableToolKeys.includes(tool.toolKey));
+
 	const firstToolError = $derived(sellableToolKeys.map((toolKey) => fieldErrors[toolKey]).find(Boolean));
 
 	function findListPriceCents(toolKey: string): number | undefined {
@@ -65,7 +67,7 @@
 
 	{#if values.whoPays === 'depends'}
 		<div class="rounded-md border border-line p-4">
-			{#each tools.filter((tool) => sellableToolKeys.includes(tool.toolKey)) as tool (tool.toolKey)}
+			{#each sellableTools as tool (tool.toolKey)}
 				<ToolPayerRow
 					{tool}
 					listPriceCents={findListPriceCents(tool.toolKey)}
@@ -90,7 +92,7 @@
 			</Field>
 		{:else if values.discountScope === 'per-tool'}
 			<div class="grid gap-3 sm:grid-cols-2">
-				{#each tools.filter((tool) => sellableToolKeys.includes(tool.toolKey)) as tool (tool.toolKey)}
+				{#each sellableTools as tool (tool.toolKey)}
 					<Field label="Remise sur {tool.label}" errorMessage={fieldErrors[tool.toolKey]}>
 						{#snippet control(controlAttributes)}
 							<UnitInput {...controlAttributes} unit="%" inputmode="numeric" placeholder="0" bind:value={values.toolTerms[tool.toolKey].discountPercent} />

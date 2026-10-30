@@ -1,6 +1,15 @@
 import { formatMinuteRange, type CoverageSegment } from '../../../domain/coverage/coverage';
 import { toTimelinePercent, type TimelineRange } from '../../../domain/calendar/timeline';
+import type { DayStatus } from '../../../domain/live/liveWeek';
 import type { ShiftChipTone } from '../../atoms/shiftChip';
+
+export const dayStatusLabels: Record<DayStatus, string> = {
+	ok: 'Journée couverte',
+	alert: 'Il manque du monde sur cette journée',
+	notice: 'Journée à regarder',
+	closed: 'Pharmacie fermée',
+	past: 'Journée passée'
+};
 
 export type PlanningTimelineHour = {
 	label: string;

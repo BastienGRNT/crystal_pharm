@@ -15,4 +15,3 @@ export {
 	type CounterAccountCreation,
 	type CounterAccountPasswordChange
 } from './customer/counterAccounts.server';
-export { counterAccountUsernameLength, validateCounterAccountUsername } from './customer/counterAccountUsername';

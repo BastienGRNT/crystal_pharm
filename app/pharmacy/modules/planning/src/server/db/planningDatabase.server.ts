@@ -12,3 +12,8 @@ export function runAsTenant<Result>(
 		return work(transaction);
 	});
 }
+
+// Postgres rend une heure en « 08:30:00 » : le planning n'en garde que « 08:30 ».
+export function toHoursAndMinutes(storedTime: string): string {
+	return storedTime.slice(0, 5);
+}

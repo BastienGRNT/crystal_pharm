@@ -2,7 +2,6 @@
 	import { Icon } from '@crystal-pharm/ui';
 	import { formatDayName, toCalendarDay } from '../../../domain/calendar/week';
 	import {
-		formatMinutesAsTime,
 		minimumDraggedShiftMinutes,
 		moveSpan,
 		resizeSpan,
@@ -10,9 +9,8 @@
 		type MinuteSpan
 	} from '../../../domain/calendar/shiftDragging';
 	import { computeWeekTimelineRange, listTimelineHours } from '../../../domain/calendar/timeline';
-	import { formatMinuteRange, listCoverageGaps } from '../../../domain/coverage/coverage';
-	import type { ShiftPreview, WeekAssessment } from '../../../domain/live/liveWeek';
-	import type { LiveWeekInput } from '../../../domain/live/liveWeek';
+	import { formatMinuteRange, formatTimeOfDay, listCoverageGaps } from '../../../domain/coverage/coverage';
+	import type { LiveWeekInput, ShiftPreview, WeekAssessment } from '../../../domain/live/liveWeek';
 	import { formatDuration, toMinutesSinceMidnight, type Employee, type Shift } from '../../../domain/planning';
 	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
@@ -63,7 +61,7 @@
 		return orderedEmployees.filter((employee) => absentIds.has(employee.id));
 	}
 
-	function listProblemShiftKeys(date: string): Set<string> {
+	function listEmployeeIdsWithIssue(date: string): Set<string> {
 		return new Set(
 			assessment.issues
 				.filter((issue) => issue.date === date && issue.employeeId !== undefined && issue.kind !== 'contract-hours-short')
@@ -87,8 +85,6 @@
 		});
 	}
 
-	const toTime = formatMinutesAsTime;
-
 	type Measure = { columns: { date: string; left: number; width: number }[]; bodyTop: number };
 
 	function measureColumns(): Measure | undefined {
@@ -108,7 +104,7 @@
 		measure.columns.find((column) => clientX >= column.left && clientX < column.left + column.width)?.date ?? fallbackDate;
 
 	function describeMinutes(span: MinuteSpan): Pick<ShiftChange, 'startTime' | 'endTime'> {
-		return { startTime: toTime(span.startMinutes), endTime: toTime(span.endMinutes) };
+		return { startTime: formatTimeOfDay(span.startMinutes), endTime: formatTimeOfDay(span.endMinutes) };
 	}
 
 	function startShiftGesture(event: PointerEvent, shift: Shift, mode: 'move' | 'start' | 'end'): void {
@@ -125,7 +121,7 @@
 				latest = { shiftId: shift.id, employeeId: shift.employeeId, date, ...describeMinutes(span) };
 				onPreview(latest);
 			},
-			onEnd: (_deltaX, _deltaY, _endEvent, wasDragged) => {
+			onEnd: (wasDragged) => {
 				const hasChanged = latest.date !== shift.date || latest.startTime !== shift.startTime || latest.endTime !== shift.endTime;
 				if (!wasDragged || !hasChanged) return onPreview(undefined);
 				onShiftChange(latest);
@@ -144,7 +140,7 @@
 				latest = spanBetween(anchorMinutes, range.startMinutes + (moveEvent.clientY - measure.bodyTop) * minutesPerPixel, range);
 				onPreview({ employeeId, date, ...describeMinutes(latest) });
 			},
-			onEnd: (_deltaX, _deltaY, _endEvent, wasDragged) => {
+			onEnd: (wasDragged) => {
 				if (!wasDragged || !latest || latest.endMinutes - latest.startMinutes < minimumDraggedShiftMinutes) return onPreview(undefined);
 				onShiftChange({ employeeId, date, ...describeMinutes(latest) });
 			}
@@ -224,7 +220,7 @@
 				</div>
 				{#each live.weekDates as date, dayIndex (date)}
 					{@const laneEmployeeIds = listLaneEmployeeIds(date)}
-					{@const problemEmployeeIds = listProblemShiftKeys(date)}
+					{@const employeeIdsWithIssue = listEmployeeIdsWithIssue(date)}
 					{@const isPastDay = date < live.firstEditableDate}
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
@@ -263,7 +259,7 @@
 								aria-label="{employee?.fullName ?? ''}, {shift.startTime} – {shift.endTime}"
 								class="absolute z-10 cursor-grab touch-none overflow-hidden rounded-xs px-1.5 py-0.5 text-slot select-none {employee?.isPharmacist
 									? 'bg-accent font-semibold text-on-accent'
-									: 'bg-accent-soft text-ink shadow-[inset_3px_0_0_var(--accent-value)]'} {problemEmployeeIds.has(shift.employeeId)
+									: 'bg-accent-soft text-ink shadow-[inset_3px_0_0_var(--accent-value)]'} {employeeIdsWithIssue.has(shift.employeeId)
 									? 'outline-2 -outline-offset-2 outline-danger'
 									: ''} {shift.id === 'preview' ? 'opacity-70' : ''}"
 								style:top="{topPercent}%"

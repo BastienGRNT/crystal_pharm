@@ -1,3 +1,4 @@
+import type { WeekTemplateSummary } from '../domain/templates/weekTemplates';
 import type { AvailabilityValidation } from '../domain/rules/employeeTerms';
 
 /** Les règles de la pharmacie, telles qu'un champ de formulaire les montre. */
@@ -22,7 +23,7 @@ export type EmployeeTermsFormRow = {
 
 export type PeakWindowView = { id: string; label: string };
 
-export type WeekTemplateView = { id: string; name: string; rotationLabel: string; shiftCount: number };
+export type WeekTemplateView = WeekTemplateSummary;
 
 export type PlanningSettingsPageData = {
 	planningHref: string;

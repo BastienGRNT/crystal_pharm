@@ -37,7 +37,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		space: 'pharmacy',
 		needsSignedInAccount: true,
 		run: async ({ accountId }) => {
-			const tenantId = await requireActiveTenantId(accountId);
+			const tenantId = await findActiveTenantIdOfSignedInAccount(accountId);
 			if (tenantId) await deleteTenant(tenantId);
 			return '/bienvenue';
 		}
@@ -48,11 +48,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		description: 'Comme avant leur saisie : la carte de rappel et le point du menu reviennent.',
 		space: 'pharmacy',
 		needsSignedInAccount: true,
-		run: async ({ accountId, returnPathname }) => {
-			const tenantId = await requireActiveTenantId(accountId);
-			if (tenantId) await clearWeeklyOpeningSchedule(tenantId);
-			return returnPathname;
-		}
+		run: runOnActiveTenantThenStayOnPage(clearWeeklyOpeningSchedule)
 	},
 	{
 		actionName: 'delete-subscription',
@@ -61,11 +57,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		isDestructive: true,
 		space: 'pharmacy',
 		needsSignedInAccount: true,
-		run: async ({ accountId, returnPathname }) => {
-			const tenantId = await requireActiveTenantId(accountId);
-			if (tenantId) await deleteSubscriptionsOfTenant(tenantId);
-			return returnPathname;
-		}
+		run: runOnActiveTenantThenStayOnPage(deleteSubscriptionsOfTenant)
 	},
 	{
 		actionName: 'backdate-subscription',
@@ -73,11 +65,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		description: 'Sort de la période « satisfait ou remboursé » : la résiliation court jusqu’à la fin du mois payé.',
 		space: 'pharmacy',
 		needsSignedInAccount: true,
-		run: async ({ accountId, returnPathname }) => {
-			const tenantId = await requireActiveTenantId(accountId);
-			if (tenantId) await backdateSubscriptionsOfTenant(tenantId, 31);
-			return returnPathname;
-		}
+		run: runOnActiveTenantThenStayOnPage((tenantId) => backdateSubscriptionsOfTenant(tenantId, 31))
 	},
 	{
 		actionName: 'decline-next-payments',
@@ -85,11 +73,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		description: 'Le faux prestataire refuse la carte : au prochain renouvellement, l’abonnement passe en retard.',
 		space: 'pharmacy',
 		needsSignedInAccount: true,
-		run: async ({ accountId, returnPathname }) => {
-			const tenantId = await requireActiveTenantId(accountId);
-			if (tenantId) await declineNextPaymentsOfTenant(tenantId);
-			return returnPathname;
-		}
+		run: runOnActiveTenantThenStayOnPage(declineNextPaymentsOfTenant)
 	},
 	{
 		actionName: 'make-subscription-overdue',
@@ -97,11 +81,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		description: 'Échéance dépassée de deux jours, prélèvement refusé : bandeau « Paiement en retard » et relances.',
 		space: 'pharmacy',
 		needsSignedInAccount: true,
-		run: async ({ accountId, returnPathname }) => {
-			const tenantId = await requireActiveTenantId(accountId);
-			if (tenantId) await makeSubscriptionOverdueOfTenant(tenantId);
-			return returnPathname;
-		}
+		run: runOnActiveTenantThenStayOnPage(makeSubscriptionOverdueOfTenant)
 	},
 	{
 		actionName: 'end-group-coverage',
@@ -109,15 +89,11 @@ const developmentActions: readonly DevelopmentAction[] = [
 		description: 'Après un départ du groupement : la prise en charge s’arrête tout de suite.',
 		space: 'pharmacy',
 		needsSignedInAccount: true,
-		run: async ({ accountId, returnPathname }) => {
-			const tenantId = await requireActiveTenantId(accountId);
-			if (tenantId) {
-				await leaveGroupAndRebuildToolAccess(tenantId);
-				await endCoverageNow(tenantId);
-				await rebuildToolAccessOfOneTenant(tenantId);
-			}
-			return returnPathname;
-		}
+		run: runOnActiveTenantThenStayOnPage(async (tenantId) => {
+			await leaveGroupAndRebuildToolAccess(tenantId);
+			await endCoverageNow(tenantId);
+			await rebuildToolAccessOfOneTenant(tenantId);
+		})
 	},
 	{
 		actionName: 'contract-awaiting-payment',
@@ -137,10 +113,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		description: 'Refait les accès aux Tools de toutes les pharmacies depuis leurs abonnements et leur groupement.',
 		space: 'everywhere',
 		needsSignedInAccount: false,
-		run: async ({ returnPathname }) => {
-			await rebuildToolAccessOfAllTenants();
-			return returnPathname;
-		}
+		run: runThenStayOnPage(rebuildToolAccessOfAllTenants)
 	},
 	{
 		actionName: 'simulate-next-month',
@@ -148,10 +121,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		description: 'Un mois passe pour toutes les pharmacies et tous les groupements : renouvellements prélevés et facturés, départs de groupement terminés.',
 		space: 'everywhere',
 		needsSignedInAccount: false,
-		run: async ({ returnPathname }) => {
-			await simulateOneMonthLater();
-			return returnPathname;
-		}
+		run: runThenStayOnPage(simulateOneMonthLater)
 	},
 	{
 		actionName: 'clear-outbox',
@@ -159,10 +129,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		description: 'Efface les emails reçus en dev.',
 		space: 'everywhere',
 		needsSignedInAccount: false,
-		run: async ({ returnPathname }) => {
-			clearDevelopmentOutbox();
-			return returnPathname;
-		}
+		run: runThenStayOnPage(async () => clearDevelopmentOutbox())
 	},
 	{
 		actionName: 'reset-demo-data',
@@ -171,10 +138,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		isDestructive: true,
 		space: 'everywhere',
 		needsSignedInAccount: false,
-		run: async ({ returnPathname }) => {
-			await resetDemoData();
-			return returnPathname;
-		}
+		run: runThenStayOnPage(resetDemoData)
 	}
 ];
 
@@ -206,6 +170,21 @@ export async function runDevelopmentAction(actionName: string, context: Developm
 	return action.run(context);
 }
 
-async function requireActiveTenantId(accountId: string | undefined): Promise<string | undefined> {
+function runOnActiveTenantThenStayOnPage(work: (tenantId: string) => Promise<unknown>): DevelopmentAction['run'] {
+	return async ({ accountId, returnPathname }) => {
+		const tenantId = await findActiveTenantIdOfSignedInAccount(accountId);
+		if (tenantId) await work(tenantId);
+		return returnPathname;
+	};
+}
+
+function runThenStayOnPage(work: () => Promise<unknown>): DevelopmentAction['run'] {
+	return async ({ returnPathname }) => {
+		await work();
+		return returnPathname;
+	};
+}
+
+async function findActiveTenantIdOfSignedInAccount(accountId: string | undefined): Promise<string | undefined> {
 	return accountId ? findActiveTenantIdOfAccount(accountId) : undefined;
 }

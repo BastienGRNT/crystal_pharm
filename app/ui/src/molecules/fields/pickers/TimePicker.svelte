@@ -51,12 +51,8 @@
 	}
 
 	async function openList(): Promise<void> {
-		highlightedIndex = findClosestOptionIndex(value);
 		isOpen = true;
-		await tick();
-		listboxElement
-			?.querySelector<HTMLElement>(`#${CSS.escape(`${listboxId}-${highlightedIndex}`)}`)
-			?.scrollIntoView({ block: 'nearest' });
+		await moveHighlight(findClosestOptionIndex(value));
 	}
 
 	function chooseTime(time: string): void {
@@ -100,7 +96,7 @@
 	}
 
 	function handleInput(): void {
-		if (!isOpen) isOpen = true;
+		isOpen = true;
 		void moveHighlight(findClosestOptionIndex(value));
 	}
 </script>

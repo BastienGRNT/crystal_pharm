@@ -14,7 +14,7 @@
 	import { Alert, Button, Checkbox, ChoiceGroup, PlanCard, Tag, TextLink } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 	import { formatDay } from '../../dateFormats';
-	import { buildSubscriptionPlans, findPlanOfToolKeys, listPlanFeatures, type SubscriptionPlan } from '../../domain/subscriptionPlans';
+	import { buildSubscriptionPlans, findPlanOfToolKeys, listPlanFeatures, packPlanKey, type SubscriptionPlan } from '../../domain/subscriptionPlans';
 	import { homePathnames } from '../../homePathnames';
 	import type { SubscriptionSummary } from '../../pages/subscription/subscriptionPageData';
 
@@ -139,7 +139,7 @@
 						{/if}
 					{/snippet}
 					{#snippet footer()}
-						{#if plan.planKey === 'pack' && plan.listMonthlyPriceCents > plan.pharmacyMonthlyPriceCents}
+						{#if plan.planKey === packPlanKey && plan.listMonthlyPriceCents > plan.pharmacyMonthlyPriceCents}
 							<Tag tone="success">
 								Vous économisez {formatPeriodPrice(plan.listMonthlyPriceCents - plan.pharmacyMonthlyPriceCents)} HT {isYearly ? 'par an' : 'par mois'}
 							</Tag>

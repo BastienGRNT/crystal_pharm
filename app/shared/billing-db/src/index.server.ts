@@ -33,7 +33,7 @@ export {
 	markInvoicePaid,
 	type Invoice
 } from './invoicing/invoices.server';
-export { renderInvoicePdf, respondWithInvoicePdf } from './invoicing/invoicePdf.server';
+export { respondWithInvoicePdf } from './invoicing/invoicePdf.server';
 export { toInvoiceRow, type InvoiceRow } from './invoicing/invoiceRows';
 export {
 	describeGroupChargeLines,
@@ -54,7 +54,7 @@ export {
 	type CheckoutCompletion,
 	type CheckoutOutcome
 } from './payments/checkoutCompletion.server';
-export { getCheckout, listPayments, type Checkout, type Payer, type Payment } from './payments/checkoutSessions.server';
+export { getCheckout, type Checkout, type Payer } from './payments/checkoutSessions.server';
 export {
 	backdateSubscriptionsOfTenant,
 	declineNextPaymentsOfTenant,
@@ -93,7 +93,8 @@ export { reconcileToolAccessOfTenant, type ToolAccessReconciliation } from './ac
 export { endPriceAgreement, grantPriceAgreement, type PriceAgreementGrant } from './events/priceAgreementEvents.server';
 export { publishOfferVersion, type OfferVersionPublication, type PublishedOfferVersion } from './events/offerVersionPublication.server';
 export { recordGroupContractChange } from './events/groupContractEvents.server';
-export { listOffersOnSale, packOfferKey, type CurrentOffer } from './offers/offerCatalog.server';
+export { listOffersOnSale, type CurrentOffer } from './offers/offerCatalog.server';
+export { packOfferKey } from './offers/offerKeys';
 export { fakeDeclinedCardReference } from './payments/paymentProvider';
 export { readSubscribedOffers, type SubscribedOffer, type SubscribedOffers } from './offers/subscriptionOffers.server';
 export {

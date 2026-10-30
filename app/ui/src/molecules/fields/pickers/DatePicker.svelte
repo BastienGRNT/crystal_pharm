@@ -84,6 +84,13 @@
 		move();
 	}
 
+	function dayButtonClasses(day: Date, isSelected: boolean, isToday: boolean): string {
+		if (isSelected) return 'bg-accent font-semibold text-on-accent hover:bg-accent-hover';
+		if (isToday) return 'font-semibold text-accent-text shadow-[inset_0_0_0_1px_var(--accent-value)]';
+		if (isSameMonth(day, focusedDay)) return 'text-ink';
+		return 'text-ink-subtle';
+	}
+
 	const monthArrowClasses =
 		'grid size-8 cursor-pointer place-items-center rounded-sm text-ink-muted hover:bg-surface-muted hover:text-ink';
 </script>
@@ -162,13 +169,11 @@
 											aria-label={formatFullDate(day)}
 											aria-pressed={isSelected}
 											aria-current={isToday ? 'date' : undefined}
-											class="grid size-9 cursor-pointer place-items-center rounded-sm text-[13.5px] tabular-nums hover:bg-surface-muted {isSelected
-												? 'bg-accent font-semibold text-on-accent hover:bg-accent-hover'
-												: isToday
-													? 'font-semibold text-accent-text shadow-[inset_0_0_0_1px_var(--accent-value)]'
-													: isSameMonth(day, focusedDay)
-														? 'text-ink'
-														: 'text-ink-subtle'}"
+											class="grid size-9 cursor-pointer place-items-center rounded-sm text-[13.5px] tabular-nums hover:bg-surface-muted {dayButtonClasses(
+												day,
+												isSelected,
+												isToday
+											)}"
 											onclick={() => chooseDay(day)}
 										>
 											{day.getUTCDate()}

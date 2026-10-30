@@ -3,7 +3,8 @@ import { runWithBillingAccess } from '../database/billingDatabase.server';
 import { checkouts } from '../database/billingTables';
 import { chargeAndInvoice } from '../invoicing/invoices.server';
 import { activateGroupContractForOnePeriod } from '../overview/groupBilling.server';
-import { applyToolSelection, getToolAccessOfTenant } from '../subscriptions/tenantSubscriptions.server';
+import { selectOffersOfSubscription } from '../events/offerSelection.server';
+import { getToolAccessOfTenant } from '../subscriptions/tenantSubscriptions.server';
 import { payerCondition, toPayerAccess, type Payer } from './checkoutSessions.server';
 
 export type CheckoutOutcome = 'paid' | 'refused';
@@ -52,7 +53,7 @@ async function applyWhatWasPaid(checkout: typeof checkouts.$inferSelect, now: Da
 	if (checkout.purpose === 'tenant_tools' && checkout.tenantId) {
 		const tenantId = checkout.tenantId;
 		await runWithBillingAccess({ tenantId }, (transaction) =>
-			applyToolSelection(transaction, tenantId, checkout.toolKeys, now, checkout.billingPeriod)
+			selectOffersOfSubscription(transaction, tenantId, checkout.toolKeys, checkout.billingPeriod, now)
 		);
 		return (await getToolAccessOfTenant(tenantId)).subscription?.currentPeriodEndsAt;
 	}

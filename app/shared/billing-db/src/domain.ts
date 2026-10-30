@@ -16,7 +16,6 @@ export { toInvoiceRow, type InvoiceRow } from './invoicing/invoiceRows';
 export { addVat, vatRatePercent, type AmountsWithVat } from './invoicing/vatAmounts';
 export { computeGroupMonthlyCharge, computeOverageUnitPrice, type GroupCharge } from './pricing/groupCharge';
 export { summarizeCoverage } from './pricing/coverageWording';
-export { describeGroupBillingMode, describeOveragePrice } from './pricing/groupChargeWording';
 export {
 	describeGroupContractInWords,
 	describeGroupContractTerms,
@@ -29,14 +28,12 @@ export {
 } from './pricing/groupContractTerms';
 export {
 	computeAmountDueToday,
-	countBilledMonths,
 	monthlyEquivalentOfYearlyPrice,
 	priceForPeriod,
 	spreadLinesOverPeriod,
 	type CurrentPeriod
 } from './pricing/billingPeriodPricing';
 export {
-	computeCurrentPeriodEnd,
 	computeMoneyBackGuaranteeEnd,
 	computePeriodEnd
 } from './subscriptions/subscriptionPeriod';

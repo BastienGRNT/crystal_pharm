@@ -28,8 +28,7 @@ builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializ
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(camelCaseEnums));
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<InvalidAppointmentExceptionHandler>();
-builder.Services.AddExceptionHandler<InvalidPrescriptionExceptionHandler>();
+builder.Services.AddExceptionHandler<DomainRuleExceptionHandler>();
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<RequestTenantContext>();

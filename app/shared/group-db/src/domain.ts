@@ -9,7 +9,6 @@ export {
 	maximumLoyaltyCardMessageLength,
 	pharmacyGroupImageFields,
 	pharmacyGroupProfileTextFieldNames,
-	PharmacyGroupProfileSchema,
 	type PharmacyGroupImageChange,
 	type PharmacyGroupImageChanges,
 	type PharmacyGroupImageKind,
@@ -24,9 +23,7 @@ export {
 } from './groups/profile/PharmacyGroupImage';
 export { parseInvitationList, type InvitationListEntry, type InvitationListParsing } from './invitations/invitationList';
 export { describeInvitationStatus, type InvitationStatus } from './invitations/invitationStatus';
-export { computeCoverageEnd } from './pharmacies/coveragePeriod';
 export {
-	GroupArticleSchema,
 	maximumGroupArticleSummaryLength,
 	maximumGroupArticleTitleLength,
 	type GroupArticle,

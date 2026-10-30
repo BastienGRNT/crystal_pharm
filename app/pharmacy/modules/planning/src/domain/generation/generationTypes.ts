@@ -42,14 +42,7 @@ export type ProposedShift = {
 };
 
 /** Un créneau déjà posé que la génération allonge au lieu d'en ajouter un autre. */
-export type ExtendedShift = {
-	shiftId: string;
-	employeeId: string;
-	date: string;
-	startTime: string;
-	endTime: string;
-	reason: string;
-};
+export type ExtendedShift = ProposedShift & { shiftId: string };
 
 export type GenerationGapKind = 'pharmacist' | 'people';
 

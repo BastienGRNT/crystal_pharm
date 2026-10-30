@@ -5,8 +5,9 @@ import { catalogSettings, offers } from '../database/billingTables';
 import { parseEurosToCents } from '../money/euroAmount';
 import type { ToolCatalog, ToolPrice } from '../pricing/toolPricing';
 import { publishOfferVersion, type OfferVersionPublication } from '../events/offerVersionPublication.server';
-import { listOffersOnSale, packOfferKey, readLatestOfferVersion } from '../offers/offerCatalog.server';
-import { findTool, isIncludedTool, isToolKey, sellableToolKeys, type ToolKey } from '../tools/tools';
+import { listOffersOnSale, readLatestOfferVersion } from '../offers/offerCatalog.server';
+import { packOfferKey } from '../offers/offerKeys';
+import { findOfferLabel, isIncludedTool, isToolKey, sellableToolKeys, type ToolKey } from '../tools/tools';
 
 export const packPriceFieldName = 'pack';
 export const annualFreeMonthsFieldName = 'annualFreeMonths';
@@ -87,10 +88,9 @@ export async function saveToolCatalog(catalogInput: ToolCatalogInput): Promise<S
 async function publishChangedOfferVersions(pricesOnSale: readonly ToolPrice[], packMonthlyPriceCents: number | undefined): Promise<void> {
 	const now = new Date();
 	const offersToPublish: OfferVersionPublication[] = pricesOnSale.map((toolPrice) => {
-		const tool: { label: string; offerLabel?: string } = findTool(toolPrice.toolKey);
 		return {
 			offerKey: toolPrice.toolKey,
-			label: tool.offerLabel ?? tool.label,
+			label: findOfferLabel(toolPrice.toolKey),
 			monthlyPriceCents: toolPrice.monthlyPriceCents,
 			toolKeys: [toolPrice.toolKey]
 		};

@@ -1,4 +1,4 @@
-using CrystalPharm.SharedKernel.Tenancy;
+using CrystalPharm.SharedKernel.Persistence.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -11,13 +11,6 @@ internal sealed class BookingDesignTimeDbContextFactory : IDesignTimeDbContextFa
     {
         var options = new DbContextOptionsBuilder<BookingDbContext>();
         BookingModuleRegistration.ConfigureBookingDatabase(options, "Host=localhost");
-        return new BookingDbContext(options.Options, new NoTenantContext());
-    }
-
-    private sealed class NoTenantContext : ITenantContext
-    {
-        public bool IsResolved => false;
-        public Guid TenantId => throw new InvalidOperationException("No tenant at design time.");
-        public string CallerId => throw new InvalidOperationException("No caller at design time.");
+        return new BookingDbContext(options.Options, new DesignTimeTenantContext());
     }
 }

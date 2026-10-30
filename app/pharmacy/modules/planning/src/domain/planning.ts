@@ -107,11 +107,14 @@ export function buildPlanningRows(weekPlanning: WeekPlanning, weekDates: string[
 	}));
 }
 
-function buildPlanningCell(weekPlanning: WeekPlanning, employeeId: string, date: string): PlanningCell {
-	const absence = weekPlanning.absences.find(
-		(candidate) =>
-			candidate.employeeId === employeeId && candidate.firstDate <= date && date <= candidate.lastDate
+export function findAbsenceOfDay(absences: Absence[], employeeId: string, date: string): Absence | undefined {
+	return absences.find(
+		(absence) => absence.employeeId === employeeId && absence.firstDate <= date && date <= absence.lastDate
 	);
+}
+
+function buildPlanningCell(weekPlanning: WeekPlanning, employeeId: string, date: string): PlanningCell {
+	const absence = findAbsenceOfDay(weekPlanning.absences, employeeId, date);
 	const shifts = weekPlanning.shifts
 		.filter((shift) => shift.employeeId === employeeId && shift.date === date)
 		.sort((first, second) => first.startTime.localeCompare(second.startTime));

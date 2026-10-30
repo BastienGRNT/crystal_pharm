@@ -37,8 +37,8 @@ export async function forwardPrescription(request: Request, tenantId: string | u
       body: request.body,
       duplex: 'half',
     } as RequestInit);
-  } catch (error) {
-      return respondWith(502, { error: 'unreachable' });
+  } catch {
+    return respondWith(502, { error: 'unreachable' });
   }
   await upstream.body?.cancel();
 

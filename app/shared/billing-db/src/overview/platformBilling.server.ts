@@ -23,14 +23,9 @@ export async function listTenantBillings(): Promise<TenantBilling[]> {
 			runWithBillingAccess(platformBillingAccess, async (transaction) => {
 				const toolAccess = await readToolAccessOfTenant(transaction, tenantSummary.tenantId, now);
 				const hasGroupCoverage = (toolAccess.coveringGroup?.coverages.length ?? 0) > 0;
-				const status: TenantBillingStatus = hasGroupCoverage
-					? 'group'
-					: toolAccess.accessibleToolKeys.length > 0
-						? 'subscribed'
-						: 'inactive';
 				return {
 					...tenantSummary,
-					status,
+					status: decideTenantBillingStatus(hasGroupCoverage, toolAccess.accessibleToolKeys.length),
 					groupName: toolAccess.coveringGroup?.groupName,
 					activeToolKeys: toolAccess.accessibleToolKeys,
 					pharmacyMonthlyPaymentCents: toolAccess.quote.pharmacyMonthlyTotalCents,
@@ -39,4 +34,10 @@ export async function listTenantBillings(): Promise<TenantBilling[]> {
 			})
 		)
 	);
+}
+
+function decideTenantBillingStatus(hasGroupCoverage: boolean, accessibleToolCount: number): TenantBillingStatus {
+	if (hasGroupCoverage) return 'group';
+	if (accessibleToolCount > 0) return 'subscribed';
+	return 'inactive';
 }

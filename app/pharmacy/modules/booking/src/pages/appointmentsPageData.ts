@@ -70,12 +70,12 @@ export type CommonAppointmentsPageData = {
 	addAppointmentPanel: AddAppointmentPanel | null;
 };
 
-export type ListViewData = CommonAppointmentsPageData & {
+type ListViewData = CommonAppointmentsPageData & {
 	view: 'list';
 	rows: AppointmentRow[];
 };
 
-export type AgendaViewData = CommonAppointmentsPageData & {
+type AgendaViewData = CommonAppointmentsPageData & {
 	view: 'day' | 'week';
 	agendaLabel: string;
 	hours: AgendaHour[];

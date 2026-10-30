@@ -6,7 +6,7 @@ import {
 	sortAppointmentsByStartTime,
 	type Appointment
 } from '../domain/appointment';
-import { toCalendarDay, toIsoDate } from '../domain/day';
+import { fromIsoDate, toCalendarDay, toIsoDate } from '../domain/day';
 import type {
 	AppointmentsActionFailure,
 	AppointmentsPageData,
@@ -130,12 +130,11 @@ export const actions = {
 			return fail(400, { message: creation.message, values } satisfies AppointmentsActionFailure);
 		}
 		const { appointment } = creation;
-		const query = readQueryOfAction(url);
 		redirect(
 			303,
 			buildPageHref(
-				query,
-				{ day: new Date(`${appointment.day}T00:00:00Z`) },
+				readQueryOfAction(url),
+				{ day: fromIsoDate(appointment.day) },
 				{ kind: 'detail', appointmentId: appointment.id }
 			)
 		);

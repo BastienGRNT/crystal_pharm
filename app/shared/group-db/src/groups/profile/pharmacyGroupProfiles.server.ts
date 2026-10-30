@@ -30,6 +30,15 @@ export type PharmacyGroupProfile = {
 	loyaltyCardMessage: string | undefined;
 };
 
+/** La fiche telle que la base la rend : `null` là où elle n'a rien. */
+export type PharmacyGroupProfileRow = {
+	name: string;
+	logoId: string | null;
+	loyaltyCardImageId: string | null;
+	loyaltyCardUrl: string | null;
+	loyaltyCardMessage: string | null;
+};
+
 type PharmacyGroupImageIds = Record<PharmacyGroupImageKind, string | null>;
 
 type PharmacyGroupProfileSubmission =
@@ -45,12 +54,16 @@ export async function getPharmacyGroupProfile(groupId: string): Promise<Pharmacy
 		transaction.select().from(pharmacyGroups).where(eq(pharmacyGroups.id, groupId))
 	);
 	if (!group) throw new Error(`The pharmacy group ${groupId} does not exist.`);
+	return toPharmacyGroupProfile(group);
+}
+
+export function toPharmacyGroupProfile(row: PharmacyGroupProfileRow): PharmacyGroupProfile {
 	return {
-		name: group.name,
-		logoId: group.logoId ?? undefined,
-		loyaltyCardImageId: group.loyaltyCardImageId ?? undefined,
-		loyaltyCardUrl: group.loyaltyCardUrl ?? undefined,
-		loyaltyCardMessage: group.loyaltyCardMessage ?? undefined
+		name: row.name,
+		logoId: row.logoId ?? undefined,
+		loyaltyCardImageId: row.loyaltyCardImageId ?? undefined,
+		loyaltyCardUrl: row.loyaltyCardUrl ?? undefined,
+		loyaltyCardMessage: row.loyaltyCardMessage ?? undefined
 	};
 }
 

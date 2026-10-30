@@ -34,6 +34,7 @@ import {
 	formatWeekRange,
 	getMondayOfWeek,
 	isSameDay,
+	listWeekDays,
 	toIsoDate
 } from '../domain/day';
 import type {
@@ -93,10 +94,7 @@ export function findEmployeeName(employees: EmployeeDirectory, employeeId: strin
 export function buildPeriod(query: AppointmentsPageQuery): AppointmentsPeriod {
 	if (query.view !== 'week') return { days: [query.day], label: capitalize(formatFullDay(query.day)) };
 	const monday = getMondayOfWeek(query.day);
-	return {
-		days: Array.from({ length: 7 }, (_, dayIndex) => addDays(monday, dayIndex)),
-		label: `Semaine ${formatWeekRange(monday)}`
-	};
+	return { days: listWeekDays(monday), label: `Semaine ${formatWeekRange(monday)}` };
 }
 
 export function buildContext(period: AppointmentsPeriod, counts: AppointmentCountsByStatus): string {

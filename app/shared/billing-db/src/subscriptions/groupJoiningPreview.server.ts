@@ -4,7 +4,7 @@ import { readGroupContract } from '../contracts/groupContracts.server';
 import { runWithBillingAccess } from '../database/billingDatabase.server';
 import { quoteTools, type ToolsQuote } from '../pricing/toolPricing';
 import type { ToolKey } from '../tools/tools';
-import { readToolAccessOfTenant } from './tenantSubscriptions.server';
+import { listContinuingToolKeys, readToolAccessOfTenant } from './tenantSubscriptions.server';
 
 /** Ce que changerait l'arrivée dans un groupement, montré avant que la pharmacie accepte. */
 export type GroupJoiningPreview = {
@@ -27,8 +27,7 @@ export async function previewGroupJoining(
 		const catalog = await readToolCatalog(transaction);
 		const contract = await readGroupContract(transaction, groupId);
 		const currentAccess = tenantId ? await readToolAccessOfTenant(transaction, tenantId, new Date()) : undefined;
-		const subscribedToolKeys =
-			currentAccess?.subscription?.tools.filter((subscribedTool) => !subscribedTool.endsAt).map((subscribedTool) => subscribedTool.toolKey) ?? [];
+		const subscribedToolKeys = listContinuingToolKeys(currentAccess?.subscription);
 		const joinedQuote = quoteTools({
 			catalog,
 			coverages: contract?.status === 'active' ? contract.coverages : [],

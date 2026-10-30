@@ -25,6 +25,13 @@
 		neutral: 'bg-surface-muted text-ink',
 		pending: 'border border-dashed border-accent bg-surface text-ink'
 	};
+
+	// Les heures des deux bords restent dans la frise au lieu d'être centrées sur leur trait.
+	function hourLabelAlignmentClass(hourIndex: number): string {
+		if (hourIndex === 0) return '';
+		if (hourIndex === hours.length - 1) return '-translate-x-full';
+		return '-translate-x-1/2';
+	}
 </script>
 
 {#snippet trackBackground()}
@@ -51,7 +58,7 @@
 			<div class="relative mr-6 ml-3 min-h-[34px] flex-1" aria-hidden="true">
 				{#each hours as hour, hourIndex (hour.label)}
 					<span
-						class="absolute top-[9px] tabular-nums {hourIndex === 0 ? '' : hourIndex === hours.length - 1 ? '-translate-x-full' : '-translate-x-1/2'}"
+						class="absolute top-[9px] tabular-nums {hourLabelAlignmentClass(hourIndex)}"
 						style:left="{hour.percent}%"
 					>
 						{hour.label}
