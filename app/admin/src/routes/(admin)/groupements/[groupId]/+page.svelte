@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { formatEuros } from '@crystal-pharm/billing-db/domain';
+	import { findTool, formatEuros } from '@crystal-pharm/billing-db/domain';
 	import {
 		Alert,
 		Button,
@@ -14,9 +14,9 @@
 		PageHeader,
 		ProgressBar,
 		StatCard,
-		Tag
+		Tag,
+		TagList
 	} from '@crystal-pharm/ui';
-	import ToolTags from '$lib/components/molecules/ToolTags.svelte';
 	import GroupContractSummary from '$lib/components/organisms/GroupContractSummary.svelte';
 	import { contractStatusLabels, paymentMethodLabels } from '$lib/contractLabels';
 	import { formatDay } from '$lib/dateFormats';
@@ -188,7 +188,7 @@
 				<tr>
 					<td><span class="body-strong">{memberPharmacy.name}</span><br /><span class="text-small text-ink-muted">{memberPharmacy.city}</span></td>
 					<td class="text-ink-muted">{formatDay(memberPharmacy.joinedAt)}</td>
-					<td><ToolTags toolKeys={memberPharmacy.activeToolKeys} /></td>
+					<td><TagList labels={memberPharmacy.activeToolKeys.map((toolKey) => findTool(toolKey).label)} emptyLabel="Aucun" /></td>
 					<td class="text-right tabular-nums">{formatEuros(memberPharmacy.groupMonthlyCostCents)}</td>
 				</tr>
 			{/each}

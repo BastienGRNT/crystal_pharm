@@ -3,7 +3,6 @@ import {
 	describeInclusion,
 	findIncludedToolKeys,
 	findOfferLabel,
-	findTool,
 	summarizeCoverage,
 	tools,
 	type ToolKey
@@ -45,7 +44,7 @@ export function describeToolCards(toolAccess: TenantToolAccess): ToolCard[] {
 		const coverage = toolAccess.coveringGroup?.coverages.find((candidate) => candidate.toolKey === tool.toolKey);
 		return {
 			toolKey: tool.toolKey,
-			label: findTool(tool.toolKey).label,
+			label: tool.label,
 			offerLabel: findOfferLabel(tool.toolKey),
 			pitch: tool.pitch,
 			includedToolKeys: findIncludedToolKeys(tool.toolKey),

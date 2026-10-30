@@ -44,12 +44,16 @@ export async function loadPublicInvitationPage({
 		groupName: invitation.groupName,
 		invitedEmail: invitation.email,
 		status: invitation.status,
-		visitorSituation: locals.user
-			? 'needs-pharmacy'
-			: (await findCustomerAccountIdByEmail(invitation.email))
-				? 'has-account'
-				: 'needs-account'
+		visitorSituation: await describeVisitorSituation(locals.user !== null, invitation.email)
 	};
+}
+
+async function describeVisitorSituation(
+	isSignedIn: boolean,
+	invitedEmail: string
+): Promise<PublicInvitationPageData['visitorSituation']> {
+	if (isSignedIn) return 'needs-pharmacy';
+	return (await findCustomerAccountIdByEmail(invitedEmail)) ? 'has-account' : 'needs-account';
 }
 
 export async function loadGroupInvitationPage({ locals, url }: InvitationEvent & { url: URL }): Promise<GroupInvitationPageData> {

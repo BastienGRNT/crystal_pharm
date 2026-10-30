@@ -13,23 +13,35 @@
 
 	let { tone, title, children }: AlertProps = $props();
 
-	const toneStyles: Record<AlertTone, { containerClasses: string; iconClasses: string; iconName: IconName }> = {
-		danger: { containerClasses: 'border-transparent bg-danger-soft', iconClasses: 'text-danger', iconName: 'warning-circle' },
+	type AlertToneStyle = {
+		containerClasses: string;
+		iconClasses: string;
+		iconName: IconName;
+		role?: 'alert' | 'status';
+	};
+
+	const toneStyles: Record<AlertTone, AlertToneStyle> = {
+		danger: {
+			containerClasses: 'border-transparent bg-danger-soft',
+			iconClasses: 'text-danger',
+			iconName: 'warning-circle',
+			role: 'alert'
+		},
 		warning: { containerClasses: 'border-transparent bg-warning-soft', iconClasses: 'text-warning', iconName: 'warning' },
-		success: { containerClasses: 'border-transparent bg-success-soft', iconClasses: 'text-success', iconName: 'check' },
+		success: {
+			containerClasses: 'border-transparent bg-success-soft',
+			iconClasses: 'text-success',
+			iconName: 'check',
+			role: 'status'
+		},
 		info: { containerClasses: 'border-line bg-surface', iconClasses: 'text-accent-text', iconName: 'info' }
 	};
 
-	const roleByTone: Record<AlertTone, 'alert' | 'status' | undefined> = {
-		danger: 'alert',
-		warning: undefined,
-		success: 'status',
-		info: undefined
-	};
+	const toneStyle = $derived(toneStyles[tone]);
 </script>
 
-<div role={roleByTone[tone]} class="flex items-start gap-2.5 rounded-md border px-3 py-2.5 text-body text-ink {toneStyles[tone].containerClasses}">
-	<Icon name={toneStyles[tone].iconName} class="mt-px {toneStyles[tone].iconClasses}" />
+<div role={toneStyle.role} class="flex items-start gap-2.5 rounded-md border px-3 py-2.5 text-body text-ink {toneStyle.containerClasses}">
+	<Icon name={toneStyle.iconName} class="mt-px {toneStyle.iconClasses}" />
 	<div>
 		{#if title}
 			<strong class="block font-semibold">{title}</strong>

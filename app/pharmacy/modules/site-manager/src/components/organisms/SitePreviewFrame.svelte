@@ -16,24 +16,16 @@
 	let isFrameReady = $state(false);
 	let isFrameSlow = $state(false);
 	const slowFrameDelayInMilliseconds = 15_000;
-	// L'aperçu prêt à recevoir le site.
-	const readyPreviewWindows = new Set<Window>();
 
-	function isPreviewWindow(source: MessageEventSource | null): source is Window {
-		return source !== null && (source === frame?.contentWindow);
-	}
-
-	function sendToPreviewWindow(previewWindow: Window, message: PreviewUpdateMessage): void {
-		if (previewWindow.closed) readyPreviewWindows.delete(previewWindow);
-		else previewWindow.postMessage(message, frameOrigin);
+	function sendToPreview(message: PreviewUpdateMessage): void {
+		frame?.contentWindow?.postMessage(message, frameOrigin);
 	}
 
 	$effect(() => {
 		function receivePreviewMessage(event: MessageEvent): void {
-			if (event.origin !== frameOrigin || !isPreviewReadyMessage(event.data) || !isPreviewWindow(event.source)) return;
-			readyPreviewWindows.add(event.source);
-			if (event.source === frame?.contentWindow) isFrameReady = true;
-			if (tenantSite) sendToPreviewWindow(event.source, toPreviewUpdateMessage($state.snapshot(tenantSite)));
+			if (event.origin !== frameOrigin || !isPreviewReadyMessage(event.data) || event.source !== frame?.contentWindow) return;
+			isFrameReady = true;
+			if (tenantSite) sendToPreview(toPreviewUpdateMessage($state.snapshot(tenantSite)));
 		}
 		window.addEventListener('message', receivePreviewMessage);
 		return () => window.removeEventListener('message', receivePreviewMessage);
@@ -44,7 +36,7 @@
 		if (!tenantSite) return;
 		const message = toPreviewUpdateMessage($state.snapshot(tenantSite));
 		const animationFrame = requestAnimationFrame(() => {
-			for (const previewWindow of readyPreviewWindows) sendToPreviewWindow(previewWindow, message);
+			if (isFrameReady) sendToPreview(message);
 		});
 		return () => cancelAnimationFrame(animationFrame);
 	});

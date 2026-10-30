@@ -22,10 +22,6 @@ export async function requireActiveTenantMember(user: AuthenticatedUser | null):
 	return memberAccess;
 }
 
-export async function requireActiveTenantId(user: AuthenticatedUser | null): Promise<string> {
-	return (await requireActiveTenantMember(user)).tenantId;
-}
-
 /** Le Tenant de la session, pour un TenantMember qui a cette Responsibility ; sinon, refusé. */
 export async function requireResponsibility(
 	user: AuthenticatedUser | null,

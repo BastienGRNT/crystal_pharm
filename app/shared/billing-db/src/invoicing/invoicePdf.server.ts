@@ -16,7 +16,7 @@ const dayFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'lon
 type PdfWriter = { page: PDFPage; regularFont: PDFFont; boldFont: PDFFont };
 
 /** La facture (ou l'avoir) en PDF A4, telle qu'on la télécharge. */
-export async function renderInvoicePdf(invoice: Invoice): Promise<Uint8Array> {
+async function renderInvoicePdf(invoice: Invoice): Promise<Uint8Array> {
 	const document = await PDFDocument.create();
 	document.setTitle(`${describeKind(invoice)} ${invoice.number}`);
 	document.setAuthor(readInvoiceIssuer().name);
@@ -97,16 +97,21 @@ function writeTotals(writer: PdfWriter, invoice: Invoice, totalsTop: number): vo
 	});
 }
 
+function describeSettlement(invoice: Invoice): string {
+	if (invoice.kind === 'credit_note') {
+		return `Avoir annulant la facture N° ${invoice.creditedInvoiceNumber ?? ''} : le montant a été remboursé sur le moyen de paiement utilisé.`;
+	}
+	if (invoice.status === 'paid') {
+		const paymentMethodText = invoice.paymentMethod === 'card' ? ' par carte' : ' par virement';
+		const paidDateText = invoice.paidAt ? ` le ${dayFormat.format(invoice.paidAt)}` : '';
+		return `Payée${paymentMethodText}${paidDateText}.`;
+	}
+	if (invoice.status === 'credited') return 'Facture annulée par un avoir (remboursement).';
+	return 'À régler par virement sous 30 jours, en rappelant le numéro de facture.';
+}
+
 function writeSettlement(writer: PdfWriter, invoice: Invoice): void {
-	const settlementText =
-		invoice.kind === 'credit_note'
-			? `Avoir annulant la facture N° ${invoice.creditedInvoiceNumber ?? ''} : le montant a été remboursé sur le moyen de paiement utilisé.`
-			: invoice.status === 'paid'
-				? `Payée${invoice.paymentMethod === 'card' ? ' par carte' : ' par virement'}${invoice.paidAt ? ` le ${dayFormat.format(invoice.paidAt)}` : ''}.`
-				: invoice.status === 'credited'
-					? 'Facture annulée par un avoir (remboursement).'
-					: 'À régler par virement sous 30 jours, en rappelant le numéro de facture.';
-	writeText(writer, settlementText, margin, 120, { size: 10, isBold: true });
+	writeText(writer, describeSettlement(invoice), margin, 120, { size: 10, isBold: true });
 	writeText(writer, 'Pas d’escompte pour paiement anticipé. Indemnité forfaitaire pour frais de recouvrement en cas de retard : 40 €.', margin, 100, {
 		size: 8,
 		color: mutedColor

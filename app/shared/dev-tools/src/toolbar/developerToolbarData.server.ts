@@ -29,9 +29,9 @@ const accountGroupTitles: Record<DemoSpace, string> = {
 	admin: 'Administration'
 };
 
-export const developmentActionPathname = '/__dev/actions';
+const developmentActionPathname = '/__dev/actions';
 
-export function personaSignInUrl(space: DemoSpace, personaKey: string): string {
+function personaSignInUrl(space: DemoSpace, personaKey: string): string {
 	return `${readAppUrl(space)}/__dev/connexion/${personaKey}`;
 }
 

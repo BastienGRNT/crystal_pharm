@@ -21,22 +21,13 @@ export function connectToContentDatabase(): ContentDatabase {
 	return sharedContentDatabase;
 }
 
-function runWithSettings<Result>(
-	settings: Record<string, string>,
-	work: (transaction: ContentTransaction) => Promise<Result>
-): Promise<Result> {
-	return connectToContentDatabase().transaction(async (transaction) => {
-		for (const [settingName, value] of Object.entries(settings)) {
-			await transaction.execute(sql`select set_config(${settingName}, ${value}, true)`);
-		}
-		return work(transaction);
-	});
-}
-
 /** Une transaction limitée par la Row-Level Security au Tenant donné. */
 export function runAsTenant<Result>(
 	tenantId: string,
 	work: (transaction: ContentTransaction) => Promise<Result>
 ): Promise<Result> {
-	return runWithSettings({ 'app.tenant_id': tenantId }, work);
+	return connectToContentDatabase().transaction(async (transaction) => {
+		await transaction.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`);
+		return work(transaction);
+	});
 }

@@ -45,15 +45,6 @@ export type SiteDraft = {
 
 export type SiteContentDraft = Pick<SiteDraft, 'services' | 'articles' | 'newsSource'>;
 
-export const moduleNames: readonly ModuleName[] = [
-	'openingHours',
-	'team',
-	'services',
-	'news',
-	'prescriptionUpload',
-	'loyaltyCard'
-];
-
 // Les règles d'affichage sont celles du site en ligne (`content-db`) : l'aperçu montre le même site.
 export function collectAvailableModuleData(base: SiteEditorBase, draft: SiteContentDraft): Partial<ModuleDataByName> {
 	return keepModuleDataWithContent({
@@ -67,11 +58,6 @@ export function collectAvailableModuleData(base: SiteEditorBase, draft: SiteCont
 function listDisplayedArticles(base: SiteEditorBase, draft: SiteContentDraft): NewsModuleData['articles'] {
 	const { source } = chooseDisplayedNewsSource(draft.newsSource, base.group);
 	return source === 'group' ? (base.group?.articles ?? []) : listCompleteArticles(draft.articles);
-}
-
-/** Les modules imposés par le groupement qu'on peut afficher ; les autres sont signalés au Manager. */
-export function listDisplayableMandatoryModules(base: SiteEditorBase, availableModuleData: Partial<ModuleDataByName>): ModuleName[] {
-	return (base.group?.mandatoryModules ?? []).filter((moduleName) => availableModuleData[moduleName] !== undefined);
 }
 
 /** Le site tel qu'il sera affiché, encore à valider par `TenantSiteSchema`. */

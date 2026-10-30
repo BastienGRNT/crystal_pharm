@@ -28,15 +28,7 @@ public static class PrescriptionsModuleRegistration
         var localDirectory = configuration[LocalDirectorySetting]
             ?? throw new InvalidOperationException("PrescriptionStorage__LocalDirectory is missing from the environment.");
 
-        services.AddScoped<TenantOwnershipInterceptor>();
-        services.AddScoped<TenantTransactionInterceptor>();
-        services.AddDbContext<PrescriptionsDbContext>((serviceProvider, options) =>
-        {
-            ConfigurePrescriptionsDatabase(options, connectionString);
-            options.AddInterceptors(
-                serviceProvider.GetRequiredService<TenantOwnershipInterceptor>(),
-                serviceProvider.GetRequiredService<TenantTransactionInterceptor>());
-        });
+        services.AddTenantScopedDbContext<PrescriptionsDbContext>(options => ConfigurePrescriptionsDatabase(options, connectionString));
         services.AddScoped<IPrescriptionSubmissionRepository, PrescriptionSubmissionRepository>();
         services.AddSingleton<IPrescriptionDocumentStore>(new LocalDiskPrescriptionDocumentStore(localDirectory));
         services.AddSingleton<IMalwareScanner, NoOpMalwareScanner>();

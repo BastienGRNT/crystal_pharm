@@ -66,7 +66,7 @@ export function describeGroupContractTerms(catalog: ToolCatalog, coverages: read
 				listPriceCents: toolQuote.listPriceCents,
 				pharmacyPriceCents: toolQuote.pharmacyPriceCents,
 				groupPriceCents: toolQuote.groupPriceCents,
-				payer: groupSharePercent >= 100 ? 'group' : groupSharePercent > 0 ? 'shared' : 'pharmacy',
+				payer: decideToolPayer(groupSharePercent),
 				discountPercent: coverage?.discountPercent ?? 0,
 				groupSharePercent
 			};
@@ -96,6 +96,12 @@ export function describeGroupContractInWords(
 	voice: ContractVoice
 ): GroupContractWords {
 	return { forPharmacies: describeWhatPharmaciesGet(terms, voice), forGroup: describeWhatGroupPays(terms, billing, voice) };
+}
+
+function decideToolPayer(groupSharePercent: number): ToolPayer {
+	if (groupSharePercent >= 100) return 'group';
+	if (groupSharePercent > 0) return 'shared';
+	return 'pharmacy';
 }
 
 function describeWhatPharmaciesGet(terms: GroupContractTerms, voice: ContractVoice): string[] {

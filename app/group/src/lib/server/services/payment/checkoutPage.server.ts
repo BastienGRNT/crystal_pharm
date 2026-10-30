@@ -3,7 +3,7 @@ import { formatEuros } from '@crystal-pharm/billing-db/domain';
 import { error, fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
 import { requireActiveGroupId } from '$lib/server/activeGroup.server';
 
-export const checkoutOutcomeFieldName = 'outcome';
+const checkoutOutcomeFieldName = 'outcome';
 
 export type CheckoutPageData = {
 	description: string;

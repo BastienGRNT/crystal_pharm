@@ -29,6 +29,7 @@ import {
 	type PharmacySectionSaved
 } from '../../pages/pharmacy/pharmacyPageData';
 import { requireOwner } from '../activeTenant.server';
+import { readText } from './pharmacyFormSubmissions.server';
 
 type AccessActionResult = PharmacySectionSaved | ActionFailure<AccessFailure>;
 
@@ -182,11 +183,6 @@ function refuse(
 	failedFieldName: AccessFieldName | undefined
 ): ActionFailure<AccessFailure> {
 	return fail(400, { failedSection: 'access', accessPanel, failureMessage, failedFieldName });
-}
-
-function readText(formData: FormData, fieldName: string): string {
-	const value = formData.get(fieldName);
-	return typeof value === 'string' ? value : '';
 }
 
 function readResponsibilityKeys(formData: FormData): string[] {

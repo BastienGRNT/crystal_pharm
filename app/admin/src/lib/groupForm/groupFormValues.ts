@@ -64,29 +64,47 @@ export function findStepOfField(fieldName: GroupFormFieldName): number {
 /** Les réponses du formulaire, traduites en prises en charge (une saisie invalide compte pour 0 dans l'aperçu). */
 export function toCoverageInputs(values: GroupFormValues): Partial<Record<ToolKey, { discountPercent: string; groupSharePercent: string }>> {
 	return Object.fromEntries(
-		sellableToolKeys.map((toolKey) => {
-			const toolTerms = values.toolTerms[toolKey];
-			const payer: ToolPayer = values.whoPays === 'group' ? 'group' : values.whoPays === 'pharmacies' ? 'pharmacy' : toolTerms.payer;
-			const groupSharePercent = payer === 'group' ? '100' : payer === 'shared' ? toolTerms.groupSharePercent || '0' : '0';
-			const discountPercent =
-				values.discountScope === 'none' ? '0' : values.discountScope === 'same' ? values.discountPercent || '0' : toolTerms.discountPercent || '0';
-			return [toolKey, { discountPercent, groupSharePercent }];
-		})
+		sellableToolKeys.map((toolKey) => [
+			toolKey,
+			{ discountPercent: findDiscountPercentInput(values, toolKey), groupSharePercent: findGroupSharePercentInput(values, toolKey) }
+		])
 	);
 }
 
 export function toPreviewCoverages(values: GroupFormValues): ToolCoverage[] {
-	return Object.entries(toCoverageInputs(values)).flatMap(([toolKey, coverageInput]) =>
-		coverageInput && sellableToolKeys.includes(toolKey as ToolKey)
-			? [
-					{
-						toolKey: toolKey as ToolKey,
-						discountPercent: readPercentage(coverageInput.discountPercent),
-						groupSharePercent: readPercentage(coverageInput.groupSharePercent)
-					}
-				]
-			: []
-	);
+	return sellableToolKeys.map((toolKey) => ({
+		toolKey,
+		discountPercent: readPercentage(findDiscountPercentInput(values, toolKey)),
+		groupSharePercent: readPercentage(findGroupSharePercentInput(values, toolKey))
+	}));
+}
+
+function findPayer(values: GroupFormValues, toolKey: ToolKey): ToolPayer {
+	if (values.whoPays === 'group') return 'group';
+	if (values.whoPays === 'pharmacies') return 'pharmacy';
+	return values.toolTerms[toolKey].payer;
+}
+
+function findGroupSharePercentInput(values: GroupFormValues, toolKey: ToolKey): string {
+	switch (findPayer(values, toolKey)) {
+		case 'group':
+			return '100';
+		case 'shared':
+			return values.toolTerms[toolKey].groupSharePercent || '0';
+		case 'pharmacy':
+			return '0';
+	}
+}
+
+function findDiscountPercentInput(values: GroupFormValues, toolKey: ToolKey): string {
+	switch (values.discountScope) {
+		case 'none':
+			return '0';
+		case 'same':
+			return values.discountPercent || '0';
+		case 'per-tool':
+			return values.toolTerms[toolKey].discountPercent || '0';
+	}
 }
 
 export function createEmptyGroupFormValues(): GroupFormValues {
@@ -114,30 +132,38 @@ export function toContractFormValues(contract: GroupContract | undefined): Pick<
 	GroupFormValues,
 	'whoPays' | 'toolTerms' | 'discountScope' | 'discountPercent'
 > {
-	const emptyValues = createEmptyGroupFormValues();
 	const coverageOf = (toolKey: ToolKey) => contract?.coverages.find((coverage) => coverage.toolKey === toolKey);
 	const groupShares = sellableToolKeys.map((toolKey) => coverageOf(toolKey)?.groupSharePercent ?? 0);
 	const discounts = sellableToolKeys.map((toolKey) => coverageOf(toolKey)?.discountPercent ?? 0);
-	const isSameDiscountEverywhere = discounts.every((discount) => discount === discounts[0]);
+	const discountScope = findDiscountScope(discounts);
 	return {
-		whoPays: groupShares.every((share) => share >= 100) ? 'group' : groupShares.every((share) => share === 0) ? 'pharmacies' : 'depends',
+		whoPays: findWhoPays(groupShares),
 		toolTerms: Object.fromEntries(
-			sellableToolKeys.map((toolKey) => {
-				const coverage = coverageOf(toolKey);
-				const groupSharePercent = coverage?.groupSharePercent ?? 0;
-				return [
-					toolKey,
-					{
-						payer: groupSharePercent >= 100 ? 'group' : groupSharePercent > 0 ? 'shared' : 'pharmacy',
-						groupSharePercent: groupSharePercent > 0 && groupSharePercent < 100 ? String(groupSharePercent) : '50',
-						discountPercent: coverage?.discountPercent ? String(coverage.discountPercent) : ''
-					}
-				];
-			})
+			sellableToolKeys.map((toolKey) => [toolKey, toToolTermsFormValue(coverageOf(toolKey))])
 		) as Record<ToolKey, ToolTermsFormValue>,
-		discountScope: discounts.every((discount) => discount === 0) ? 'none' : isSameDiscountEverywhere ? 'same' : 'per-tool',
-		discountPercent: isSameDiscountEverywhere && discounts[0] ? String(discounts[0]) : emptyValues.discountPercent
+		discountScope,
+		discountPercent: discountScope === 'same' ? String(discounts[0]) : ''
 	};
+}
+
+function findWhoPays(groupShares: number[]): WhoPays {
+	if (groupShares.every((share) => share >= 100)) return 'group';
+	if (groupShares.every((share) => share === 0)) return 'pharmacies';
+	return 'depends';
+}
+
+function findDiscountScope(discounts: number[]): DiscountScope {
+	if (discounts.every((discount) => discount === 0)) return 'none';
+	if (discounts.every((discount) => discount === discounts[0])) return 'same';
+	return 'per-tool';
+}
+
+function toToolTermsFormValue(coverage: ToolCoverage | undefined): ToolTermsFormValue {
+	const groupSharePercent = coverage?.groupSharePercent ?? 0;
+	const discountPercent = coverage?.discountPercent ? String(coverage.discountPercent) : '';
+	if (groupSharePercent >= 100) return { payer: 'group', groupSharePercent: '50', discountPercent };
+	if (groupSharePercent > 0) return { payer: 'shared', groupSharePercent: String(groupSharePercent), discountPercent };
+	return { payer: 'pharmacy', groupSharePercent: '50', discountPercent };
 }
 
 function readPercentage(percentageText: string): number {

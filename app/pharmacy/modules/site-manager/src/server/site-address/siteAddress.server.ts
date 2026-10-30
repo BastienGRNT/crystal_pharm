@@ -5,11 +5,6 @@ import { readUrlFromEnvironment } from '../siteUrlEnvironment.server';
 
 const maximumSuggestionAttempts = 50;
 
-/** Le domaine sous lequel vivent les sites (`site.localhost` en dev), tiré de `SITE_URL`. */
-export function readSitesHostname(): string {
-	return readUrlFromEnvironment('SITE_URL').hostname;
-}
-
 /** Ce qui suit le sous-domaine dans l'adresse d'un site : `.site.localhost:8080` en dev. */
 export function readSiteAddressSuffix(): string {
 	return `.${readUrlFromEnvironment('SITE_URL').host}`;

@@ -15,7 +15,7 @@ import {
 	type InvoicePaymentMethod,
 	type InvoiceStatus
 } from '../database/billingTables';
-import { toPayerAccess, type Payer } from '../payments/checkoutSessions.server';
+import { toPayerAccess, toPayerColumns, type Payer } from '../payments/checkoutSessions.server';
 import { getPaymentProvider } from '../payments/paymentProvider';
 import { addVat, vatRatePercent } from './vatAmounts';
 
@@ -162,7 +162,7 @@ export function listInvoices(payer: Payer): Promise<Invoice[]> {
 		const invoiceRows = await transaction
 			.select()
 			.from(invoices)
-			.where('tenantId' in payer ? eq(invoices.tenantId, payer.tenantId) : eq(invoices.groupId, payer.groupId))
+			.where(invoicesOfPayer(payer))
 			.orderBy(desc(invoices.issuedAt), desc(invoices.number));
 		return invoiceRows.map(toInvoice);
 	});
@@ -174,12 +174,7 @@ export async function getInvoice(payer: Payer, invoiceId: string): Promise<Invoi
 		transaction
 			.select()
 			.from(invoices)
-			.where(
-				and(
-					eq(invoices.id, invoiceId),
-					'tenantId' in payer ? eq(invoices.tenantId, payer.tenantId) : eq(invoices.groupId, payer.groupId)
-				)
-			)
+			.where(and(eq(invoices.id, invoiceId), invoicesOfPayer(payer)))
 	);
 	return invoiceRow && toInvoice(invoiceRow);
 }
@@ -240,8 +235,8 @@ function isUuid(candidate: string): boolean {
 	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate);
 }
 
-function toPayerColumns(payer: Payer) {
-	return { tenantId: 'tenantId' in payer ? payer.tenantId : null, groupId: 'groupId' in payer ? payer.groupId : null };
+function invoicesOfPayer(payer: Payer) {
+	return 'tenantId' in payer ? eq(invoices.tenantId, payer.tenantId) : eq(invoices.groupId, payer.groupId);
 }
 
 function toInvoice(invoiceRow: typeof invoices.$inferSelect): Invoice {

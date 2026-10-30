@@ -43,6 +43,9 @@ export function buildSelectedPrescription(prescription: ReceivedPrescription): S
 	const items: DescriptionItem[] = [
 		{ label: 'Date de naissance', value: formatDay(prescription.birthDate) },
 		{ label: 'Téléphone', value: prescription.phone },
+		...(prescription.socialSecurityNumber
+			? [{ label: 'Numéro de sécurité sociale', value: prescription.socialSecurityNumber }]
+			: []),
 		{ label: 'Passage prévu', value: formatLocalDateTime(prescription.plannedVisitAt) },
 		{
 			label: 'Déjà venu(e) à la pharmacie',
@@ -50,9 +53,6 @@ export function buildSelectedPrescription(prescription: ReceivedPrescription): S
 		},
 		{ label: 'Reçue le', value: formatLocalDateTime(prescription.submittedAt) }
 	];
-	if (prescription.socialSecurityNumber) {
-		items.splice(2, 0, { label: 'Numéro de sécurité sociale', value: prescription.socialSecurityNumber });
-	}
 
 	return {
 		patientName: formatPatientName(prescription),

@@ -2,7 +2,7 @@ import type { FilterTab } from '@crystal-pharm/ui';
 import { homePathnames } from '../../homePathnames';
 import type { PharmacySection } from './pharmacyPageData';
 
-export const pharmacySectionQueryParameter = 'onglet';
+const pharmacySectionQueryParameter = 'onglet';
 
 const pharmacySectionTabs: ReadonlyArray<{ section: PharmacySection; label: string; href: string }> = [
 	{ section: 'contactDetails', label: 'Coordonnées', href: homePathnames.pharmacy },

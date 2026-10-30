@@ -22,16 +22,23 @@ export async function lockCurrentSubscriptionOfTenant(
 	const [subscriptionRow] = await transaction
 		.select()
 		.from(tenantSubscriptions)
-		.where(
-			and(
-				eq(tenantSubscriptions.tenantId, tenantId),
-				or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, now))
-			)
-		)
+		.where(and(eq(tenantSubscriptions.tenantId, tenantId), isSubscriptionNotEndedAt(now)))
 		.orderBy(desc(tenantSubscriptions.startedAt))
 		.limit(1)
 		.for('update');
 	return subscriptionRow;
+}
+
+export function isSubscriptionNotEndedAt(moment: Date) {
+	return or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, moment));
+}
+
+/** Annule une résiliation : l'abonnement repart sans date de fin. */
+export async function clearCancellation(transaction: BillingTransaction, subscriptionId: string): Promise<void> {
+	await transaction
+		.update(tenantSubscriptions)
+		.set({ cancelledAt: null, endsAt: null })
+		.where(and(eq(tenantSubscriptions.id, subscriptionId), eq(tenantSubscriptions.status, 'active')));
 }
 
 export async function listItemsOfSubscription(
@@ -50,7 +57,7 @@ export async function listItemsOfSubscription(
  * Le prix négocié qui s'applique à une offre à une date : le plus bas entre
  * l'accord du Tenant et celui de son groupement.
  */
-export async function findPriceAgreementInForce(
+async function findPriceAgreementInForce(
 	transaction: BillingTransaction,
 	tenantId: string,
 	offerKey: string,
@@ -104,12 +111,30 @@ export async function repriceItemsOfSubscription(
 	const renewalDate = new Date(Math.max(subscription.billedUntil.getTime(), Date.now()));
 	for (const item of await listItemsOfSubscription(transaction, subscription.id)) {
 		if (item.endsAt) continue;
-		const versionId = item.nextOfferVersionId ?? item.offerVersionId;
-		const [versionRow] = await transaction.select().from(offerVersions).where(eq(offerVersions.id, versionId));
-		if (!versionRow) continue;
-		const pricing = await computeBilledPriceOfOffer(transaction, subscription.tenantId, item.offerKey, versionRow.monthlyPriceCents, renewalDate);
-		await transaction.update(tenantSubscriptionItems).set(pricing).where(eq(tenantSubscriptionItems.id, item.id));
+		const nextPeriodPrice = await priceItemForNextPeriod(transaction, subscription.tenantId, item, renewalDate);
+		if (!nextPeriodPrice) continue;
+		const { billedMonthlyPriceCents, priceAgreementId } = nextPeriodPrice;
+		await transaction
+			.update(tenantSubscriptionItems)
+			.set({ billedMonthlyPriceCents, priceAgreementId })
+			.where(eq(tenantSubscriptionItems.id, item.id));
 	}
+}
+
+export type NextPeriodPrice = { offerVersionId: string; billedMonthlyPriceCents: number; priceAgreementId: string | null };
+
+/** Le prix d'une ligne à la version qu'elle aura la période suivante (la prochaine si une nouvelle l'attend). */
+export async function priceItemForNextPeriod(
+	transaction: BillingTransaction,
+	tenantId: string,
+	item: SubscriptionItemWithOffer,
+	at: Date
+): Promise<NextPeriodPrice | undefined> {
+	const offerVersionId = item.nextOfferVersionId ?? item.offerVersionId;
+	const [versionRow] = await transaction.select().from(offerVersions).where(eq(offerVersions.id, offerVersionId));
+	if (!versionRow) return undefined;
+	const pricing = await computeBilledPriceOfOffer(transaction, tenantId, item.offerKey, versionRow.monthlyPriceCents, at);
+	return { offerVersionId, ...pricing };
 }
 
 /** La fin de chaque événement : la projection des accès est refaite, dans la même transaction. */

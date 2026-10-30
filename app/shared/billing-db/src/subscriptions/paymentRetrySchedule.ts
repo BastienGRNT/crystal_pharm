@@ -4,7 +4,7 @@ const dayInMilliseconds = 24 * 60 * 60 * 1000;
 const retryDelaysInDaysAfterFirstFailure = [1, 3, 6] as const;
 
 /** La grâce : les accès restent ouverts 7 jours après la fin de la période payée. */
-export const gracePeriodInDays = 7;
+const gracePeriodInDays = 7;
 
 export type RetryPlan = { outcome: 'retry'; nextRetryAt: Date } | { outcome: 'give-up' };
 

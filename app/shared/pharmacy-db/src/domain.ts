@@ -1,7 +1,6 @@
 // Ce qui sert aussi dans le navigateur (formater, vérifier une saisie) : sans base de données.
-export { PhoneNumber, PhoneNumberSchema } from './contact-details/PhoneNumber';
+export { PhoneNumber } from './contact-details/PhoneNumber';
 export {
-	PharmacyContactDetailsSchema,
 	pharmacyContactDetailsFieldNames,
 	type PharmacyContactDetails,
 	type PharmacyContactDetailsFieldName,
@@ -15,7 +14,6 @@ export {
 	type WeeklyOpeningSchedule
 } from './opening-hours/weeklyOpeningSchedule';
 export {
-	EmployeeIdentitySchema,
 	employeeIdentityFieldNames,
 	employeePhotoFieldName,
 	formatEmployeeFullName,
@@ -24,19 +22,13 @@ export {
 	type EmployeeIdentityInput,
 	type EmployeePhotoChange
 } from './employees/employeeIdentity';
-export { FirstName, FirstNameSchema } from './employees/identity/FirstName';
-export { JobTitle, JobTitleSchema } from './employees/identity/JobTitle';
-export { LastName, LastNameSchema } from './employees/identity/LastName';
-export {
-	acceptedEmployeePhotoTypes,
-	EmployeePhoto,
-	maximumEmployeePhotoMegabytes
-} from './employees/photos/EmployeePhoto';
+export { FirstName } from './employees/identity/FirstName';
+export { JobTitle } from './employees/identity/JobTitle';
+export { LastName } from './employees/identity/LastName';
+export { acceptedEmployeePhotoTypes, maximumEmployeePhotoMegabytes } from './employees/photos/EmployeePhoto';
 export { acceptedImageTypes, detectImageFormat, toImageContentType, type ImageFormat } from './file-storage/imageFormat';
 export { collectFieldErrors, wholeFormErrorKey, type FieldErrors, type SaveResult } from './fieldErrors';
 export {
-	isResponsibilityKey,
-	keepKnownResponsibilityKeys,
 	responsibilities,
 	responsibilityKeys,
 	type ResponsibilityKey

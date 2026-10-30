@@ -3,16 +3,15 @@ import { getToolAccessOfTenant, previewGroupJoining } from '@crystal-pharm/billi
 import type { ToolKey } from '@crystal-pharm/billing-db/domain';
 import { findCurrentGroupOfTenant, listPendingInvitationsForAccountEmail } from '@crystal-pharm/group-db';
 import { getPharmacyProfile } from '@crystal-pharm/pharmacy-db';
-import { canManageSubscriptionAndAccess } from '@crystal-pharm/pharmacy-db/domain';
-import { keepToolsPermittedToMember } from '../../domain/toolResponsibilities';
-import { weekdays, type WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
+import { canManageSubscriptionAndAccess, weekdays, type WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
 import { fail, redirect, type ActionFailure } from '@sveltejs/kit';
 import { describeToolCards } from '../../domain/toolCards';
+import { keepToolsPermittedToMember } from '../../domain/toolResponsibilities';
 import { homePathnames } from '../../homePathnames';
 import type { ConfirmAppointmentFailure, ToolsHomePageData } from '../../pages/tools-home/toolsHomePageData';
-import { requireActiveTenantMember, requireSignedInAccountId } from '../activeTenant.server';
+import { requireActiveTenantMember } from '../activeTenant.server';
 import { appointmentIdFieldName, buildTodayOverview, type TodayOverviewInput } from './today/todayOverview';
-import type { TodaySources } from './today/todaySources';
+import type { TodayAppointmentsSummary, TodayManager, TodaySources } from './today/todaySources';
 
 const confirmAppointmentActionName = 'confirmAppointment';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -25,7 +24,7 @@ export async function loadToolsHomePage(
 	todaySources: TodaySources
 ): Promise<ToolsHomePageData> {
 	const memberAccess = await requireActiveTenantMember(locals.user);
-	const { tenantId } = memberAccess;
+	const { tenantId, accountId } = memberAccess;
 	const accountEmail = locals.user?.email ?? '';
 	// Les invitations d'un groupement s'acceptent par un Owner : les autres ne les voient pas.
 	const [toolAccess, currentGroup, pendingInvitations, pharmacyProfile] = await Promise.all([
@@ -35,7 +34,7 @@ export async function loadToolsHomePage(
 		getPharmacyProfile(tenantId)
 	]);
 	const todayInput = await readToday(
-		{ accountId: requireSignedInAccountId(locals.user), tenantId },
+		{ accountId, tenantId },
 		keepToolsPermittedToMember(toolAccess.accessibleToolKeys, memberAccess),
 		pharmacyProfile.weeklyOpeningSchedule,
 		todaySources
@@ -73,23 +72,24 @@ export async function loadToolsHomePage(
 }
 
 async function readToday(
-	manager: { accountId: string; tenantId: string },
+	manager: TodayManager,
 	accessibleToolKeys: readonly ToolKey[],
 	weeklyOpeningSchedule: WeeklyOpeningSchedule | undefined,
 	todaySources: TodaySources
 ): Promise<TodayOverviewInput> {
 	const now = new Date();
 	const isoDate = toLocalIsoDate(now);
+	const hasBooking = accessibleToolKeys.includes('booking');
 	const [teamSummary, appointmentsSummary] = await Promise.all([
 		accessibleToolKeys.includes('planning') ? todaySources.team.getTodayTeam(manager.tenantId, isoDate) : undefined,
-		accessibleToolKeys.includes('booking') ? readAppointmentsOrNothing(todaySources, manager, isoDate) : undefined
+		hasBooking ? readAppointmentsOrNothing(todaySources, manager, isoDate) : undefined
 	]);
 	return {
 		isoDate,
 		nowMinutes: now.getHours() * 60 + now.getMinutes(),
 		openingPeriods: weeklyOpeningSchedule && listOpeningPeriodsOfDay(weeklyOpeningSchedule, now),
 		team: teamSummary && { href: todaySources.team.href, summary: teamSummary },
-		appointments: accessibleToolKeys.includes('booking')
+		appointments: hasBooking
 			? { href: todaySources.appointments.href, summary: appointmentsSummary }
 			: undefined,
 		confirmAppointmentFormAction: `?/${confirmAppointmentActionName}`
@@ -102,7 +102,7 @@ export async function confirmAppointmentFromToolsHome(
 	todaySources: TodaySources
 ): Promise<ActionFailure<ConfirmAppointmentFailure>> {
 	const memberAccess = await requireActiveTenantMember(locals.user);
-	const { tenantId } = memberAccess;
+	const { tenantId, accountId } = memberAccess;
 	const { accessibleToolKeys } = await getToolAccessOfTenant(tenantId);
 	if (!accessibleToolKeys.includes('booking')) {
 		return fail(403, { confirmationFailure: 'Les rendez-vous ne sont pas activés pour votre pharmacie.' });
@@ -113,8 +113,7 @@ export async function confirmAppointmentFromToolsHome(
 	const appointmentId = String((await request.formData()).get(appointmentIdFieldName) ?? '');
 	if (!uuidPattern.test(appointmentId)) return fail(400, { confirmationFailure: 'Ce rendez-vous est introuvable.' });
 
-	const manager = { accountId: requireSignedInAccountId(locals.user), tenantId };
-	const isConfirmed = await todaySources.appointments.confirmAppointment(manager, appointmentId).catch(() => false);
+	const isConfirmed = await todaySources.appointments.confirmAppointment({ accountId, tenantId }, appointmentId).catch(() => false);
 	if (!isConfirmed) {
 		return fail(409, { confirmationFailure: 'Ce rendez-vous n’a pas pu être confirmé. Réessayez depuis l’agenda.' });
 	}
@@ -124,9 +123,9 @@ export async function confirmAppointmentFromToolsHome(
 // L'accueil reste utilisable quand le C# ne répond pas : la journée le signale, sans le détail de l'erreur.
 async function readAppointmentsOrNothing(
 	todaySources: TodaySources,
-	manager: { accountId: string; tenantId: string },
+	manager: TodayManager,
 	isoDate: string
-): Promise<Awaited<ReturnType<TodaySources['appointments']['getTodayAppointments']>> | undefined> {
+): Promise<TodayAppointmentsSummary | undefined> {
 	try {
 		return await todaySources.appointments.getTodayAppointments(manager, isoDate);
 	} catch {

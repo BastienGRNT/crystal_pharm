@@ -1,14 +1,12 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { BillingAccess, BillingTransaction } from '../database/billingDatabase.server';
 import { runWithBillingAccess } from '../database/billingDatabase.server';
 import {
 	checkouts,
-	payments,
 	type BillingPeriod,
 	type CheckoutLine,
 	type CheckoutPurpose,
-	type CheckoutStatus,
-	type PaymentStatus
+	type CheckoutStatus
 } from '../database/billingTables';
 import type { ToolKey } from '../tools/tools';
 import { vatRatePercent } from '../invoicing/vatAmounts';
@@ -38,17 +36,12 @@ export type Checkout = {
 	returnPathname: string;
 };
 
-export type Payment = {
-	paymentId: string;
-	description: string;
-	amountCents: number;
-	status: PaymentStatus;
-	paidAt: Date;
-	refundedAt: Date | undefined;
-};
-
 export function toPayerAccess(payer: Payer): BillingAccess {
 	return 'tenantId' in payer ? { tenantId: payer.tenantId } : { groupId: payer.groupId };
+}
+
+export function toPayerColumns(payer: Payer): { tenantId: string | null; groupId: string | null } {
+	return { tenantId: 'tenantId' in payer ? payer.tenantId : null, groupId: 'groupId' in payer ? payer.groupId : null };
 }
 
 /** Ouvre une page de paiement ; renvoie l'adresse où l'envoyer. */
@@ -60,8 +53,7 @@ export async function openCheckout(
 	const checkoutId = crypto.randomUUID();
 	await transaction.insert(checkouts).values({
 		id: checkoutId,
-		tenantId: 'tenantId' in payer ? payer.tenantId : null,
-		groupId: 'groupId' in payer ? payer.groupId : null,
+		...toPayerColumns(payer),
 		purpose: checkoutOpening.purpose,
 		toolKeys: [...(checkoutOpening.toolKeys ?? [])],
 		billingPeriod: checkoutOpening.billingPeriod ?? 'monthly',
@@ -86,24 +78,6 @@ export async function getCheckout(payer: Payer, checkoutId: string): Promise<Che
 		status: checkout.status,
 		returnPathname: checkout.returnPathname
 	};
-}
-
-export function listPayments(payer: Payer): Promise<Payment[]> {
-	return runWithBillingAccess(toPayerAccess(payer), async (transaction) => {
-		const paymentRows = await transaction
-			.select()
-			.from(payments)
-			.where('tenantId' in payer ? eq(payments.tenantId, payer.tenantId) : eq(payments.groupId, payer.groupId))
-			.orderBy(desc(payments.paidAt));
-		return paymentRows.map((paymentRow) => ({
-			paymentId: paymentRow.id,
-			description: paymentRow.description,
-			amountCents: paymentRow.amountCents,
-			status: paymentRow.status,
-			paidAt: paymentRow.paidAt,
-			refundedAt: paymentRow.refundedAt ?? undefined
-		}));
-	});
 }
 
 export function payerCondition(payer: Payer) {

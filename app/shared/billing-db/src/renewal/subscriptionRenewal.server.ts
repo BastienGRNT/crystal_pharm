@@ -1,11 +1,12 @@
 import { and, eq, gt, isNull, lte, or } from 'drizzle-orm';
 import { readToolCatalog } from '../catalog/toolCatalog.server';
 import { platformBillingAccess, runWithBillingAccess, type BillingTransaction } from '../database/billingDatabase.server';
-import { offerVersions, payments, tenantSubscriptionItems, tenantSubscriptions } from '../database/billingTables';
+import { payments, tenantSubscriptionItems, tenantSubscriptions, type BillingPeriod } from '../database/billingTables';
 import {
-	computeBilledPriceOfOffer,
 	finishSubscriptionEvent,
 	listItemsOfSubscription,
+	priceItemForNextPeriod,
+	type NextPeriodPrice,
 	type SubscriptionItemWithOffer,
 	type SubscriptionRow
 } from '../events/subscriptionEventSupport.server';
@@ -20,7 +21,7 @@ import { computePeriodEnd } from '../subscriptions/subscriptionPeriod';
 /** `renewed` : période suivante payée · `payment-failed` : on relancera · `abandoned` : relances épuisées · `skipped` : déjà pris par une autre instance, ou plus dû. */
 export type RenewalOutcome = 'renewed' | 'payment-failed' | 'abandoned' | 'skipped';
 
-type RenewedItem = { item: SubscriptionItemWithOffer; offerVersionId: string; billedMonthlyPriceCents: number; priceAgreementId: string | null };
+type RenewedItem = NextPeriodPrice & { item: SubscriptionItemWithOffer };
 
 /**
  * Événement : la période payée d'un abonnement actif est finie. Le prélèvement
@@ -33,14 +34,7 @@ export async function renewSubscription(subscriptionId: string, tenantId: string
 		const [subscription] = await transaction
 			.select()
 			.from(tenantSubscriptions)
-			.where(
-				and(
-					eq(tenantSubscriptions.id, subscriptionId),
-					eq(tenantSubscriptions.status, 'active'),
-					lte(tenantSubscriptions.billedUntil, now),
-					or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, tenantSubscriptions.billedUntil))
-				)
-			)
+			.where(and(eq(tenantSubscriptions.id, subscriptionId), isDueForRenewal(now)))
 			.for('update', { skipLocked: true });
 		if (!subscription) return 'skipped';
 		return chargePeriod(transaction, subscription, customer, 1, now);
@@ -58,13 +52,7 @@ export async function retryFailedPayment(subscriptionId: string, tenantId: strin
 		const [subscription] = await transaction
 			.select()
 			.from(tenantSubscriptions)
-			.where(
-				and(
-					eq(tenantSubscriptions.id, subscriptionId),
-					eq(tenantSubscriptions.status, 'past_due'),
-					lte(tenantSubscriptions.nextRetryAt, now)
-				)
-			)
+			.where(and(eq(tenantSubscriptions.id, subscriptionId), isDueForRetry(now)))
 			.for('update', { skipLocked: true });
 		if (!subscription) return 'skipped';
 		return chargePeriod(transaction, subscription, customer, subscription.failedAttempts + 1, now);
@@ -76,13 +64,7 @@ export function listSubscriptionsDueForRenewal(now: Date) {
 		transaction
 			.select({ id: tenantSubscriptions.id, tenantId: tenantSubscriptions.tenantId })
 			.from(tenantSubscriptions)
-			.where(
-				and(
-					eq(tenantSubscriptions.status, 'active'),
-					lte(tenantSubscriptions.billedUntil, now),
-					or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, tenantSubscriptions.billedUntil))
-				)
-			)
+			.where(isDueForRenewal(now))
 	);
 }
 
@@ -91,8 +73,21 @@ export function listSubscriptionsDueForRetry(now: Date) {
 		transaction
 			.select({ id: tenantSubscriptions.id, tenantId: tenantSubscriptions.tenantId })
 			.from(tenantSubscriptions)
-			.where(and(eq(tenantSubscriptions.status, 'past_due'), lte(tenantSubscriptions.nextRetryAt, now)))
+			.where(isDueForRetry(now))
 	);
+}
+
+/** Actif, sa période payée est finie, et il ne s'arrête pas à cette échéance. */
+function isDueForRenewal(now: Date) {
+	return and(
+		eq(tenantSubscriptions.status, 'active'),
+		lte(tenantSubscriptions.billedUntil, now),
+		or(isNull(tenantSubscriptions.endsAt), gt(tenantSubscriptions.endsAt, tenantSubscriptions.billedUntil))
+	);
+}
+
+function isDueForRetry(now: Date) {
+	return and(eq(tenantSubscriptions.status, 'past_due'), lte(tenantSubscriptions.nextRetryAt, now));
 }
 
 async function chargePeriod(
@@ -111,9 +106,10 @@ async function chargePeriod(
 
 	if (subtotalCents > 0) {
 		const idempotencyKey = `${subscription.id}:${periodStart.toISOString()}:${attemptNumber}`;
+		const totalWithVatCents = addVat(subtotalCents).totalCents;
 		const chargeResult = await getPaymentProvider().chargeStoredCard({
 			cardReference: subscription.providerSubscriptionReference,
-			amountCents: addVat(subtotalCents).totalCents,
+			amountCents: totalWithVatCents,
 			idempotencyKey
 		});
 		if (chargeResult.outcome === 'declined') {
@@ -122,7 +118,7 @@ async function chargePeriod(
 				tenantId: subscription.tenantId,
 				subscriptionId: subscription.id,
 				attemptNumber,
-				amountCents: addVat(subtotalCents).totalCents,
+				amountCents: totalWithVatCents,
 				description: 'Abonnement Crystal Pharm',
 				status: 'failed',
 				providerPaymentReference: chargeResult.providerPaymentReference,
@@ -179,16 +175,13 @@ async function priceItemsForRenewal(transaction: BillingTransaction, subscriptio
 	);
 	const renewedItems: RenewedItem[] = [];
 	for (const item of continuingItems) {
-		const offerVersionId = item.nextOfferVersionId ?? item.offerVersionId;
-		const [versionRow] = await transaction.select().from(offerVersions).where(eq(offerVersions.id, offerVersionId));
-		if (!versionRow) continue;
-		const pricing = await computeBilledPriceOfOffer(transaction, subscription.tenantId, item.offerKey, versionRow.monthlyPriceCents, subscription.billedUntil);
-		renewedItems.push({ item, offerVersionId, ...pricing });
+		const nextPeriodPrice = await priceItemForNextPeriod(transaction, subscription.tenantId, item, subscription.billedUntil);
+		if (nextPeriodPrice) renewedItems.push({ item, ...nextPeriodPrice });
 	}
 	return renewedItems;
 }
 
-async function describeRenewalLines(transaction: BillingTransaction, renewedItems: readonly RenewedItem[], billingPeriod: 'monthly' | 'yearly') {
+async function describeRenewalLines(transaction: BillingTransaction, renewedItems: readonly RenewedItem[], billingPeriod: BillingPeriod) {
 	const labels = await readOfferLabels(transaction, renewedItems.map((renewedItem) => renewedItem.item.offerKey));
 	const monthlyLines = renewedItems
 		.filter((renewedItem) => renewedItem.billedMonthlyPriceCents > 0)

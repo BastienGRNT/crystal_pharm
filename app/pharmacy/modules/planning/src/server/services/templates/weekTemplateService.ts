@@ -1,7 +1,7 @@
 import * as v from 'valibot';
 import { addDays, toIsoDate } from '../../../domain/calendar/week';
 import { findBlockingRule } from '../../../domain/availability/availabilityRules';
-import { findOverlappingShift, type Shift } from '../../../domain/planning';
+import { findAbsenceOfDay, findOverlappingShift, type Shift } from '../../../domain/planning';
 import {
 	pickTemplateForWeek,
 	toShiftsOfWeek,
@@ -12,7 +12,7 @@ import {
 import { listAvailabilityRules } from '../../repositories/availabilityRuleRepository';
 import { deleteWeekTemplate, insertWeekTemplate, listWeekTemplates } from '../../repositories/weekTemplateRepository';
 import { insertShift, listShifts } from '../../repositories/planningRepository';
-import { getWeekPlanning } from '../team/teamPlanningService';
+import { getPlanningOfWeek } from '../team/teamPlanningService';
 import { returnWeekToDraft } from '../week/weekStatusService';
 
 export type TemplateChangeResult = { isSaved: true; message?: string } | { isSaved: false; message: string };
@@ -52,7 +52,7 @@ export async function applyWeekTemplate(tenantId: string, monday: Date, template
 	if (!template) return { isSaved: false, message: 'Aucune semaine type ne correspond à cette semaine.' };
 
 	const [weekPlanning, availabilityRules] = await Promise.all([
-		getWeekPlanning(tenantId, toIsoDate(monday), toIsoDate(addDays(monday, 6))),
+		getPlanningOfWeek(tenantId, monday),
 		listAvailabilityRules(tenantId, ['approved'])
 	]);
 	const knownEmployeeIds = new Set(weekPlanning.employees.map((employee) => employee.id));
@@ -61,9 +61,7 @@ export async function applyWeekTemplate(tenantId: string, monday: Date, template
 	let skippedCount = 0;
 
 	for (const candidate of toShiftsOfWeek(template, monday)) {
-		const isAbsent = weekPlanning.absences.some(
-			(absence) => absence.employeeId === candidate.employeeId && absence.firstDate <= candidate.date && candidate.date <= absence.lastDate
-		);
+		const isAbsent = findAbsenceOfDay(weekPlanning.absences, candidate.employeeId, candidate.date) !== undefined;
 		const isBlocked = findBlockingRule(availabilityRules, candidate.employeeId, candidate.date, candidate.startTime, candidate.endTime) !== undefined;
 		const isFree = findOverlappingShift(placedShifts, candidate) === undefined;
 		if (!knownEmployeeIds.has(candidate.employeeId) || isAbsent || isBlocked || !isFree) {

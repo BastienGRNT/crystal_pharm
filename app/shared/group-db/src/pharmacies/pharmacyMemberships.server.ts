@@ -41,10 +41,6 @@ export async function findCurrentGroupOfTenant(tenantId: string): Promise<Curren
 	return membership;
 }
 
-export function findCoveringGroupOfTenant(tenantId: string, now: Date): Promise<CoveringGroupOfTenant | undefined> {
-	return runWithGroupAccess({ tenantId }, (transaction) => readCoveringGroupOfTenant(transaction, tenantId, now));
-}
-
 /** Pour qui a déjà une transaction ouverte : en ouvrir une deuxième bloquerait le pool de connexions. */
 export async function readCoveringGroupOfTenant(
 	transaction: GroupTransaction,
@@ -60,12 +56,7 @@ export async function readCoveringGroupOfTenant(
 		})
 		.from(pharmacyMemberships)
 		.innerJoin(pharmacyGroups, eq(pharmacyGroups.id, pharmacyMemberships.groupId))
-		.where(
-			and(
-				eq(pharmacyMemberships.tenantId, tenantId),
-				or(isNull(pharmacyMemberships.leftAt), gt(pharmacyMemberships.coverageEndsAt, now))
-			)
-		)
+		.where(and(eq(pharmacyMemberships.tenantId, tenantId), isCoveringAt(now)))
 		.orderBy(desc(pharmacyMemberships.joinedAt));
 	const coveringMembership =
 		coveringMemberships.find((membership) => membership.leftAt === null) ?? coveringMemberships[0];
@@ -93,18 +84,15 @@ export function listCoveredTenantIdsOfGroup(access: GroupAccess, groupId: string
 		const memberships = await transaction
 			.select({ tenantId: pharmacyMemberships.tenantId })
 			.from(pharmacyMemberships)
-			.where(
-				and(
-					eq(pharmacyMemberships.groupId, groupId),
-					or(isNull(pharmacyMemberships.leftAt), gt(pharmacyMemberships.coverageEndsAt, now))
-				)
-			);
+			.where(and(eq(pharmacyMemberships.groupId, groupId), isCoveringAt(now)));
 		return [...new Set(memberships.map((membership) => membership.tenantId))];
 	});
 }
 
-/** La pharmacie quitte son groupement ; la prise en charge court jusqu'à la fin du mois. */
-/** Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction. */
+/**
+ * La pharmacie quitte son groupement ; la prise en charge court jusqu'à la fin du mois.
+ * Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction.
+ */
 export function leaveGroupInTransaction(
 	transaction: GroupTransaction,
 	tenantId: string
@@ -112,8 +100,10 @@ export function leaveGroupInTransaction(
 	return endMembership(transaction, eq(pharmacyMemberships.tenantId, tenantId), 'pharmacy');
 }
 
-/** Le groupement retire une de ses pharmacies ; la prise en charge court jusqu'à la fin du mois. */
-/** Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction. */
+/**
+ * Le groupement retire une de ses pharmacies ; la prise en charge court jusqu'à la fin du mois.
+ * Pour `billing-db`, qui doit refaire les accès de la pharmacie dans la même transaction.
+ */
 export function removePharmacyFromGroupInTransaction(
 	transaction: GroupTransaction,
 	groupId: string,
@@ -172,6 +162,11 @@ async function endMembership(
 		groupName: group?.name ?? '',
 		coverageEndsAt
 	};
+}
+
+/** Membre, ou parti avec une prise en charge qui court encore. */
+function isCoveringAt(now: Date) {
+	return or(isNull(pharmacyMemberships.leftAt), gt(pharmacyMemberships.coverageEndsAt, now));
 }
 
 function listCurrentMemberships(access: GroupAccess, groupId: string) {

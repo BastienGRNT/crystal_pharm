@@ -1,6 +1,7 @@
 import { getPharmacyProfile, listEmployees, type Employee as PharmacyEmployee } from '@crystal-pharm/pharmacy-db';
 import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import * as v from 'valibot';
+import { addDays, toIsoDate } from '../../../domain/calendar/week';
 import { listOpeningPeriodsOfDate, type OpeningHours } from '../../../domain/coverage/coverage';
 import {
 	findOverlappingShift,
@@ -46,6 +47,10 @@ export async function getWeekPlanning(tenantId: string, firstDate: string, lastD
 	return { employees: pharmacyEmployees.map(toPlanningEmployee), shifts, absences };
 }
 
+export function getPlanningOfWeek(tenantId: string, monday: Date): Promise<WeekPlanning> {
+	return getWeekPlanning(tenantId, toIsoDate(monday), toIsoDate(addDays(monday, 6)));
+}
+
 /** Les plages d'ouverture de chaque date, dans l'ordre des dates données. */
 export async function listOpeningPeriodsByDate(tenantId: string, dates: string[]): Promise<OpeningHours[][]> {
 	const { weeklyOpeningSchedule } = await getPharmacyProfile(tenantId);
@@ -57,20 +62,8 @@ export async function addShift(tenantId: string, submission: ShiftSubmission): P
 	if (!validation.success) return { isSaved: false, message: validation.issues[0].message };
 	const newShift = validation.output;
 
-	const { employees, shifts } = await getWeekPlanning(tenantId, newShift.date, newShift.date);
-	// La clé étrangère vers l'employé ne passe pas par la Row-Level Security : c'est ici
-	// qu'on refuse l'employé d'une autre pharmacie.
-	const employee = employees.find((candidate) => candidate.id === newShift.employeeId);
-	if (!employee) return { isSaved: false, message: 'Cet employé ne fait plus partie de l’équipe.' };
-
-	const overlappingShift = findOverlappingShift(shifts, newShift);
-	if (overlappingShift) {
-		return {
-			isSaved: false,
-			message: `${employee.fullName} travaille déjà ce jour-là sur ${formatShiftHours(overlappingShift)}.`
-		};
-	}
-
+	const refusal = await findPlacementRefusal(tenantId, newShift);
+	if (refusal) return refusal;
 	await insertShift(tenantId, newShift);
 	return { isSaved: true };
 }
@@ -82,20 +75,30 @@ export async function updateShift(tenantId: string, shiftId: string, submission:
 	if (!validation.success) return { isSaved: false, message: validation.issues[0].message };
 	const changes = validation.output;
 
-	const { employees, shifts } = await getWeekPlanning(tenantId, changes.date, changes.date);
-	const employee = employees.find((candidate) => candidate.id === changes.employeeId);
-	if (!employee) return { isSaved: false, message: 'Cet employé ne fait plus partie de l’équipe.' };
-
-	const overlappingShift = findOverlappingShift(shifts, changes, shiftId);
-	if (overlappingShift) {
-		return {
-			isSaved: false,
-			message: `${employee.fullName} travaille déjà ce jour-là sur ${formatShiftHours(overlappingShift)}.`
-		};
-	}
-
+	const refusal = await findPlacementRefusal(tenantId, changes, shiftId);
+	if (refusal) return refusal;
 	await updateShiftRow(tenantId, shiftId, changes);
 	return { isSaved: true };
+}
+
+/** Le refus d'un créneau qu'on veut poser à cette place ; `ignoredShiftId` est celui qu'on déplace. */
+async function findPlacementRefusal(
+	tenantId: string,
+	shift: NewShift,
+	ignoredShiftId?: string
+): Promise<ShiftSaveResult | undefined> {
+	const { employees, shifts } = await getWeekPlanning(tenantId, shift.date, shift.date);
+	// La clé étrangère vers l'employé ne passe pas par la Row-Level Security : c'est ici
+	// qu'on refuse l'employé d'une autre pharmacie.
+	const employee = employees.find((candidate) => candidate.id === shift.employeeId);
+	if (!employee) return { isSaved: false, message: 'Cet employé ne fait plus partie de l’équipe.' };
+
+	const overlappingShift = findOverlappingShift(shifts, shift, ignoredShiftId);
+	if (!overlappingShift) return undefined;
+	return {
+		isSaved: false,
+		message: `${employee.fullName} travaille déjà ce jour-là sur ${formatShiftHours(overlappingShift)}.`
+	};
 }
 
 export async function removeShift(tenantId: string, shiftId: string): Promise<void> {

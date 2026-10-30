@@ -1,5 +1,5 @@
 import { formatAppointmentHours, type Appointment } from '../domain/appointment';
-import { formatFullDay, toIsoDate } from '../domain/day';
+import { formatFullDay, fromIsoDate, toIsoDate } from '../domain/day';
 import type { AddAppointmentPanel, AppointmentDetailPanel } from '../pages/appointmentsPageData';
 import { buildActionHref, buildPageHref, type AppointmentsPageQuery } from './appointmentsPageQuery';
 import { capitalize, statusPresentations, type EmployeeDirectory } from './appointmentsPresentation';
@@ -21,7 +21,7 @@ export function buildDetailPanel(
 		items: [
 			{
 				label: 'Date',
-				value: capitalize(formatFullDay(new Date(`${appointment.day}T00:00:00Z`))),
+				value: capitalize(formatFullDay(fromIsoDate(appointment.day))),
 				detail: formatAppointmentHours(appointment)
 			},
 			{ label: 'Motif', value: appointment.reason },

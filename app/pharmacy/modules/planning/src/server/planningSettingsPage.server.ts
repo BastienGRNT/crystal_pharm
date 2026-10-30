@@ -8,7 +8,7 @@ import {
 } from '../domain/rules/hoursInput';
 import type { PlanningSettingsActionResult, PlanningSettingsPageData } from '../pages/planningSettingsPageData';
 import { describePeakWindow } from '../domain/coverage/peakWindows';
-import { rotationLabels } from '../domain/templates/weekTemplates';
+import { summarizeWeekTemplate } from '../domain/templates/weekTemplates';
 import { requireActiveTenantId } from './activeTenant.server';
 import {
 	findPlanningRules,
@@ -34,12 +34,7 @@ export async function load({ locals }: SettingsRequest): Promise<PlanningSetting
 	return {
 		planningHref: '/planning',
 		peakWindows: peakWindows.map((peakWindow) => ({ id: peakWindow.id, label: describePeakWindow(peakWindow) })),
-		templates: templates.map((template) => ({
-			id: template.id,
-			name: template.name,
-			rotationLabel: rotationLabels[template.rotation ?? 'none'],
-			shiftCount: template.shifts.length
-		})),
+		templates: templates.map(summarizeWeekTemplate),
 		rules: {
 			minimumPharmacistsPresent: String(rules.minimumPharmacistsPresent),
 			minimumPeoplePresent: String(rules.minimumPeoplePresent),

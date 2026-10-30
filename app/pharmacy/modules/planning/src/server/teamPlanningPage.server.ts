@@ -1,10 +1,7 @@
 import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import { fail, redirect } from '@sveltejs/kit';
 import type { SegmentedControlOption } from '@crystal-pharm/ui';
-import type { PlanningTimelineRow } from '../components/organisms/day/planningTimeline';
-import {
-	spanOpeningPeriods
-} from '../domain/coverage/coverage';
+import { formatTimeOfDay, spanOpeningPeriods } from '../domain/coverage/coverage';
 import {
 	buildPlanningRows,
 	formatDuration,
@@ -49,6 +46,7 @@ import type {
 import { requireActiveTenantId } from './activeTenant.server';
 import {
 	addShift,
+	getPlanningOfWeek,
 	getWeekPlanning,
 	listOpeningPeriodsByDate,
 	removeShift,
@@ -57,7 +55,7 @@ import {
 } from './services/team/teamPlanningService';
 import { decideAvailabilityRule, listPendingAvailabilityRequests } from './services/availability/availabilityService';
 import { applyWeekTemplate, findWeekTemplates, saveWeekAsTemplate } from './services/templates/weekTemplateService';
-import { rotationLabels } from '../domain/templates/weekTemplates';
+import { summarizeWeekTemplate } from '../domain/templates/weekTemplates';
 import { generateWeekPlanning } from './services/generation/weekGenerationService';
 import { loadLiveWeekInput } from './services/week/weekIssuesService';
 import { getWeekStatus, publishWeek, returnWeekToDraft } from './services/week/weekStatusService';
@@ -86,47 +84,46 @@ function toActionHref(pageQuery: URLSearchParams, actionName: string): string {
 	return query ? `?${query}&/${actionName}` : `?/${actionName}`;
 }
 
+function withQueryParameter(pageQuery: URLSearchParams, key: string, value: string): URLSearchParams {
+	const extendedQuery = new URLSearchParams(pageQuery);
+	extendedQuery.set(key, value);
+	return extendedQuery;
+}
+
 function buildFormActions(url: URL): FormActions {
 	const pageQuery = readPageQuery(url);
-	const pageQueryWithPanel = new URLSearchParams(pageQuery);
-	pageQueryWithPanel.set('add', '1');
+	const pageHref = toPageHref(url, pageQuery);
+	const pageQueryWithAddPanel = withQueryParameter(pageQuery, 'add', '1');
+	const pageQueryWithSavePanel = withQueryParameter(pageQuery, 'template', 'save');
 	const editedShiftId = url.searchParams.get('edit');
-	const pageQueryWithEdit = new URLSearchParams(pageQuery);
-	if (editedShiftId) pageQueryWithEdit.set('edit', editedShiftId);
-
-	const templatePanel = (panel: 'save' | 'apply') => {
-		const pageQueryWithTemplate = new URLSearchParams(pageQuery);
-		pageQueryWithTemplate.set('template', panel);
-		return {
-			isOpen: url.searchParams.get('template') === panel,
-			openHref: toPageHref(url, pageQueryWithTemplate),
-			closeHref: toPageHref(url, pageQuery)
-		};
-	};
-	const pageQueryWithSavePanel = new URLSearchParams(pageQuery);
-	pageQueryWithSavePanel.set('template', 'save');
-	const pageQueryWithApplyPanel = new URLSearchParams(pageQuery);
-	pageQueryWithApplyPanel.set('template', 'apply');
 
 	return {
-		saveTemplatePanel: templatePanel('save'),
-		applyTemplatePanel: templatePanel('apply'),
+		saveTemplatePanel: {
+			isOpen: url.searchParams.get('template') === 'save',
+			openHref: toPageHref(url, pageQueryWithSavePanel),
+			closeHref: pageHref
+		},
+		applyTemplatePanel: {
+			isOpen: url.searchParams.get('template') === 'apply',
+			openHref: toPageHref(url, withQueryParameter(pageQuery, 'template', 'apply')),
+			closeHref: pageHref
+		},
 		generateWeekFormAction: toActionHref(pageQuery, 'generateWeek'),
 		saveTemplateFormAction: toActionHref(pageQueryWithSavePanel, 'saveTemplate'),
 		applyTemplateFormAction: toActionHref(pageQuery, 'applyTemplate'),
 		addShiftPanel: {
 			isOpen: url.searchParams.get('add') === '1',
-			openHref: toPageHref(url, pageQueryWithPanel),
-			closeHref: toPageHref(url, pageQuery)
+			openHref: toPageHref(url, pageQueryWithAddPanel),
+			closeHref: pageHref
 		},
 		// Les valeurs du créneau ouvert sont posées par la vue, qui connaît ceux de la période.
 		editShiftPanel: editedShiftId
-			? { closeHref: toPageHref(url, pageQuery), shiftId: editedShiftId, values: { employeeId: '', date: '', startTime: '', endTime: '' } }
+			? { closeHref: pageHref, shiftId: editedShiftId, values: { employeeId: '', date: '', startTime: '', endTime: '' } }
 			: undefined,
 		// Un ajout refusé garde le panneau ouvert avec son message ; un envoi réussi revient à la vue affichée.
-		addShiftFormAction: toActionHref(pageQueryWithPanel, 'addShift'),
-		editShiftHrefPrefix: toPageHref(url, new URLSearchParams([...pageQuery, ['edit', '']])),
-		updateShiftFormAction: toActionHref(pageQueryWithEdit, 'updateShift'),
+		addShiftFormAction: toActionHref(pageQueryWithAddPanel, 'addShift'),
+		editShiftHrefPrefix: toPageHref(url, withQueryParameter(pageQuery, 'edit', '')),
+		updateShiftFormAction: toActionHref(editedShiftId ? withQueryParameter(pageQuery, 'edit', editedShiftId) : pageQuery, 'updateShift'),
 		deleteShiftFormAction: toActionHref(pageQuery, 'deleteShift'),
 		decideAvailabilityFormAction: toActionHref(pageQuery, 'decideAvailability'),
 		publishWeekFormAction: toActionHref(pageQuery, 'publishWeek'),
@@ -158,9 +155,7 @@ export async function load({ url, locals }: PlanningRequest): Promise<PlanningPa
 	const today = toCalendarDay(now);
 	const formActions = buildFormActions(url);
 
-	const isWeekView = isWeekViewRequested(url);
-
-	if (isWeekView) {
+	if (isWeekViewRequested(url)) {
 		const monday = parseWeekParameter(url.searchParams.get('week'), today);
 		return loadWeekView(tenantId, monday, today, formActions);
 	}
@@ -193,12 +188,7 @@ async function loadWeekContext(tenantId: string, monday: Date): Promise<WeekCont
 		findWeekTemplates(tenantId)
 	]);
 	return {
-		templates: templates.map((template) => ({
-			id: template.id,
-			name: template.name,
-			rotationLabel: rotationLabels[template.rotation ?? 'none'],
-			shiftCount: template.shifts.length
-		})),
+		templates: templates.map(summarizeWeekTemplate),
 		pendingAvailabilityRequests: pendingRequests.map(({ rule, employeeName, summary }) => ({
 			ruleId: rule.id,
 			employeeName,
@@ -228,7 +218,7 @@ async function loadWeekView(
 	const weekDays = listWeekDays(monday);
 	const weekDates = weekDays.map(toIsoDate);
 	const [weekPlanning, weekContext] = await Promise.all([
-		getWeekPlanning(tenantId, weekDates[0] ?? '', weekDates[6] ?? ''),
+		getPlanningOfWeek(tenantId, monday),
 		loadWeekContext(tenantId, monday)
 	]);
 	const todayIsInWeek = weekDates.includes(toIsoDate(today));
@@ -272,8 +262,8 @@ async function loadDayView(
 	const openingHours = spanOpeningPeriods(openingPeriods);
 	const timelineRange = computeTimelineRange(dayPlanning.shifts, openingHours);
 	const isToday = date === toIsoDate(today);
-	const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-	const presentEmployeeCount = countPresentEmployees(planningRows, 0);
+	const currentTime = formatTimeOfDay(now.getHours() * 60 + now.getMinutes());
+	const presentEmployeeCount = countPresentEmployees(planningRows);
 
 	return {
 		view: 'day',
@@ -330,9 +320,10 @@ async function loadDayView(
 	};
 }
 
-function countPresentEmployees(planningRows: PlanningRow[], dayIndex: number): number {
+/** Sur une ligne d'une seule journée : présent s'il y a des créneaux et pas d'absence. */
+function countPresentEmployees(planningRows: PlanningRow[]): number {
 	return planningRows.filter((planningRow) => {
-		const cell = planningRow.cells[dayIndex];
+		const [cell] = planningRow.cells;
 		return cell !== undefined && cell.absenceKind === undefined && cell.shifts.length > 0;
 	}).length;
 }
@@ -348,56 +339,54 @@ function sortPharmaciansFirst(planningRows: PlanningRow[]): PlanningRow[] {
 	);
 }
 
+const missingShiftFieldMessage = 'Renseignez l’employé, le jour, le début et la fin du créneau.';
+
+function readShiftSubmission(formData: FormData): ShiftSubmission {
+	return Object.fromEntries(
+		shiftFieldNames.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? '')])
+	) as ShiftSubmission;
+}
+
+function hasMissingShiftField(values: ShiftSubmission): boolean {
+	return shiftFieldNames.some((fieldName) => values[fieldName] === '');
+}
+
+function redirectToDisplayedView(url: URL): never {
+	redirect(303, toPageHref(url, readPageQuery(url)));
+}
+
 export const actions = {
 	addShift: async ({ request, url, locals }) => {
 		const tenantId = await requireActiveTenantId(locals.user);
-		const formData = await request.formData();
-		const values = Object.fromEntries(
-			shiftFieldNames.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? '')])
-		) as ShiftSubmission;
-
-		if (shiftFieldNames.some((fieldName) => values[fieldName] === '')) {
-			return fail(400, {
-				message: 'Renseignez l’employé, le jour, le début et la fin du créneau.',
-				values
-			} satisfies AddShiftFailure);
-		}
+		const values = readShiftSubmission(await request.formData());
+		if (hasMissingShiftField(values)) return fail(400, { message: missingShiftFieldMessage, values } satisfies AddShiftFailure);
 
 		const saveResult = await addShift(tenantId, values);
 		if (!saveResult.isSaved) return fail(400, { message: saveResult.message, values } satisfies AddShiftFailure);
-		redirect(303, toPageHref(url, readPageQuery(url)));
+		redirectToDisplayedView(url);
 	},
 
 	updateShift: async ({ request, url, locals }) => {
 		const tenantId = await requireActiveTenantId(locals.user);
 		const formData = await request.formData();
-		const values = Object.fromEntries(
-			shiftFieldNames.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? '')])
-		) as ShiftSubmission;
-		const shiftId = String(formData.get('shiftId') ?? '');
+		const values = readShiftSubmission(formData);
+		if (hasMissingShiftField(values)) return fail(400, { message: missingShiftFieldMessage, values } satisfies AddShiftFailure);
 
-		if (shiftFieldNames.some((fieldName) => values[fieldName] === '')) {
-			return fail(400, {
-				message: 'Renseignez l’employé, le jour, le début et la fin du créneau.',
-				values
-			} satisfies AddShiftFailure);
-		}
-
-		const saveResult = await updateShift(tenantId, shiftId, values);
+		const saveResult = await updateShift(tenantId, String(formData.get('shiftId') ?? ''), values);
 		if (!saveResult.isSaved) return fail(400, { message: saveResult.message, values } satisfies AddShiftFailure);
-		redirect(303, toPageHref(url, readPageQuery(url)));
+		redirectToDisplayedView(url);
 	},
 
 	publishWeek: async ({ url, locals }) => {
 		const tenantId = await requireActiveTenantId(locals.user);
 		await publishWeek(tenantId, readMondayOfDisplayedWeek(url));
-		redirect(303, toPageHref(url, readPageQuery(url)));
+		redirectToDisplayedView(url);
 	},
 
 	returnWeekToDraft: async ({ url, locals }) => {
 		const tenantId = await requireActiveTenantId(locals.user);
 		await returnWeekToDraft(tenantId, readMondayOfDisplayedWeek(url));
-		redirect(303, toPageHref(url, readPageQuery(url)));
+		redirectToDisplayedView(url);
 	},
 
 	decideAvailability: async ({ request, url, locals }) => {
@@ -407,7 +396,7 @@ export const actions = {
 		if (decision !== 'approved' && decision !== 'declined') return fail(400, { message: 'Décision inconnue.' });
 
 		await decideAvailabilityRule(tenantId, String(formData.get('ruleId') ?? ''), decision);
-		redirect(303, toPageHref(url, readPageQuery(url)));
+		redirectToDisplayedView(url);
 	},
 
 	generateWeek: async ({ url, locals }) => {
@@ -426,7 +415,7 @@ export const actions = {
 			String(formData.get('rotation') ?? 'none')
 		);
 		if (!result.isSaved) return fail(400, { message: result.message });
-		redirect(303, toPageHref(url, readPageQuery(url)));
+		redirectToDisplayedView(url);
 	},
 
 	applyTemplate: async ({ request, url, locals }) => {
@@ -444,6 +433,6 @@ export const actions = {
 		if (slotId === '') return fail(400, { message: 'Créneau introuvable.' });
 
 		await removeShift(tenantId, slotId);
-		redirect(303, toPageHref(url, readPageQuery(url)));
+		redirectToDisplayedView(url);
 	}
 } satisfies Actions;

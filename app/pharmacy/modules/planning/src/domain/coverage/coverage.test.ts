@@ -4,6 +4,7 @@ import {
 	computeCoverage,
 	computeCoverageOfOpeningPeriods,
 	formatMinuteRange,
+	formatTimeOfDay,
 	listCoverageGaps,
 	listOpeningPeriodsOfDate,
 	spanOpeningPeriods
@@ -86,5 +87,11 @@ describe('computeCoverageOfOpeningPeriods', () => {
 	it('signale le trou de chaque plage', () => {
 		const segments = computeCoverageOfOpeningPeriods([morning, afternoon], [shift('09:00', '12:30'), shift('14:00', '18:00')]);
 		expect(listCoverageGaps(segments).map(formatMinuteRange)).toEqual(['08:30–09:00', '18:00–19:30']);
+	});
+});
+
+describe('formatTimeOfDay', () => {
+	it('écrit HH:MM', () => {
+		expect(formatTimeOfDay(545)).toBe('09:05');
 	});
 });

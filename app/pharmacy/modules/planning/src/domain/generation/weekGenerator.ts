@@ -1,6 +1,6 @@
 import { findBlockingRule, doesRuleApplyOnDate } from '../availability/availabilityRules';
 import { formatTimeOfDay } from '../coverage/coverage';
-import { toMinutesSinceMidnight } from '../planning';
+import { findAbsenceOfDay, toMinutesSinceMidnight } from '../planning';
 import {
 	generationLimits,
 	type GenerationEmployee,
@@ -115,10 +115,7 @@ function listPeriods(state: GenerationState, dayIndex: number): Period[] {
 }
 
 function isAbsent(state: GenerationState, employeeId: string, dayIndex: number): boolean {
-	const date = state.input.weekDates[dayIndex] ?? '';
-	return state.input.absences.some(
-		(absence) => absence.employeeId === employeeId && absence.firstDate <= date && date <= absence.lastDate
-	);
+	return findAbsenceOfDay(state.input.absences, employeeId, state.input.weekDates[dayIndex] ?? '') !== undefined;
 }
 
 function countPresent(state: GenerationState, dayIndex: number, minute: number, pharmacistsOnly: boolean): number {

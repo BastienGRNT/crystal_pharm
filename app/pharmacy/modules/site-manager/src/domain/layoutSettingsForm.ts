@@ -8,10 +8,8 @@ export type LayoutSettingsReading =
 	| { success: true; layoutSettings: Record<string, unknown> }
 	| { success: false; fieldErrors: Record<string, string>; formError: string | undefined };
 
-export const layoutSettingFieldNamePrefix = 'setting.';
-
 export function toLayoutSettingFieldName(settingKey: string): string {
-	return `${layoutSettingFieldNamePrefix}${settingKey}`;
+	return `setting.${settingKey}`;
 }
 
 /** Le formulaire rempli avec les réglages enregistrés, ou à défaut ceux du layout. */

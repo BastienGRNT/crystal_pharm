@@ -54,3 +54,14 @@ export const rotationLabels: Record<TemplateRotation | 'none', string> = {
 	A: 'Semaines A (impaires)',
 	B: 'Semaines B (paires)'
 };
+
+export type WeekTemplateSummary = { id: string; name: string; rotationLabel: string; shiftCount: number };
+
+export function summarizeWeekTemplate(template: WeekTemplate): WeekTemplateSummary {
+	return {
+		id: template.id,
+		name: template.name,
+		rotationLabel: rotationLabels[template.rotation ?? 'none'],
+		shiftCount: template.shifts.length
+	};
+}

@@ -15,6 +15,8 @@ public sealed class PrescriptionSubmissionService(
     ITenantContext tenantContext,
     TimeProvider timeProvider) : IPrescriptionSubmissionService
 {
+    private const int MaximumListedSubmissions = 100;
+
     public async Task<PrescriptionSubmissionResult> SubmitAsync(
         NewPrescriptionSubmissionDto newSubmission,
         CancellationToken cancellationToken)
@@ -70,6 +72,7 @@ public sealed class PrescriptionSubmissionService(
         {
             await DeleteStoredFilesAsync(storedKeys);
             var winner = await submissionRepository.FindByIdempotencyKeyAsync(newSubmission.IdempotencyKey.Trim(), cancellationToken);
+            // L'envoi concurrent qui a gagné la contrainte d'unicité est enregistré : il existe forcément.
             return new PrescriptionSubmissionResult(winner!.Id, AlreadyReceived: true);
         }
         catch
@@ -80,8 +83,6 @@ public sealed class PrescriptionSubmissionService(
 
         return new PrescriptionSubmissionResult(submission.Id, AlreadyReceived: false);
     }
-
-    public const int MaximumListedSubmissions = 100;
 
     public async Task<IReadOnlyList<ReceivedPrescriptionSummaryDto>> ListReceivedAsync(CancellationToken cancellationToken)
     {
@@ -117,7 +118,7 @@ public sealed class PrescriptionSubmissionService(
             return null;
         }
 
-        await accessLog.RecordAsync("prescriptions.document", [submission!.Id], cancellationToken);
+        await accessLog.RecordAsync("prescriptions.document", [document.SubmissionId], cancellationToken);
         return new ReceivedDocumentContent(content, document.Format.ToMimeType());
     }
 

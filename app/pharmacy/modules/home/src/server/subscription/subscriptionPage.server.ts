@@ -6,7 +6,8 @@ import {
 	listInvoices,
 	readSubscribedOffers,
 	requestToolSelection,
-	resumeSubscription
+	resumeSubscription,
+	type SubscriptionCancellation
 } from '@crystal-pharm/billing-db';
 import { isToolKey, toInvoiceRow } from '@crystal-pharm/billing-db/domain';
 import { fail, redirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
@@ -79,13 +80,7 @@ export const subscriptionPageActions = {
 
 	cancel: async ({ locals }: RequestEvent): Promise<never> => {
 		const cancellation = await cancelSubscription((await requireOwner(locals.user)).tenantId);
-		const outcome: Record<string, string> =
-			cancellation.outcome === 'refunded'
-				? { resiliation: 'rembourse', montant: String(cancellation.refundedAmountCents) }
-				: cancellation.outcome === 'ends-at-period-end'
-					? { resiliation: 'fin', jusquau: cancellation.endsAt.toISOString() }
-					: {};
-		redirect(303, `${homePathnames.subscription}?${new URLSearchParams(outcome)}`);
+		redirect(303, `${homePathnames.subscription}?${new URLSearchParams(describeCancellationOutcome(cancellation))}`);
 	},
 
 	resume: async ({ locals }: RequestEvent): Promise<never> => {
@@ -93,3 +88,15 @@ export const subscriptionPageActions = {
 		redirect(303, `${homePathnames.subscription}?repris=1`);
 	}
 };
+
+/** Les paramètres que la page lit pour annoncer la résiliation. */
+function describeCancellationOutcome(cancellation: SubscriptionCancellation): Record<string, string> {
+	switch (cancellation.outcome) {
+		case 'refunded':
+			return { resiliation: 'rembourse', montant: String(cancellation.refundedAmountCents) };
+		case 'ends-at-period-end':
+			return { resiliation: 'fin', jusquau: cancellation.endsAt.toISOString() };
+		case 'no-subscription':
+			return {};
+	}
+}

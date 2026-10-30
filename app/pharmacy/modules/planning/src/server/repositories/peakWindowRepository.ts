@@ -1,11 +1,9 @@
 import { and, asc, eq } from 'drizzle-orm';
 import type { PeakWindow } from '../../domain/coverage/peakWindows';
-import { runAsTenant } from '../db/planningDatabase.server';
+import { runAsTenant, toHoursAndMinutes } from '../db/planningDatabase.server';
 import { peakWindows } from '../db/planningTables';
 
 export type NewPeakWindow = Omit<PeakWindow, 'id'>;
-
-const toHoursAndMinutes = (storedTime: string): string => storedTime.slice(0, 5);
 
 export async function listPeakWindows(tenantId: string): Promise<PeakWindow[]> {
 	const rows = await runAsTenant(tenantId, (transaction) =>

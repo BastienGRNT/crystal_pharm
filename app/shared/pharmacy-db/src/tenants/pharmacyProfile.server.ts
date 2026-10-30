@@ -40,15 +40,7 @@ export async function getPharmacyProfile(tenantId: string): Promise<PharmacyProf
 	);
 	if (!tenant) throw new Error(`The tenant ${tenantId} does not exist.`);
 
-	return {
-		name: tenant.name,
-		street: tenant.street,
-		postalCode: tenant.postalCode,
-		city: tenant.city,
-		phoneNumber: PhoneNumber.fromStorageFormat(tenant.phoneNumber),
-		email: tenant.email ?? undefined,
-		weeklyOpeningSchedule: tenant.weeklyOpeningSchedule ?? undefined
-	};
+	return toPharmacyProfile(tenant);
 }
 
 type PharmacyProfileRow = Omit<PharmacyContactDetails, 'phoneNumber' | 'email'> & {
@@ -66,16 +58,18 @@ export async function getPharmacyProfileInOneStatement(tenantId: string): Promis
 		sql`select pharmacy.read_pharmacy_profile_for_site(${tenantId}::uuid) as profile`
 	);
 	if (!row?.profile) throw new Error(`The tenant ${tenantId} does not exist.`);
-	const { profile } = row;
+	return toPharmacyProfile(row.profile);
+}
 
+function toPharmacyProfile(row: PharmacyProfileRow): PharmacyProfile {
 	return {
-		name: profile.name,
-		street: profile.street,
-		postalCode: profile.postalCode,
-		city: profile.city,
-		phoneNumber: PhoneNumber.fromStorageFormat(profile.phoneNumber),
-		email: profile.email ?? undefined,
-		weeklyOpeningSchedule: profile.weeklyOpeningSchedule ?? undefined
+		name: row.name,
+		street: row.street,
+		postalCode: row.postalCode,
+		city: row.city,
+		phoneNumber: PhoneNumber.fromStorageFormat(row.phoneNumber),
+		email: row.email ?? undefined,
+		weeklyOpeningSchedule: row.weeklyOpeningSchedule ?? undefined
 	};
 }
 

@@ -23,7 +23,7 @@ import { findEmployeeTerms } from './repositories/employeeTermsRepository';
 import { listPlanningNoticesOfAccount, markPlanningNoticesAsRead } from './repositories/planningNoticeRepository';
 import { requireActiveTenantId } from './activeTenant.server';
 import { removeAvailabilityRule, submitAvailabilityRule } from './services/availability/availabilityService';
-import { getWeekPlanning } from './services/team/teamPlanningService';
+import { getPlanningOfWeek } from './services/team/teamPlanningService';
 import { getWeekStatus } from './services/week/weekStatusService';
 
 type MyPlanningRequest = {
@@ -49,7 +49,7 @@ export async function load({ url, locals }: MyPlanningRequest): Promise<MyPlanni
 	const weekDates = listWeekDays(monday).map(toIsoDate);
 
 	const [weekPlanning, weekStatus, rules, terms, notices] = await Promise.all([
-		getWeekPlanning(tenantId, weekDates[0] ?? '', weekDates[6] ?? ''),
+		getPlanningOfWeek(tenantId, monday),
 		getWeekStatus(tenantId, monday),
 		listAvailabilityRulesOfEmployee(tenantId, employeeId),
 		findEmployeeTerms(tenantId, employeeId),

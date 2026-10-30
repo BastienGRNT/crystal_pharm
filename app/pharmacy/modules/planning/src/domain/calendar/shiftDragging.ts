@@ -5,8 +5,6 @@ export type MinuteSpan = { startMinutes: number; endMinutes: number };
 export const dragSnapMinutes = 15;
 export const minimumDraggedShiftMinutes = 30;
 
-const minutesPerHour = 60;
-
 export function snapToQuarterHour(minutes: number): number {
 	return Math.round(minutes / dragSnapMinutes) * dragSnapMinutes;
 }
@@ -32,9 +30,4 @@ export function spanBetween(anchorMinutes: number, currentMinutes: number, range
 	const clamp = (minutes: number): number => Math.min(range.endMinutes, Math.max(range.startMinutes, snapToQuarterHour(minutes)));
 	const [startMinutes, endMinutes] = [clamp(anchorMinutes), clamp(currentMinutes)].sort((first, second) => first - second);
 	return { startMinutes: startMinutes ?? 0, endMinutes: endMinutes ?? 0 };
-}
-
-export function formatMinutesAsTime(minutes: number): string {
-	const hours = Math.floor(minutes / minutesPerHour);
-	return `${String(hours).padStart(2, '0')}:${String(minutes % minutesPerHour).padStart(2, '0')}`;
 }

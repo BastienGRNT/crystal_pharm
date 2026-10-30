@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMinutesAsTime, moveSpan, resizeSpan, snapToQuarterHour, spanBetween } from './shiftDragging';
+import { moveSpan, resizeSpan, snapToQuarterHour, spanBetween } from './shiftDragging';
 
 const range = { startMinutes: 480, endMinutes: 1200 };
 const morning = { startMinutes: 540, endMinutes: 750 };
@@ -38,11 +38,5 @@ describe('spanBetween', () => {
 	it('ordonne les deux points, dans les deux sens', () => {
 		expect(spanBetween(600, 720, range)).toEqual({ startMinutes: 600, endMinutes: 720 });
 		expect(spanBetween(720, 600, range)).toEqual({ startMinutes: 600, endMinutes: 720 });
-	});
-});
-
-describe('formatMinutesAsTime', () => {
-	it('écrit HH:MM', () => {
-		expect(formatMinutesAsTime(545)).toBe('09:05');
 	});
 });

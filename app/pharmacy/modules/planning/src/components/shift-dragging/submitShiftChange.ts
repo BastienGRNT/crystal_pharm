@@ -1,14 +1,9 @@
 import { deserialize } from '$app/forms';
 import { invalidateAll } from '$app/navigation';
+import type { ShiftPreview } from '../../domain/live/liveWeek';
 
-export type ShiftChange = {
-	/** Absent pour un nouveau créneau. */
-	shiftId?: string;
-	employeeId: string;
-	date: string;
-	startTime: string;
-	endTime: string;
-};
+/** Le créneau tel que le geste l'a laissé : sans `shiftId`, c'est un nouveau créneau. */
+export type ShiftChange = ShiftPreview;
 
 export type ShiftChangeActions = { updateShiftAction: string; addShiftAction: string };
 

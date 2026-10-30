@@ -11,6 +11,10 @@ export function addDays(day: Date, numberOfDays: number): Date {
 	return new Date(day.getTime() + numberOfDays * millisecondsPerDay);
 }
 
+export function fromIsoDate(isoDate: string): Date {
+	return new Date(`${isoDate}T00:00:00Z`);
+}
+
 export function toIsoDate(day: Date): string {
 	return day.toISOString().slice(0, 10);
 }
@@ -31,7 +35,7 @@ export function listWeekDays(monday: Date): Date[] {
 /** Lit `?jour=2026-10-22` ; sans paramètre valide, c'est `today`. */
 export function parseDayParameter(dayParameter: string | null, today: Date): Date {
 	if (!dayParameter || !dayParameterPattern.test(dayParameter)) return today;
-	const day = new Date(`${dayParameter}T00:00:00Z`);
+	const day = fromIsoDate(dayParameter);
 	const isExistingDay = !Number.isNaN(day.getTime()) && toIsoDate(day) === dayParameter;
 	return isExistingDay ? day : today;
 }

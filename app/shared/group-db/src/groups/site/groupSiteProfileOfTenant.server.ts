@@ -7,7 +7,11 @@ import type { GroupArticle } from '../../news/groupArticle';
 import { listGroupArticles } from '../../news/groupNews.server';
 import type { PharmacyGroupImage } from '../profile/PharmacyGroupImage';
 import { readStoredPharmacyGroupImage } from '../profile/pharmacyGroupImageFiles.server';
-import type { PharmacyGroupProfile } from '../profile/pharmacyGroupProfiles.server';
+import {
+	toPharmacyGroupProfile,
+	type PharmacyGroupProfile,
+	type PharmacyGroupProfileRow
+} from '../profile/pharmacyGroupProfiles.server';
 
 /** Ce que le site d'une pharmacie montre du groupement dont elle est membre. */
 export type GroupSiteProfileOfTenant = PharmacyGroupProfile & {
@@ -40,12 +44,8 @@ export async function findGroupSiteProfileOfTenant(tenantId: string): Promise<Gr
 			.where(and(eq(pharmacyMemberships.tenantId, tenantId), isNull(pharmacyMemberships.leftAt)));
 		if (!group) return undefined;
 		return {
+			...toPharmacyGroupProfile(group),
 			groupId: group.groupId,
-			name: group.name,
-			logoId: group.logoId ?? undefined,
-			loyaltyCardImageId: group.loyaltyCardImageId ?? undefined,
-			loyaltyCardUrl: group.loyaltyCardUrl ?? undefined,
-			loyaltyCardMessage: group.loyaltyCardMessage ?? undefined,
 			mandatoryModules: group.mandatoryModules,
 			imposesGroupNews: group.imposesGroupNews,
 			articles: await listGroupArticles(transaction, group.groupId)
@@ -53,12 +53,7 @@ export async function findGroupSiteProfileOfTenant(tenantId: string): Promise<Gr
 	});
 }
 
-type GroupSiteProfileRow = Omit<GroupSiteProfileOfTenant, 'logoId' | 'loyaltyCardImageId' | 'loyaltyCardUrl' | 'loyaltyCardMessage'> & {
-	logoId: string | null;
-	loyaltyCardImageId: string | null;
-	loyaltyCardUrl: string | null;
-	loyaltyCardMessage: string | null;
-};
+type GroupSiteProfileRow = Omit<GroupSiteProfileOfTenant, keyof PharmacyGroupProfile> & PharmacyGroupProfileRow;
 
 /**
  * Le même profil en une seule instruction, sans transaction explicite :
@@ -69,14 +64,7 @@ export async function findGroupSiteProfileOfTenantInOneStatement(tenantId: strin
 		sql`select groups.read_group_site_profile_of_tenant(${tenantId}::uuid) as profile`
 	);
 	if (!row?.profile) return undefined;
-	const { profile } = row;
-	return {
-		...profile,
-		logoId: profile.logoId ?? undefined,
-		loyaltyCardImageId: profile.loyaltyCardImageId ?? undefined,
-		loyaltyCardUrl: profile.loyaltyCardUrl ?? undefined,
-		loyaltyCardMessage: profile.loyaltyCardMessage ?? undefined
-	};
+	return { ...row.profile, ...toPharmacyGroupProfile(row.profile) };
 }
 
 /** Une image du groupement actuel de la pharmacie, seulement si c'est son logo ou sa carte de fidélité. */

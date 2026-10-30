@@ -68,7 +68,6 @@ export {
 } from './invitations/pharmacyInvitations.server';
 export {
 	endCoverageNow,
-	findCoveringGroupOfTenant,
 	readCoveringGroupOfTenant,
 	findCurrentGroupOfTenant,
 	leaveGroupInTransaction,

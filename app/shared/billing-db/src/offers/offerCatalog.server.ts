@@ -2,9 +2,6 @@ import { desc, eq, inArray } from 'drizzle-orm';
 import type { BillingTransaction } from '../database/billingDatabase.server';
 import { offers, offerVersions, offerVersionTools } from '../database/billingTables';
 import type { ToolKey } from '../tools/tools';
-import { packOfferKey } from './offerKeys';
-
-export { packOfferKey };
 
 /** Une offre vue à travers sa dernière version : ce qu'on vend aujourd'hui. */
 export type CurrentOffer = {
@@ -16,9 +13,9 @@ export type CurrentOffer = {
 	toolKeys: ToolKey[];
 };
 
-export type OfferVersionDetails = Omit<CurrentOffer, 'label'> & { offerKey: string };
+type OfferVersionDetails = Omit<CurrentOffer, 'label'>;
 
-export async function readOfferVersion(transaction: BillingTransaction, offerVersionId: string): Promise<OfferVersionDetails> {
+async function readOfferVersion(transaction: BillingTransaction, offerVersionId: string): Promise<OfferVersionDetails> {
 	const [versionRow] = await transaction.select().from(offerVersions).where(eq(offerVersions.id, offerVersionId));
 	if (!versionRow) throw new Error(`The offer version ${offerVersionId} does not exist.`);
 	const toolRows = await transaction

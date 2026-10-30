@@ -1,4 +1,5 @@
 import { weekdays, type WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
+import { getWeekdayIndexOfDate } from '../availability/availabilityRules';
 import { toMinutesSinceMidnight, type Shift } from '../planning';
 import { computeStaffing, type MinuteInterval } from './staffing';
 
@@ -12,8 +13,7 @@ export function listOpeningPeriodsOfDate(
 	weeklyOpeningSchedule: WeeklyOpeningSchedule | undefined,
 	isoDate: string
 ): OpeningHours[] {
-	const daysSinceMonday = (new Date(`${isoDate}T00:00:00Z`).getUTCDay() + 6) % 7;
-	const weekday = weekdays[daysSinceMonday];
+	const weekday = weekdays[getWeekdayIndexOfDate(isoDate)];
 	return weeklyOpeningSchedule && weekday ? weeklyOpeningSchedule[weekday] : [];
 }
 

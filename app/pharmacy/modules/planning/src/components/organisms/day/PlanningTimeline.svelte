@@ -2,20 +2,22 @@
 	import AbsenceBlock from '../../atoms/AbsenceBlock.svelte';
 	import ShiftChip from '../../atoms/ShiftChip.svelte';
 	import EmployeeIdentity from '../../molecules/EmployeeIdentity.svelte';
-	import { formatMinutesAsTime, moveSpan, resizeSpan, spanBetween, minimumDraggedShiftMinutes, type MinuteSpan } from '../../../domain/calendar/shiftDragging';
+	import { moveSpan, resizeSpan, spanBetween, minimumDraggedShiftMinutes, type MinuteSpan } from '../../../domain/calendar/shiftDragging';
 	import { toTimelinePercent, type TimelineRange } from '../../../domain/calendar/timeline';
+	import { formatTimeOfDay } from '../../../domain/coverage/coverage';
 	import type { DayStatus, EmployeeHoursStatus, ShiftPreview } from '../../../domain/live/liveWeek';
 	import { toMinutesSinceMidnight } from '../../../domain/planning';
 	import { dayStatusClasses } from '../week/weekCalendar';
 	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
-	import type {
-		PlanningTimelineCoverage,
-		PlanningTimelineHour,
-		PlanningTimelineBar,
-		PlanningTimelineNow,
-		PlanningTimelineOpening,
-		PlanningTimelineRow
+	import {
+		dayStatusLabels,
+		type PlanningTimelineCoverage,
+		type PlanningTimelineHour,
+		type PlanningTimelineBar,
+		type PlanningTimelineNow,
+		type PlanningTimelineOpening,
+		type PlanningTimelineRow
 	} from './planningTimeline';
 
 	type PlanningTimelineProps = {
@@ -38,7 +40,6 @@
 	type Gesture = { barId: string | undefined; employeeId: string; span: MinuteSpan };
 	let gesture = $state<Gesture>();
 
-	const toTimeOfDay = (minutes: number): string => formatMinutesAsTime(minutes);
 	const percentOf = (minutes: number): number => (dragging ? toTimelinePercent(minutes, dragging.range) : 0);
 
 	function readMinutesPerPixel(event: PointerEvent): { minutesPerPixel: number; trackLeft: number } | undefined {
@@ -64,16 +65,16 @@
 				const deltaMinutes = deltaX * measure.minutesPerPixel;
 				const span = mode === 'move' ? moveSpan(original, deltaMinutes, range) : resizeSpan(original, mode, deltaMinutes, range);
 				gesture = { barId: bar.id, employeeId: mode === 'move' ? findEmployeeIdAt(moveEvent.clientX, moveEvent.clientY, employeeId) : employeeId, span };
-				onPreview({ shiftId: bar.id, employeeId: gesture.employeeId, date, startTime: toTimeOfDay(span.startMinutes), endTime: toTimeOfDay(span.endMinutes) });
+				onPreview({ shiftId: bar.id, employeeId: gesture.employeeId, date, startTime: formatTimeOfDay(span.startMinutes), endTime: formatTimeOfDay(span.endMinutes) });
 			},
-			onEnd: (_deltaX, _deltaY, _endEvent, wasDragged) => {
+			onEnd: (wasDragged) => {
 				const finished = gesture;
 				gesture = undefined;
 				const hasChanged =
 					finished !== undefined &&
 					(finished.employeeId !== employeeId || finished.span.startMinutes !== original.startMinutes || finished.span.endMinutes !== original.endMinutes);
 				if (!wasDragged || !finished || !hasChanged) return onPreview(undefined);
-				onShiftChange({ shiftId: bar.id, employeeId: finished.employeeId, date, startTime: toTimeOfDay(finished.span.startMinutes), endTime: toTimeOfDay(finished.span.endMinutes) });
+				onShiftChange({ shiftId: bar.id, employeeId: finished.employeeId, date, startTime: formatTimeOfDay(finished.span.startMinutes), endTime: formatTimeOfDay(finished.span.endMinutes) });
 			}
 		});
 	}
@@ -86,13 +87,13 @@
 		trackPointerDrag(event, {
 			onMove: (deltaX) => {
 				gesture = { barId: undefined, employeeId, span: spanBetween(anchorMinutes, anchorMinutes + deltaX * measure.minutesPerPixel, range) };
-				onPreview({ employeeId, date, startTime: toTimeOfDay(gesture.span.startMinutes), endTime: toTimeOfDay(gesture.span.endMinutes) });
+				onPreview({ employeeId, date, startTime: formatTimeOfDay(gesture.span.startMinutes), endTime: formatTimeOfDay(gesture.span.endMinutes) });
 			},
-			onEnd: (_deltaX, _deltaY, _endEvent, wasDragged) => {
+			onEnd: (wasDragged) => {
 				const finished = gesture;
 				gesture = undefined;
 				if (!wasDragged || !finished || finished.span.endMinutes - finished.span.startMinutes < minimumDraggedShiftMinutes) return onPreview(undefined);
-				onShiftChange({ employeeId, date, startTime: toTimeOfDay(finished.span.startMinutes), endTime: toTimeOfDay(finished.span.endMinutes) });
+				onShiftChange({ employeeId, date, startTime: formatTimeOfDay(finished.span.startMinutes), endTime: formatTimeOfDay(finished.span.endMinutes) });
 			}
 		});
 	}
@@ -126,7 +127,7 @@
 <div class="overflow-auto rounded-md border border-line bg-surface shadow-card">
 	{#if status}
 		<p class="px-4 py-2 text-small font-semibold {dayStatusClasses[status]}" aria-live="polite">
-			{status === 'ok' ? 'Journée couverte' : status === 'alert' ? 'Il manque du monde sur cette journée' : status === 'notice' ? 'Journée à regarder' : status === 'closed' ? 'Pharmacie fermée' : 'Journée passée'}
+			{dayStatusLabels[status]}
 		</p>
 	{/if}
 	<div class="min-w-[840px]">
@@ -203,13 +204,13 @@
 								style:left="{percentOf(gesture.span.startMinutes)}%"
 								style:width="{percentOf(gesture.span.endMinutes) - percentOf(gesture.span.startMinutes)}%"
 							>
-								{toTimeOfDay(gesture.span.startMinutes)} – {toTimeOfDay(gesture.span.endMinutes)}
+								{formatTimeOfDay(gesture.span.startMinutes)} – {formatTimeOfDay(gesture.span.endMinutes)}
 							</div>
 						{/if}
 						{#if !row.absence}
 							{#each row.bars as bar (bar.id)}
 								<ShiftChip
-									label={gesture?.barId === bar.id && gesture.employeeId === row.employeeId ? `${toTimeOfDay(gesture.span.startMinutes)} – ${toTimeOfDay(gesture.span.endMinutes)}` : bar.label}
+									label={gesture?.barId === bar.id && gesture.employeeId === row.employeeId ? `${formatTimeOfDay(gesture.span.startMinutes)} – ${formatTimeOfDay(gesture.span.endMinutes)}` : bar.label}
 									tone={bar.tone}
 									timelinePosition={positionOf(bar, row.employeeId)}
 									editHref={bar.editHref}

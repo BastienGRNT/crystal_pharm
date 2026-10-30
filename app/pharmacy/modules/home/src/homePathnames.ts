@@ -23,8 +23,18 @@ export function employeePanelPathname(employeeId: string | undefined): string {
 
 /** Le panneau des comptes et accès : une invitation, le compte comptoir, ou un compte. */
 export function accessPanelPathname(panel: AccessPanel): string {
-	const panelValue = panel.kind === 'invitation' ? 'invitation' : panel.kind === 'counter-account' ? 'comptoir' : panel.accountId;
-	return `${homePathnames.pharmacyAccess}&compte=${panelValue}`;
+	return `${homePathnames.pharmacyAccess}&compte=${describeAccessPanelValue(panel)}`;
+}
+
+function describeAccessPanelValue(panel: AccessPanel): string {
+	switch (panel.kind) {
+		case 'invitation':
+			return 'invitation';
+		case 'counter-account':
+			return 'comptoir';
+		case 'member':
+			return panel.accountId;
+	}
 }
 
 /** Le lien de l'email d'invitation d'un Employee : il y crée son compte. */

@@ -5,7 +5,7 @@ import { error, fail, redirect, type ActionFailure, type RequestEvent } from '@s
 import type { CheckoutPageData } from '../../pages/subscription/checkoutPageData';
 import { requireOwner } from '../activeTenant.server';
 
-export const checkoutOutcomeFieldName = 'outcome';
+const checkoutOutcomeFieldName = 'outcome';
 
 /** La page de paiement de test de la pharmacie (le faux prestataire). */
 export async function loadCheckoutPage({

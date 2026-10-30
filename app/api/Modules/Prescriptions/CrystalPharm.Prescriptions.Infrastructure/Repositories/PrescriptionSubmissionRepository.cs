@@ -8,41 +8,30 @@ namespace CrystalPharm.Prescriptions.Infrastructure.Repositories;
 
 internal sealed class PrescriptionSubmissionRepository(PrescriptionsDbContext context) : IPrescriptionSubmissionRepository
 {
-    public async Task<PrescriptionSubmission?> FindByIdempotencyKeyAsync(string idempotencyKey, CancellationToken cancellationToken)
-    {
-        // Une lecture seule ne crée pas de transaction : on en ouvre une pour que la
-        // Row-Level Security connaisse le Tenant (cf. TenantTransactionInterceptor).
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        var submission = await context.Submissions
-            .AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.IdempotencyKey == idempotencyKey, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return submission;
-    }
+    public Task<PrescriptionSubmission?> FindByIdempotencyKeyAsync(string idempotencyKey, CancellationToken cancellationToken) =>
+        context.ReadInTenantTransactionAsync(
+            () => context.Submissions
+                .AsNoTracking()
+                .SingleOrDefaultAsync(candidate => candidate.IdempotencyKey == idempotencyKey, cancellationToken),
+            cancellationToken);
 
-    public async Task<IReadOnlyList<PrescriptionSubmission>> ListLatestAsync(int limit, CancellationToken cancellationToken)
-    {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        var submissions = await context.Submissions
-            .AsNoTracking()
-            .Include(submission => submission.Documents)
-            .OrderByDescending(submission => submission.SubmittedAt)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return submissions;
-    }
+    public async Task<IReadOnlyList<PrescriptionSubmission>> ListLatestAsync(int limit, CancellationToken cancellationToken) =>
+        await context.ReadInTenantTransactionAsync(
+            () => context.Submissions
+                .AsNoTracking()
+                .Include(submission => submission.Documents)
+                .OrderByDescending(submission => submission.SubmittedAt)
+                .Take(limit)
+                .ToListAsync(cancellationToken),
+            cancellationToken);
 
-    public async Task<PrescriptionSubmission?> FindAsync(Guid submissionId, CancellationToken cancellationToken)
-    {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        var submission = await context.Submissions
-            .AsNoTracking()
-            .Include(candidate => candidate.Documents)
-            .SingleOrDefaultAsync(candidate => candidate.Id == submissionId, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return submission;
-    }
+    public Task<PrescriptionSubmission?> FindAsync(Guid submissionId, CancellationToken cancellationToken) =>
+        context.ReadInTenantTransactionAsync(
+            () => context.Submissions
+                .AsNoTracking()
+                .Include(candidate => candidate.Documents)
+                .SingleOrDefaultAsync(candidate => candidate.Id == submissionId, cancellationToken),
+            cancellationToken);
 
     public void Add(PrescriptionSubmission submission)
     {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findSubdomainOfHost, numberSubdomain, readSubdomainChoice, suggestSubdomain } from './siteSubdomain';
+import { numberSubdomain, readSubdomainChoice, suggestSubdomain } from './siteSubdomain';
 
 describe('readSubdomainChoice', () => {
 	it('accepte une adresse en minuscules, chiffres et tirets', () => {
@@ -36,16 +36,5 @@ describe('numberSubdomain', () => {
 	it('ajoute un numéro sans dépasser la longueur permise', () => {
 		expect(numberSubdomain('pharmacie-du-port', 2)).toBe('pharmacie-du-port-2');
 		expect(numberSubdomain(`${'a'.repeat(61)}-b`, 12)).toBe(`${'a'.repeat(60)}-12`);
-	});
-});
-
-describe('findSubdomainOfHost', () => {
-	it('trouve le sous-domaine, avec ou sans port', () => {
-		expect(findSubdomainOfHost('Pharmacie-du-Port.site.localhost:8080', 'site.localhost')).toBe('pharmacie-du-port');
-		expect(findSubdomainOfHost('pharmacie-du-port.site.localhost', 'site.localhost')).toBe('pharmacie-du-port');
-	});
-
-	it.each(['site.localhost', 'autre.exemple.fr', 'a.b.site.localhost', 'port.site.localhost.exemple.fr'])('ignore « %s »', (host) => {
-		expect(findSubdomainOfHost(host, 'site.localhost')).toBeUndefined();
 	});
 });

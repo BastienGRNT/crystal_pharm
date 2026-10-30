@@ -6,13 +6,11 @@ import createClient, { type Client } from 'openapi-fetch';
 /** Au nom de qui le C# est appelé : le compte du Manager et son Tenant actif. */
 export type BookingCaller = ApiTokenClaims;
 
-export type BookingApiClient = Client<paths>;
-
 /**
  * Un client du C#, côté serveur seulement, qui joint à chaque appel un jeton court
  * signé pour ce Manager. Le C# n'est jamais appelé depuis le navigateur.
  */
-export function createBookingApiClient(caller: BookingCaller): BookingApiClient {
+export function createBookingApiClient(caller: BookingCaller): Client<paths> {
 	const client = createClient<paths>({ baseUrl: readRequiredEnvironmentVariable('API_URL') });
 	client.use({
 		async onRequest({ request }) {

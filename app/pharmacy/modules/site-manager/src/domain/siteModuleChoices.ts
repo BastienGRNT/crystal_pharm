@@ -1,6 +1,6 @@
-import type { ModuleName } from '@crystal-pharm/schema';
+import { ModuleNameSchema, type ModuleName } from '@crystal-pharm/schema';
 import { chooseDisplayedNewsSource } from '@crystal-pharm/group-db/domain';
-import { collectAvailableModuleData, moduleNames, type SiteContentDraft, type SiteEditorBase } from './siteDraft';
+import { collectAvailableModuleData, type SiteContentDraft, type SiteEditorBase } from './siteDraft';
 
 /** Un module tel que le Manager le voit : il peut l'afficher, il lui est imposé, ou il lui manque quelque chose. */
 export type SiteModuleChoice = {
@@ -61,7 +61,7 @@ const groupNewsTexts: ModuleTexts = {
 export function listSiteModuleChoices(base: SiteEditorBase, draft: SiteContentDraft): SiteModuleChoice[] {
 	const availableModuleData = collectAvailableModuleData(base, draft);
 	const textsByModule = { ...moduleTexts, news: findNewsTexts(base, draft) };
-	return moduleNames.map((moduleName) => {
+	return ModuleNameSchema.options.map((moduleName) => {
 		const { title, description, unavailableReason, fixHref } = textsByModule[moduleName];
 		const isAvailable = availableModuleData[moduleName] !== undefined;
 		return { moduleName, title, description, state: toModuleState(base, moduleName, isAvailable, unavailableReason, fixHref) };

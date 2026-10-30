@@ -36,10 +36,6 @@ export const responsibilityKeys: readonly ResponsibilityKey[] = responsibilities
 	({ responsibilityKey }) => responsibilityKey
 );
 
-export function isResponsibilityKey(candidate: string): candidate is ResponsibilityKey {
-	return (responsibilityKeys as readonly string[]).includes(candidate);
-}
-
 /** Les clés connues, sans doublon, dans l'ordre de la liste : une saisie inconnue est ignorée. */
 export function keepKnownResponsibilityKeys(candidates: readonly string[]): ResponsibilityKey[] {
 	return responsibilityKeys.filter((responsibilityKey) => candidates.includes(responsibilityKey));

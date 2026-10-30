@@ -23,8 +23,10 @@ import {
 	deletePharmacyGroup,
 	invitePharmacies,
 	inviteGroupMember,
-	listPharmacyGroupIdsNamed
+	listPharmacyGroupIdsNamed,
+	type SentPharmacyInvitation
 } from '@crystal-pharm/group-db';
+import type { InvitationListEntry } from '@crystal-pharm/group-db/domain';
 import {
 	acceptTenantMemberInvitation,
 	addEmployee,
@@ -53,21 +55,23 @@ import {
 const pharmaPlusName = 'Pharma+ (démo)';
 const reseauSanteName = 'Réseau Santé (démo)';
 
+const morningOpening = { opensAt: '09:00', closesAt: '12:30' };
+const fullDayOpening = [morningOpening, { opensAt: '14:00', closesAt: '19:30' }];
+
 const usualOpeningSchedule: WeeklyOpeningSchedule = {
-	monday: [{ opensAt: '09:00', closesAt: '12:30' }, { opensAt: '14:00', closesAt: '19:30' }],
-	tuesday: [{ opensAt: '09:00', closesAt: '12:30' }, { opensAt: '14:00', closesAt: '19:30' }],
-	wednesday: [{ opensAt: '09:00', closesAt: '12:30' }, { opensAt: '14:00', closesAt: '19:30' }],
-	thursday: [{ opensAt: '09:00', closesAt: '12:30' }, { opensAt: '14:00', closesAt: '19:30' }],
-	friday: [{ opensAt: '09:00', closesAt: '12:30' }, { opensAt: '14:00', closesAt: '19:30' }],
-	saturday: [{ opensAt: '09:00', closesAt: '12:30' }],
+	monday: fullDayOpening,
+	tuesday: fullDayOpening,
+	wednesday: fullDayOpening,
+	thursday: fullDayOpening,
+	friday: fullDayOpening,
+	saturday: [morningOpening],
 	sunday: []
 };
 
 type DemoPharmacy = { accountEmail: string; firstName: string; lastName: string; contactDetails: PharmacyContactDetailsInput };
 
 function demoPharmacyOf(personaKey: string, contactDetails: Omit<PharmacyContactDetailsInput, 'phoneNumber' | 'email'>): DemoPharmacy {
-	const persona = findDemoPersona(personaKey);
-	if (!persona) throw new Error(`The demo persona ${personaKey} does not exist.`);
+	const persona = requireDemoPersona(personaKey);
 	return {
 		accountEmail: persona.email,
 		firstName: persona.firstName,
@@ -270,11 +274,11 @@ async function addDemoTeam(tenantId: string): Promise<void> {
 
 /** Par le parcours d'un Owner : l'invitation de l'Employee du même nom, acceptée par son compte. */
 async function giveDemoEmployeeAnAccount(tenantId: string, persona: DemoPersona, teamRole: DemoTeamRole): Promise<void> {
-	const accountId = await findCustomerAccountIdByEmail(persona.email);
+	const accountId = await requireDemoAccountId(persona);
 	const employee = (await listEmployees(tenantId)).find(
 		(candidate) => candidate.firstName.toDisplayFormat() === persona.firstName && candidate.lastName.toDisplayFormat() === persona.lastName
 	);
-	if (!accountId || !employee) throw new Error(`The demo employee ${persona.personaKey} does not exist.`);
+	if (!employee) throw new Error(`The demo employee ${persona.personaKey} does not exist.`);
 
 	const invitation = await inviteEmployeeToCreateAccount(tenantId, {
 		employeeId: employee.employeeId,
@@ -295,9 +299,8 @@ async function createDemoGroup(
 	if (!groupCreation.isSaved) throw new Error(`The demo group ${name} was refused.`);
 	await saveGroupContract(groupCreation.groupId, contractInput);
 
-	const memberPersona = findDemoPersona(memberPersonaKey);
-	const memberAccountId = memberPersona && (await findCustomerAccountIdByEmail(memberPersona.email));
-	if (!memberPersona || !memberAccountId) throw new Error(`The demo group member ${memberPersonaKey} does not exist.`);
+	const memberPersona = requireDemoPersona(memberPersonaKey);
+	const memberAccountId = await requireDemoAccountId(memberPersona);
 	const invitation = await inviteGroupMember({ kind: 'platform' }, groupCreation.groupId, memberPersona.email);
 	if (invitation.isSent) {
 		await acceptGroupMemberInvitation(invitation.invitationToken, { accountId: memberAccountId, email: memberPersona.email });
@@ -319,14 +322,12 @@ async function publishDemoGroupArticles(groupId: string): Promise<void> {
 }
 
 async function joinGroup(groupId: string, accountEmail: string, tenantId: string): Promise<void> {
-	const invitations = await invitePharmacies(groupId, [{ email: accountEmail }]);
-	const sentInvitation = invitations.isSent ? invitations.sentInvitations[0] : undefined;
+	const sentInvitation = await invitePharmacy(groupId, { email: accountEmail });
 	if (sentInvitation) await acceptPharmacyInvitationAndRebuildToolAccess(tenantId, { invitationToken: sentInvitation.invitationToken });
 }
 
 async function invitePharmacyByEmail(groupId: string, email: string, pharmacyName: string): Promise<void> {
-	const invitations = await invitePharmacies(groupId, [{ email, pharmacyName }]);
-	const sentInvitation = invitations.isSent ? invitations.sentInvitations[0] : undefined;
+	const sentInvitation = await invitePharmacy(groupId, { email, pharmacyName });
 	if (!sentInvitation) return;
 	await sendEmail(
 		composePharmacyInvitationEmail({
@@ -336,6 +337,11 @@ async function invitePharmacyByEmail(groupId: string, email: string, pharmacyNam
 			invitationUrl: `${readAppUrl('pharmacy')}/invitation/${sentInvitation.invitationToken}`
 		})
 	);
+}
+
+async function invitePharmacy(groupId: string, invitee: InvitationListEntry): Promise<SentPharmacyInvitation | undefined> {
+	const invitations = await invitePharmacies(groupId, [invitee]);
+	return invitations.isSent ? invitations.sentInvitations[0] : undefined;
 }
 
 async function inviteGroupMemberByEmail(groupId: string, email: string): Promise<void> {
@@ -352,14 +358,25 @@ async function inviteGroupMemberByEmail(groupId: string, email: string): Promise
 
 /** La personne de la démo coche les conditions, comme à l'écran. */
 async function subscribe(personaKey: string, tenantId: string, toolKeys: ToolKey[], billingPeriod: BillingPeriod): Promise<void> {
-	const persona = findDemoPersona(personaKey);
-	const accountId = persona && (await findCustomerAccountIdByEmail(persona.email));
-	if (!persona || !accountId) throw new Error(`The demo account ${personaKey} does not exist.`);
+	const persona = requireDemoPersona(personaKey);
+	const accountId = await requireDemoAccountId(persona);
 	const termsAcceptedBy = { userId: accountId, name: `${persona.firstName} ${persona.lastName}`, email: persona.email };
 	const selection = await requestToolSelection(tenantId, toolKeys, '/abonnement', billingPeriod, termsAcceptedBy);
 	if (selection.outcome !== 'checkout') return;
 	const checkoutId = selection.checkoutLocation.split('/').at(-1) ?? '';
 	await completeCheckout({ tenantId }, checkoutId, 'paid');
+}
+
+function requireDemoPersona(personaKey: string): DemoPersona {
+	const persona = findDemoPersona(personaKey);
+	if (!persona) throw new Error(`The demo persona ${personaKey} does not exist.`);
+	return persona;
+}
+
+async function requireDemoAccountId(persona: DemoPersona): Promise<string> {
+	const accountId = await findCustomerAccountIdByEmail(persona.email);
+	if (!accountId) throw new Error(`The demo account ${persona.personaKey} does not exist.`);
+	return accountId;
 }
 
 function requireTenantId(tenantIdsByPersonaKey: ReadonlyMap<string, string>, personaKey: string): string {

@@ -1,13 +1,10 @@
 import { and, eq, gte, lte } from 'drizzle-orm';
 import type { Absence, Shift } from '../../domain/planning';
-import { runAsTenant } from '../db/planningDatabase.server';
+import { runAsTenant, toHoursAndMinutes } from '../db/planningDatabase.server';
 import { absences, shifts } from '../db/planningTables';
 
 export type NewShift = Omit<Shift, 'id'>;
 export type NewAbsence = Omit<Absence, 'id'>;
-
-// Postgres rend une heure en « 08:30:00 » : le planning n'en garde que « 08:30 ».
-const toHoursAndMinutes = (storedTime: string): string => storedTime.slice(0, 5);
 
 export async function listShifts(tenantId: string, firstDate: string, lastDate: string): Promise<Shift[]> {
 	const shiftRows = await runAsTenant(tenantId, (transaction) =>

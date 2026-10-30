@@ -16,15 +16,12 @@
 	let { toolCard, href, icon, module, groupName }: ToolTileProps = $props();
 
 	const isActive = $derived(activeToolCardStatuses.includes(toolCard.status));
-	const tileHref = $derived(
-		isActive
-			? href
-			: toolCard.status === 'available'
-				? subscriptionPathnameHighlighting(toolCard.toolKey)
-				: toolCard.status === 'needs-another'
-					? `${homePathnames.subscription}#modules`
-					: undefined
-	);
+	const tileHref = $derived.by(() => {
+		if (isActive) return href;
+		if (toolCard.status === 'available') return subscriptionPathnameHighlighting(toolCard.toolKey);
+		if (toolCard.status === 'needs-another') return `${homePathnames.subscription}#modules`;
+		return undefined;
+	});
 </script>
 
 <svelte:element

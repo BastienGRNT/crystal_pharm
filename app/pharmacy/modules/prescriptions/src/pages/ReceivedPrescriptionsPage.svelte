@@ -4,11 +4,12 @@
 
 	let { data }: { data: ReceivedPrescriptionsPageData } = $props();
 
-	const context = $derived(
-		data.rows.length === 0
-			? 'Aucune ordonnance reçue'
-			: `${data.rows.length} ordonnance${data.rows.length > 1 ? 's' : ''} reçue${data.rows.length > 1 ? 's' : ''}`
-	);
+	const context = $derived.by(() => {
+		const prescriptionCount = data.rows.length;
+		if (prescriptionCount === 0) return 'Aucune ordonnance reçue';
+		const plural = prescriptionCount > 1 ? 's' : '';
+		return `${prescriptionCount} ordonnance${plural} reçue${plural}`;
+	});
 </script>
 
 <svelte:head>

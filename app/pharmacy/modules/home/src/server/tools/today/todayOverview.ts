@@ -54,7 +54,7 @@ export function buildTodayOverview(input: TodayOverviewInput): TodayOverview {
 /** « Ouvert · ferme à 12:30 », « Fermé · ouvre à 14:00 » : l'état de la pharmacie à cette heure-ci. */
 export function describeOpeningStatus(openingPeriods: MinuteRange[], nowMinutes: number): TodayOverview['openingStatus'] {
 	if (openingPeriods.length === 0) return { label: 'Fermé aujourd’hui', tone: 'neutral' };
-	const currentPeriod = openingPeriods.find((period) => period.startMinutes <= nowMinutes && nowMinutes < period.endMinutes);
+	const currentPeriod = openingPeriods.find((period) => isInProgressAt(period, nowMinutes));
 	if (currentPeriod) return { label: `Ouvert · ferme à ${formatTimeOfDay(currentPeriod.endMinutes)}`, tone: 'success' };
 	const nextPeriod = openingPeriods.find((period) => nowMinutes < period.startMinutes);
 	if (nextPeriod) return { label: `Fermé · ouvre à ${formatTimeOfDay(nextPeriod.startMinutes)}`, tone: 'neutral' };
@@ -63,8 +63,8 @@ export function describeOpeningStatus(openingPeriods: MinuteRange[], nowMinutes:
 
 function describeNow(input: TodayOverviewInput): TodayNow {
 	const { team, appointments, nowMinutes } = input;
-	const isOpenNow = (input.openingPeriods ?? []).some((period) => period.startMinutes <= nowMinutes && nowMinutes < period.endMinutes);
-	const shiftsInProgress = (team?.summary.shifts ?? []).filter((shift) => shift.startMinutes <= nowMinutes && nowMinutes < shift.endMinutes);
+	const isOpenNow = (input.openingPeriods ?? []).some((period) => isInProgressAt(period, nowMinutes));
+	const shiftsInProgress = (team?.summary.shifts ?? []).filter((shift) => isInProgressAt(shift, nowMinutes));
 	const presentPeople = team && keepOnePerPerson(shiftsInProgress).map((shift) => ({
 		key: shift.id,
 		name: shift.personName,
@@ -259,16 +259,23 @@ function buildTimelineRows(input: TodayOverviewInput, range: MinuteRange): DayTi
 
 function buildAppointmentItems(appointments: NonNullable<TodayOverviewInput['appointments']>, nowMinutes: number): TimeListItem[] {
 	return (appointments.summary?.appointments ?? []).map((appointment) => {
-		const isPast = appointment.endMinutes <= nowMinutes;
 		return {
 			id: appointment.id,
 			timeLabel: appointment.startTime,
 			title: appointment.reason,
-			detail: appointment.status === 'pending' ? 'À confirmer' : isPast ? 'Passé' : 'Confirmé',
-			tone: appointment.status === 'pending' ? 'pending' : isPast ? 'neutral' : 'accent',
+			...describeAppointmentState(appointment, nowMinutes),
 			href: `${appointments.href}${appointment.detailQuery}`
 		};
 	});
+}
+
+function describeAppointmentState(
+	appointment: TodayAppointmentsSummary['appointments'][number],
+	nowMinutes: number
+): Pick<TimeListItem, 'detail' | 'tone'> {
+	if (appointment.status === 'pending') return { detail: 'À confirmer', tone: 'pending' };
+	if (appointment.endMinutes <= nowMinutes) return { detail: 'Passé', tone: 'neutral' };
+	return { detail: 'Confirmé', tone: 'accent' };
 }
 
 /**
@@ -310,6 +317,10 @@ function describeDay(isoDay: string, todayIsoDate: string): string {
 	if (daysFromToday === 0) return 'aujourd’hui';
 	if (daysFromToday === 1) return 'demain';
 	return shortDayFormat.format(toCalendarDay(isoDay));
+}
+
+function isInProgressAt(range: MinuteRange, minutesSinceMidnight: number): boolean {
+	return range.startMinutes <= minutesSinceMidnight && minutesSinceMidnight < range.endMinutes;
 }
 
 function keepOnePerPerson<Shift extends { personName: string }>(shifts: Shift[]): Shift[] {

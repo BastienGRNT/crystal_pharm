@@ -1,11 +1,9 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { AvailabilityRule, AvailabilityStatus } from '../../domain/availability/availabilityRules';
-import { runAsTenant } from '../db/planningDatabase.server';
+import { runAsTenant, toHoursAndMinutes } from '../db/planningDatabase.server';
 import { availabilityRules } from '../db/planningTables';
 
 export type NewAvailabilityRule = Omit<AvailabilityRule, 'id'>;
-
-const toHoursAndMinutes = (storedTime: string): string => storedTime.slice(0, 5);
 
 function toRule(row: typeof availabilityRules.$inferSelect): AvailabilityRule {
 	return {

@@ -9,7 +9,13 @@
 	let { label, value, maximum }: ProgressBarProps = $props();
 
 	const filledPercentage = $derived(maximum > 0 ? Math.min(100, Math.round((value / maximum) * 100)) : 0);
-	const fillClass = $derived(filledPercentage >= 100 ? 'bg-danger' : filledPercentage >= 85 ? 'bg-warning' : 'bg-accent');
+	const fillClass = $derived(fillClassFor(filledPercentage));
+
+	function fillClassFor(percentage: number): string {
+		if (percentage >= 100) return 'bg-danger';
+		if (percentage >= 85) return 'bg-warning';
+		return 'bg-accent';
+	}
 </script>
 
 <div

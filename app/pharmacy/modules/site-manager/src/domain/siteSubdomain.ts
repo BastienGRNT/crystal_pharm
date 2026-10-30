@@ -43,15 +43,3 @@ export function numberSubdomain(subdomain: string, attemptNumber: number): strin
 	const suffix = `-${attemptNumber}`;
 	return `${subdomain.slice(0, maximumSubdomainLength - suffix.length).replace(/-+$/, '')}${suffix}`;
 }
-
-/**
- * Le sous-domaine d'une adresse demandée à la passerelle (`pharmacie-du-port.site.localhost:8080`),
- * `undefined` si elle n'est pas sous le domaine des sites.
- */
-export function findSubdomainOfHost(requestedHost: string, siteHostname: string): string | undefined {
-	const requestedHostname = requestedHost.toLowerCase().replace(/:\d+$/, '');
-	const siteHostnameSuffix = `.${siteHostname.toLowerCase()}`;
-	if (!requestedHostname.endsWith(siteHostnameSuffix)) return undefined;
-	const subdomain = requestedHostname.slice(0, -siteHostnameSuffix.length);
-	return subdomainPattern.test(subdomain) ? subdomain : undefined;
-}

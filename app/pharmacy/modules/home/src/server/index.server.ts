@@ -13,5 +13,5 @@ export { loadSubscriptionPage, subscriptionPageActions } from './subscription/su
 export { loadTeamInvitationPage, teamInvitationPageActions } from './team-invitation/teamInvitationPage.server';
 export { createToolAccessHandle, type ProtectedTool } from './tools/toolAccessHandle.server';
 export { confirmAppointmentFromToolsHome, loadToolsHomePage } from './tools/toolsHomePage.server';
-export type { TodayAppointmentsSummary, TodayManager, TodaySources, TodayTeamSummary } from './tools/today/todaySources';
-export { loadToolsShell, type ToolsShellData } from './tools/toolsShell.server';
+export type { TodaySources } from './tools/today/todaySources';
+export { loadToolsShell } from './tools/toolsShell.server';

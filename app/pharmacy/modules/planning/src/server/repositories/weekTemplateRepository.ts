@@ -1,11 +1,9 @@
 import { and, asc, eq } from 'drizzle-orm';
 import type { WeekTemplate, WeekTemplateShift } from '../../domain/templates/weekTemplates';
-import { runAsTenant } from '../db/planningDatabase.server';
+import { runAsTenant, toHoursAndMinutes } from '../db/planningDatabase.server';
 import { weekTemplates, weekTemplateShifts } from '../db/planningTables';
 
 export type NewWeekTemplate = Omit<WeekTemplate, 'id'>;
-
-const toHoursAndMinutes = (storedTime: string): string => storedTime.slice(0, 5);
 
 export async function listWeekTemplates(tenantId: string): Promise<WeekTemplate[]> {
 	const [templateRows, shiftRows] = await runAsTenant(tenantId, (transaction) =>

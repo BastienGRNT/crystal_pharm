@@ -11,26 +11,25 @@ public sealed class TenantResolutionMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext httpContext, RequestTenantContext tenantContext)
     {
-        var isManager = ManagerClaims.TryRead(httpContext.User, out var managerTenantId, out var accountId);
-        var siteService = httpContext.Request.Headers.ContainsKey(SiteServiceAuthentication.ServiceKeyHeader)
-            ? await httpContext.AuthenticateAsync(SiteServiceAuthentication.SchemeName)
-            : null;
-        var isSiteService = siteService?.Principal is { } principal && SiteServiceAuthentication.TryReadTenantId(principal, out _);
+        var presentsSiteServiceKey = httpContext.Request.Headers.ContainsKey(SiteServiceAuthentication.ServiceKeyHeader);
 
-        if (isManager && siteService is not null)
+        if (ManagerClaims.TryRead(httpContext.User, out var managerTenantId, out var accountId))
         {
-            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            return;
-        }
+            if (presentsSiteServiceKey)
+            {
+                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
 
-        if (isManager)
-        {
-            tenantContext.Resolve(managerTenantId, accountId!);
+            tenantContext.Resolve(managerTenantId, accountId);
         }
-        else if (isSiteService)
+        else if (presentsSiteServiceKey)
         {
-            SiteServiceAuthentication.TryReadTenantId(siteService!.Principal!, out var siteTenantId);
-            tenantContext.Resolve(siteTenantId, SiteServiceAuthentication.CallerId);
+            var siteService = await httpContext.AuthenticateAsync(SiteServiceAuthentication.SchemeName);
+            if (siteService.Principal is { } principal && SiteServiceAuthentication.TryReadTenantId(principal, out var siteTenantId))
+            {
+                tenantContext.Resolve(siteTenantId, SiteServiceAuthentication.CallerId);
+            }
         }
 
         await next(httpContext);

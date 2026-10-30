@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { formatEuros } from '@crystal-pharm/billing-db/domain';
-	import { DataTable, EmptyState, PageHeader, Tag } from '@crystal-pharm/ui';
-	import ToolTags from '$lib/components/molecules/ToolTags.svelte';
+	import { findTool, formatEuros } from '@crystal-pharm/billing-db/domain';
+	import { DataTable, EmptyState, PageHeader, Tag, TagList } from '@crystal-pharm/ui';
 	import { tenantBillingStatusLabels } from '$lib/contractLabels';
 	import { formatDay } from '$lib/dateFormats';
 	import type { PageProps } from './$types';
@@ -38,7 +37,7 @@
 						{#if pharmacy.groupName}<span class="text-small text-ink-muted">{pharmacy.groupName}</span>{/if}
 					</span>
 				</td>
-				<td><ToolTags toolKeys={pharmacy.activeToolKeys} /></td>
+				<td><TagList labels={pharmacy.activeToolKeys.map((toolKey) => findTool(toolKey).label)} emptyLabel="Aucun" /></td>
 				<td class="text-right tabular-nums">{formatEuros(pharmacy.pharmacyMonthlyPaymentCents)}</td>
 				<td class="text-right tabular-nums">{formatEuros(pharmacy.groupMonthlyPaymentCents)}</td>
 			</tr>
