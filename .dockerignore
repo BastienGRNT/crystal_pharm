@@ -1,0 +1,16 @@
+.git
+.githooks
+.claude
+.idea
+.env
+.env.*
+!.env.example
+.storage
+.logs
+**/node_modules
+**/.svelte-kit
+**/build
+**/dist
+**/.output
+**/bin
+**/obj

@@ -1,0 +1,46 @@
+# La passerelle de prod, derrière le proxy qui termine le HTTPS : elle ne parle qu'en HTTP et route selon le Host.
+# Les domaines arrivent sans schéma : PHARMACY_HOST, GROUP_HOST, ADMIN_HOST, SITE_HOST et SITE_PREVIEW_HOST.
+# Aucun journal des requêtes : une adresse demandée peut dire qu'une personne cherche un soin.
+{
+	auto_https off
+	admin off
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+http://{$PHARMACY_HOST}:8080 {
+	reverse_proxy pharmacy:3000
+}
+
+http://{$GROUP_HOST}:8080 {
+	reverse_proxy group:3000
+}
+
+http://{$ADMIN_HOST}:8080 {
+	reverse_proxy admin:3000
+}
+
+# Le site d'un Tenant : `app/site` résout le Tenant depuis l'adresse, jamais depuis un en-tête.
+http://*.{$SITE_HOST}:8080 {
+	route {
+		request_header -X-Tenant-Id
+
+		@preview path /__preview /__preview/*
+		respond @preview "Page introuvable." 404
+
+		reverse_proxy site:3000
+	}
+}
+
+http://{$SITE_PREVIEW_HOST}:8080 {
+	reverse_proxy site:3000 {
+		header_up -X-Tenant-Id
+	}
+}
+
+# Tout autre Host, et la sonde de santé du conteneur.
+http://:8080 {
+	respond /healthz "ok" 200
+	respond "Page introuvable." 404
+}
