@@ -45,6 +45,6 @@ export const fakePaymentProvider: PaymentProvider = {
 };
 
 export function getPaymentProvider(): PaymentProvider {
-	if (process.env.STRIPE_SECRET_KEY) throw new Error('The Stripe payment provider is not plugged in yet.');
+	if (process.env.APP_ENV !== 'development' && process.env.STRIPE_SECRET_KEY) throw new Error('The Stripe payment provider is not plugged in yet.');
 	return fakePaymentProvider;
 }

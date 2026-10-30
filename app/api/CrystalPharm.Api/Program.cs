@@ -34,7 +34,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<RequestTenantContext>();
 builder.Services.AddScoped<ITenantContext>(services => services.GetRequiredService<RequestTenantContext>());
 builder.Services.AddManagerAuthentication(builder.Configuration, builder.Environment);
-builder.Services.AddSiteServiceAuthentication(builder.Configuration);
+builder.Services.AddSiteServiceAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddPrescriptionRateLimiting();
 builder.Services.AddBookingModule(builder.Configuration);
 builder.Services.AddPrescriptionsModule(builder.Configuration);
@@ -44,6 +44,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
+
+// Les déploiements posent ApplyMigrationsAtStartup : le C# est seul à migrer ses schémas.
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("ApplyMigrationsAtStartup"))
+{
     await app.Services.ApplyBookingMigrationsAsync(CancellationToken.None);
     await app.Services.ApplyPrescriptionsMigrationsAsync(CancellationToken.None);
 }
