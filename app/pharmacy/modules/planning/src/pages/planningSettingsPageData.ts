@@ -17,6 +17,15 @@ export type OvertimeRulesFormValues = {
 	beyondRatePercent: string;
 };
 
+export type AccountantExportFormValues = {
+	accountantEmail: string;
+	/** Le mois proposé : le précédent, au format « 2026-10 ». */
+	defaultMonth: string;
+	/** Le dernier mois que l'on peut choisir : le mois en cours. */
+	latestMonth: string;
+	downloadAction: string;
+};
+
 export type EmployeeTermsFormRow = {
 	employeeId: string;
 	fullName: string;
@@ -38,9 +47,12 @@ export type PlanningSettingsPageData = {
 	templates: WeekTemplateView[];
 	rules: PlanningRulesFormValues;
 	overtimeRules: OvertimeRulesFormValues;
+	accountantExport: AccountantExportFormValues;
 	employees: EmployeeTermsFormRow[];
 };
 
+type PlanningSettingsSection = 'rules' | 'overtime' | 'accountant' | 'terms' | 'peaks';
+
 export type PlanningSettingsActionResult =
-	| { savedSection: 'rules' | 'overtime' | 'terms' | 'peaks'; employeeId?: string }
-	| { failedSection: 'rules' | 'overtime' | 'terms' | 'peaks'; employeeId?: string; message: string };
+	| { savedSection: PlanningSettingsSection; employeeId?: string; message?: string }
+	| { failedSection: PlanningSettingsSection; employeeId?: string; message: string };

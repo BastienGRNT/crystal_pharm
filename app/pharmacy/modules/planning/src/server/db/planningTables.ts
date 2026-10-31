@@ -115,6 +115,8 @@ export const planningSettings = planningSchema.table(
 		overtimeBeyondRatePercent: integer('overtime_beyond_rate_percent')
 			.notNull()
 			.default(collectiveAgreementOvertimeRules.beyondRatePercent),
+		/** À qui part le planning du mois ; `null` tant que la pharmacie ne l'a pas renseigné. */
+		accountantEmail: text('accountant_email'),
 		updatedAt: timestampWithTimeZone('updated_at').notNull().defaultNow()
 	},
 	() => [ofActiveTenant('planning_settings_of_active_tenant')]

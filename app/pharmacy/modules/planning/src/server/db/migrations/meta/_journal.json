@@ -50,6 +50,13 @@
       "when": 1793457252022,
       "tag": "0006_overtime_rates",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793458851712,
+      "tag": "0007_accountant_email",
+      "breakpoints": true
     }
   ]
 }

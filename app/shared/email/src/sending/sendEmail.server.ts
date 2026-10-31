@@ -21,7 +21,11 @@ export async function sendEmail(email: Email): Promise<void> {
 			to: [email.to],
 			subject: email.subject,
 			text: [email.text, ...email.actionLinks.map((actionLink) => `${actionLink.label} : ${actionLink.url}`)].join('\n\n'),
-			html: renderEmailHtml(email)
+			html: renderEmailHtml(email),
+			attachments: email.attachments?.map((attachment) => ({
+				filename: attachment.fileName,
+				content: Buffer.from(attachment.content, 'utf8').toString('base64')
+			}))
 		})
 	});
 	if (!response.ok) throw new Error(`Resend refused the email (status ${response.status}).`);

@@ -5,6 +5,7 @@
 	import EmployeeTermsList from '../components/organisms/settings/EmployeeTermsList.svelte';
 	import PlanningRulesForm from '../components/organisms/settings/PlanningRulesForm.svelte';
 	import OvertimeRulesForm from '../components/organisms/settings/OvertimeRulesForm.svelte';
+	import AccountantExportSection from '../components/organisms/settings/AccountantExportSection.svelte';
 	import type { PlanningSettingsActionResult, PlanningSettingsPageData } from './planningSettingsPageData';
 
 	type PlanningSettingsPageProps = {
@@ -18,6 +19,11 @@
 	const rulesSaved = $derived(form !== null && form !== undefined && 'savedSection' in form && form.savedSection === 'rules');
 	const overtimeFailure = $derived(form && 'failedSection' in form && form.failedSection === 'overtime' ? form.message : undefined);
 	const overtimeSaved = $derived(form !== null && form !== undefined && 'savedSection' in form && form.savedSection === 'overtime');
+	const accountantFeedback = $derived.by(() => {
+		if (form && 'failedSection' in form && form.failedSection === 'accountant') return { message: form.message, isFailure: true };
+		if (form && 'savedSection' in form && form.savedSection === 'accountant' && form.message) return { message: form.message, isFailure: false };
+		return undefined;
+	});
 	const peaksFailure = $derived(form && 'failedSection' in form && form.failedSection === 'peaks' ? form.message : undefined);
 	const termsFeedback = $derived.by(() => {
 		if (!form) return undefined;
@@ -53,6 +59,22 @@
 		</p>
 		<Card>
 			<OvertimeRulesForm formAction="?/saveOvertimeRules" values={data.overtimeRules} errorMessage={overtimeFailure} isSaved={overtimeSaved} />
+		</Card>
+	</section>
+
+	<section aria-labelledby="accountant-heading" class="grid gap-3">
+		<h2 id="accountant-heading" class="text-heading font-semibold text-ink">Expert-comptable</h2>
+		<p class="text-small text-ink-muted">
+			Le planning du mois en CSV : les heures de chacun semaine par semaine, les heures supplémentaires et les absences.
+			Une semaine à cheval sur deux mois compte dans le mois où elle se termine.
+		</p>
+		<Card>
+			<AccountantExportSection
+				saveEmailFormAction="?/saveAccountantEmail"
+				sendFormAction="?/sendToAccountant"
+				values={data.accountantExport}
+				feedback={accountantFeedback}
+			/>
 		</Card>
 	</section>
 
