@@ -819,11 +819,10 @@
   text-align: center;
 }
 
-.layout-atelier .at-on-duty--hotline {
-  background: none;
+.layout-atelier .at-duty-hotline {
+  padding: 12px 0;
   color: var(--at-color-muted);
   font-size: 0.9rem;
-  font-weight: 400;
 }
 
 .layout-atelier .at-find-us__content {

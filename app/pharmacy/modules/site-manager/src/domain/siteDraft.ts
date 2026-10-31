@@ -7,7 +7,7 @@ import {
 	type TenantSiteInput
 } from '@crystal-pharm/content-db/domain';
 import { chooseDisplayedNewsSource, type NewsSource } from '@crystal-pharm/group-db/domain';
-import type { ModuleName, NewsModuleData, OpeningHoursSectionData } from '@crystal-pharm/schema';
+import type { ModuleName, NewsModuleData, OnDutyPeriod, OpeningHoursSectionData } from '@crystal-pharm/schema';
 import { listCompleteArticles, listCompleteBrands, listCompleteServices, type ArticleDraft, type BrandDraft, type ServiceDraft } from './siteContentLists';
 import { createPreviewImageResolver } from './siteImageChoices';
 import { toStoredSections, type SectionDrafts } from './siteSectionDrafts';
@@ -24,6 +24,8 @@ export type SiteEditorBase = {
 	group: SiteEditorGroup | undefined;
 	/** Les horaires viennent de la fiche ; sans horaires saisis, le site montre une semaine fermée. */
 	openingHours: OpeningHoursSectionData | undefined;
+	/** Les gardes déclarées, saisies dans leur propre écran : le bandeau de l'aperçu les montre. */
+	onDutyPeriods: OnDutyPeriod[];
 	/** Un module absent n'a pas encore de données : il ne peut pas s'afficher. */
 	availableModuleData: Partial<Omit<ModuleDataByName, ModuleEditedHere>>;
 	/** Les adresses signées de l'aperçu pour chaque image envoyée, par identifiant. */
@@ -69,6 +71,7 @@ function resolveDraftContent(base: SiteEditorBase, draft: SiteContentDraft): Res
 			findUs,
 			appointment,
 			onlineOrder,
+			onDutyPeriods: base.onDutyPeriods,
 			services: listCompleteServices(draft.services),
 			brands: listCompleteBrands(draft.brands),
 			articles: listCompleteArticles(draft.articles)
@@ -104,6 +107,7 @@ export function toTenantSiteInput(base: SiteEditorBase, draft: SiteDraft): Tenan
 		enabledModules: draft.enabledModules,
 		moduleOrder: draft.moduleOrder,
 		pharmacy: base.pharmacy,
+		onDutyPeriods: base.onDutyPeriods,
 		fixedSections: { hero: resolvedContent.hero, findUs: resolvedContent.findUs, openingHours: base.openingHours },
 		group: base.group && { name: base.group.name, logoUrl: base.group.logoUrl, mandatoryModules: base.group.mandatoryModules },
 		moduleData: toModuleData(base, draft, resolvedContent)

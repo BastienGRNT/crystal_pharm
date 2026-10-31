@@ -33,6 +33,7 @@ export const pharmacieDupont: MockTenant = {
         brands: { enabled: true, data: sampleModuleData.brands },
         appointment: { enabled: true, data: sampleModuleData.appointment },
         onlineOrder: { enabled: true, data: sampleModuleData.onlineOrder },
+        dutyHotline: { enabled: true, data: sampleModuleData.dutyHotline },
       },
     };
   },

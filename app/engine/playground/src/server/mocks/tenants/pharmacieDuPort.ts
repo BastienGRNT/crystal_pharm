@@ -30,6 +30,7 @@ export const pharmacieDuPort: MockTenant = {
       brands: { enabled: false },
       appointment: { enabled: false },
       onlineOrder: { enabled: false },
+      dutyHotline: { enabled: false },
     },
   }),
 };

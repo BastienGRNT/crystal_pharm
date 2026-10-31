@@ -8,6 +8,7 @@ export const ModuleNameSchema = v.picklist([
   'prescriptionUpload',
   'appointment',
   'onlineOrder',
+  'dutyHotline',
   'services',
   'team',
   'brands',

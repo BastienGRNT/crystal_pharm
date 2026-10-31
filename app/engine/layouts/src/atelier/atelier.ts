@@ -2,6 +2,7 @@ import type { PharmacySiteLayout } from '@crystal-pharm/renderer';
 import { atelierSettingsSchema, type AtelierSettings } from './atelierManifest';
 import { AppointmentPanel } from './organisms/AppointmentPanel';
 import { BrandsList } from './organisms/BrandsList';
+import { DutyHotlinePanel } from './organisms/DutyHotlinePanel';
 import { EditorialIntro } from './organisms/EditorialIntro';
 import { FindUsPanel } from './organisms/FindUsPanel';
 import { LoyaltyCardPanel } from './organisms/LoyaltyCardPanel';
@@ -24,6 +25,7 @@ export const atelier: PharmacySiteLayout<AtelierSettings> = {
   brands: BrandsList,
   appointment: AppointmentPanel,
   onlineOrder: OnlineOrderPanel,
+  dutyHotline: DutyHotlinePanel,
   team: TeamGallery,
   services: ServiceIndex,
   news: NewsColumns,

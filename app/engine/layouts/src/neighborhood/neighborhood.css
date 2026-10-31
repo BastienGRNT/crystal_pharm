@@ -196,10 +196,11 @@
   text-align: center;
 }
 
-.layout-neighborhood .nb-on-duty-banner--hotline {
+.layout-neighborhood .nb-duty-hotline {
+  padding: 12px 20px;
   background: var(--nb-color-tint);
   font-size: 0.9rem;
-  font-weight: 400;
+  text-align: center;
 }
 
 .layout-neighborhood .nb-on-duty-banner--now {

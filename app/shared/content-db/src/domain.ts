@@ -31,6 +31,7 @@ export type {
 	StoredBrand,
 	StoredFindUs,
 	StoredHero,
+	StoredOnDutyPeriod,
 	StoredOnlineOrder,
 	StoredService
 } from './tenant-sites/storedSiteContent';

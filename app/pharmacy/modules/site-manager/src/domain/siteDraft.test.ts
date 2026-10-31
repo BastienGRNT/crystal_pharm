@@ -14,10 +14,12 @@ const baseWithoutGroup: SiteEditorBase = {
 	},
 	group: undefined,
 	openingHours: undefined,
+	onDutyPeriods: [],
 	uploadedImagePreviewUrls: {},
 	availableModuleData: {
 		team: { members: [{ fullName: 'Marie Dupont', role: 'Pharmacienne' }] },
 		prescriptionUpload: {},
+		dutyHotline: {},
 		loyaltyCard: { text: '-10 % sur la parapharmacie', url: 'https://groupement.example/carte' }
 	}
 };
@@ -103,6 +105,7 @@ describe('listSiteModuleChoices', () => {
 			appointment: 'optional',
 			onlineOrder: 'unavailable',
 			prescriptionUpload: 'optional',
+			dutyHotline: 'optional',
 			loyaltyCard: 'mandatory'
 		});
 	});

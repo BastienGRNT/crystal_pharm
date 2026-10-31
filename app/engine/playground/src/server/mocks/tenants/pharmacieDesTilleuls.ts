@@ -45,6 +45,7 @@ export const pharmacieDesTilleuls: MockTenant = {
       brands: { enabled: false },
       appointment: { enabled: true, data: { mode: 'externalLink', url: 'https://rdv.example/tilleuls' } },
       onlineOrder: { enabled: false },
+      dutyHotline: { enabled: false },
     },
   }),
 };

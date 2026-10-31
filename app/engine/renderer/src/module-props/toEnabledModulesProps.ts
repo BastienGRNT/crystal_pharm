@@ -4,6 +4,7 @@ import type { ModulePropsByName } from '../contract/ModulePropsByName';
 import type { SubmitPrescription } from '../prescription/createSubmitPrescription';
 import { toAppointmentModuleProps } from './toAppointmentModuleProps';
 import { toBrandsModuleProps } from './toBrandsModuleProps';
+import { toDutyHotlineModuleProps } from './toDutyHotlineModuleProps';
 import { toLoyaltyCardModuleProps } from './toLoyaltyCardModuleProps';
 import { toNewsModuleProps } from './toNewsModuleProps';
 import { toOnlineOrderModuleProps } from './toOnlineOrderModuleProps';
@@ -35,6 +36,7 @@ export function toEnabledModulesProps(
       : undefined,
     appointment: modules.appointment.enabled ? toAppointmentModuleProps(modules.appointment.data, context) : undefined,
     onlineOrder: modules.onlineOrder.enabled ? toOnlineOrderModuleProps(modules.onlineOrder.data) : undefined,
+    dutyHotline: modules.dutyHotline.enabled ? toDutyHotlineModuleProps() : undefined,
     loyaltyCard: modules.loyaltyCard.enabled && context.belongsToGroup ? toLoyaltyCardModuleProps(modules.loyaltyCard.data) : undefined,
   };
 }

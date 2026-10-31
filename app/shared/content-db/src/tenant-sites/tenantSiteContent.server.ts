@@ -42,6 +42,7 @@ export async function readTenantSiteContent(tenantId: string): Promise<TenantSit
 			brands: tenantSite.brands,
 			appointment: tenantSite.appointment ?? undefined,
 			onlineOrder: tenantSite.onlineOrder ?? undefined,
+			onDutyPeriods: tenantSite.onDutyPeriods,
 			prescriptionIntroduction: tenantSite.prescriptionIntroduction ?? undefined,
 			newsSource: tenantSite.newsSource,
 			articles: articleRows.map((articleRow) => ({

@@ -4,11 +4,21 @@ import type {
 	FindUsSectionData,
 	HeroSectionData,
 	NewsModuleData,
+	OnDutyPeriod,
 	OnlineOrderModuleData,
 	ServicesModuleData
 } from '@crystal-pharm/schema';
 import { resolveSiteImageUrl, type SiteImageUrlResolver } from './siteImage';
-import type { StoredAppointment, StoredArticle, StoredBrand, StoredFindUs, StoredHero, StoredOnlineOrder, StoredService } from './storedSiteContent';
+import type {
+	StoredAppointment,
+	StoredArticle,
+	StoredBrand,
+	StoredFindUs,
+	StoredHero,
+	StoredOnDutyPeriod,
+	StoredOnlineOrder,
+	StoredService
+} from './storedSiteContent';
 
 /** Ce que le Tenant saisit lui-même sur son site, tel qu'enregistré (images en choix). */
 export type EditedSiteContent = {
@@ -19,6 +29,7 @@ export type EditedSiteContent = {
 	articles: StoredArticle[];
 	appointment: StoredAppointment | undefined;
 	onlineOrder: StoredOnlineOrder | undefined;
+	onDutyPeriods: StoredOnDutyPeriod[];
 };
 
 /** La même saisie, prête pour `engine/schema` : chaque image devient une adresse du domaine qui affiche le site. */
@@ -30,6 +41,7 @@ export type ResolvedEditedContent = {
 	articles: NewsModuleData['articles'];
 	appointment: AppointmentModuleData | undefined;
 	onlineOrder: OnlineOrderModuleData | undefined;
+	onDutyPeriods: OnDutyPeriod[];
 };
 
 export function resolveEditedContent(content: EditedSiteContent, resolver: SiteImageUrlResolver): ResolvedEditedContent {
@@ -43,7 +55,8 @@ export function resolveEditedContent(content: EditedSiteContent, resolver: SiteI
 		brands: content.brands.map(({ logo, ...brand }) => ({ ...brand, ...withUrl('logoUrl', resolveSiteImageUrl(logo, resolver)) })),
 		articles: content.articles.map(({ image, ...article }) => ({ ...article, ...withUrl('imageUrl', resolveSiteImageUrl(image, resolver)) })),
 		appointment: content.appointment,
-		onlineOrder: content.onlineOrder
+		onlineOrder: content.onlineOrder,
+		onDutyPeriods: content.onDutyPeriods
 	};
 }
 

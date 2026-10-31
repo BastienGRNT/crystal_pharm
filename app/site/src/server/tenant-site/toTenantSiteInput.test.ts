@@ -33,6 +33,7 @@ const sources: TenantSiteSources = {
     brands: [],
     appointment: undefined,
     onlineOrder: undefined,
+    onDutyPeriods: [],
     services: [],
     prescriptionIntroduction: undefined,
     newsSource: 'pharmacy',

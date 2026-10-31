@@ -3,7 +3,7 @@ import type { AtelierSettings } from '../atelierManifest';
 import { AsymmetricGridTemplate } from '../templates/AsymmetricGridTemplate';
 
 /** L'équipe et l'ordonnance ont leur propre page. */
-const homeModuleNames = ['services', 'brands', 'appointment', 'onlineOrder', 'loyaltyCard', 'news'] as const;
+const homeModuleNames = ['services', 'brands', 'appointment', 'onlineOrder', 'dutyHotline', 'loyaltyCard', 'news'] as const;
 
 export default definePage<AtelierSettings>({
   title: 'Accueil',

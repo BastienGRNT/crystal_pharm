@@ -23,6 +23,7 @@
 	import { toLayoutSettings, toLayoutSettingsFormValues, type LayoutSettingsFormValues } from '../domain/layoutSettingsForm';
 	import { isArticleDraftIncomplete, isBrandAddressInvalid, isBrandDraftIncomplete, isServiceDraftIncomplete } from '../domain/siteContentLists';
 	import { toTenantSiteInput, type SiteEditorBase } from '../domain/siteDraft';
+	import { onDutyPathname } from './onDutyPageData';
 	import { listSiteModuleChoices, type SiteModuleChoice } from '../domain/siteModuleChoices';
 	import {
 		articlesFieldName,
@@ -262,6 +263,7 @@
 		icon="globe-simple"
 	>
 		{#snippet actions()}
+			<Button variant="ghost" icon="moon" href={onDutyPathname}>Gardes</Button>
 			{#if data.publicSiteUrl}
 				<Button variant="ghost" href={siteAddressPathname}>Changer d’adresse</Button>
 				<Button variant="secondary" icon="arrow-square-out" href={data.publicSiteUrl} opensInNewTab>Voir mon site</Button>

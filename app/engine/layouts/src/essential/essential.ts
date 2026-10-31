@@ -2,6 +2,7 @@ import type { PharmacySiteLayout } from '@crystal-pharm/renderer';
 import { essentialSettingsSchema, type EssentialSettings } from './essentialManifest';
 import { AppointmentBlock } from './organisms/AppointmentBlock';
 import { BrandsBlock } from './organisms/BrandsBlock';
+import { DutyHotlineBlock } from './organisms/DutyHotlineBlock';
 import { FindUsBlock } from './organisms/FindUsBlock';
 import { HeroMasthead } from './organisms/HeroMasthead';
 import { LoyaltyCardBlock } from './organisms/LoyaltyCardBlock';
@@ -29,4 +30,5 @@ export const essential: PharmacySiteLayout<EssentialSettings> = {
   brands: BrandsBlock,
   appointment: AppointmentBlock,
   onlineOrder: OnlineOrderBlock,
+  dutyHotline: DutyHotlineBlock,
 };

@@ -95,6 +95,7 @@ export const grandePharmacieDeLaPlace: MockTenant = {
         brands: { enabled: true, data: { brands: [{ name: 'La Roche-Posay' }, { name: 'Avène', url: 'https://www.eau-thermale-avene.fr' }, { name: 'Weleda' }] } },
         appointment: { enabled: true, data: { mode: 'builtIn' } },
         onlineOrder: { enabled: true, data: { url: 'https://commande.example/grande-pharmacie-place' } },
+        dutyHotline: { enabled: true, data: {} },
       },
     };
   },
