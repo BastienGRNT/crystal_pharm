@@ -156,8 +156,6 @@ services:
     build:
       context: .
       dockerfile: docker/prod/site.Dockerfile
-      args:
-        BUILD_MODE: *build_mode
     restart: unless-stopped
     environment:
       <<: *application_environment
