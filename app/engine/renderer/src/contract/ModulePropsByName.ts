@@ -1,5 +1,6 @@
 import type { AppointmentModuleProps } from '../module-props/toAppointmentModuleProps';
 import type { BrandsModuleProps } from '../module-props/toBrandsModuleProps';
+import type { DutyHotlineModuleProps } from '../module-props/toDutyHotlineModuleProps';
 import type { LoyaltyCardModuleProps } from '../module-props/toLoyaltyCardModuleProps';
 import type { NewsModuleProps } from '../module-props/toNewsModuleProps';
 import type { OnlineOrderModuleProps } from '../module-props/toOnlineOrderModuleProps';
@@ -16,5 +17,6 @@ export type ModulePropsByName = {
   prescriptionUpload: PrescriptionUploadModuleProps;
   appointment: AppointmentModuleProps;
   onlineOrder: OnlineOrderModuleProps;
+  dutyHotline: DutyHotlineModuleProps;
   loyaltyCard: LoyaltyCardModuleProps;
 };

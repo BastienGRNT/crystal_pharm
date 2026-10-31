@@ -57,6 +57,11 @@ const moduleTexts: Record<ModuleName, ModuleTexts> = {
 		unavailableReason: 'Renseignez l’adresse de votre site de commande, dans le bloc Commande en ligne.',
 		fixHref: '#commande'
 	},
+	dutyHotline: {
+		title: 'Numéro de garde (3237)',
+		description: 'Un rappel du 3237, qui oriente vers la pharmacie de garde la plus proche. Vous choisissez sa place.',
+		unavailableReason: 'Ce bloc n’est pas disponible pour ce site.'
+	},
 	loyaltyCard: {
 		title: 'Carte de fidélité',
 		description: 'La carte de fidélité de votre groupement.',

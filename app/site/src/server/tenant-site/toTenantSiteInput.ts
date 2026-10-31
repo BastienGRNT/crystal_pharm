@@ -39,6 +39,7 @@ export function toTenantSiteInput(sources: TenantSiteSources): {
       findUs: editedContent.findUs,
       openingHours: pharmacyProfile.weeklyOpeningSchedule && { weeklySchedule: pharmacyProfile.weeklyOpeningSchedule, onDutyPeriods: [] },
     },
+    onDutyPeriods: editedContent.onDutyPeriods,
     pharmacy: {
       name: pharmacyProfile.name,
       address: { street: pharmacyProfile.street, postalCode: pharmacyProfile.postalCode, city: pharmacyProfile.city },
@@ -67,6 +68,7 @@ function collectModuleData(sources: TenantSiteSources, editedContent: ResolvedEd
     onlineOrder: editedContent.onlineOrder,
     // Le module `Prescriptions` du C# reçoit les envois (cf. `/api/prescriptions`) : rien à saisir côté pharmacie.
     prescriptionUpload: {},
+    dutyHotline: {},
     loyaltyCard: group?.loyaltyCardUrl && group.loyaltyCardMessage
       ? {
           text: group.loyaltyCardMessage,

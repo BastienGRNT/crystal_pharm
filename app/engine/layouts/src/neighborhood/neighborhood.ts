@@ -2,6 +2,7 @@ import type { PharmacySiteLayout } from '@crystal-pharm/renderer';
 import { neighborhoodSettingsSchema, type NeighborhoodSettings } from './neighborhoodManifest';
 import { AppointmentSection } from './organisms/AppointmentSection';
 import { BrandsSection } from './organisms/BrandsSection';
+import { DutyHotlineSection } from './organisms/DutyHotlineSection';
 import { FindUsSection } from './organisms/FindUsSection';
 import { HeroSection } from './organisms/HeroSection';
 import { LoyaltyCardSection } from './organisms/LoyaltyCardSection';
@@ -29,4 +30,5 @@ export const neighborhood: PharmacySiteLayout<NeighborhoodSettings> = {
   brands: BrandsSection,
   appointment: AppointmentSection,
   onlineOrder: OnlineOrderSection,
+  dutyHotline: DutyHotlineSection,
 };

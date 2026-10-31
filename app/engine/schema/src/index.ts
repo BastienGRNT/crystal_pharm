@@ -13,6 +13,7 @@ export * from './modules/LoyaltyCardModuleDataSchema';
 export * from './modules/BrandsModuleDataSchema';
 export * from './modules/AppointmentModuleDataSchema';
 export * from './modules/OnlineOrderModuleDataSchema';
+export * from './modules/DutyHotlineModuleDataSchema';
 export * from './modules/ModuleNameSchema';
 export * from './modules/TenantModulesSchema';
 export * from './TenantSiteSchema';

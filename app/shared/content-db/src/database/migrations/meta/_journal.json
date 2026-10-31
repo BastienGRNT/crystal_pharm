@@ -36,6 +36,13 @@
       "when": 1793448503906,
       "tag": "0004_add_site_fixed_sections_brands_and_images",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793459342755,
+      "tag": "0005_add_tenant_site_on_duty_periods",
+      "breakpoints": true
     }
   ]
 }

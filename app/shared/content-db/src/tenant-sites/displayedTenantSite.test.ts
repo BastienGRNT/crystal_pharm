@@ -12,6 +12,7 @@ function assemble(sources: Partial<DisplayedTenantSiteSources>) {
 		enabledModules: [],
 		moduleOrder: [],
 		fixedSections: { hero: {}, findUs: {}, openingHours: undefined },
+		onDutyPeriods: [],
 		pharmacy: { name: 'Pharmacie du Port', address: { street: '1 quai', postalCode: '76600', city: 'Le Havre' }, phone: '02 35 00 00 00' },
 		group: undefined,
 		moduleData: {},

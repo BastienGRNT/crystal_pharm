@@ -1,4 +1,4 @@
-import type { AppointmentModuleData, FindUsSectionData, OnlineOrderModuleData, ServiceIconName } from '@crystal-pharm/schema';
+import type { AppointmentModuleData, FindUsSectionData, OnDutyPeriod, OnlineOrderModuleData, ServiceIconName } from '@crystal-pharm/schema';
 import type { SiteImage } from './siteImage';
 
 // Ce que le Tenant saisit tel qu'il est enregistré : les images y sont des
@@ -11,3 +11,4 @@ export type StoredService = { title: string; description: string; iconName?: Ser
 export type StoredArticle = { title: string; summary: string; publishedAt: string; image?: SiteImage };
 export type StoredAppointment = AppointmentModuleData;
 export type StoredOnlineOrder = OnlineOrderModuleData;
+export type StoredOnDutyPeriod = OnDutyPeriod;

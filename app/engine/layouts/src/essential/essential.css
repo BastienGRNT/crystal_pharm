@@ -119,7 +119,7 @@
 
 .layout-essential .essential-on-duty {
   margin-bottom: 12px;
-  padding: 8px;
+  padding: 10px 8px;
   background: var(--essential-color-highlight);
   color: var(--essential-color-on-highlight);
   font-weight: 700;
@@ -156,9 +156,8 @@
 
 .layout-essential .essential-hotline {
   display: block;
-  margin-top: 12px;
   color: var(--essential-color-muted);
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 /* Marques, commande en ligne, rendez-vous, nous trouver */

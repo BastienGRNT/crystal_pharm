@@ -15,6 +15,7 @@ const moduleLabels = {
   prescriptionUpload: "Envoi d'ordonnance",
   appointment: 'Prise de rendez-vous',
   onlineOrder: 'Commande en ligne',
+  dutyHotline: 'Numéro de garde (3237)',
   loyaltyCard: 'Carte de fidélité',
 } satisfies Record<ModuleName, string>;
 

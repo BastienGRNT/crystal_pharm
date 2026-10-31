@@ -29,6 +29,7 @@ export function toSiteEditorBase(tenantId: string, sources: SiteEditorSources): 
 			articles: group.articles.map(({ title, summary, publishedAt }) => ({ title, summary, publishedAt }))
 		},
 		openingHours: pharmacyProfile.weeklyOpeningSchedule && { weeklySchedule: pharmacyProfile.weeklyOpeningSchedule, onDutyPeriods: [] },
+		onDutyPeriods: sources.content?.onDutyPeriods ?? [],
 		availableModuleData: collectAvailableModuleData(tenantId, sources),
 		uploadedImagePreviewUrls: toUploadedImagePreviewUrls(tenantId, sources)
 	};
@@ -52,6 +53,7 @@ function collectAvailableModuleData(
 		team: { members: employees.map((employee) => toTeamMember(tenantId, employee)) },
 		// Le module `Prescriptions` du C# reçoit les ordonnances : rien à saisir, le module est toujours affichable.
 		prescriptionUpload: {},
+		dutyHotline: {},
 		loyaltyCard:
 			group?.loyaltyCardUrl && group.loyaltyCardMessage
 				? {

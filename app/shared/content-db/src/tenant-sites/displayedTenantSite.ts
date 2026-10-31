@@ -1,4 +1,4 @@
-import { ModuleNameSchema, type FindUsSectionData, type HeroSectionData, type ModuleName, type OpeningHoursSectionData, type TenantSiteSchema } from '@crystal-pharm/schema';
+import { ModuleNameSchema, type FindUsSectionData, type HeroSectionData, type ModuleName, type OnDutyPeriod, type OpeningHoursSectionData, type TenantSiteSchema } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 
 // Les règles du site affiché, écrites une seule fois : `app/site` (le site en
@@ -21,6 +21,8 @@ export type DisplayedTenantSiteSources = {
 	pharmacy: Omit<TenantSiteInput['pharmacy'], 'group'>;
 	/** `openingHours` vient de la fiche ; sans horaires saisis, toutes les journées comptent comme fermées. */
 	fixedSections: { hero: HeroSectionData; findUs: FindUsSectionData; openingHours: OpeningHoursSectionData | undefined };
+	/** Les gardes déclarées par le Tenant : elles s'ajoutent aux horaires de la fiche. */
+	onDutyPeriods: OnDutyPeriod[];
 	group: DisplayedPharmacyGroup | undefined;
 	/** Les données de chaque module ; un module absent n'a pas encore de données. */
 	moduleData: Partial<ModuleDataByName>;
@@ -64,7 +66,7 @@ export function assembleDisplayedTenantSite(sources: DisplayedTenantSiteSources)
 			fixedSections: {
 				hero: sources.fixedSections.hero,
 				findUs: sources.fixedSections.findUs,
-				openingHours: sources.fixedSections.openingHours ?? closedAllWeek
+				openingHours: { ...(sources.fixedSections.openingHours ?? closedAllWeek), onDutyPeriods: sources.onDutyPeriods }
 			},
 			moduleOrder: [...new Set(sources.moduleOrder)],
 			modules: {
@@ -75,7 +77,8 @@ export function assembleDisplayedTenantSite(sources: DisplayedTenantSiteSources)
 				loyaltyCard: toModule('loyaltyCard'),
 				brands: toModule('brands'),
 				appointment: toModule('appointment'),
-				onlineOrder: toModule('onlineOrder')
+				onlineOrder: toModule('onlineOrder'),
+				dutyHotline: toModule('dutyHotline')
 			}
 		},
 		unavailableMandatoryModules: mandatoryModules.filter((moduleName) => availableModuleData[moduleName] === undefined)

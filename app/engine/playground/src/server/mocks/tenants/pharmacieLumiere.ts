@@ -43,6 +43,7 @@ export const pharmacieLumiere: MockTenant = {
       brands: { enabled: false },
       appointment: { enabled: false },
       onlineOrder: { enabled: true, data: { url: 'https://commande.example/lumiere' } },
+      dutyHotline: { enabled: true, data: {} },
     },
   }),
 };

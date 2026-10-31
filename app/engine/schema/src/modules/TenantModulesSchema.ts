@@ -2,6 +2,7 @@ import * as v from 'valibot';
 import { createToggleableModuleSchema } from './createToggleableModuleSchema';
 import { AppointmentModuleDataSchema } from './AppointmentModuleDataSchema';
 import { BrandsModuleDataSchema } from './BrandsModuleDataSchema';
+import { DutyHotlineModuleDataSchema } from './DutyHotlineModuleDataSchema';
 import { LoyaltyCardModuleDataSchema } from './LoyaltyCardModuleDataSchema';
 import type { ModuleName } from './ModuleNameSchema';
 import { NewsModuleDataSchema } from './NewsModuleDataSchema';
@@ -19,6 +20,7 @@ export const TenantModulesSchema = v.object({
   brands: createToggleableModuleSchema(BrandsModuleDataSchema),
   appointment: createToggleableModuleSchema(AppointmentModuleDataSchema),
   onlineOrder: createToggleableModuleSchema(OnlineOrderModuleDataSchema),
+  dutyHotline: createToggleableModuleSchema(DutyHotlineModuleDataSchema),
 } satisfies Record<ModuleName, v.GenericSchema>);
 
 export type TenantModules = v.InferOutput<typeof TenantModulesSchema>;

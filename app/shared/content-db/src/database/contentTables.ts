@@ -7,6 +7,7 @@ import type {
 	StoredBrand,
 	StoredFindUs,
 	StoredHero,
+	StoredOnDutyPeriod,
 	StoredOnlineOrder,
 	StoredService
 } from '../tenant-sites/storedSiteContent';
@@ -56,6 +57,8 @@ export const tenantSites = contentSchema.table(
 		brands: jsonb('brands').$type<StoredBrand[]>().notNull().default([]),
 		appointment: jsonb('appointment').$type<StoredAppointment>(),
 		onlineOrder: jsonb('online_order').$type<StoredOnlineOrder>(),
+		/** Les gardes déclarées par la pharmacie ; le bandeau du site s'affiche pendant l'une d'elles. */
+		onDutyPeriods: jsonb('on_duty_periods').$type<StoredOnDutyPeriod[]>().notNull().default([]),
 		prescriptionIntroduction: text('prescription_introduction'),
 		/** Le choix du Tenant ; son groupement peut l'imposer (cf. `group-db`). */
 		newsSource: text('news_source').$type<NewsSource>().notNull().default('pharmacy'),

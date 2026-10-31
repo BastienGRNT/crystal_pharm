@@ -21,6 +21,7 @@ export const pharmacieSaintRoch: MockTenant = {
       brands: { enabled: false },
       appointment: { enabled: false },
       onlineOrder: { enabled: false },
+      dutyHotline: { enabled: false },
     },
   }),
 };

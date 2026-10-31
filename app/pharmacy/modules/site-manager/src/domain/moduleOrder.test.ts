@@ -6,8 +6,8 @@ describe('listModulesInDisplayOrder', () => {
 		const order = listModulesInDisplayOrder(['news', 'team']);
 
 		expect(order.slice(0, 2)).toEqual(['news', 'team']);
-		expect(order).toHaveLength(8);
-		expect(new Set(order).size).toBe(8);
+		expect(order).toHaveLength(9);
+		expect(new Set(order).size).toBe(9);
 	});
 });
 

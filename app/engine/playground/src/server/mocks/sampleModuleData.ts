@@ -76,6 +76,7 @@ export function createSampleModuleData(): { [Name in ModuleName]: EnabledModuleD
     },
     appointment: { mode: 'builtIn', introduction: 'Choisissez un jour puis un créneau : nous confirmons par téléphone.' },
     onlineOrder: { url: 'https://commande.example/pharmacie', introduction: 'Commandez en ligne, retirez à la pharmacie en 2 heures.' },
+    dutyHotline: {},
     loyaltyCard: {
       text: '1 € dépensé = 1 point. Dès 100 points, 5 € offerts sur la parapharmacie.',
       url: 'https://fidelite.example/inscription',

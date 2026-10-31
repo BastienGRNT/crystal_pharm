@@ -23,6 +23,7 @@ export type { PrescriptionUploadModuleProps } from './module-props/toPrescriptio
 export type { LoyaltyCardModuleProps } from './module-props/toLoyaltyCardModuleProps';
 export type { BrandsModuleProps } from './module-props/toBrandsModuleProps';
 export type { AppointmentModuleProps } from './module-props/toAppointmentModuleProps';
+export type { DutyHotlineModuleProps } from './module-props/toDutyHotlineModuleProps';
 export type { OnlineOrderModuleProps } from './module-props/toOnlineOrderModuleProps';
 export type {
   AppointmentForm,
