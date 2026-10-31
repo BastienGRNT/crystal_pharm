@@ -3,15 +3,14 @@ using System.Text;
 
 namespace CrystalPharm.Booking.Application.Services;
 
-/// <summary>L'identifiant opaque d'un créneau : la personne, le jour et la plage, que le site ne sait pas lire.</summary>
-internal readonly record struct AppointmentSlotId(Guid EmployeeId, DateOnly Day, TimeOnly StartTime, TimeOnly EndTime)
+/// <summary>L'identifiant opaque d'un créneau : le jour et la plage. La personne qui reçoit est choisie à la réservation.</summary>
+internal readonly record struct AppointmentSlotId(DateOnly Day, TimeOnly StartTime, TimeOnly EndTime)
 {
     private const string Separator = "|";
 
     public string Encode() =>
         ToBase64Url(Encoding.UTF8.GetBytes(string.Join(
             Separator,
-            EmployeeId,
             Day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
             EndTime.ToString("HH:mm", CultureInfo.InvariantCulture))));
@@ -22,16 +21,15 @@ internal readonly record struct AppointmentSlotId(Guid EmployeeId, DateOnly Day,
         try
         {
             var parts = Encoding.UTF8.GetString(FromBase64Url(slotId)).Split(Separator);
-            if (parts.Length != 4
-                || !Guid.TryParse(parts[0], out var employeeId)
-                || !DateOnly.TryParseExact(parts[1], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)
-                || !TimeOnly.TryParseExact(parts[2], "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start)
-                || !TimeOnly.TryParseExact(parts[3], "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
+            if (parts.Length != 3
+                || !DateOnly.TryParseExact(parts[0], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)
+                || !TimeOnly.TryParseExact(parts[1], "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start)
+                || !TimeOnly.TryParseExact(parts[2], "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
             {
                 return false;
             }
 
-            decoded = new AppointmentSlotId(employeeId, day, start, end);
+            decoded = new AppointmentSlotId(day, start, end);
             return true;
         }
         catch (FormatException)

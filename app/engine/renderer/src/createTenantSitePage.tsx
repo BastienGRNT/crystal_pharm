@@ -1,6 +1,6 @@
 import type { TenantSite } from '@crystal-pharm/schema';
 import type { Component } from 'solid-js';
-import { createBookAppointment, type AppointmentGateway } from './appointment/createBookAppointment';
+import { createAppointmentActions, type AppointmentGateway } from './appointment/createBookAppointment';
 import type { LayoutRegistry } from './layout-registry/createLayoutRegistry';
 import { toEnabledModulesProps } from './module-props/toEnabledModulesProps';
 import { findStableRedirectLocation } from './redirect/findStableRedirectLocation';
@@ -41,8 +41,8 @@ export function createTenantSitePage(input: {
     renderedAt: input.renderedAt,
     belongsToGroup: tenantSite.pharmacy.group !== undefined,
     submitPrescription: createSubmitPrescription(input.sendPrescription),
-    listAvailableSlots: input.appointments.listAvailableSlots,
-    bookAppointment: createBookAppointment(input.appointments),
+    pharmacyName: tenantSite.pharmacy.name,
+    appointmentActions: createAppointmentActions(input.appointments),
   });
   const pageKit = createPageKit({
     pharmacy: tenantSite.pharmacy,

@@ -18,6 +18,7 @@ const appointment = (overrides: Partial<Appointment>): Appointment => ({
 	reason: 'Vaccination',
 	employeeId: 'employee-lea',
 	status: 'confirmed',
+	note: '',
 	...overrides
 });
 

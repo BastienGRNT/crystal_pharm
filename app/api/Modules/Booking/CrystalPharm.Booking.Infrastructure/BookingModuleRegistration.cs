@@ -27,6 +27,8 @@ public static class BookingModuleRegistration
 
         services.AddTenantScopedDbContext<BookingDbContext>(options => ConfigureBookingDatabase(options, connectionString));
         services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+        services.AddScoped<IAppointmentConfigurationRepository, AppointmentConfigurationRepository>();
+        services.AddScoped<IAppointmentConfigurationService, AppointmentConfigurationService>();
         services.AddScoped<IHealthDataAccessLog, HealthDataAccessLog>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IVisitorAppointmentService, VisitorAppointmentService>();

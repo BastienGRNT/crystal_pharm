@@ -1,5 +1,5 @@
 import type { ModuleName, TenantModules } from '@crystal-pharm/schema';
-import type { BookAppointment, ListAvailableSlots } from '../appointment/createBookAppointment';
+import type { AppointmentActions } from '../appointment/createBookAppointment';
 import type { ModulePropsByName } from '../contract/ModulePropsByName';
 import type { SubmitPrescription } from '../prescription/createSubmitPrescription';
 import { toAppointmentModuleProps } from './toAppointmentModuleProps';
@@ -21,8 +21,8 @@ export function toEnabledModulesProps(
     /** La carte de fidélité est celle du groupement : sans groupement, le module reste masqué. */
     belongsToGroup: boolean;
     submitPrescription: SubmitPrescription;
-    listAvailableSlots: ListAvailableSlots;
-    bookAppointment: BookAppointment;
+    pharmacyName: string;
+    appointmentActions: AppointmentActions;
   },
 ): EnabledModulesProps {
   return {

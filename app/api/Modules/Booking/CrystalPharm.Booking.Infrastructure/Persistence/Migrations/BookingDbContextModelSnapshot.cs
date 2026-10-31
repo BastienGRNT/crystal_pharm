@@ -45,6 +45,11 @@ namespace CrystalPharm.Booking.Infrastructure.Persistence.Migrations
                         .HasColumnType("time without time zone")
                         .HasColumnName("end_time");
 
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
                     b.Property<string>("PatientName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -62,6 +67,10 @@ namespace CrystalPharm.Booking.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("reason");
+
+                    b.Property<Guid?>("ReasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reason_id");
 
                     b.Property<TimeOnly>("StartTime")
                         .HasColumnType("time without time zone")
@@ -121,6 +130,35 @@ namespace CrystalPharm.Booking.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_health_data_access_records_tenant_id_accessed_at");
 
                     b.ToTable("health_data_access_records", "booking");
+                });
+
+            modelBuilder.Entity("CrystalPharm.Booking.Infrastructure.Persistence.StoredAppointmentConfiguration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Configuration")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("configuration");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_appointment_configurations");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_appointment_configurations_tenant_id");
+
+                    b.ToTable("appointment_configurations", "booking");
                 });
 #pragma warning restore 612, 618
         }

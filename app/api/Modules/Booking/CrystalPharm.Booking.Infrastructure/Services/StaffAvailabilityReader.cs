@@ -1,5 +1,5 @@
-using CrystalPharm.Booking.Application.Dtos;
 using CrystalPharm.Booking.Application.Interfaces;
+using CrystalPharm.Booking.Domain.Scheduling;
 using CrystalPharm.SharedKernel.Tenancy;
 using Npgsql;
 
@@ -14,21 +14,22 @@ internal sealed class StaffAvailabilityReader(NpgsqlDataSource planningDataSourc
     private const string Query = """
         select employee_id, day, start_time, end_time
         from planning.staff_availability
-        where tenant_id = @tenantId and day = @day
-        order by start_time
+        where tenant_id = @tenantId and day between @firstDay and @lastDay
+        order by day, start_time
         """;
 
-    public async Task<IReadOnlyList<StaffAvailabilityWindow>> ListOfDayAsync(DateOnly day, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<AvailabilityWindow>> ListOfPeriodAsync(DateOnly firstDay, DateOnly lastDay, CancellationToken cancellationToken)
     {
         await using var command = planningDataSource.CreateCommand(Query);
         command.Parameters.AddWithValue("tenantId", tenantContext.TenantId);
-        command.Parameters.AddWithValue("day", day);
+        command.Parameters.AddWithValue("firstDay", firstDay);
+        command.Parameters.AddWithValue("lastDay", lastDay);
 
-        var windows = new List<StaffAvailabilityWindow>();
+        var windows = new List<AvailabilityWindow>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            windows.Add(new StaffAvailabilityWindow(
+            windows.Add(new AvailabilityWindow(
                 reader.GetGuid(0),
                 DateOnly.FromDateTime(reader.GetDateTime(1)),
                 TimeOnly.FromTimeSpan(reader.GetTimeSpan(2)),

@@ -1,17 +1,13 @@
-import type { AppointmentGateway } from '@crystal-pharm/renderer';
 import type { TenantSite } from '@crystal-pharm/schema';
 import { createAsync } from '@solidjs/router';
 import { createEffect, createSignal, ErrorBoundary, on, onCleanup, onMount, Show, type Accessor } from 'solid-js';
+import { previewAppointmentGateway } from '../../client/previewAppointmentGateway';
 import { TenantSitePageView } from '../../components/TenantSitePageView';
 import { previewReadyMessage, readPreviewUpdate } from '../../server/preview/previewMessages';
 import { getPreviewParentOrigin } from '../../server/preview/previewSettings';
 
 // Rien ne part de l'aperçu : le Manager teste son formulaire sans envoyer d'ordonnance.
 const sendPrescriptionWithoutEffect = async () => ({ outcome: 'sent' as const });
-const appointmentsWithoutEffect: AppointmentGateway = {
-  listAvailableSlots: async () => ({ outcome: 'listed', slots: [] }),
-  requestAppointment: async () => ({ outcome: 'requested' }),
-};
 
 type PreviewedSite = { tenantSite: TenantSite; renderedAt: string };
 
@@ -78,7 +74,7 @@ export default function PreviewRoute() {
               requestedPath={currentPath()}
               renderedAt={site().renderedAt}
               sendPrescription={sendPrescriptionWithoutEffect}
-              appointments={appointmentsWithoutEffect}
+              appointments={previewAppointmentGateway}
             />
           </ErrorBoundary>
         </div>

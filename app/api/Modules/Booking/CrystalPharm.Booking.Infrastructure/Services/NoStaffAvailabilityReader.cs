@@ -1,11 +1,11 @@
-using CrystalPharm.Booking.Application.Dtos;
 using CrystalPharm.Booking.Application.Interfaces;
+using CrystalPharm.Booking.Domain.Scheduling;
 
 namespace CrystalPharm.Booking.Infrastructure.Services;
 
-/// <summary>Sans <c>ConnectionStrings__PlanningReadOnly</c>, aucune disponibilité : le site n'affiche alors aucun créneau.</summary>
+/// <summary>Sans <c>ConnectionStrings__PlanningReadOnly</c>, le planning n'ajoute aucune plage : seuls les horaires réglés dans <c>booking</c> comptent.</summary>
 internal sealed class NoStaffAvailabilityReader : IStaffAvailabilityReader
 {
-    public Task<IReadOnlyList<StaffAvailabilityWindow>> ListOfDayAsync(DateOnly day, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<StaffAvailabilityWindow>>([]);
+    public Task<IReadOnlyList<AvailabilityWindow>> ListOfPeriodAsync(DateOnly firstDay, DateOnly lastDay, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<AvailabilityWindow>>([]);
 }

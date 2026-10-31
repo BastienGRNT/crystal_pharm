@@ -28,13 +28,27 @@ export type {
   AppointmentForm,
   AppointmentFormErrors,
   AppointmentBookingResult,
+  AppointmentActions,
   AppointmentGateway,
+  AppointmentOptionsResult,
+  AvailableDaysResult,
   AvailableSlotsResult,
   BookAppointment,
-  ListAvailableSlots,
 } from './appointment/createBookAppointment';
 export { onlineOrderStablePath, appointmentStablePath } from './redirect/findStableRedirectLocation';
 export type { PrescriptionForm, PrescriptionFormErrors } from './prescription/validatePrescriptionForm';
 export type { SubmitPrescription } from './prescription/createSubmitPrescription';
 export { createPrescriptionFormState, type PrescriptionFormState, type PrescriptionFormStatus } from './prescription/createPrescriptionFormState';
-export { createAppointmentFormState, type AppointmentFormState, type AppointmentFormStatus, type AvailableSlotsStatus } from './appointment/createAppointmentFormState';
+export {
+  createAppointmentWizardState,
+  type AppointmentWizardState,
+  type AppointmentWizardStep,
+  type AppointmentSendStatus,
+  type AppointmentLoadStatus,
+  type AppointmentOptionsStatus,
+  type CalendarDayCell,
+  type TimeOfDay,
+  type TimeOfDaySlots,
+  type TimedSlot,
+} from './appointment/createAppointmentWizardState';
+export { buildAppointmentCalendarFile } from './appointment/buildAppointmentCalendarFile';

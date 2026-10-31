@@ -2,15 +2,17 @@ import type { components } from '@crystal-pharm/api-client';
 import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import { listEmployees } from '@crystal-pharm/pharmacy-db';
 import type { Appointment, BookableEmployee } from '../../domain/appointment';
+import { listActiveReasonLabels } from '../../domain/appointmentConfiguration';
+import { getAppointmentConfiguration } from './appointmentConfigurationApi.server';
 import { createBookingApiClient, type BookingCaller } from './bookingApiClient.server';
 
-export type NewAppointment = Omit<Appointment, 'id' | 'status'>;
+export type NewAppointment = Omit<Appointment, 'id' | 'status' | 'note'>;
 
 export type AppointmentCreation = { isCreated: true; appointment: Appointment } | { isCreated: false; message: string };
 
 type AppointmentDto = components['schemas']['AppointmentDto'];
 
-const appointmentReasons: readonly string[] = [
+const fallbackAppointmentReasons: readonly string[] = [
 	'Vaccination',
 	'Test antigénique',
 	'Entretien pharmaceutique',
@@ -33,7 +35,8 @@ function toAppointment(appointmentDto: AppointmentDto): Appointment {
 		patientPhone: appointmentDto.patientPhone,
 		reason: appointmentDto.reason,
 		employeeId: appointmentDto.employeeId,
-		status: appointmentDto.status
+		status: appointmentDto.status,
+		note: appointmentDto.note ?? ''
 	};
 }
 
@@ -42,8 +45,10 @@ function unexpectedResponse(operation: string, response: Response): Error {
 	return new Error(`The booking API refused ${operation} with status ${response.status}.`);
 }
 
-export async function listAppointmentReasons(): Promise<string[]> {
-	return [...appointmentReasons];
+export async function listAppointmentReasons(caller: BookingCaller): Promise<string[]> {
+	const { reasons } = await getAppointmentConfiguration(caller);
+	const configuredLabels = listActiveReasonLabels(reasons);
+	return configuredLabels.length > 0 ? configuredLabels : [...fallbackAppointmentReasons];
 }
 
 export async function listBookableEmployees(caller: BookingCaller): Promise<BookableEmployee[]> {
@@ -76,6 +81,9 @@ export async function createAppointment(caller: BookingCaller, newAppointment: N
 	const { data, error, response } = await createBookingApiClient(caller).POST('/booking/appointments', {
 		body: {
 			...newAppointment,
+			reasonId: null,
+			confirmImmediately: false,
+			note: null,
 			startTime: toTimeOfDay(newAppointment.startTime),
 			endTime: toTimeOfDay(newAppointment.endTime)
 		}

@@ -40,7 +40,13 @@ public sealed class AppointmentService(
             new AppointmentSlot(newAppointment.Day, newAppointment.StartTime, newAppointment.EndTime),
             new PatientContact(newAppointment.PatientName, newAppointment.PatientPhone),
             newAppointment.Reason,
-            timeProvider.GetUtcNow());
+            timeProvider.GetUtcNow(),
+            newAppointment.ReasonId,
+            newAppointment.Note);
+        if (newAppointment.ConfirmImmediately)
+        {
+            appointment.Confirm();
+        }
 
         appointmentRepository.Add(appointment);
         try

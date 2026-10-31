@@ -3,5 +3,5 @@ import { forwardAvailableSlotsRequest } from '../../../server/appointments/forwa
 import { findSiteRequest } from '../../../server/site-request/siteRequest';
 
 export async function GET(event: APIEvent) {
-  return forwardAvailableSlotsRequest(new URL(event.request.url).searchParams.get('day'), findSiteRequest(event.locals)?.tenantId);
+  return forwardAvailableSlotsRequest(new URL(event.request.url).searchParams, findSiteRequest(event.locals)?.tenantId);
 }

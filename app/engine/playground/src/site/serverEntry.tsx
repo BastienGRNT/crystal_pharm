@@ -12,6 +12,8 @@ export type RenderedDocument = { status: 200 | 404; html: string } | { status: 3
 const sendPrescriptionFromServer: SendPrescription = () => Promise.reject(new Error('Une ordonnance ne s’envoie pas pendant le rendu serveur.'));
 
 const appointmentsFromServer: AppointmentGateway = {
+  getOptions: () => Promise.reject(new Error('Les motifs ne se demandent que depuis le navigateur.')),
+  listAvailableDays: () => Promise.reject(new Error('Les disponibilités ne se demandent que depuis le navigateur.')),
   listAvailableSlots: () => Promise.reject(new Error('Les créneaux ne se demandent que depuis le navigateur.')),
   requestAppointment: () => Promise.reject(new Error('Un rendez-vous ne se demande que depuis le navigateur.')),
 };

@@ -524,3 +524,295 @@
   font-size: 0.75rem;
   text-transform: uppercase;
 }
+
+/* Prise de rendez-vous guidée */
+
+.layout-essential .essential-wizard {
+  display: grid;
+  gap: 20px;
+  max-width: 640px;
+}
+
+.layout-essential .essential-wizard__introduction,
+.layout-essential .essential-wizard__summary,
+.layout-essential .essential-wizard__privacy,
+.layout-essential .essential-wizard__counter {
+  color: var(--essential-color-muted);
+}
+
+.layout-essential .essential-wizard__counter,
+.layout-essential .essential-wizard__privacy {
+  font-size: 0.8125rem;
+}
+
+.layout-essential .essential-wizard__title {
+  margin-bottom: 12px;
+  font-size: 1rem; text-transform: uppercase;
+}
+
+.layout-essential .essential-wizard__notice,
+.layout-essential .essential-wizard__preparation {
+  padding: 12px 14px;
+  border: 2px solid var(--essential-color-ink);
+}
+
+.layout-essential .essential-wizard__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.layout-essential .essential-wizard__button {
+  display: inline-block;
+  justify-self: start;
+  margin-top: 12px;
+  padding: 12px 22px;
+  border: var(--essential-rule-width) solid var(--essential-color-ink); background: var(--essential-color-ink); color: var(--essential-color-paper); text-transform: uppercase; font-weight: 700;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.layout-essential .essential-wizard__button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.layout-essential .essential-wizard__button--quiet {
+  background: var(--essential-color-paper); color: var(--essential-color-ink);
+}
+
+.layout-essential .essential-wizard__form {
+  display: grid;
+  gap: 14px;
+}
+
+.layout-essential .essential-wizard :is(button, a):focus-visible {
+  outline: 3px solid var(--essential-color-ink);
+  outline-offset: 2px;
+}
+
+.layout-essential .essential-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--essential-color-muted);
+}
+
+.layout-essential .essential-steps__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.layout-essential .essential-steps__label--link {
+  cursor: pointer;
+}
+
+.layout-essential .essential-steps__number {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid currentColor;
+  font-size: 0.75rem;
+}
+
+.layout-essential .essential-steps__item--current {
+  color: var(--essential-color-ink);
+  font-weight: 700;
+}
+
+.layout-essential .essential-steps__item--current .essential-steps__number {
+  background: var(--essential-color-ink); color: var(--essential-color-paper);
+}
+
+.layout-essential .essential-steps__item--done .essential-steps__number {
+  background: var(--essential-color-ink); color: var(--essential-color-paper);
+}
+
+.layout-essential .essential-reasons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-essential .essential-reason {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 14px;
+  border: 2px solid var(--essential-color-ink); background: var(--essential-color-paper); color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layout-essential .essential-reason:hover,
+.layout-essential .essential-reason--chosen {
+  background: var(--essential-color-ink); color: var(--essential-color-paper);
+}
+
+.layout-essential .essential-reason__label {
+  font-weight: 700;
+}
+
+.layout-essential .essential-reason__duration {
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+.layout-essential .essential-reason__description {
+  font-size: 0.875rem;
+  opacity: 0.85;
+}
+
+.layout-essential .essential-calendar {
+  display: grid;
+  gap: 10px;
+  max-width: 380px;
+  padding: 14px;
+  border: var(--essential-rule-width) solid var(--essential-color-ink);
+}
+
+.layout-essential .essential-calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.layout-essential .essential-calendar__month {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.layout-essential .essential-calendar__arrow {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--essential-color-ink); background: none; color: inherit;
+  font: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.layout-essential .essential-calendar__arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.layout-essential .essential-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  transition: opacity 0.15s;
+}
+
+.layout-essential .essential-calendar__grid--loading {
+  opacity: 0.5;
+}
+
+.layout-essential .essential-calendar__weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--essential-color-muted);
+}
+
+.layout-essential .essential-calendar__day {
+  aspect-ratio: 1;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--essential-color-muted);
+  font: inherit;
+  opacity: 0.45;
+}
+
+.layout-essential .essential-calendar__day--free {
+  color: var(--essential-color-ink); font-weight: 700; border: 2px solid var(--essential-color-ink);
+  opacity: 1;
+  cursor: pointer;
+}
+
+.layout-essential .essential-calendar__day--free:hover,
+.layout-essential .essential-calendar__day--chosen {
+  background: var(--essential-color-ink); color: var(--essential-color-paper);
+}
+
+.layout-essential .essential-slots__title {
+  margin: 12px 0 8px;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  color: var(--essential-color-muted);
+}
+
+.layout-essential .essential-slots__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-essential .essential-slot {
+  min-width: 76px;
+  padding: 10px 14px;
+  border: 2px solid var(--essential-color-ink); background: var(--essential-color-paper); color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.layout-essential .essential-slot:hover {
+  background: var(--essential-color-ink); color: var(--essential-color-paper);
+}
+
+.layout-essential .essential-recap {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 14px;
+  border: var(--essential-rule-width) solid var(--essential-color-ink);
+}
+
+.layout-essential .essential-recap > div {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 10px;
+}
+
+.layout-essential .essential-recap dt {
+  color: var(--essential-color-muted);
+}
+
+.layout-essential .essential-recap dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.layout-essential .essential-done {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: var(--essential-rule-width) solid var(--essential-color-ink);
+}
+
+.layout-essential .essential-done__when {
+  font-weight: 700;
+}

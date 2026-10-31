@@ -11,6 +11,8 @@ export type Appointment = {
 	reason: string;
 	employeeId: string;
 	status: AppointmentStatus;
+	/** Le mot laissé par le patient en réservant ; vide si rien. */
+	note: string;
 };
 
 export type BookableEmployee = {
