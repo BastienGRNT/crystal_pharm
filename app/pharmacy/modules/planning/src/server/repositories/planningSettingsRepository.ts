@@ -54,3 +54,23 @@ export async function saveOvertimeRules(tenantId: string, rules: OvertimeRules):
 			.onConflictDoUpdate({ target: planningSettings.tenantId, set: { ...columns, updatedAt: new Date() } })
 	);
 }
+
+export async function findAccountantEmail(tenantId: string): Promise<string | undefined> {
+	const [settingsRow] = await runAsTenant(tenantId, (transaction) =>
+		transaction
+			.select({ accountantEmail: planningSettings.accountantEmail })
+			.from(planningSettings)
+			.where(eq(planningSettings.tenantId, tenantId))
+	);
+	return settingsRow?.accountantEmail ?? undefined;
+}
+
+export async function saveAccountantEmail(tenantId: string, accountantEmail: string | undefined): Promise<void> {
+	const columns = { accountantEmail: accountantEmail ?? null };
+	await runAsTenant(tenantId, (transaction) =>
+		transaction
+			.insert(planningSettings)
+			.values({ tenantId, ...columns })
+			.onConflictDoUpdate({ target: planningSettings.tenantId, set: { ...columns, updatedAt: new Date() } })
+	);
+}

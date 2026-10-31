@@ -7,6 +7,7 @@ import {
 	parseHoursToMinutes
 } from '../domain/rules/hoursInput';
 import type { PlanningSettingsActionResult, PlanningSettingsPageData } from '../pages/planningSettingsPageData';
+import { toCalendarDay } from '../domain/calendar/week';
 import { describePeakWindow } from '../domain/coverage/peakWindows';
 import { summarizeWeekTemplate } from '../domain/templates/weekTemplates';
 import { requirePlanningManager } from './activeTenant.server';
@@ -18,6 +19,12 @@ import {
 	updateOvertimeRules,
 	updatePlanningRules
 } from './services/settings/planningSettingsService';
+import {
+	findAccountantEmail,
+	sendMonthlyPlanningToAccountant,
+	updateAccountantEmail
+} from './services/accountant-export/accountantExportService';
+import { findPreviousPayrollMonth, formatPayrollMonthParameter } from '../domain/accountant-export/monthlyPayrollExport';
 import { addPeakWindow, findPeakWindows, removePeakWindow } from './services/peaks/peakWindowService';
 import { findWeekTemplates, removeWeekTemplate } from './services/templates/weekTemplateService';
 
@@ -27,9 +34,11 @@ type SettingsRequest = {
 
 export async function load({ locals }: SettingsRequest): Promise<PlanningSettingsPageData> {
 	const { tenantId } = await requirePlanningManager(locals.user);
-	const [rules, overtimeRules, termsRows, peakWindows, templates] = await Promise.all([
+	const today = toCalendarDay(new Date());
+	const [rules, overtimeRules, accountantEmail, termsRows, peakWindows, templates] = await Promise.all([
 		findPlanningRules(tenantId),
 		findOvertimeRules(tenantId),
+		findAccountantEmail(tenantId),
 		listEmployeeTermsRows(tenantId),
 		findPeakWindows(tenantId),
 		findWeekTemplates(tenantId)
@@ -50,6 +59,12 @@ export async function load({ locals }: SettingsRequest): Promise<PlanningSetting
 			firstBandHours: formatMinutesAsHoursInput(overtimeRules.firstBandMinutes),
 			firstBandRatePercent: String(overtimeRules.firstBandRatePercent),
 			beyondRatePercent: String(overtimeRules.beyondRatePercent)
+		},
+		accountantExport: {
+			accountantEmail: accountantEmail ?? '',
+			defaultMonth: formatPayrollMonthParameter(findPreviousPayrollMonth(today)),
+			latestMonth: formatPayrollMonthParameter({ year: today.getUTCFullYear(), month: today.getUTCMonth() + 1 }),
+			downloadAction: '/planning/parametres/export'
 		},
 		employees: termsRows.map((row) => ({
 			employeeId: row.employeeId,
@@ -129,6 +144,20 @@ export const actions = {
 		});
 		if (!result.isSaved) return fail(400, { failedSection: 'overtime', message: result.message } satisfies PlanningSettingsActionResult);
 		return { savedSection: 'overtime' } satisfies PlanningSettingsActionResult;
+	},
+
+	saveAccountantEmail: async ({ request, locals }) => {
+		const { tenantId } = await requirePlanningManager(locals.user);
+		const result = await updateAccountantEmail(tenantId, readText(await request.formData(), 'accountantEmail'));
+		if (!result.isDone) return fail(400, { failedSection: 'accountant', message: result.message } satisfies PlanningSettingsActionResult);
+		return { savedSection: 'accountant', message: result.message } satisfies PlanningSettingsActionResult;
+	},
+
+	sendToAccountant: async ({ request, locals }) => {
+		const { tenantId } = await requirePlanningManager(locals.user);
+		const result = await sendMonthlyPlanningToAccountant(tenantId, readText(await request.formData(), 'month'));
+		if (!result.isDone) return fail(400, { failedSection: 'accountant', message: result.message } satisfies PlanningSettingsActionResult);
+		return { savedSection: 'accountant', message: result.message } satisfies PlanningSettingsActionResult;
 	},
 
 	saveTerms: async ({ request, locals }) => {
