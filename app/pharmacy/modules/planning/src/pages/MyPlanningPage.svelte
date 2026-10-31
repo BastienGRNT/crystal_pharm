@@ -2,11 +2,13 @@
 	import { Alert, Card, PageHeader, StatusBadge, WeekNav } from '@crystal-pharm/ui';
 	import AvailabilityRequestForm from '../components/organisms/my-planning/AvailabilityRequestForm.svelte';
 	import MyAvailabilityRuleList from '../components/organisms/my-planning/MyAvailabilityRuleList.svelte';
-	import type { AddAvailabilityFailure, MyPlanningPageData } from './myPlanningPageData';
+	import LeaveRequestForm from '../components/organisms/my-planning/LeaveRequestForm.svelte';
+	import MyLeaveList from '../components/organisms/my-planning/MyLeaveList.svelte';
+	import type { AddAvailabilityFailure, LeaveRequestFailure, LeaveRequestFeedback, MyPlanningPageData } from './myPlanningPageData';
 
 	type MyPlanningPageProps = {
 		data: MyPlanningPageData;
-		form: AddAvailabilityFailure | null | undefined;
+		form: AddAvailabilityFailure | LeaveRequestFailure | LeaveRequestFeedback | null | undefined;
 	};
 
 	let { data, form }: MyPlanningPageProps = $props();
@@ -64,6 +66,28 @@
 	</ul>
 {/if}
 
+<section class="grid gap-3" aria-label="Mes congés">
+	<h2 class="text-body font-semibold text-ink">Mes congés</h2>
+	{#if form && 'leaveConfirmation' in form}
+		<Alert tone={form.isTeamSufficient ? 'success' : 'warning'} title="Demande envoyée">{form.leaveConfirmation}</Alert>
+	{/if}
+	<MyLeaveList leaves={data.leaves} cancelFormAction={data.cancelLeaveFormAction} />
+</section>
+
+<Card>
+	<h2 class="mb-1 text-body font-semibold text-ink">Demander un congé</h2>
+	<p class="mb-3.5 text-small text-ink-muted">
+		Votre titulaire reçoit la demande, voit tout de suite s’il reste assez de monde, et l’accepte ou la refuse.
+	</p>
+	<LeaveRequestForm
+		formAction={data.requestLeaveFormAction}
+		leaveKinds={data.requestableLeaveKinds}
+		defaultDate={data.todayDate}
+		errorMessage={form && 'leaveMessage' in form ? form.leaveMessage : undefined}
+		submittedValues={form && 'leaveValues' in form ? form.leaveValues : undefined}
+	/>
+</Card>
+
 <section class="grid gap-3" aria-label="Mes disponibilités">
 	<h2 class="text-body font-semibold text-ink">Mes indisponibilités et disponibilités</h2>
 	<MyAvailabilityRuleList rules={data.rules} removeFormAction={data.removeAvailabilityFormAction} />
@@ -78,7 +102,7 @@
 	</p>
 	<AvailabilityRequestForm
 		formAction={data.addAvailabilityFormAction}
-		errorMessage={form?.message}
-		submittedValues={form?.values}
+		errorMessage={form && 'message' in form ? form.message : undefined}
+		submittedValues={form && 'values' in form ? form.values : undefined}
 	/>
 </Card>

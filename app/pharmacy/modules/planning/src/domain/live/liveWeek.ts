@@ -1,3 +1,4 @@
+import { sumTrainingMinutes, type PlannedActivity } from '../activities/plannedActivities';
 import type { AvailabilityRule } from '../availability/availabilityRules';
 import { type CoverageSegment, type OpeningHours } from '../coverage/coverage';
 import { computePharmacistCoverage } from '../coverage/pharmacistCoverage';
@@ -21,6 +22,7 @@ export type LiveWeekInput = {
 	rules: PlanningRules;
 	terms: EmployeeTerms[];
 	availabilityRules: AvailabilityRule[];
+	plannedActivities: PlannedActivity[];
 };
 
 /** Un créneau déplacé, étiré ou tracé, pas encore enregistré. */
@@ -84,7 +86,8 @@ export function assessWeek(input: LiveWeekInput, preview?: ShiftPreview): WeekAs
 		requirementWindowsByDate: input.requirementWindowsByDate,
 		rules: input.rules,
 		termsByEmployee,
-		availabilityRules: input.availabilityRules
+		availabilityRules: input.availabilityRules,
+		plannedActivities: input.plannedActivities
 	}).filter((issue) => issue.kind === 'contract-hours-short' || issue.date >= input.firstEditableDate);
 
 	const planningRows = buildPlanningRows(weekPlanning, input.weekDates);
@@ -95,7 +98,9 @@ export function assessWeek(input: LiveWeekInput, preview?: ShiftPreview): WeekAs
 		days: input.weekDates.map((date, dayIndex) => assessDay(input, planningRows, issues, date, dayIndex)),
 		employees: input.employees.map((employee) => {
 			const contractMinutes = termsByEmployee.get(employee.id)?.weeklyContractMinutes;
-			const plannedMinutes = sumPlannedMinutes(shifts.filter((shift) => shift.employeeId === employee.id));
+			const plannedMinutes =
+				sumPlannedMinutes(shifts.filter((shift) => shift.employeeId === employee.id)) +
+				sumTrainingMinutes(input.plannedActivities, employee.id);
 			return { employeeId: employee.id, plannedMinutes, contractMinutes, status: judgeEmployeeHours(plannedMinutes, contractMinutes) };
 		})
 	};

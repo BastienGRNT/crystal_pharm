@@ -24,6 +24,8 @@ public static class ManagerAuthentication
     {
         var settings = configuration.GetSection("ManagerJwt");
         var jwksUrl = RequireSetting(settings, "JwksUrl");
+        // Le JWKS est joint par le réseau interne des conteneurs, en HTTP : jamais un réglage d'Internet.
+        var allowPlainHttpJwksUrl = settings.GetValue<bool>("AllowPlainHttpJwksUrl");
 
         services.AddAuthentication(SchemeName).AddJwtBearer(SchemeName, options =>
         {
@@ -31,7 +33,7 @@ public static class ManagerAuthentication
             options.ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
                 jwksUrl,
                 new JsonWebKeySetRetriever(),
-                new HttpDocumentRetriever { RequireHttps = !environment.IsDevelopment() });
+                new HttpDocumentRetriever { RequireHttps = !(environment.IsDevelopment() || allowPlainHttpJwksUrl) });
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 // Distingue un Manager de l'identité de service de `site` (cf. ManagerClaims).

@@ -5,9 +5,9 @@ import { renderEmailHtml } from './emailHtml';
 const resendEndpoint = 'https://api.resend.com/emails';
 const defaultSender = 'Crystal Pharm <bonjour@crystal-pharm.fr>';
 
-/** Par Resend si `RESEND_API_KEY` existe ; sinon dans la boîte de dev, sans rien envoyer. */
+/** Par Resend si `RESEND_API_KEY` existe ; sinon (et toujours avec `APP_ENV=development`) dans la boîte de dev, sans rien envoyer. */
 export async function sendEmail(email: Email): Promise<void> {
-	const resendApiKey = process.env.RESEND_API_KEY;
+	const resendApiKey = process.env.APP_ENV === 'development' ? undefined : process.env.RESEND_API_KEY;
 	if (!resendApiKey) {
 		storeInDevelopmentOutbox(email);
 		return;

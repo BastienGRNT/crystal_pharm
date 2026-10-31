@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { Alert, Button, PageHeader, SegmentedControl, SidePanel, WeekNav } from '@crystal-pharm/ui';
+	import { Alert, Button, PageHeader, SegmentedControl, SidePanel, StatusBadge, WeekNav } from '@crystal-pharm/ui';
 	import PlanningLegend from '../components/molecules/PlanningLegend.svelte';
 	import type { PlanningLegendItem } from '../components/molecules/planningLegend';
 	import PendingAvailabilityRequestsPanel from '../components/organisms/availability/PendingAvailabilityRequestsPanel.svelte';
 	import PlanningIssuesPanel from '../components/organisms/issues/PlanningIssuesPanel.svelte';
+	import PendingLeaveRequestsPanel from '../components/organisms/leave/PendingLeaveRequestsPanel.svelte';
+	import PlannedActivitiesPanel from '../components/organisms/activities/PlannedActivitiesPanel.svelte';
 	import GenerationReportPanel from '../components/organisms/generation/GenerationReportPanel.svelte';
+	import WeekToolsList from '../components/organisms/week-tools/WeekToolsList.svelte';
 	import SaveWeekTemplateForm from '../components/organisms/templates/SaveWeekTemplateForm.svelte';
 	import ApplyWeekTemplateForm from '../components/organisms/templates/ApplyWeekTemplateForm.svelte';
 	import ShiftForm from '../components/organisms/ShiftForm.svelte';
@@ -14,6 +17,7 @@
 	import { assessWeek, type ShiftPreview } from '../domain/live/liveWeek';
 	import { submitShiftChange, type ShiftChange } from '../components/shift-dragging/submitShiftChange';
 	import { buildDayCoverage } from '../components/organisms/day/planningTimeline';
+	import { assignEmployeeColorIndexes } from '../domain/employees/employeeAppearance';
 	import type { AddShiftFailure, PlanningPageData, WeekGenerationFeedback } from './teamPlanningPageData';
 
 	type TeamPlanningPageProps = {
@@ -44,42 +48,36 @@
 	const dayCoverage = $derived(
 		data.view === 'day' && data.opening ? buildDayCoverage(assessment.days[dayIndex]?.pharmacistCoverage ?? [], data.timelineMinutes) : undefined
 	);
+	const colorIndexByEmployee = $derived(assignEmployeeColorIndexes(data.live.employees.map((employee) => employee.id)));
 	const hoursStatusByEmployee = $derived(new Map(assessment.employees.map((employee) => [employee.employeeId, employee.status])));
 
-	const slotLegendItems: PlanningLegendItem[] = [
-		{ label: 'Pharmacien', swatch: 'shiftStrong' },
-		{ label: 'Autre employé', swatch: 'shiftSoft' },
-		{ label: 'Absence', swatch: 'absence' }
-	];
+	const pendingRequestCount = $derived(data.pendingLeaveRequests.length + data.pendingAvailabilityRequests.length);
 
-	const legendItems: PlanningLegendItem[] = $derived(
-		data.view === 'week'
-			? slotLegendItems
-			: [
-					...slotLegendItems,
-					{ label: 'Aucun pharmacien', swatch: 'uncovered' },
-					{ label: 'Pharmacie fermée', swatch: 'closed' },
-					...(data.now ? [{ label: 'Maintenant', swatch: 'now' } as const] : [])
-				]
-	);
+	const dayLegendItems: PlanningLegendItem[] = $derived([
+		{ label: 'Absence', swatch: 'absence' },
+		{ label: 'Aucun pharmacien', swatch: 'uncovered' },
+		{ label: 'Pharmacie fermée', swatch: 'closed' },
+		...(data.view === 'day' && data.now ? [{ label: 'Maintenant', swatch: 'now' } as const] : [])
+	]);
 </script>
 
 <svelte:head>
 	<title>Planning · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader title={data.title} context={data.context} icon="calendar-dots" />
+<div class="flex flex-col gap-4">
+	<PageHeader title={data.title} context={data.context} icon="calendar-dots">
+		{#snippet actions()}
+			<WeekStatusBar
+				isDraft={data.weekStatus.isDraft}
+				publishFormAction={data.publishWeekFormAction}
+				returnToDraftFormAction={data.returnWeekToDraftFormAction}
+			/>
+		{/snippet}
+	</PageHeader>
 
-<div class="flex flex-wrap items-center gap-3">
-	<SegmentedControl label="Vue du planning" options={data.viewOptions} />
-	<form method="POST" action={data.generateWeekFormAction}>
-		<Button type="submit" icon="sparkle">Proposer la semaine</Button>
-	</form>
-	<Button href={data.addShiftPanel.openHref} variant="secondary" icon="plus">Ajouter un créneau</Button>
-	<Button href={data.applyTemplatePanel.openHref} variant="secondary" icon="calendar-dots">Appliquer une semaine type</Button>
-	<Button href={data.saveTemplatePanel.openHref} variant="ghost" icon="check">Enregistrer comme semaine type</Button>
-	<Button href={data.settingsHref} variant="ghost" icon="wrench">Règles et contrats</Button>
-	<div class="ml-auto">
+	<div class="flex flex-wrap items-center gap-4">
+		<SegmentedControl label="Vue du planning" options={data.viewOptions} />
 		<WeekNav
 			weekLabel={data.periodNavigation.label}
 			previousWeekHref={data.periodNavigation.previousHref}
@@ -89,115 +87,150 @@
 			nextLabel={data.periodNavigation.nextLabel}
 			todayHref={data.periodNavigation.todayHref}
 		/>
+		<div class="ml-auto flex items-center gap-2">
+			{#if pendingRequestCount > 0}
+				<Button href={data.pendingPanel.openHref} variant="secondary" icon="bell">
+					À traiter <StatusBadge tone="warning">{pendingRequestCount}</StatusBadge>
+				</Button>
+			{/if}
+			<Button href={data.toolsPanel.openHref} variant="secondary" icon="sparkle">Remplir la semaine…</Button>
+			<Button href={data.settingsHref} variant="ghost" icon="wrench">Réglages</Button>
+		</div>
 	</div>
-</div>
 
-{#if form && 'generationReport' in form}
-	<GenerationReportPanel report={form.generationReport} closeHref={form.closeHref} />
-{/if}
+	{#if form && 'generationReport' in form}
+		<GenerationReportPanel report={form.generationReport} closeHref={form.closeHref} />
+	{/if}
 
-{#if form && 'isSuccess' in form && form.isSuccess}
-	<Alert tone="success" title="Semaine type appliquée">{form.message}</Alert>
-{/if}
+	{#if form && 'isSuccess' in form && form.isSuccess}
+		<Alert tone="success" title="Semaine type appliquée">{form.message}</Alert>
+	{/if}
 
-{#if dragFailureMessage}
-	<Alert tone="danger" title="Créneau non modifié">{dragFailureMessage}</Alert>
-{/if}
+	{#if dragFailureMessage}
+		<Alert tone="danger" title="Créneau non modifié">{dragFailureMessage}</Alert>
+	{/if}
 
-<PendingAvailabilityRequestsPanel
-	requests={data.pendingAvailabilityRequests}
-	decideFormAction={data.decideAvailabilityFormAction}
-/>
-
-<WeekStatusBar
-	isDraft={data.weekStatus.isDraft}
-	publishFormAction={data.publishWeekFormAction}
-	returnToDraftFormAction={data.returnWeekToDraftFormAction}
-/>
-
-<PlanningIssuesPanel
-	issues={displayedIssues}
-	linksToDay={data.view === 'week'}
-	dayHrefPrefix={data.dayHrefPrefix}
-	adaptFormAction={data.generateWeekFormAction}
-/>
-
-{#if data.view === 'week'}
-	<WeekCalendar
-		live={data.live}
-		{assessment}
-		todayDate={data.todayDate}
-		editHrefPrefix={data.editShiftHrefPrefix}
-		dayHrefPrefix={data.dayHrefPrefix}
-		onPreview={(preview) => (previewChange = preview)}
-		onShiftChange={saveDraggedShift}
-	/>
-{:else}
-	<PlanningTimeline
-		hours={data.hours}
-		rows={data.rows}
-		opening={data.opening}
-		coverage={dayCoverage}
-		status={dayStatus}
-		{hoursStatusByEmployee}
-		now={data.now}
-		dragging={{ range: data.timelineMinutes, date: data.date, onShiftChange: saveDraggedShift, onPreview: (preview) => (previewChange = preview) }}
-	/>
-{/if}
-
-<PlanningLegend items={legendItems} />
-
-{#if data.addShiftPanel.isOpen}
-	<SidePanel title="Ajouter un créneau" closeHref={data.addShiftPanel.closeHref}>
-		<ShiftForm
-			submitLabel="Ajouter"
-			formAction={data.addShiftFormAction}
-			cancelHref={data.addShiftPanel.closeHref}
-			employees={data.employees}
-			defaultDate={data.defaultShiftDate}
-			errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
-			submittedValues={form && 'values' in form ? form.values : undefined}
+	{#if data.view === 'week'}
+		<WeekCalendar
+			live={data.live}
+			{assessment}
+			todayDate={data.todayDate}
+			editHrefPrefix={data.editShiftHrefPrefix}
+			dayHrefPrefix={data.dayHrefPrefix}
+			onPreview={(preview) => (previewChange = preview)}
+			onShiftChange={saveDraggedShift}
 		/>
-	</SidePanel>
-{/if}
-
-{#if data.saveTemplatePanel.isOpen}
-	<SidePanel title="Enregistrer comme semaine type" closeHref={data.saveTemplatePanel.closeHref}>
-		<SaveWeekTemplateForm
-			formAction={data.saveTemplateFormAction}
-			cancelHref={data.saveTemplatePanel.closeHref}
-			errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
+	{:else}
+		<PlanningIssuesPanel issues={displayedIssues} adaptFormAction={data.generateWeekFormAction} />
+		<PlanningTimeline
+			hours={data.hours}
+			rows={data.rows}
+			opening={data.opening}
+			{colorIndexByEmployee}
+			coverage={dayCoverage}
+			status={dayStatus}
+			{hoursStatusByEmployee}
+			now={data.now}
+			dragging={{ range: data.timelineMinutes, date: data.date, onShiftChange: saveDraggedShift, onPreview: (preview) => (previewChange = preview) }}
 		/>
-	</SidePanel>
-{/if}
+		<PlanningLegend items={dayLegendItems} />
+	{/if}
 
-{#if data.applyTemplatePanel.isOpen}
-	<SidePanel title="Appliquer une semaine type" closeHref={data.applyTemplatePanel.closeHref}>
-		{#if data.templates.length === 0}
-			<p class="text-body text-ink-muted">Aucune semaine type pour l’instant. Posez une semaine, puis « Enregistrer comme semaine type ».</p>
-		{:else}
-			<ApplyWeekTemplateForm
-				formAction={data.applyTemplateFormAction}
-				cancelHref={data.applyTemplatePanel.closeHref}
-				templates={data.templates}
+	{#if data.toolsPanel.isOpen}
+		<SidePanel title="Remplir la semaine" closeHref={data.toolsPanel.closeHref}>
+			<WeekToolsList
+				generateWeekFormAction={data.generateWeekFormAction}
+				addShiftHref={data.addShiftPanel.openHref}
+				activitiesHref={data.activitiesPanel.openHref}
+				applyTemplateHref={data.applyTemplatePanel.openHref}
+				saveTemplateHref={data.saveTemplatePanel.openHref}
+			/>
+		</SidePanel>
+	{/if}
+
+	{#if data.pendingPanel.isOpen}
+		<SidePanel title="À traiter" closeHref={data.pendingPanel.closeHref}>
+			{#if pendingRequestCount === 0}
+				<p class="text-body text-ink-muted">Plus rien à traiter.</p>
+			{:else}
+				<div class="flex flex-col gap-4">
+					<PendingLeaveRequestsPanel requests={data.pendingLeaveRequests} decideFormAction={data.decideLeaveFormAction} />
+					<PendingAvailabilityRequestsPanel
+						requests={data.pendingAvailabilityRequests}
+						decideFormAction={data.decideAvailabilityFormAction}
+					/>
+				</div>
+			{/if}
+		</SidePanel>
+	{/if}
+
+	{#if data.addShiftPanel.isOpen}
+		<SidePanel title="Ajouter un créneau" closeHref={data.addShiftPanel.closeHref}>
+			<ShiftForm
+				submitLabel="Ajouter"
+				formAction={data.addShiftFormAction}
+				cancelHref={data.addShiftPanel.closeHref}
+				employees={data.employees}
+				defaultDate={data.defaultShiftDate}
+				errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
+				submittedValues={form && 'values' in form ? form.values : undefined}
+			/>
+		</SidePanel>
+	{/if}
+
+	{#if data.activitiesPanel.isOpen}
+		<SidePanel title="Formations et astreintes" closeHref={data.activitiesPanel.closeHref}>
+			<PlannedActivitiesPanel
+				activities={data.live.plannedActivities}
+				employees={data.employees}
+				addFormAction={data.addActivityFormAction}
+				removeFormAction={data.removeActivityFormAction}
+				cancelHref={data.activitiesPanel.closeHref}
+				defaultDate={data.defaultShiftDate}
+				errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
+				submittedValues={form && 'values' in form ? form.values : undefined}
+			/>
+		</SidePanel>
+	{/if}
+
+	{#if data.saveTemplatePanel.isOpen}
+		<SidePanel title="Enregistrer comme semaine type" closeHref={data.saveTemplatePanel.closeHref}>
+			<SaveWeekTemplateForm
+				formAction={data.saveTemplateFormAction}
+				cancelHref={data.saveTemplatePanel.closeHref}
 				errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
 			/>
-		{/if}
-	</SidePanel>
-{/if}
+		</SidePanel>
+	{/if}
 
-{#if data.editShiftPanel}
-	<SidePanel title="Modifier le créneau" closeHref={data.editShiftPanel.closeHref}>
-		<ShiftForm
-			submitLabel="Enregistrer"
-			formAction={data.updateShiftFormAction}
-			editedShiftId={data.editShiftPanel.shiftId}
-			deleteFormAction={data.deleteShiftFormAction}
-			cancelHref={data.editShiftPanel.closeHref}
-			employees={data.employees}
-			defaultDate={data.defaultShiftDate}
-			errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
-			submittedValues={form && 'values' in form ? form.values : data.editShiftPanel.values}
-		/>
-	</SidePanel>
-{/if}
+	{#if data.applyTemplatePanel.isOpen}
+		<SidePanel title="Appliquer une semaine type" closeHref={data.applyTemplatePanel.closeHref}>
+			{#if data.templates.length === 0}
+				<p class="text-body text-ink-muted">Aucune semaine type pour l’instant. Posez une semaine, puis « Enregistrer comme semaine type ».</p>
+			{:else}
+				<ApplyWeekTemplateForm
+					formAction={data.applyTemplateFormAction}
+					cancelHref={data.applyTemplatePanel.closeHref}
+					templates={data.templates}
+					errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
+				/>
+			{/if}
+		</SidePanel>
+	{/if}
+
+	{#if data.editShiftPanel}
+		<SidePanel title="Modifier le créneau" closeHref={data.editShiftPanel.closeHref}>
+			<ShiftForm
+				submitLabel="Enregistrer"
+				formAction={data.updateShiftFormAction}
+				editedShiftId={data.editShiftPanel.shiftId}
+				deleteFormAction={data.deleteShiftFormAction}
+				cancelHref={data.editShiftPanel.closeHref}
+				employees={data.employees}
+				defaultDate={data.defaultShiftDate}
+				errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
+				submittedValues={form && 'values' in form ? form.values : data.editShiftPanel.values}
+			/>
+		</SidePanel>
+	{/if}
+</div>

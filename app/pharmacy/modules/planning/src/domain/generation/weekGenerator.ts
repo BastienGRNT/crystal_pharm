@@ -1,3 +1,4 @@
+import { findActivityDuringRange, sumTrainingMinutes } from '../activities/plannedActivities';
 import { findBlockingRule, doesRuleApplyOnDate } from '../availability/availabilityRules';
 import { formatTimeOfDay } from '../coverage/coverage';
 import { findAbsenceOfDay, toMinutesSinceMidnight } from '../planning';
@@ -258,7 +259,9 @@ function extendWhileFree(state: GenerationState, employee: GenerationEmployee, d
 
 function isRangeFree(state: GenerationState, employee: GenerationEmployee, dayIndex: number, start: number, end: number): boolean {
 	const date = state.input.weekDates[dayIndex] ?? '';
-	const isBlocked = findBlockingRule(state.input.availabilityRules, employee.id, date, formatTimeOfDay(start), formatTimeOfDay(end));
+	const isBlocked =
+		findBlockingRule(state.input.availabilityRules, employee.id, date, formatTimeOfDay(start), formatTimeOfDay(end)) ??
+		findActivityDuringRange(state.input.plannedActivities, employee.id, date, formatTimeOfDay(start), formatTimeOfDay(end));
 	if (isBlocked) return false;
 	return !state.shifts.some(
 		(shift) => shift.employeeId === employee.id && shift.dayIndex === dayIndex && shift.startMinutes < end && start < shift.endMinutes
@@ -271,6 +274,13 @@ function listEmployeeShifts(state: GenerationState, employeeId: string, dayIndex
 
 function sumEmployeeMinutes(shifts: WorkingShift[]): number {
 	return shifts.reduce((total, shift) => total + shift.endMinutes - shift.startMinutes, 0);
+}
+
+/** Le temps de travail de la journée (ou de la semaine sans `dayIndex`) : ses créneaux et ses formations. */
+function sumWorkedMinutes(state: GenerationState, employeeId: string, dayIndex?: number): number {
+	const shifts = state.shifts.filter((shift) => shift.employeeId === employeeId && (dayIndex === undefined || shift.dayIndex === dayIndex));
+	const date = dayIndex === undefined ? undefined : (state.input.weekDates[dayIndex] ?? '');
+	return sumEmployeeMinutes(shifts) + sumTrainingMinutes(state.input.plannedActivities, employeeId, date);
 }
 
 function respectsHardLimits(
@@ -286,9 +296,8 @@ function respectsHardLimits(
 	const dayShifts = listEmployeeShifts(state, employee.id, dayIndex);
 	const added = end - start;
 	if (!isMerged && !isContractTopUp && dayShifts.length + 1 > rules.maximumShiftsPerDay) return false;
-	if (sumEmployeeMinutes(dayShifts) + added > generationLimits.maximumDailyMinutes) return false;
-	const weekMinutes = sumEmployeeMinutes(state.shifts.filter((shift) => shift.employeeId === employee.id));
-	if (weekMinutes + added > generationLimits.maximumWeeklyMinutes) return false;
+	if (sumWorkedMinutes(state, employee.id, dayIndex) + added > generationLimits.maximumDailyMinutes) return false;
+	if (sumWorkedMinutes(state, employee.id) + added > generationLimits.maximumWeeklyMinutes) return false;
 
 	const previousEnd = Math.max(-Infinity, ...listEmployeeShifts(state, employee.id, dayIndex - 1).map((shift) => shift.endMinutes));
 	if (Number.isFinite(previousEnd) && 24 * 60 - previousEnd + start < rules.minimumRestMinutes) return false;
@@ -321,7 +330,7 @@ function scoreCandidate(
 	end: number,
 	mergedInto: WorkingShift | undefined
 ): Candidate {
-	const weekMinutes = sumEmployeeMinutes(state.shifts.filter((shift) => shift.employeeId === employee.id));
+	const weekMinutes = sumWorkedMinutes(state, employee.id);
 	const addedMinutes = end - start;
 	const cost = computeMarginalCostEuros(employee, weekMinutes, addedMinutes);
 	const contractMinutes = employee.weeklyContractMinutes ?? 0;
@@ -419,8 +428,7 @@ function findShiftExtension(
 }
 
 function deficitOf(state: GenerationState, employee: GenerationEmployee): number {
-	const planned = sumEmployeeMinutes(state.shifts.filter((shift) => shift.employeeId === employee.id));
-	return Math.max(0, (employee.weeklyContractMinutes ?? 0) - planned);
+	return Math.max(0, (employee.weeklyContractMinutes ?? 0) - sumWorkedMinutes(state, employee.id));
 }
 
 function findLeastStaffedPlacement(

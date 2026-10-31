@@ -22,14 +22,19 @@ export async function listShifts(tenantId: string, firstDate: string, lastDate: 
 	}));
 }
 
-/** Les absences qui touchent la période, même si elles commencent avant ou finissent après. */
+/** Les absences acceptées qui touchent la période, même si elles commencent avant ou finissent après. */
 export async function listAbsences(tenantId: string, firstDate: string, lastDate: string): Promise<Absence[]> {
 	const absenceRows = await runAsTenant(tenantId, (transaction) =>
 		transaction
 			.select()
 			.from(absences)
 			.where(
-				and(eq(absences.tenantId, tenantId), lte(absences.firstDate, lastDate), gte(absences.lastDate, firstDate))
+				and(
+					eq(absences.tenantId, tenantId),
+					eq(absences.status, 'approved'),
+					lte(absences.firstDate, lastDate),
+					gte(absences.lastDate, firstDate)
+				)
 			)
 	);
 	return absenceRows.map((absenceRow) => ({
@@ -65,5 +70,26 @@ export async function updateShiftRow(tenantId: string, shiftId: string, changes:
 			.update(shifts)
 			.set(changes)
 			.where(and(eq(shifts.tenantId, tenantId), eq(shifts.id, shiftId)))
+	);
+}
+
+/** Les créneaux d'un employé entre deux dates comprises : ceux d'un congé qu'on vient d'accepter. */
+export async function deleteShiftsOfEmployeeBetween(
+	tenantId: string,
+	employeeId: string,
+	firstDate: string,
+	lastDate: string
+): Promise<void> {
+	await runAsTenant(tenantId, (transaction) =>
+		transaction
+			.delete(shifts)
+			.where(
+				and(
+					eq(shifts.tenantId, tenantId),
+					eq(shifts.employeeId, employeeId),
+					gte(shifts.date, firstDate),
+					lte(shifts.date, lastDate)
+				)
+			)
 	);
 }

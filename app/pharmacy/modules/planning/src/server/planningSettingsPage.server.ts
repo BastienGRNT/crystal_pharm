@@ -9,7 +9,7 @@ import {
 import type { PlanningSettingsActionResult, PlanningSettingsPageData } from '../pages/planningSettingsPageData';
 import { describePeakWindow } from '../domain/coverage/peakWindows';
 import { summarizeWeekTemplate } from '../domain/templates/weekTemplates';
-import { requireActiveTenantId } from './activeTenant.server';
+import { requirePlanningManager } from './activeTenant.server';
 import {
 	findPlanningRules,
 	listEmployeeTermsRows,
@@ -24,7 +24,7 @@ type SettingsRequest = {
 };
 
 export async function load({ locals }: SettingsRequest): Promise<PlanningSettingsPageData> {
-	const tenantId = await requireActiveTenantId(locals.user);
+	const { tenantId } = await requirePlanningManager(locals.user);
 	const [rules, termsRows, peakWindows, templates] = await Promise.all([
 		findPlanningRules(tenantId),
 		listEmployeeTermsRows(tenantId),
@@ -59,7 +59,7 @@ const readText = (formData: FormData, fieldName: string): string => String(formD
 
 export const actions = {
 	addPeakWindow: async ({ request, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
 		const result = await addPeakWindow(tenantId, {
 			weekday: readText(formData, 'weekday'),
@@ -72,19 +72,19 @@ export const actions = {
 	},
 
 	removePeakWindow: async ({ request, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		await removePeakWindow(tenantId, readText(await request.formData(), 'peakWindowId'));
 		return { savedSection: 'peaks' } satisfies PlanningSettingsActionResult;
 	},
 
 	removeTemplate: async ({ request, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		await removeWeekTemplate(tenantId, readText(await request.formData(), 'templateId'));
 		return { savedSection: 'peaks' } satisfies PlanningSettingsActionResult;
 	},
 
 	saveRules: async ({ request, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
 		const minimumShiftMinutes = parseHoursToMinutes(readText(formData, 'minimumShiftHours'));
 		const minimumRestMinutes = parseHoursToMinutes(readText(formData, 'minimumRestHours'));
@@ -104,7 +104,7 @@ export const actions = {
 	},
 
 	saveTerms: async ({ request, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
 		const employeeId = readText(formData, 'employeeId');
 		const contractText = readText(formData, 'weeklyContractHours');

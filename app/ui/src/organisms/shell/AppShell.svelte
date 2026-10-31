@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { findCurrentNavigationLink, type NavigationLink, type SignedInUserSummary } from './navigation';
+	import { findCurrentNavigationLink, type NavigationLink, type NotificationsSummary, type SignedInUserSummary } from './navigation';
 	import SideNav from './SideNav.svelte';
 	import TopBar from './TopBar.svelte';
 
@@ -13,6 +13,8 @@
 		spaceLabel?: string;
 		/** Les liens du menu marqués d'un point : une page qui attend une action. */
 		hrefsNeedingAttention?: readonly string[];
+		/** La cloche de la barre du haut ; absente, pas de cloche. */
+		notifications?: NotificationsSummary;
 		onSignOut: () => void;
 		children: Snippet;
 	};
@@ -24,6 +26,7 @@
 		signedInUser,
 		spaceLabel,
 		hrefsNeedingAttention = [],
+		notifications,
 		onSignOut,
 		children
 	}: AppShellProps = $props();
@@ -42,7 +45,7 @@
 	/>
 
 	<div class="flex min-w-0 flex-1 flex-col" data-module={currentNavigationLink?.module}>
-		<TopBar sectionLabel={currentNavigationLink?.label ?? ''} {spaceLabel} />
+		<TopBar sectionLabel={currentNavigationLink?.label ?? ''} {spaceLabel} {notifications} />
 
 		<main id="contenu" class="flex flex-col gap-3.5 px-7 pt-5 pb-10 [&>*]:min-w-0 [&>*]:flex-none">
 			{@render children()}

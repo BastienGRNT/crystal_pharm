@@ -43,7 +43,7 @@ import type {
 	WeekGenerationFeedback,
 	WeekViewData
 } from '../pages/teamPlanningPageData';
-import { requireActiveTenantId } from './activeTenant.server';
+import { requirePlanningManager } from './activeTenant.server';
 import {
 	addShift,
 	getPlanningOfWeek,
@@ -54,6 +54,8 @@ import {
 	type ShiftSubmission
 } from './services/team/teamPlanningService';
 import { decideAvailabilityRule, listPendingAvailabilityRequests } from './services/availability/availabilityService';
+import { addPlannedActivity, removePlannedActivity, type PlannedActivitySubmission } from './services/activities/plannedActivityService';
+import { decideLeaveRequest, listPendingLeaveRequestsWithStaffing } from './services/leave/leaveRequestService';
 import { applyWeekTemplate, findWeekTemplates, saveWeekAsTemplate } from './services/templates/weekTemplateService';
 import { summarizeWeekTemplate } from '../domain/templates/weekTemplates';
 import { generateWeekPlanning } from './services/generation/weekGenerationService';
@@ -61,15 +63,18 @@ import { loadLiveWeekInput } from './services/week/weekIssuesService';
 import { getWeekStatus, publishWeek, returnWeekToDraft } from './services/week/weekStatusService';
 
 const shiftFieldNames = ['employeeId', 'date', 'startTime', 'endTime'] as const;
+const activityFieldNames = ['employeeId', 'kind', 'date', 'startTime', 'endTime', 'label'] as const;
 
 const weekHref = (monday: Date): string => `?view=week&week=${formatWeekParameter(monday)}`;
 const dayHref = (day: Date): string => `?view=day&day=${toIsoDate(day)}`;
+
+const panelQueryKeys = new Set(['add', 'edit', 'template', 'activities', 'tools', 'pending']);
 
 /** La requête de la vue affichée, sans le panneau ni le nom d'une action de formulaire. */
 function readPageQuery(url: URL): URLSearchParams {
 	const pageQuery = new URLSearchParams(url.searchParams);
 	for (const key of [...pageQuery.keys()]) {
-		if (key === 'add' || key === 'edit' || key === 'template' || key.startsWith('/')) pageQuery.delete(key);
+		if (panelQueryKeys.has(key) || key.startsWith('/')) pageQuery.delete(key);
 	}
 	return pageQuery;
 }
@@ -95,9 +100,21 @@ function buildFormActions(url: URL): FormActions {
 	const pageHref = toPageHref(url, pageQuery);
 	const pageQueryWithAddPanel = withQueryParameter(pageQuery, 'add', '1');
 	const pageQueryWithSavePanel = withQueryParameter(pageQuery, 'template', 'save');
+	const pageQueryWithActivitiesPanel = withQueryParameter(pageQuery, 'activities', '1');
+	const pageQueryWithPendingPanel = withQueryParameter(pageQuery, 'pending', '1');
 	const editedShiftId = url.searchParams.get('edit');
 
 	return {
+		toolsPanel: {
+			isOpen: url.searchParams.get('tools') === '1',
+			openHref: toPageHref(url, withQueryParameter(pageQuery, 'tools', '1')),
+			closeHref: pageHref
+		},
+		pendingPanel: {
+			isOpen: url.searchParams.get('pending') === '1',
+			openHref: toPageHref(url, pageQueryWithPendingPanel),
+			closeHref: pageHref
+		},
 		saveTemplatePanel: {
 			isOpen: url.searchParams.get('template') === 'save',
 			openHref: toPageHref(url, pageQueryWithSavePanel),
@@ -125,7 +142,15 @@ function buildFormActions(url: URL): FormActions {
 		editShiftHrefPrefix: toPageHref(url, withQueryParameter(pageQuery, 'edit', '')),
 		updateShiftFormAction: toActionHref(editedShiftId ? withQueryParameter(pageQuery, 'edit', editedShiftId) : pageQuery, 'updateShift'),
 		deleteShiftFormAction: toActionHref(pageQuery, 'deleteShift'),
-		decideAvailabilityFormAction: toActionHref(pageQuery, 'decideAvailability'),
+		decideAvailabilityFormAction: toActionHref(pageQueryWithPendingPanel, 'decideAvailability'),
+		decideLeaveFormAction: toActionHref(pageQueryWithPendingPanel, 'decideLeave'),
+		activitiesPanel: {
+			isOpen: url.searchParams.get('activities') === '1',
+			openHref: toPageHref(url, pageQueryWithActivitiesPanel),
+			closeHref: pageHref
+		},
+		addActivityFormAction: toActionHref(pageQueryWithActivitiesPanel, 'addActivity'),
+		removeActivityFormAction: toActionHref(pageQueryWithActivitiesPanel, 'removeActivity'),
 		publishWeekFormAction: toActionHref(pageQuery, 'publishWeek'),
 		returnWeekToDraftFormAction: toActionHref(pageQuery, 'returnWeekToDraft')
 	};
@@ -150,7 +175,7 @@ function readMondayOfDisplayedWeek(url: URL): Date {
 }
 
 export async function load({ url, locals }: PlanningRequest): Promise<PlanningPageData> {
-	const tenantId = await requireActiveTenantId(locals.user);
+	const { tenantId } = await requirePlanningManager(locals.user);
 	const now = new Date();
 	const today = toCalendarDay(now);
 	const formActions = buildFormActions(url);
@@ -176,15 +201,16 @@ function withEditedShiftValues(formActions: FormActions, shifts: Shift[]): FormA
 
 type WeekContext = Pick<
 	CommonPlanningPageData,
-	'weekStatus' | 'settingsHref' | 'pendingAvailabilityRequests' | 'templates' | 'live' | 'dayHrefPrefix'
+	'weekStatus' | 'settingsHref' | 'pendingAvailabilityRequests' | 'pendingLeaveRequests' | 'templates' | 'live' | 'dayHrefPrefix'
 >;
 
 /** Ce qui vaut pour toute la semaine, qu'on regarde la semaine ou une de ses journées. */
 async function loadWeekContext(tenantId: string, monday: Date): Promise<WeekContext> {
-	const [status, live, pendingRequests, templates] = await Promise.all([
+	const [status, live, pendingRequests, pendingLeaveRequests, templates] = await Promise.all([
 		getWeekStatus(tenantId, monday),
 		loadLiveWeekInput(tenantId, monday),
 		listPendingAvailabilityRequests(tenantId),
+		listPendingLeaveRequestsWithStaffing(tenantId),
 		findWeekTemplates(tenantId)
 	]);
 	return {
@@ -194,6 +220,15 @@ async function loadWeekContext(tenantId: string, monday: Date): Promise<WeekCont
 			employeeName,
 			summary,
 			note: rule.note
+		})),
+		pendingLeaveRequests: pendingLeaveRequests.map(({ leave, employeeName, summary, staffingImpact, overlappingRequesterNames }) => ({
+			leaveRequestId: leave.id,
+			employeeName,
+			summary,
+			note: leave.note,
+			isTeamSufficient: staffingImpact.isTeamSufficient,
+			shortages: staffingImpact.shortages.map((shortage) => shortage.message),
+			overlappingRequesterNames
 		})),
 		weekStatus: { isDraft: status === 'draft', mondayDate: toIsoDate(monday) },
 		settingsHref: '/planning/parametres',
@@ -355,9 +390,13 @@ function redirectToDisplayedView(url: URL): never {
 	redirect(303, toPageHref(url, readPageQuery(url)));
 }
 
+function redirectToPendingRequests(url: URL): never {
+	redirect(303, toPageHref(url, withQueryParameter(readPageQuery(url), 'pending', '1')));
+}
+
 export const actions = {
 	addShift: async ({ request, url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const values = readShiftSubmission(await request.formData());
 		if (hasMissingShiftField(values)) return fail(400, { message: missingShiftFieldMessage, values } satisfies AddShiftFailure);
 
@@ -367,7 +406,7 @@ export const actions = {
 	},
 
 	updateShift: async ({ request, url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
 		const values = readShiftSubmission(formData);
 		if (hasMissingShiftField(values)) return fail(400, { message: missingShiftFieldMessage, values } satisfies AddShiftFailure);
@@ -378,35 +417,65 @@ export const actions = {
 	},
 
 	publishWeek: async ({ url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		await publishWeek(tenantId, readMondayOfDisplayedWeek(url));
 		redirectToDisplayedView(url);
 	},
 
 	returnWeekToDraft: async ({ url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		await returnWeekToDraft(tenantId, readMondayOfDisplayedWeek(url));
 		redirectToDisplayedView(url);
 	},
 
 	decideAvailability: async ({ request, url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
 		const decision = String(formData.get('decision') ?? '');
 		if (decision !== 'approved' && decision !== 'declined') return fail(400, { message: 'Décision inconnue.' });
 
 		await decideAvailabilityRule(tenantId, String(formData.get('ruleId') ?? ''), decision);
-		redirectToDisplayedView(url);
+		redirectToPendingRequests(url);
+	},
+
+	decideLeave: async ({ request, url, locals }) => {
+		const { tenantId } = await requirePlanningManager(locals.user);
+		const formData = await request.formData();
+		const decision = String(formData.get('decision') ?? '');
+		if (decision !== 'approved' && decision !== 'declined') return fail(400, { message: 'Décision inconnue.' });
+
+		const result = await decideLeaveRequest(tenantId, String(formData.get('leaveRequestId') ?? ''), decision);
+		if (!result.isSaved) return fail(400, { message: result.message });
+		redirectToPendingRequests(url);
+	},
+
+	addActivity: async ({ request, url, locals }) => {
+		const { tenantId } = await requirePlanningManager(locals.user);
+		const formData = await request.formData();
+		const values = Object.fromEntries(
+			activityFieldNames.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? '')])
+		) as PlannedActivitySubmission;
+
+		const result = await addPlannedActivity(tenantId, values);
+		if (!result.isSaved) return fail(400, { message: result.message, values } satisfies AddShiftFailure);
+		redirect(303, toPageHref(url, withQueryParameter(readPageQuery(url), 'activities', '1')));
+	},
+
+	removeActivity: async ({ request, url, locals }) => {
+		const { tenantId } = await requirePlanningManager(locals.user);
+		const formData = await request.formData();
+		await removePlannedActivity(tenantId, String(formData.get('activityId') ?? ''));
+		redirect(303, toPageHref(url, withQueryParameter(readPageQuery(url), 'activities', '1')));
 	},
 
 	generateWeek: async ({ url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const generationReport = await generateWeekPlanning(tenantId, readMondayOfDisplayedWeek(url));
 		return { generationReport, closeHref: toPageHref(url, readPageQuery(url)) } satisfies WeekGenerationFeedback;
 	},
 
 	saveTemplate: async ({ request, url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
 		const result = await saveWeekAsTemplate(
 			tenantId,
@@ -419,7 +488,7 @@ export const actions = {
 	},
 
 	applyTemplate: async ({ request, url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
 		const result = await applyWeekTemplate(tenantId, readMondayOfDisplayedWeek(url), String(formData.get('templateId') ?? ''));
 		if (!result.isSaved) return fail(400, { message: result.message });
@@ -427,7 +496,7 @@ export const actions = {
 	},
 
 	deleteShift: async ({ request, url, locals }) => {
-		const tenantId = await requireActiveTenantId(locals.user);
+		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
 		const slotId = String(formData.get('slotId') ?? '');
 		if (slotId === '') return fail(400, { message: 'Créneau introuvable.' });

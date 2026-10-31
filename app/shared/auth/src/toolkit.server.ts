@@ -23,3 +23,4 @@ export {
 	hashInvitationToken
 } from './toolkit/invitationTokens.server';
 export { personNameFields } from './toolkit/personNameFields';
+export { assertProductionSecretsAreStrong, isProductionEnvironment } from './toolkit/productionSecrets.server';

@@ -1,0 +1,205 @@
+# Le déploiement Forge (prod = branche main, dev = branche develop, chacun avec son .env).
+# Seule la passerelle publie un port ; le HTTPS est terminé par le proxy placé devant.
+# APP_ENV absent = production. `APP_ENV=development` embarque l'outil de dev et garde la boîte mail de dev
+# et le faux PaymentProvider quelles que soient les clés.
+
+x-application-environment: &application_environment
+  APP_ENV: ${APP_ENV:-production}
+  DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER manque}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manque}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB manque}
+  FILE_STORAGE_DIRECTORY: /var/lib/crystal-pharm/files
+
+x-svelte-environment: &svelte_environment
+  <<: *application_environment
+  PHARMACY_URL: ${PHARMACY_URL:?PHARMACY_URL manque (https://...)}
+  GROUP_URL: ${GROUP_URL:?GROUP_URL manque (https://...)}
+  ADMIN_URL: ${ADMIN_URL:?ADMIN_URL manque (https://...)}
+  SITE_URL: ${SITE_URL:?SITE_URL manque (https://...)}
+  SITE_PREVIEW_URL: ${SITE_PREVIEW_URL:?SITE_PREVIEW_URL manque (https://...)}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  EMAIL_SENDER: ${EMAIL_SENDER:-Crystal Pharm <bonjour@crystal-pharm.fr>}
+  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+  INVOICE_ISSUER_NAME: ${INVOICE_ISSUER_NAME:-Crystal Pharm}
+  INVOICE_ISSUER_ADDRESS: ${INVOICE_ISSUER_ADDRESS:-Adresse à compléter}
+  INVOICE_ISSUER_SIREN: ${INVOICE_ISSUER_SIREN:-à compléter}
+  INVOICE_ISSUER_VAT_NUMBER: ${INVOICE_ISSUER_VAT_NUMBER:-à compléter}
+  HOST: 0.0.0.0
+  PORT: "3000"
+
+x-svelte-healthcheck: &svelte_healthcheck
+  test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/',{redirect:'manual'}).then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+x-build-mode: &build_mode ${APP_ENV:-production}
+
+services:
+  postgres:
+    image: postgres:16@sha256:1beaa3084eee2676f20a9cd9928f0bf2c5bf674f8e49f81017912183d377c61c
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER manque}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manque}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB manque}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/prod/migrate.Dockerfile
+    restart: "no"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/prod/api.Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ApplyMigrationsAtStartup: "true"
+      ConnectionStrings__Booking: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Prescriptions: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      PrescriptionStorage__LocalDirectory: /var/lib/prescriptions
+      SiteService__ApiKey: ${SiteService__ApiKey:?SiteService__ApiKey manque (openssl rand -base64 32)}
+      ManagerJwt__JwksUrl: http://pharmacy:3000/api/auth/jwks
+      ManagerJwt__AllowPlainHttpJwksUrl: "true"
+      ManagerJwt__Issuer: ${PHARMACY_URL:?PHARMACY_URL manque (https://...)}
+      ManagerJwt__Audience: crystal-pharm-api
+    volumes:
+      - prescription_files:/var/lib/prescriptions
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  pharmacy:
+    build:
+      context: .
+      dockerfile: docker/prod/sveltekit.Dockerfile
+      args:
+        APP_DIRECTORY: pharmacy/host
+        APP_PACKAGE: "@crystal-pharm/pharmacy"
+        BUILD_MODE: *build_mode
+    restart: unless-stopped
+    environment:
+      <<: *svelte_environment
+      ORIGIN: ${PHARMACY_URL}
+      API_URL: http://api:8080
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET manque (openssl rand -base64 32)}
+      SITE_PREVIEW_MEDIA_SECRET: ${SITE_PREVIEW_MEDIA_SECRET:?SITE_PREVIEW_MEDIA_SECRET manque (openssl rand -base64 32)}
+    volumes:
+      - file_storage:/var/lib/crystal-pharm/files
+    healthcheck: *svelte_healthcheck
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  group:
+    build:
+      context: .
+      dockerfile: docker/prod/sveltekit.Dockerfile
+      args:
+        APP_DIRECTORY: group
+        APP_PACKAGE: "@crystal-pharm/group"
+        BUILD_MODE: *build_mode
+    restart: unless-stopped
+    environment:
+      <<: *svelte_environment
+      ORIGIN: ${GROUP_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+    volumes:
+      - file_storage:/var/lib/crystal-pharm/files
+    healthcheck: *svelte_healthcheck
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  admin:
+    build:
+      context: .
+      dockerfile: docker/prod/sveltekit.Dockerfile
+      args:
+        APP_DIRECTORY: admin
+        APP_PACKAGE: "@crystal-pharm/admin"
+        BUILD_MODE: *build_mode
+    restart: unless-stopped
+    environment:
+      <<: *svelte_environment
+      ORIGIN: ${ADMIN_URL}
+      PLATFORM_AUTH_SECRET: ${PLATFORM_AUTH_SECRET:?PLATFORM_AUTH_SECRET manque (openssl rand -base64 32)}
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:?PLATFORM_ADMIN_EMAILS manque}
+    volumes:
+      - file_storage:/var/lib/crystal-pharm/files
+    healthcheck: *svelte_healthcheck
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  site:
+    build:
+      context: .
+      dockerfile: docker/prod/site.Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *application_environment
+      HOST: 0.0.0.0
+      PORT: "3000"
+      SITE_URL: ${SITE_URL:?SITE_URL manque (https://...)}
+      PHARMACY_URL: ${PHARMACY_URL}
+      API_URL: http://api:8080
+      SiteService__ApiKey: ${SiteService__ApiKey}
+      SITE_PREVIEW_MEDIA_SECRET: ${SITE_PREVIEW_MEDIA_SECRET}
+    volumes:
+      - file_storage:/var/lib/crystal-pharm/files
+    healthcheck: *svelte_healthcheck
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  caddy:
+    image: caddy:2.11.7@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    entrypoint: ["/usr/local/bin/caddy-entrypoint.sh"]
+    environment:
+      PHARMACY_URL: ${PHARMACY_URL}
+      GROUP_URL: ${GROUP_URL}
+      ADMIN_URL: ${ADMIN_URL}
+      SITE_URL: ${SITE_URL}
+      SITE_PREVIEW_URL: ${SITE_PREVIEW_URL}
+    volumes:
+      - ./docker/prod/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/prod/caddy-entrypoint.sh:/usr/local/bin/caddy-entrypoint.sh:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      - pharmacy
+      - group
+      - admin
+      - site
+
+volumes:
+  postgres_data:
+  prescription_files:
+  file_storage:

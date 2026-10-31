@@ -95,4 +95,4 @@ export { default as SuggestionInput } from './molecules/fields/pickers/Suggestio
 export type { SuggestionInputOption } from './molecules/fields/pickers/suggestionInput';
 export { default as Switch } from './atoms/fields/Switch.svelte';
 export type { ModuleKey } from './modules';
-export type { NavigationLink, SignedInUserSummary } from './organisms/shell/navigation';
+export type { NavigationLink, NotificationItem, NotificationsSummary, SignedInUserSummary } from './organisms/shell/navigation';

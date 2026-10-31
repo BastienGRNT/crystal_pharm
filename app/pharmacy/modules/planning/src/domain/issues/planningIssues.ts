@@ -1,7 +1,14 @@
+import {
+	describePlannedActivity,
+	findActivityDuringRange,
+	sumTrainingMinutes,
+	type PlannedActivity
+} from '../activities/plannedActivities';
 import { findBlockingRule, describeAvailabilityRule, type AvailabilityRule } from '../availability/availabilityRules';
 import { formatTimeOfDay, type OpeningHours } from '../coverage/coverage';
 import {
 	buildPlanningRows,
+	findAbsenceOfDay,
 	formatDuration,
 	sumPlannedMinutes,
 	toMinutesSinceMidnight,
@@ -23,6 +30,9 @@ export type PlanningIssueKind =
 	| 'too-many-shifts'
 	| 'employee-on-absence'
 	| 'shift-on-unavailability'
+	| 'shift-on-activity'
+	| 'activity-on-absence'
+	| 'on-call-without-pharmacist'
 	| 'contract-hours-short';
 
 export type PlanningIssue = {
@@ -43,6 +53,7 @@ export type PlanningIssueInput = {
 	rules: PlanningRules;
 	termsByEmployee: Map<string, EmployeeTerms>;
 	availabilityRules: readonly AvailabilityRule[];
+	plannedActivities: readonly PlannedActivity[];
 };
 
 /** Tout ce que le titulaire doit regarder dans la semaine, du plus grave au moins grave, jour par jour. */
@@ -50,6 +61,7 @@ export function detectPlanningIssues(input: PlanningIssueInput): PlanningIssue[]
 	const issues = [
 		...input.weekDates.flatMap((date, dayIndex) => detectStaffingIssues(input, date, dayIndex)),
 		...detectShiftIssues(input),
+		...detectActivityIssues(input),
 		...detectContractIssues(input)
 	];
 	const severityOrder: Record<PlanningIssueSeverity, number> = { alert: 0, notice: 1 };
@@ -101,7 +113,7 @@ function detectStaffingIssues(input: PlanningIssueInput, date: string, dayIndex:
 	];
 }
 
-function detectShiftIssues({ weekPlanning, weekDates, rules, availabilityRules }: PlanningIssueInput): PlanningIssue[] {
+function detectShiftIssues({ weekPlanning, weekDates, rules, availabilityRules, plannedActivities }: PlanningIssueInput): PlanningIssue[] {
 	return buildPlanningRows(weekPlanning, weekDates).flatMap(({ employee, cells }) =>
 		cells.flatMap((cell): PlanningIssue[] => {
 			const dayTitle = formatDayTitle(new Date(`${cell.date}T00:00:00Z`));
@@ -138,6 +150,17 @@ function detectShiftIssues({ weekPlanning, weekDates, rules, availabilityRules }
 						message: `${employee.fullName}, ${dayTitle.toLocaleLowerCase('fr')} : plage de ${shift.startTime} à ${shift.endTime} sur une indisponibilité (${describeAvailabilityRule(blockingRule).toLocaleLowerCase('fr')}).`
 					});
 				}
+				const overlappingActivity = findActivityDuringRange(plannedActivities, employee.id, cell.date, shift.startTime, shift.endTime);
+				if (overlappingActivity) {
+					issues.push({
+						key: `activity-${shift.id}`,
+						kind: 'shift-on-activity',
+						severity: 'alert',
+						date: cell.date,
+						employeeId: employee.id,
+						message: `${employee.fullName}, ${dayTitle.toLocaleLowerCase('fr')} : plage de ${shift.startTime} à ${shift.endTime} pendant sa ${describePlannedActivity(overlappingActivity).toLocaleLowerCase('fr')}.`
+					});
+				}
 				const durationMinutes = sumPlannedMinutes([shift]);
 				if (durationMinutes >= rules.minimumShiftMinutes) continue;
 				issues.push({
@@ -154,11 +177,51 @@ function detectShiftIssues({ weekPlanning, weekDates, rules, availabilityRules }
 	);
 }
 
-function detectContractIssues({ weekPlanning, termsByEmployee, weekDates }: PlanningIssueInput): PlanningIssue[] {
+/** Une formation ou une astreinte un jour d'absence ; une astreinte que seul un pharmacien peut tenir. */
+function detectActivityIssues({ weekPlanning, weekDates, plannedActivities }: PlanningIssueInput): PlanningIssue[] {
+	return plannedActivities
+		.filter((activity) => weekDates.includes(activity.date))
+		.flatMap((activity): PlanningIssue[] => {
+			const employee = weekPlanning.employees.find((candidate) => candidate.id === activity.employeeId);
+			if (!employee) return [];
+			const dayTitle = formatDayTitle(new Date(`${activity.date}T00:00:00Z`)).toLocaleLowerCase('fr');
+			const description = describePlannedActivity(activity).toLocaleLowerCase('fr');
+			const absence = findAbsenceOfDay(weekPlanning.absences, employee.id, activity.date);
+			const issues: PlanningIssue[] = [];
+			if (absence) {
+				issues.push({
+					key: `activity-absence-${activity.id}`,
+					kind: 'activity-on-absence',
+					severity: 'alert',
+					date: activity.date,
+					employeeId: employee.id,
+					message: `${employee.fullName}, ${dayTitle} : ${description} alors qu’il ou elle est absent(e) (${absence.kind}).`
+				});
+			}
+			if (activity.kind === 'on-call' && !employee.isPharmacist) {
+				issues.push({
+					key: `on-call-pharmacist-${activity.id}`,
+					kind: 'on-call-without-pharmacist',
+					severity: 'alert',
+					date: activity.date,
+					employeeId: employee.id,
+					message: `${employee.fullName}, ${dayTitle} : une astreinte doit être tenue par un pharmacien.`
+				});
+			}
+			return issues;
+		});
+}
+
+function detectContractIssues({ weekPlanning, termsByEmployee, weekDates, plannedActivities }: PlanningIssueInput): PlanningIssue[] {
 	return weekPlanning.employees.flatMap((employee): PlanningIssue[] => {
 		const contractMinutes = termsByEmployee.get(employee.id)?.weeklyContractMinutes;
 		if (contractMinutes === undefined) return [];
-		const plannedMinutes = sumPlannedMinutes(weekPlanning.shifts.filter((shift) => shift.employeeId === employee.id));
+		const plannedMinutes =
+			sumPlannedMinutes(weekPlanning.shifts.filter((shift) => shift.employeeId === employee.id)) +
+			sumTrainingMinutes(
+				plannedActivities.filter((activity) => weekDates.includes(activity.date)),
+				employee.id
+			);
 		if (plannedMinutes >= contractMinutes) return [];
 		return [
 			{

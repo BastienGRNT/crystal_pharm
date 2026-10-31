@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Alert, Button } from '@crystal-pharm/ui';
+	import { Button, StatusBadge } from '@crystal-pharm/ui';
 
 	type WeekStatusBarProps = {
 		isDraft: boolean;
@@ -11,14 +11,13 @@
 </script>
 
 {#if isDraft}
-	<Alert tone="warning" title="Brouillon">
-		<form method="POST" action={publishFormAction} class="flex flex-wrap items-center gap-x-4 gap-y-2">
-			<span>Votre équipe ne voit pas encore cette semaine. Ajustez-la, puis publiez-la.</span>
-			<Button type="submit" icon="paper-plane-tilt">Publier la semaine</Button>
-		</form>
-	</Alert>
+	<form method="POST" action={publishFormAction} class="flex items-center gap-2">
+		<span title="Votre équipe ne voit pas encore cette semaine."><StatusBadge tone="warning">Brouillon</StatusBadge></span>
+		<Button type="submit" icon="paper-plane-tilt">Publier la semaine</Button>
+	</form>
 {:else}
-	<form method="POST" action={returnToDraftFormAction}>
+	<form method="POST" action={returnToDraftFormAction} class="flex items-center gap-2">
+		<StatusBadge tone="success">Publiée</StatusBadge>
 		<Button type="submit" variant="ghost" icon="arrow-counter-clockwise">Repasser en brouillon</Button>
 	</form>
 {/if}

@@ -1,9 +1,12 @@
 import { createMiddleware } from '@solidjs/start/middleware';
 import { readPreviewParentOrigin } from './server/preview/previewSettings';
+import { assertProductionSecretsAreStrong } from './server/production-secrets/assertProductionSecretsAreStrong.server';
 import { prepareSiteRequest } from './server/site-request/prepareSiteRequest.server';
 import { isCacheableSitePageRequest, isPreviewRequest } from './server/site-request/sitePaths';
 import { rememberLocalsOfRequest, setSiteRequest } from './server/site-request/siteRequest';
 import { cacheControlOfSitePage, frameAncestorsPolicyOfSitePage, sitePageCacheHeaderName } from './server/site-responses/sitePageHeaders';
+
+assertProductionSecretsAreStrong(['SITE_PREVIEW_MEDIA_SECRET', 'SiteService__ApiKey']);
 
 export default createMiddleware({
   onRequest: async (event) => {

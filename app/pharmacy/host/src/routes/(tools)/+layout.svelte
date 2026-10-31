@@ -10,6 +10,11 @@
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	const dateFormatter = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' });
+
+	const notifications = $derived({
+		items: data.notifications,
+		onOpen: () => void fetch('/notifications/lues', { method: 'POST' })
+	});
 </script>
 
 <AppShell
@@ -19,6 +24,7 @@
 	signedInUser={data.signedInMember}
 	spaceLabel={data.pharmacyName}
 	hrefsNeedingAttention={data.hrefsNeedingAttention}
+	{notifications}
 	onSignOut={() => signOutAndOpen('/login')}
 >
 	{#if data.overduePayment}

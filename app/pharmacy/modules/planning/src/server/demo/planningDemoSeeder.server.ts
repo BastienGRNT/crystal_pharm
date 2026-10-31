@@ -6,13 +6,15 @@ import { savePlannedWeekStatus } from '../repositories/plannedWeekRepository';
 import { insertPeakWindow } from '../repositories/peakWindowRepository';
 import { insertWeekTemplate } from '../repositories/weekTemplateRepository';
 import { saveEmployeeTerms } from '../repositories/employeeTermsRepository';
+import { insertLeaveRequest } from '../repositories/leaveRequestRepository';
+import { insertPlannedActivity } from '../repositories/plannedActivityRepository';
 
 type DemoShiftTemplate = { weekdayIndex: number; startTime: string; endTime: string };
 
 const morning = (weekdayIndex: number): DemoShiftTemplate => ({ weekdayIndex, startTime: '09:00', endTime: '12:30' });
 const afternoon = (weekdayIndex: number, endTime = '17:30'): DemoShiftTemplate => ({ weekdayIndex, startTime: '14:00', endTime });
 
-const [monday, tuesday, wednesday, thursday, friday, saturday] = [0, 1, 2, 3, 4, 5];
+const [monday, tuesday, wednesday, thursday, friday, saturday, sunday] = [0, 1, 2, 3, 4, 5, 6];
 
 // Volontairement troués : le jeudi soir sans personne, le mercredi soir avec une seule personne,
 // les heures de Julien et d'Emma sous leur contrat, pour voir les alertes.
@@ -96,6 +98,38 @@ export async function seedPlanningDemoData(tenantId: string): Promise<void> {
 				firstDate: toIsoDate(addDays(currentMonday, wednesday)),
 				lastDate: toIsoDate(addDays(currentMonday, thursday)),
 				kind: 'Congé'
+			});
+		}
+
+		if (firstName === 'Camille') {
+			await insertLeaveRequest(tenantId, {
+				employeeId: employee.employeeId,
+				firstDate: toIsoDate(addDays(currentMonday, 7 + tuesday)),
+				lastDate: toIsoDate(addDays(currentMonday, 7 + wednesday)),
+				kind: 'Congé',
+				note: 'Mariage de ma sœur'
+			});
+		}
+
+		if (firstName === 'Léa') {
+			await insertPlannedActivity(tenantId, {
+				employeeId: employee.employeeId,
+				kind: 'training',
+				date: toIsoDate(addDays(currentMonday, wednesday)),
+				startTime: '14:00',
+				endTime: '17:00',
+				label: 'Vaccination antigrippale'
+			});
+		}
+
+		if (firstName === 'Thomas') {
+			await insertPlannedActivity(tenantId, {
+				employeeId: employee.employeeId,
+				kind: 'on-call',
+				date: toIsoDate(addDays(currentMonday, sunday)),
+				startTime: '09:00',
+				endTime: '19:00',
+				label: 'Garde du secteur'
 			});
 		}
 	}

@@ -22,3 +22,19 @@ export function findCurrentNavigationLink(
 			currentPathname === navigationLink.href || currentPathname.startsWith(`${navigationLink.href}/`)
 	);
 }
+
+/** Une notification de la cloche : un message, et la page où agir. */
+export type NotificationItem = {
+	id: string;
+	message: string;
+	href: string;
+	isRead: boolean;
+	/** « il y a 5 min », « hier »… : déjà formulé par l'app. */
+	timeLabel: string;
+};
+
+export type NotificationsSummary = {
+	items: readonly NotificationItem[];
+	/** Appelé à la première ouverture : l'app y marque les notifications comme lues. */
+	onOpen: () => void;
+};
