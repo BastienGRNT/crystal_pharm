@@ -12,8 +12,8 @@
 	let { generateWeekFormAction, addShiftHref, activitiesHref, applyTemplateHref, saveTemplateHref }: WeekToolsListProps = $props();
 </script>
 
-<div class="flex flex-col gap-5">
-	<form method="POST" action={generateWeekFormAction} class="flex flex-col gap-1.5">
+<div class="flex flex-col gap-4">
+	<form method="POST" action={generateWeekFormAction} class="flex flex-col gap-2">
 		<Button type="submit" icon="sparkle" isFullWidth>Proposer la semaine</Button>
 		<p class="text-small text-ink-muted">Complète ce qui manque autour de ce qui est déjà posé, sans rien déplacer.</p>
 	</form>

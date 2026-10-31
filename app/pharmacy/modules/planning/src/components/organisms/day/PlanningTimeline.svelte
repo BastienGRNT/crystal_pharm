@@ -149,7 +149,7 @@
 			<div class="w-14 flex-none" aria-hidden="true"></div>
 			{#each rows as row (row.key)}
 				{@const hoursStatus = hoursStatusByEmployee?.get(row.employeeId) ?? 'ok'}
-				<div class="flex min-w-0 flex-1 flex-col items-center gap-1 border-l border-line-soft px-2 py-2.5 text-center">
+				<div class="flex min-w-0 flex-1 flex-col items-center gap-1 border-l border-line-soft px-2 py-2 text-center">
 					<EmployeeInitials fullName={row.personName} colorIndex={colorIndexByEmployee.get(row.employeeId)} size="medium" />
 					<b class="max-w-full truncate text-[12.5px] leading-4 font-semibold text-ink" title="{row.personName} · {row.personDetail}">{row.personName.split(' ')[0]}</b>
 					{#if row.personHours}
@@ -188,7 +188,7 @@
 					{@render columnBackground()}
 
 					{#if row.absence}
-						<div class="absolute inset-x-1.5 inset-y-2 z-10 flex flex-col items-center gap-0.5 rounded-xs bg-absence px-1 pt-2.5 text-center text-[12px] text-on-absence">
+						<div class="absolute inset-x-1 inset-y-2 z-10 flex flex-col items-center gap-1 rounded-xs bg-absence p-2 text-center text-[12px] text-on-absence">
 							<b>{row.absence.label}</b>
 							<span>{row.absence.detail}</span>
 						</div>
@@ -196,7 +196,7 @@
 					{#if gesture && gesture.barId === undefined && gesture.employeeId === row.employeeId}
 						<div
 							aria-hidden="true"
-							class="absolute inset-x-1.5 z-10 rounded-xs px-1.5 py-1 text-[11.5px] tabular-nums {readEmployeeColorClasses(colorIndex).soft}"
+							class="absolute inset-x-1 z-10 rounded-xs p-1 text-[11.5px] tabular-nums {readEmployeeColorClasses(colorIndex).soft}"
 							style:top="{percentOf(gesture.span.startMinutes)}%"
 							style:height="{percentOf(gesture.span.endMinutes) - percentOf(gesture.span.startMinutes)}%"
 						>
@@ -210,7 +210,7 @@
 							<div
 								role="group"
 								aria-label="{row.personName}, {describeBar(bar, row.employeeId)}"
-								class="absolute inset-x-1.5 z-10 flex flex-col gap-px overflow-hidden rounded-xs px-1.5 py-1 text-[11.5px] leading-[14px] select-none {readShiftBlockClasses(
+								class="absolute inset-x-1 z-10 flex flex-col gap-px overflow-hidden rounded-xs p-1 text-[11.5px] leading-[14px] select-none {readShiftBlockClasses(
 									colorIndex,
 									bar.tone === 'strong'
 								)} {dragging ? 'cursor-grab touch-none' : ''} {isDragged ? 'z-30 cursor-grabbing opacity-80 shadow-card' : ''}"
@@ -233,7 +233,7 @@
 							</div>
 						{/each}
 						{#if row.bars.length === 0 && !gesture}
-							<p class="text-small pointer-events-none absolute inset-x-1 top-3 z-10 text-center text-ink-subtle">
+							<p class="text-small pointer-events-none absolute inset-x-1 top-2 z-10 text-center text-ink-subtle">
 								{dragging ? 'Glissez pour tracer' : 'Pas de créneau'}
 							</p>
 						{/if}

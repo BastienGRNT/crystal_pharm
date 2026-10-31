@@ -175,34 +175,36 @@
 	}
 </script>
 
-<div class="flex flex-col gap-3">
-	<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Employé à suivre et à placer en glissant sur le calendrier">
-		{#each orderedEmployees as employee (employee.id)}
-			{@const hoursOfEmployee = hoursByEmployee.get(employee.id)}
-			<button
-				type="button"
-				aria-pressed={brushEmployeeId === employee.id}
-				class="flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-small text-ink transition-colors {brushEmployeeId === employee.id
-					? `font-semibold ${readEmployeeColorClasses(colorIndexByEmployee.get(employee.id)).selected}`
-					: 'border-line bg-surface hover:bg-surface-muted'}"
-				onclick={() => (brushEmployeeId = brushEmployeeId === employee.id ? undefined : employee.id)}
-			>
-				<EmployeeInitials fullName={employee.fullName} colorIndex={colorIndexByEmployee.get(employee.id)} />
-				<span>{employee.fullName}</span>
-				{#if hoursOfEmployee}
-					<span class="tabular-nums {hoursStatusClasses[hoursOfEmployee.status]}">
-						{formatDuration(hoursOfEmployee.plannedMinutes)}{hoursOfEmployee.contractMinutes !== undefined ? ` / ${formatDuration(hoursOfEmployee.contractMinutes)}` : ''}
-						{#if hoursOfEmployee.status !== 'ok'}<span class="sr-only"> ({hoursStatusLabels[hoursOfEmployee.status]})</span>{/if}
-					</span>
-				{/if}
-			</button>
-		{/each}
+<div class="flex flex-col gap-4">
+	<div class="flex flex-col gap-2">
+		<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Employé à suivre et à placer en glissant sur le calendrier">
+			{#each orderedEmployees as employee (employee.id)}
+				{@const hoursOfEmployee = hoursByEmployee.get(employee.id)}
+				<button
+					type="button"
+					aria-pressed={brushEmployeeId === employee.id}
+					class="flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-small text-ink transition-colors {brushEmployeeId === employee.id
+						? `font-semibold ${readEmployeeColorClasses(colorIndexByEmployee.get(employee.id)).selected}`
+						: 'border-line bg-surface hover:bg-surface-muted'}"
+					onclick={() => (brushEmployeeId = brushEmployeeId === employee.id ? undefined : employee.id)}
+				>
+					<EmployeeInitials fullName={employee.fullName} colorIndex={colorIndexByEmployee.get(employee.id)} />
+					<span>{employee.fullName}</span>
+					{#if hoursOfEmployee}
+						<span class="tabular-nums {hoursStatusClasses[hoursOfEmployee.status]}">
+							{formatDuration(hoursOfEmployee.plannedMinutes)}{hoursOfEmployee.contractMinutes !== undefined ? ` / ${formatDuration(hoursOfEmployee.contractMinutes)}` : ''}
+							{#if hoursOfEmployee.status !== 'ok'}<span class="sr-only"> ({hoursStatusLabels[hoursOfEmployee.status]})</span>{/if}
+						</span>
+					{/if}
+				</button>
+			{/each}
+		</div>
+		<p class="text-small text-ink-muted">
+			{brushEmployee
+				? `Seule la semaine de ${brushEmployee.fullName} ressort. Glissez sur une journée pour lui poser un créneau.`
+				: 'Choisissez quelqu’un pour suivre sa semaine et lui poser des créneaux en glissant. Un créneau se déplace en le glissant, s’allonge en tirant ses bords.'}
+		</p>
 	</div>
-	<p class="text-small text-ink-muted">
-		{brushEmployee
-			? `Seule la semaine de ${brushEmployee.fullName} ressort. Glissez sur une journée pour lui poser un créneau.`
-			: 'Choisissez quelqu’un pour suivre sa semaine et lui poser des créneaux en glissant. Un créneau se déplace en le glissant, s’allonge en tirant ses bords.'}
-	</p>
 
 	<div class="overflow-auto rounded-md border border-line bg-surface shadow-card">
 		<div class="min-w-[960px]">
@@ -215,7 +217,7 @@
 						<a
 							href="{dayHrefPrefix}{date}"
 							title="Voir la journée"
-							class="flex flex-col px-2 py-1.5 no-underline transition-colors {day ? dayStatusClasses[day.status] : ''}"
+							class="flex flex-col px-2 py-2 no-underline transition-colors {day ? dayStatusClasses[day.status] : ''}"
 						>
 							<span class="text-small font-semibold">
 								{formatDayName(toCalendarDay(new Date(`${date}T00:00:00Z`)))}
@@ -228,14 +230,14 @@
 								{describeDay(dayIndex)}
 							</span>
 						</a>
-						<div class="min-h-6 border-t border-line-soft px-1.5 py-0.5 text-small text-ink-muted">
+						<div class="flex min-h-6 flex-wrap gap-1 border-t border-line-soft p-1 text-small text-ink-muted">
 							{#each absentEmployees as employee (employee.id)}
-								<span class="mr-1 inline-block rounded-xs bg-absence px-1.5 text-on-absence">{employee.fullName} · absent</span>
+								<span class="rounded-xs bg-absence px-1 text-on-absence">{employee.fullName} · absent</span>
 							{/each}
 							{#each listActivitiesOfDate(date) as activity (activity.id)}
 								{@const employee = live.employees.find((candidate) => candidate.id === activity.employeeId)}
 								<span
-									class="mr-1 inline-block rounded-xs border border-line px-1.5 text-ink"
+									class="rounded-xs border border-line px-1 text-ink"
 									title={activity.label === '' ? undefined : activity.label}
 								>
 									{employee?.fullName.split(' ')[0] ?? ''} · {plannedActivityKindLabels[activity.kind].toLocaleLowerCase('fr')}
@@ -289,7 +291,7 @@
 								role="group"
 								aria-label="{employee?.fullName ?? ''}, {shift.startTime} – {shift.endTime}"
 								title="{employee?.fullName ?? ''} · {shift.startTime}–{shift.endTime}"
-								class="absolute z-10 cursor-grab touch-none overflow-hidden rounded-xs px-1 py-0.5 text-[11px] leading-[13px] transition-opacity select-none {readShiftBlockClasses(
+								class="absolute z-10 cursor-grab touch-none overflow-hidden rounded-xs p-1 text-[11px] leading-[13px] transition-opacity select-none {readShiftBlockClasses(
 									colorIndexByEmployee.get(shift.employeeId),
 									employee?.isPharmacist ?? false
 								)} {employeeIdsWithIssue.has(shift.employeeId) ? 'outline-2 -outline-offset-2 outline-danger' : ''} {shift.id === 'preview' || isDimmed

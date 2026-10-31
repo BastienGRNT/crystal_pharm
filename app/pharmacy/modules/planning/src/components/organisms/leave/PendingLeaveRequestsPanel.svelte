@@ -12,14 +12,14 @@
 
 {#if requests.length > 0}
 	<section class="rounded-md border border-line bg-surface shadow-card" aria-label="Congés à valider">
-		<h2 class="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-ink">
+		<h2 class="flex items-center gap-2 px-4 py-2 text-body font-semibold text-ink">
 			<Icon name="calendar-check" class="text-accent-text" />
 			Congés à valider
 			<StatusBadge tone="warning">{requests.length}</StatusBadge>
 		</h2>
 		<ul class="border-t border-line-soft">
 			{#each requests as request (request.leaveRequestId)}
-				<li class="flex flex-wrap items-start gap-3 px-4 py-2.5 not-last:border-b not-last:border-line-soft">
+				<li class="flex flex-wrap items-start gap-4 px-4 py-2 not-last:border-b not-last:border-line-soft">
 					<div class="grid min-w-0 flex-1 gap-1 text-body">
 						<p><span class="font-semibold">{request.employeeName}</span> : {request.summary}</p>
 						{#if request.note !== ''}
