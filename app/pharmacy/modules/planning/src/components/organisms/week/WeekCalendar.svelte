@@ -72,6 +72,9 @@
 		return assignLanes([...spanByEmployee].map(([employeeId, span]) => ({ key: employeeId, ...span })));
 	}
 
+	// Toutes les journées prennent autant de voies que la plus chargée : un créneau a la même largeur tous les jours.
+	const weekLaneCount = $derived(Math.max(1, ...live.weekDates.map((date) => assignEmployeeLanes(date).laneCount)));
+
 	function peakPeriodsOf(dayIndex: number): { topPercent: number; heightPercent: number }[] {
 		return (live.requirementWindowsByDate[dayIndex] ?? []).map((window) => {
 			const topPercent = percentOfBody(window.startMinutes);
@@ -299,8 +302,8 @@
 									: ''}"
 								style:top="{topPercent}%"
 								style:height="{heightPercent}%"
-								style:left="calc({(laneIndex / lanes.laneCount) * 100}% + 1px)"
-								style:width="calc({100 / lanes.laneCount}% - 2px)"
+								style:left="calc({(laneIndex / weekLaneCount) * 100}% + 1px)"
+								style:width="calc({100 / weekLaneCount}% - 2px)"
 								onpointerdown={(event) => startShiftGesture(event, shift, 'move')}
 							>
 								<span aria-hidden="true" class="absolute inset-x-0 top-0 z-20 h-2 cursor-ns-resize" onpointerdown={(event) => startShiftGesture(event, shift, 'start')}></span>
@@ -311,7 +314,7 @@
 									aria-label="Modifier le créneau de {employee?.fullName ?? ''}"
 								>
 									<b class="font-bold">{formatEmployeeInitials(employee?.fullName ?? '')}</b>
-									{#if lanes.laneCount <= 3}<span class="block tabular-nums">{shift.startTime}</span>{/if}
+									{#if weekLaneCount <= 3}<span class="block tabular-nums">{shift.startTime}</span>{/if}
 								</a>
 								<span aria-hidden="true" class="absolute inset-x-0 bottom-0 z-20 h-2 cursor-ns-resize" onpointerdown={(event) => startShiftGesture(event, shift, 'end')}></span>
 							</div>
