@@ -5,6 +5,7 @@ import { computePharmacistCoverage } from '../coverage/pharmacistCoverage';
 import type { RequirementWindow } from '../coverage/staffing';
 import { detectPlanningIssues, type PlanningIssue } from '../issues/planningIssues';
 import { buildPlanningRows, sumPlannedMinutes, type Absence, type Employee, type PlanningRow, type Shift } from '../planning';
+import { computeWeeklyPay, splitWeeklyOvertime, type OvertimeRules, type WeeklyOvertime } from '../overtime/overtimePay';
 import { indexTermsByEmployee, type EmployeeTerms } from '../rules/employeeTerms';
 import type { PlanningRules } from '../rules/planningRules';
 
@@ -20,6 +21,7 @@ export type LiveWeekInput = {
 	openingPeriodsByDate: OpeningHours[][];
 	requirementWindowsByDate: RequirementWindow[][];
 	rules: PlanningRules;
+	overtimeRules: OvertimeRules;
 	terms: EmployeeTerms[];
 	availabilityRules: AvailabilityRule[];
 	plannedActivities: PlannedActivity[];
@@ -51,6 +53,9 @@ export type EmployeeAssessment = {
 	plannedMinutes: number;
 	contractMinutes: number | undefined;
 	status: EmployeeHoursStatus;
+	overtime: WeeklyOvertime;
+	/** Le taux de sa prochaine heure, majoration comprise ; `undefined` sans taux horaire renseigné. */
+	nextHourRateCents: number | undefined;
 };
 
 export type WeekAssessment = {
@@ -97,11 +102,22 @@ export function assessWeek(input: LiveWeekInput, preview?: ShiftPreview): WeekAs
 		shifts,
 		days: input.weekDates.map((date, dayIndex) => assessDay(input, planningRows, issues, date, dayIndex)),
 		employees: input.employees.map((employee) => {
-			const contractMinutes = termsByEmployee.get(employee.id)?.weeklyContractMinutes;
+			const terms = termsByEmployee.get(employee.id);
+			const contractMinutes = terms?.weeklyContractMinutes;
 			const plannedMinutes =
 				sumPlannedMinutes(shifts.filter((shift) => shift.employeeId === employee.id)) +
 				sumTrainingMinutes(input.plannedActivities, employee.id);
-			return { employeeId: employee.id, plannedMinutes, contractMinutes, status: judgeEmployeeHours(plannedMinutes, contractMinutes) };
+			return {
+				employeeId: employee.id,
+				plannedMinutes,
+				contractMinutes,
+				status: judgeEmployeeHours(plannedMinutes, contractMinutes),
+				overtime: splitWeeklyOvertime(plannedMinutes, input.overtimeRules),
+				nextHourRateCents:
+					terms?.hourlyRateCents === undefined
+						? undefined
+						: computeWeeklyPay(plannedMinutes, terms.hourlyRateCents, input.overtimeRules).nextHourRateCents
+			};
 		})
 	};
 }

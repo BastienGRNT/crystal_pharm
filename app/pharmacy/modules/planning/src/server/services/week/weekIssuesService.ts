@@ -5,16 +5,17 @@ import { listAvailabilityRules } from '../../repositories/availabilityRuleReposi
 import { listEmployeeTerms } from '../../repositories/employeeTermsRepository';
 import { listPlannedActivities } from '../../repositories/plannedActivityRepository';
 import { listPeakWindows } from '../../repositories/peakWindowRepository';
-import { findPlanningRules } from '../../repositories/planningSettingsRepository';
+import { findOvertimeRules, findPlanningRules } from '../../repositories/planningSettingsRepository';
 import { getPlanningOfWeek, listOpeningPeriodsByDate } from '../team/teamPlanningService';
 
 /** Tout ce qu'il faut pour juger la semaine du lundi donné, y compris dans le navigateur pendant un glissement. */
 export async function loadLiveWeekInput(tenantId: string, monday: Date): Promise<LiveWeekInput> {
 	const weekDates = listWeekDays(monday).map(toIsoDate);
-	const [weekPlanning, openingPeriodsByDate, rules, terms, availabilityRules, peakWindows, plannedActivities] = await Promise.all([
+	const [weekPlanning, openingPeriodsByDate, rules, overtimeRules, terms, availabilityRules, peakWindows, plannedActivities] = await Promise.all([
 		getPlanningOfWeek(tenantId, monday),
 		listOpeningPeriodsByDate(tenantId, weekDates),
 		findPlanningRules(tenantId),
+		findOvertimeRules(tenantId),
 		listEmployeeTerms(tenantId),
 		listAvailabilityRules(tenantId, ['approved']),
 		listPeakWindows(tenantId),
@@ -29,6 +30,7 @@ export async function loadLiveWeekInput(tenantId: string, monday: Date): Promise
 		openingPeriodsByDate,
 		requirementWindowsByDate: weekDates.map((date) => listRequirementWindowsOfDate(peakWindows, date)),
 		rules,
+		overtimeRules,
 		terms,
 		availabilityRules,
 		plannedActivities

@@ -10,6 +10,13 @@ export type PlanningRulesFormValues = {
 	minimumRestHours: string;
 };
 
+export type OvertimeRulesFormValues = {
+	weeklyThresholdHours: string;
+	firstBandHours: string;
+	firstBandRatePercent: string;
+	beyondRatePercent: string;
+};
+
 export type EmployeeTermsFormRow = {
 	employeeId: string;
 	fullName: string;
@@ -30,9 +37,10 @@ export type PlanningSettingsPageData = {
 	peakWindows: PeakWindowView[];
 	templates: WeekTemplateView[];
 	rules: PlanningRulesFormValues;
+	overtimeRules: OvertimeRulesFormValues;
 	employees: EmployeeTermsFormRow[];
 };
 
 export type PlanningSettingsActionResult =
-	| { savedSection: 'rules' | 'terms' | 'peaks'; employeeId?: string }
-	| { failedSection: 'rules' | 'terms' | 'peaks'; employeeId?: string; message: string };
+	| { savedSection: 'rules' | 'overtime' | 'terms' | 'peaks'; employeeId?: string }
+	| { failedSection: 'rules' | 'overtime' | 'terms' | 'peaks'; employeeId?: string; message: string };

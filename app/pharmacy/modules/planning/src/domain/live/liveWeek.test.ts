@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { collectiveAgreementOvertimeRules } from '../overtime/overtimePay';
 import { defaultPlanningRules } from '../rules/planningRules';
 import { applyShiftPreview, assessWeek, type LiveWeekInput } from './liveWeek';
 
@@ -16,6 +17,7 @@ const input: LiveWeekInput = {
 	openingPeriodsByDate: weekDates.map((_, index) => (index === 0 ? [{ opensAt: '09:00', closesAt: '19:00' }] : [])),
 	requirementWindowsByDate: weekDates.map(() => []),
 	rules: { ...defaultPlanningRules, minimumPeoplePresent: 1, minimumPharmacistsPresent: 1 },
+	overtimeRules: collectiveAgreementOvertimeRules,
 	terms: [{ employeeId: 'pharmacien', weeklyContractMinutes: 10 * 60, hourlyRateCents: undefined, isStudent: false, isPlannedManually: false, availabilityValidation: 'manual' }],
 	availabilityRules: [],
 	plannedActivities: []

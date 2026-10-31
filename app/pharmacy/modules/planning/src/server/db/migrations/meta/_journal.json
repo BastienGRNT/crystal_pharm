@@ -43,6 +43,13 @@
       "when": 1793444088793,
       "tag": "0005_leave_requests_and_planned_activities",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793457252022,
+      "tag": "0006_overtime_rates",
+      "breakpoints": true
     }
   ]
 }

@@ -19,7 +19,14 @@
 	import { readEmployeeColorClasses, readShiftBlockClasses } from '../../atoms/employeeColor';
 	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
-	import { dayStatusClasses, hoursStatusClasses, hoursStatusLabels, weekCalendarHourHeightPixels } from './weekCalendar';
+	import { sumOvertimeMinutes } from '../../../domain/overtime/overtimePay';
+	import {
+		dayStatusClasses,
+		describeEmployeeOvertime,
+		hoursStatusClasses,
+		hoursStatusLabels,
+		weekCalendarHourHeightPixels
+	} from './weekCalendar';
 
 	type WeekCalendarProps = {
 		live: LiveWeekInput;
@@ -183,8 +190,10 @@
 		<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Employé à suivre et à placer en glissant sur le calendrier">
 			{#each orderedEmployees as employee (employee.id)}
 				{@const hoursOfEmployee = hoursByEmployee.get(employee.id)}
+				{@const overtimeDescription = hoursOfEmployee ? describeEmployeeOvertime(hoursOfEmployee, live.overtimeRules) : undefined}
 				<button
 					type="button"
+					title={overtimeDescription}
 					aria-pressed={brushEmployeeId === employee.id}
 					class="flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-small text-ink transition-colors {brushEmployeeId === employee.id
 						? `font-semibold ${readEmployeeColorClasses(colorIndexByEmployee.get(employee.id)).selected}`
@@ -198,6 +207,11 @@
 							{formatDuration(hoursOfEmployee.plannedMinutes)}{hoursOfEmployee.contractMinutes !== undefined ? ` / ${formatDuration(hoursOfEmployee.contractMinutes)}` : ''}
 							{#if hoursOfEmployee.status !== 'ok'}<span class="sr-only"> ({hoursStatusLabels[hoursOfEmployee.status]})</span>{/if}
 						</span>
+						{#if overtimeDescription}
+							<span class="text-small font-semibold text-warning tabular-nums">
+								+{formatDuration(sumOvertimeMinutes(hoursOfEmployee.overtime))} sup<span class="sr-only"> — {overtimeDescription}</span>
+							</span>
+						{/if}
 					{/if}
 				</button>
 			{/each}
