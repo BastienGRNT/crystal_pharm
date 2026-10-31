@@ -1,12 +1,9 @@
 <script lang="ts">
-	import { shiftChipToneClasses } from '../atoms/shiftChip';
 	import type { PlanningLegendItem, PlanningLegendSwatch } from './planningLegend';
 
 	let { items }: { items: PlanningLegendItem[] } = $props();
 
 	const swatchClasses: Record<PlanningLegendSwatch, string> = {
-		shiftStrong: shiftChipToneClasses.strong,
-		shiftSoft: shiftChipToneClasses.soft,
 		absence: 'bg-absence',
 		uncovered: 'bg-danger-soft shadow-[inset_0_0_0_1px_var(--danger)]',
 		closed: 'bg-surface-subtle shadow-[inset_0_0_0_1px_var(--line)]',

@@ -1,4 +1,4 @@
-export type PlanningLegendSwatch = 'shiftStrong' | 'shiftSoft' | 'absence' | 'uncovered' | 'closed' | 'now';
+export type PlanningLegendSwatch = 'absence' | 'uncovered' | 'closed' | 'now';
 
 export type PlanningLegendItem = {
 	label: string;

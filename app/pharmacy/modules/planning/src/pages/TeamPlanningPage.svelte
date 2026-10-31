@@ -16,7 +16,7 @@
 	import WeekCalendar from '../components/organisms/week/WeekCalendar.svelte';
 	import { assessWeek, type ShiftPreview } from '../domain/live/liveWeek';
 	import { submitShiftChange, type ShiftChange } from '../components/shift-dragging/submitShiftChange';
-	import { buildDayPeaks } from '../components/organisms/day/planningTimeline';
+	import { buildDayCoverage } from '../components/organisms/day/planningTimeline';
 	import { assignEmployeeColorIndexes } from '../domain/employees/employeeAppearance';
 	import type { AddShiftFailure, PlanningPageData, WeekGenerationFeedback } from './teamPlanningPageData';
 
@@ -45,15 +45,15 @@
 
 	const dayIndex = $derived(data.view === 'day' ? data.live.weekDates.indexOf(data.date) : -1);
 	const dayStatus = $derived(assessment.days[dayIndex]?.status);
-	const dayPeaks = $derived(data.view === 'day' ? buildDayPeaks(data.live.requirementWindowsByDate[dayIndex] ?? [], data.timelineMinutes) : []);
+	const dayCoverage = $derived(
+		data.view === 'day' && data.opening ? buildDayCoverage(assessment.days[dayIndex]?.pharmacistCoverage ?? [], data.timelineMinutes) : undefined
+	);
 	const colorIndexByEmployee = $derived(assignEmployeeColorIndexes(data.live.employees.map((employee) => employee.id)));
 	const hoursStatusByEmployee = $derived(new Map(assessment.employees.map((employee) => [employee.employeeId, employee.status])));
 
 	const pendingRequestCount = $derived(data.pendingLeaveRequests.length + data.pendingAvailabilityRequests.length);
 
 	const dayLegendItems: PlanningLegendItem[] = $derived([
-		{ label: 'Pharmacien', swatch: 'shiftStrong' },
-		{ label: 'Autre employé', swatch: 'shiftSoft' },
 		{ label: 'Absence', swatch: 'absence' },
 		{ label: 'Aucun pharmacien', swatch: 'uncovered' },
 		{ label: 'Pharmacie fermée', swatch: 'closed' },
@@ -127,7 +127,7 @@
 			rows={data.rows}
 			opening={data.opening}
 			{colorIndexByEmployee}
-			peaks={dayPeaks}
+			coverage={dayCoverage}
 			status={dayStatus}
 			{hoursStatusByEmployee}
 			now={data.now}

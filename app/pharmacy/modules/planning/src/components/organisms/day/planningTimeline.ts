@@ -1,8 +1,7 @@
+import { formatMinuteRange, type CoverageSegment } from '../../../domain/coverage/coverage';
 import { toTimelinePercent, type TimelineRange } from '../../../domain/calendar/timeline';
 import type { DayStatus } from '../../../domain/live/liveWeek';
 import type { ShiftChipTone } from '../../atoms/shiftChip';
-
-export const planningTimelineHourHeightPixels = 56;
 
 export const dayStatusLabels: Record<DayStatus, string> = {
 	ok: 'Journée couverte',
@@ -47,10 +46,18 @@ export type PlanningTimelineOpening = {
 	endPercent: number;
 };
 
-/** Une heure de pointe sur l'axe, en pourcentage de la journée. */
-export type PlanningTimelinePeak = {
-	startPercent: number;
-	endPercent: number;
+/** Une ligne de contrôle au-dessus des employés : des segments couverts ou non. */
+export type PlanningTimelineCoverage = {
+	label: string;
+	/** Lu avant chaque segment non couvert, dont le libellé ne donne que les heures. */
+	uncoveredLabel: string;
+	segments: {
+		key: string;
+		startPercent: number;
+		widthPercent: number;
+		isCovered: boolean;
+		label: string;
+	}[];
 };
 
 export type PlanningTimelineNow = {
@@ -58,9 +65,19 @@ export type PlanningTimelineNow = {
 	label: string;
 };
 
-export function buildDayPeaks(peakWindows: { startMinutes: number; endMinutes: number }[], timelineRange: TimelineRange): PlanningTimelinePeak[] {
-	return peakWindows.map((peakWindow) => ({
-		startPercent: toTimelinePercent(peakWindow.startMinutes, timelineRange),
-		endPercent: toTimelinePercent(peakWindow.endMinutes, timelineRange)
-	}));
+export function buildDayCoverage(coverageSegments: CoverageSegment[], timelineRange: TimelineRange): PlanningTimelineCoverage {
+	return {
+		label: 'Pharmacien présent',
+		uncoveredLabel: 'Aucun pharmacien',
+		segments: coverageSegments.map((segment) => {
+			const startPercent = toTimelinePercent(segment.startMinutes, timelineRange);
+			return {
+				key: String(segment.startMinutes),
+				startPercent,
+				widthPercent: toTimelinePercent(segment.endMinutes, timelineRange) - startPercent,
+				isCovered: segment.isCovered,
+				label: segment.isCovered ? 'Présent' : formatMinuteRange(segment)
+			};
+		})
+	};
 }
