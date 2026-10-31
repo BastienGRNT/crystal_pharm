@@ -4,14 +4,11 @@
 
 	type PlanningIssuesPanelProps = {
 		issues: PlanningIssue[];
-		/** Dans la vue semaine, chaque alerte mène à sa journée. */
-		linksToDay: boolean;
-		dayHrefPrefix: string;
 		/** Action qui complète le planning autour de ce qui est déjà posé. */
 		adaptFormAction: string;
 	};
 
-	let { issues, linksToDay, dayHrefPrefix, adaptFormAction }: PlanningIssuesPanelProps = $props();
+	let { issues, adaptFormAction }: PlanningIssuesPanelProps = $props();
 
 	const alertCount = $derived(issues.filter((issue) => issue.severity === 'alert').length);
 </script>
@@ -41,9 +38,6 @@
 					<span class="flex-1">
 						<span class="sr-only">{issue.severity === 'alert' ? 'Alerte : ' : 'À noter : '}</span>{issue.message}
 					</span>
-					{#if linksToDay}
-						<a href="{dayHrefPrefix}{issue.date}" class="text-small font-medium text-accent-text hover:underline">Voir la journée</a>
-					{/if}
 				</li>
 			{/each}
 		</ul>

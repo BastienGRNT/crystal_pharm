@@ -11,10 +11,10 @@
 </script>
 
 {#if requests.length > 0}
-	<section class="rounded-md border border-line bg-surface shadow-card" aria-label="Demandes à traiter">
+	<section class="rounded-md border border-line bg-surface shadow-card" aria-label="Disponibilités à valider">
 		<h2 class="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-ink">
 			<Icon name="clock" class="text-accent-text" />
-			À traiter
+			Disponibilités à valider
 			<StatusBadge tone="warning">{requests.length}</StatusBadge>
 		</h2>
 		<ul class="border-t border-line-soft">

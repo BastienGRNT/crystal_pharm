@@ -68,11 +68,13 @@ const activityFieldNames = ['employeeId', 'kind', 'date', 'startTime', 'endTime'
 const weekHref = (monday: Date): string => `?view=week&week=${formatWeekParameter(monday)}`;
 const dayHref = (day: Date): string => `?view=day&day=${toIsoDate(day)}`;
 
+const panelQueryKeys = new Set(['add', 'edit', 'template', 'activities', 'tools', 'pending']);
+
 /** La requête de la vue affichée, sans le panneau ni le nom d'une action de formulaire. */
 function readPageQuery(url: URL): URLSearchParams {
 	const pageQuery = new URLSearchParams(url.searchParams);
 	for (const key of [...pageQuery.keys()]) {
-		if (key === 'add' || key === 'edit' || key === 'template' || key === 'activities' || key.startsWith('/')) pageQuery.delete(key);
+		if (panelQueryKeys.has(key) || key.startsWith('/')) pageQuery.delete(key);
 	}
 	return pageQuery;
 }
@@ -99,9 +101,20 @@ function buildFormActions(url: URL): FormActions {
 	const pageQueryWithAddPanel = withQueryParameter(pageQuery, 'add', '1');
 	const pageQueryWithSavePanel = withQueryParameter(pageQuery, 'template', 'save');
 	const pageQueryWithActivitiesPanel = withQueryParameter(pageQuery, 'activities', '1');
+	const pageQueryWithPendingPanel = withQueryParameter(pageQuery, 'pending', '1');
 	const editedShiftId = url.searchParams.get('edit');
 
 	return {
+		toolsPanel: {
+			isOpen: url.searchParams.get('tools') === '1',
+			openHref: toPageHref(url, withQueryParameter(pageQuery, 'tools', '1')),
+			closeHref: pageHref
+		},
+		pendingPanel: {
+			isOpen: url.searchParams.get('pending') === '1',
+			openHref: toPageHref(url, pageQueryWithPendingPanel),
+			closeHref: pageHref
+		},
 		saveTemplatePanel: {
 			isOpen: url.searchParams.get('template') === 'save',
 			openHref: toPageHref(url, pageQueryWithSavePanel),
@@ -129,8 +142,8 @@ function buildFormActions(url: URL): FormActions {
 		editShiftHrefPrefix: toPageHref(url, withQueryParameter(pageQuery, 'edit', '')),
 		updateShiftFormAction: toActionHref(editedShiftId ? withQueryParameter(pageQuery, 'edit', editedShiftId) : pageQuery, 'updateShift'),
 		deleteShiftFormAction: toActionHref(pageQuery, 'deleteShift'),
-		decideAvailabilityFormAction: toActionHref(pageQuery, 'decideAvailability'),
-		decideLeaveFormAction: toActionHref(pageQuery, 'decideLeave'),
+		decideAvailabilityFormAction: toActionHref(pageQueryWithPendingPanel, 'decideAvailability'),
+		decideLeaveFormAction: toActionHref(pageQueryWithPendingPanel, 'decideLeave'),
 		activitiesPanel: {
 			isOpen: url.searchParams.get('activities') === '1',
 			openHref: toPageHref(url, pageQueryWithActivitiesPanel),
@@ -377,6 +390,10 @@ function redirectToDisplayedView(url: URL): never {
 	redirect(303, toPageHref(url, readPageQuery(url)));
 }
 
+function redirectToPendingRequests(url: URL): never {
+	redirect(303, toPageHref(url, withQueryParameter(readPageQuery(url), 'pending', '1')));
+}
+
 export const actions = {
 	addShift: async ({ request, url, locals }) => {
 		const { tenantId } = await requirePlanningManager(locals.user);
@@ -418,7 +435,7 @@ export const actions = {
 		if (decision !== 'approved' && decision !== 'declined') return fail(400, { message: 'Décision inconnue.' });
 
 		await decideAvailabilityRule(tenantId, String(formData.get('ruleId') ?? ''), decision);
-		redirectToDisplayedView(url);
+		redirectToPendingRequests(url);
 	},
 
 	decideLeave: async ({ request, url, locals }) => {
@@ -429,7 +446,7 @@ export const actions = {
 
 		const result = await decideLeaveRequest(tenantId, String(formData.get('leaveRequestId') ?? ''), decision);
 		if (!result.isSaved) return fail(400, { message: result.message });
-		redirectToDisplayedView(url);
+		redirectToPendingRequests(url);
 	},
 
 	addActivity: async ({ request, url, locals }) => {
