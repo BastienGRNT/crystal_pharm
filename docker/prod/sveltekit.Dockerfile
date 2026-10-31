@@ -7,8 +7,11 @@ ARG APP_PACKAGE
 ARG BUILD_MODE=production
 RUN npm install --global pnpm@11.22.0
 WORKDIR /repository/app
+COPY app/pnpm-lock.yaml app/pnpm-workspace.yaml ./
+# Télécharge les dépendances avant de copier le code : cette couche ne change que si le lockfile change.
+RUN pnpm fetch
 COPY app/ ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --offline
 RUN NODE_ENV=${BUILD_MODE} pnpm --filter ${APP_PACKAGE} build
 RUN pnpm --filter ${APP_PACKAGE} --prod --legacy deploy /runtime \
  && cp -r ${APP_DIRECTORY}/build /runtime/build
