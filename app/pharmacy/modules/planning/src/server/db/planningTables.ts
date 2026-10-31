@@ -16,6 +16,8 @@ import {
 	uuid
 } from 'drizzle-orm/pg-core';
 import type { AbsenceKind } from '../../domain/planning';
+import type { PlannedActivityKind } from '../../domain/activities/plannedActivities';
+import type { AbsenceStatus } from '../../domain/leave/leaveRequests';
 import type { AvailabilityKind, AvailabilityStatus } from '../../domain/availability/availabilityRules';
 import type { AvailabilityValidation } from '../../domain/rules/employeeTerms';
 import { defaultPlanningRules } from '../../domain/rules/planningRules';
@@ -58,8 +60,9 @@ export const shifts = planningSchema.table(
 );
 
 const absenceKinds = ['Congé', 'RTT', 'Arrêt maladie', 'Autre'] as const satisfies readonly AbsenceKind[];
+const absenceStatuses = ['pending', 'approved', 'declined'] as const satisfies readonly AbsenceStatus[];
 
-/** Une absence d'un Employee, du premier au dernier jour compris. */
+/** Une absence d'un Employee, du premier au dernier jour compris ; seule une absence acceptée compte dans le planning. */
 export const absences = planningSchema.table(
 	'absences',
 	{
@@ -71,10 +74,15 @@ export const absences = planningSchema.table(
 		firstDate: date('first_date', { mode: 'string' }).notNull(),
 		lastDate: date('last_date', { mode: 'string' }).notNull(),
 		kind: text('kind').$type<AbsenceKind>().notNull(),
+		status: text('status').$type<AbsenceStatus>().notNull().default('approved'),
+		note: text('note').notNull().default(''),
+		decidedAt: timestampWithTimeZone('decided_at'),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
 	},
 	(table) => [
 		index('absences_tenant_id_first_date_index').on(table.tenantId, table.firstDate),
+		index('absences_tenant_id_status_index').on(table.tenantId, table.status),
+		check('absences_status_is_known', sql.raw(`status in (${absenceStatuses.map((status) => `'${status}'`).join(', ')})`)),
 		check('absences_last_date_not_before_first', sql`${table.lastDate} >= ${table.firstDate}`),
 		check(
 			'absences_kind_is_known',
@@ -189,9 +197,14 @@ export const availabilityRules = planningSchema.table(
 	]
 );
 
-export type PlanningNoticeKind = 'availability-requested' | 'availability-decided';
+export type PlanningNoticeKind = 'availability-requested' | 'availability-decided' | 'leave-requested' | 'leave-decided';
 
-const planningNoticeKinds = ['availability-requested', 'availability-decided'] as const satisfies readonly PlanningNoticeKind[];
+const planningNoticeKinds = [
+	'availability-requested',
+	'availability-decided',
+	'leave-requested',
+	'leave-decided'
+] as const satisfies readonly PlanningNoticeKind[];
 
 /** Une notification dans l'application, pour un compte du Tenant (sans clé étrangère : le compte vit dans un autre schéma). */
 export const planningNotices = planningSchema.table(
@@ -210,6 +223,32 @@ export const planningNotices = planningSchema.table(
 		index('planning_notices_tenant_id_recipient_created_index').on(table.tenantId, table.recipientAccountId, table.createdAt),
 		check('planning_notices_kind_is_known', sql.raw(`kind in (${quoted(planningNoticeKinds)})`)),
 		ofActiveTenant('planning_notices_of_active_tenant')
+	]
+);
+
+const plannedActivityKinds = ['training', 'on-call'] as const satisfies readonly PlannedActivityKind[];
+
+/** Une formation ou une astreinte d'un Employee, posée par le titulaire sur une journée. */
+export const plannedActivities = planningSchema.table(
+	'planned_activities',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id').notNull(),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'cascade' }),
+		kind: text('kind').$type<PlannedActivityKind>().notNull(),
+		date: date('date', { mode: 'string' }).notNull(),
+		startTime: time('start_time').notNull(),
+		endTime: time('end_time').notNull(),
+		label: text('label').notNull().default(''),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('planned_activities_tenant_id_date_index').on(table.tenantId, table.date),
+		check('planned_activities_kind_is_known', sql.raw(`kind in (${quoted(plannedActivityKinds)})`)),
+		check('planned_activities_ends_after_start', sql`${table.startTime} < ${table.endTime}`),
+		ofActiveTenant('planned_activities_of_active_tenant')
 	]
 );
 

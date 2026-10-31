@@ -42,6 +42,11 @@ export type FormActions = {
 	updateShiftFormAction: string;
 	deleteShiftFormAction: string;
 	decideAvailabilityFormAction: string;
+	decideLeaveFormAction: string;
+	/** Le panneau des formations et astreintes de la semaine. */
+	activitiesPanel: AddShiftPanel;
+	addActivityFormAction: string;
+	removeActivityFormAction: string;
 	saveTemplatePanel: AddShiftPanel;
 	applyTemplatePanel: AddShiftPanel;
 	generateWeekFormAction: string;
@@ -64,6 +69,18 @@ export type PendingAvailabilityRequestView = {
 	note: string;
 };
 
+export type PendingLeaveRequestView = {
+	leaveRequestId: string;
+	employeeName: string;
+	summary: string;
+	note: string;
+	/** Calculé par le générateur : l'équipe tient-elle toutes les semaines touchées sans la personne ? */
+	isTeamSufficient: boolean;
+	/** Une phrase par plage qu'il ne serait plus possible de tenir. */
+	shortages: string[];
+	overlappingRequesterNames: string[];
+};
+
 export type CommonPlanningPageData = FormActions & {
 	viewOptions: SegmentedControlOption[];
 	periodNavigation: PeriodNavigation;
@@ -77,6 +94,7 @@ export type CommonPlanningPageData = FormActions & {
 	/** Le début du lien vers une journée : on y ajoute sa date. */
 	dayHrefPrefix: string;
 	pendingAvailabilityRequests: PendingAvailabilityRequestView[];
+	pendingLeaveRequests: PendingLeaveRequestView[];
 	settingsHref: string;
 	templates: WeekTemplateView[];
 };

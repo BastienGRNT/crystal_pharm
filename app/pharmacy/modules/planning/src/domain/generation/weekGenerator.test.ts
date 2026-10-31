@@ -32,6 +32,7 @@ const buildInput = (employees: GenerationEmployee[], overrides: Partial<Generati
 	absences: [],
 	availabilityRules: [],
 	existingShifts: [],
+	plannedActivities: [],
 	...overrides
 });
 
@@ -53,7 +54,8 @@ const toIssues = (input: GenerationInput, result: ReturnType<typeof generateWeek
 		requirementWindowsByDate: input.requirementWindowsByDate,
 		rules: input.rules,
 		termsByEmployee: new Map(),
-		availabilityRules: input.availabilityRules
+		availabilityRules: input.availabilityRules,
+		plannedActivities: input.plannedActivities
 	}).filter((issue) => issue.kind === 'not-enough-pharmacists' || issue.kind === 'not-enough-people');
 };
 
@@ -80,6 +82,40 @@ describe('generateWeek', () => {
 		const { proposedShifts } = generateWeek(input);
 		expect(proposedShifts.some((shift) => shift.employeeId === 'pharmacien-1' && shift.date <= '2026-10-28')).toBe(false);
 		expect(proposedShifts.some((shift) => shift.employeeId === 'etudiant' && shift.date === '2026-10-26')).toBe(false);
+	});
+
+	it('ne pose rien pendant une formation ou une astreinte', () => {
+		const input = buildInput(team, {
+			plannedActivities: [
+				{ id: 'f', employeeId: 'pharmacien-1', kind: 'training', date: '2026-10-26', startTime: '09:00', endTime: '19:30', label: '' },
+				{ id: 'g', employeeId: 'preparateur', kind: 'on-call', date: '2026-10-27', startTime: '14:00', endTime: '19:30', label: '' }
+			]
+		});
+		const { proposedShifts } = generateWeek(input);
+		expect(proposedShifts.some((shift) => shift.employeeId === 'pharmacien-1' && shift.date === '2026-10-26')).toBe(false);
+		expect(
+			proposedShifts.some((shift) => shift.employeeId === 'preparateur' && shift.date === '2026-10-27' && shift.endTime > '14:00')
+		).toBe(false);
+	});
+
+	it('compte une formation dans les heures du contrat', () => {
+		const contractOnly = [person('preparateur', { weeklyContractMinutes: 10 * 60 })];
+		const withoutTraining = generateWeek(buildInput(contractOnly, { rules: { ...defaultPlanningRules, minimumPeoplePresent: 0, minimumPharmacistsPresent: 0 } }));
+		const withTraining = generateWeek(
+			buildInput(contractOnly, {
+				rules: { ...defaultPlanningRules, minimumPeoplePresent: 0, minimumPharmacistsPresent: 0 },
+				plannedActivities: [{ id: 'f', employeeId: 'preparateur', kind: 'training', date: '2026-10-28', startTime: '09:00', endTime: '13:00', label: '' }]
+			})
+		);
+		const plannedMinutes = (result: ReturnType<typeof generateWeek>) =>
+			result.proposedShifts.reduce((total, shift) => {
+				const [startHours = 0, startMinutes = 0] = shift.startTime.split(':').map(Number);
+				const [endHours = 0, endMinutes = 0] = shift.endTime.split(':').map(Number);
+				return total + endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
+			}, 0);
+		expect(plannedMinutes(withoutTraining)).toBeGreaterThanOrEqual(10 * 60);
+		expect(plannedMinutes(withTraining)).toBeGreaterThanOrEqual(6 * 60);
+		expect(plannedMinutes(withTraining)).toBeLessThanOrEqual(plannedMinutes(withoutTraining) - 3 * 60);
 	});
 
 	it('signale la plage sans pharmacien quand tous sont indisponibles', () => {

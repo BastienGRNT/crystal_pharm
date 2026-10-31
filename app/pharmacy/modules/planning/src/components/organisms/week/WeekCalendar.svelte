@@ -11,6 +11,7 @@
 	import { computeWeekTimelineRange, listTimelineHours } from '../../../domain/calendar/timeline';
 	import { formatMinuteRange, formatTimeOfDay, listCoverageGaps } from '../../../domain/coverage/coverage';
 	import type { LiveWeekInput, ShiftPreview, WeekAssessment } from '../../../domain/live/liveWeek';
+	import { plannedActivityKindLabels, type PlannedActivity } from '../../../domain/activities/plannedActivities';
 	import { formatDuration, toMinutesSinceMidnight, type Employee, type Shift } from '../../../domain/planning';
 	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
@@ -59,6 +60,10 @@
 	function listAbsentEmployees(date: string): Employee[] {
 		const absentIds = new Set(live.absences.filter((absence) => absence.firstDate <= date && absence.lastDate >= date).map((absence) => absence.employeeId));
 		return orderedEmployees.filter((employee) => absentIds.has(employee.id));
+	}
+
+	function listActivitiesOfDate(date: string): PlannedActivity[] {
+		return live.plannedActivities.filter((activity) => activity.date === date);
 	}
 
 	function listEmployeeIdsWithIssue(date: string): Set<string> {
@@ -204,6 +209,16 @@
 						<div class="min-h-6 border-t border-line-soft px-1.5 py-0.5 text-small text-ink-muted">
 							{#each absentEmployees as employee (employee.id)}
 								<span class="mr-1 inline-block rounded-xs bg-absence px-1.5 text-on-absence">{employee.fullName} · absent</span>
+							{/each}
+							{#each listActivitiesOfDate(date) as activity (activity.id)}
+								{@const employee = live.employees.find((candidate) => candidate.id === activity.employeeId)}
+								<span
+									class="mr-1 inline-block rounded-xs border border-line px-1.5 text-ink"
+									title={activity.label === '' ? undefined : activity.label}
+								>
+									{employee?.fullName.split(' ')[0] ?? ''} · {plannedActivityKindLabels[activity.kind].toLocaleLowerCase('fr')}
+									<span class="tabular-nums">{activity.startTime}–{activity.endTime}</span>
+								</span>
 							{/each}
 						</div>
 					</div>

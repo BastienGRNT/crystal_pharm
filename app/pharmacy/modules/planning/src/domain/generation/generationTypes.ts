@@ -1,3 +1,4 @@
+import type { PlannedActivity } from '../activities/plannedActivities';
 import type { AvailabilityRule } from '../availability/availabilityRules';
 import type { OpeningHours } from '../coverage/coverage';
 import type { RequirementWindow } from '../coverage/staffing';
@@ -30,6 +31,8 @@ export type GenerationInput = {
 	availabilityRules: AvailabilityRule[];
 	/** Ce qui est déjà posé : la génération le garde et ne comble que ce qui manque. */
 	existingShifts: Shift[];
+	/** Formations et astreintes : la personne n'est pas au comptoir ; une formation compte dans ses heures. */
+	plannedActivities: PlannedActivity[];
 };
 
 export type ProposedShift = {

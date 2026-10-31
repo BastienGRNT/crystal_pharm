@@ -17,13 +17,20 @@ import {
 } from '../domain/calendar/week';
 import { buildPlanningRows, formatDuration, sumPlannedMinutes } from '../domain/planning';
 import { buildDefaultEmployeeTerms } from '../domain/rules/employeeTerms';
-import type { AddAvailabilityFailure, MyPlanningPageData } from '../pages/myPlanningPageData';
+import { absenceStatusLabels, describeLeave, requestableLeaveKinds } from '../domain/leave/leaveRequests';
+import type {
+	AddAvailabilityFailure,
+	LeaveRequestFailure,
+	LeaveRequestFeedback,
+	MyPlanningPageData
+} from '../pages/myPlanningPageData';
 import { listAvailabilityRulesOfEmployee } from './repositories/availabilityRuleRepository';
 import { findEmployeeTerms } from './repositories/employeeTermsRepository';
 import { listPlanningNoticesOfAccount, markPlanningNoticesAsRead } from './repositories/planningNoticeRepository';
 import { requireActiveTenantId } from './activeTenant.server';
 import { removeAvailabilityRule, submitAvailabilityRule } from './services/availability/availabilityService';
 import { getPlanningOfWeek } from './services/team/teamPlanningService';
+import { cancelLeaveRequest, listUpcomingLeavesOfEmployee, requestLeave } from './services/leave/leaveRequestService';
 import { getWeekStatus } from './services/week/weekStatusService';
 
 type MyPlanningRequest = {
@@ -32,6 +39,7 @@ type MyPlanningRequest = {
 };
 
 const availabilityFieldNames = ['kind', 'recurrence', 'weekday', 'date', 'startTime', 'endTime', 'note'] as const;
+const leaveFieldNames = ['kind', 'firstDate', 'lastDate', 'note'] as const;
 
 /** Ce que voit l'Employee relié au compte : sans Responsibility, mais seulement si la pharmacie a activé le planning. */
 async function requireEmployeeOfPlanning(user: AuthenticatedUser | null) {
@@ -48,12 +56,13 @@ export async function load({ url, locals }: MyPlanningRequest): Promise<MyPlanni
 	const monday = parseWeekParameter(url.searchParams.get('week'), today);
 	const weekDates = listWeekDays(monday).map(toIsoDate);
 
-	const [weekPlanning, weekStatus, rules, terms, notices] = await Promise.all([
+	const [weekPlanning, weekStatus, rules, terms, notices, leaves] = await Promise.all([
 		getPlanningOfWeek(tenantId, monday),
 		getWeekStatus(tenantId, monday),
 		listAvailabilityRulesOfEmployee(tenantId, employeeId),
 		findEmployeeTerms(tenantId, employeeId),
-		listPlanningNoticesOfAccount(tenantId, accountId)
+		listPlanningNoticesOfAccount(tenantId, accountId),
+		listUpcomingLeavesOfEmployee(tenantId, employeeId)
 	]);
 	await markPlanningNoticesAsRead(tenantId, accountId);
 
@@ -85,6 +94,18 @@ export async function load({ url, locals }: MyPlanningRequest): Promise<MyPlanni
 			status: rule.status
 		})),
 		notices: notices.map(({ id, message, isRead }) => ({ id, message, isRead })),
+		leaves: leaves.map((leave) => ({
+			id: leave.id,
+			summary: describeLeave(leave),
+			status: leave.status,
+			statusLabel: absenceStatusLabels[leave.status],
+			note: leave.note,
+			canCancel: leave.status === 'pending'
+		})),
+		requestableLeaveKinds: [...requestableLeaveKinds],
+		todayDate: toIsoDate(today),
+		requestLeaveFormAction: '?/requestLeave',
+		cancelLeaveFormAction: '?/cancelLeave',
 		isAvailabilityAutomaticallyValidated:
 			(terms ?? buildDefaultEmployeeTerms(employeeId)).availabilityValidation === 'automatic',
 		addAvailabilityFormAction: '?/addAvailability',
@@ -106,6 +127,30 @@ export const actions = {
 			{ ...values, employeeId }
 		);
 		if (!saveResult.isSaved) return fail(400, { message: saveResult.message, values } satisfies AddAvailabilityFailure);
+	},
+
+	requestLeave: async ({ request, locals }) => {
+		const { tenantId, accountId, employeeId } = await requireEmployeeOfPlanning(locals.user);
+		const formData = await request.formData();
+		const values = Object.fromEntries(
+			leaveFieldNames.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? '')])
+		) as Record<(typeof leaveFieldNames)[number], string>;
+
+		const result = await requestLeave(tenantId, { accountId, employeeId }, values);
+		if (!result.isSaved) return fail(400, { leaveMessage: result.message, leaveValues: values } satisfies LeaveRequestFailure);
+		return {
+			isTeamSufficient: result.staffingImpact.isTeamSufficient,
+			leaveConfirmation: result.staffingImpact.isTeamSufficient
+				? 'Demande envoyée. D’après le planning, l’équipe reste suffisante ces jours-là.'
+				: 'Demande envoyée. Il manquerait du monde ces jours-là : votre titulaire verra comment s’organiser.'
+		} satisfies LeaveRequestFeedback;
+	},
+
+	cancelLeave: async ({ request, locals }) => {
+		const { tenantId, accountId, employeeId } = await requireEmployeeOfPlanning(locals.user);
+		const formData = await request.formData();
+		const result = await cancelLeaveRequest(tenantId, { accountId, employeeId }, String(formData.get('leaveRequestId') ?? ''));
+		if (!result.isSaved) return fail(400, { leaveMessage: result.message, leaveValues: {} } satisfies LeaveRequestFailure);
 	},
 
 	removeAvailability: async ({ request, locals }) => {

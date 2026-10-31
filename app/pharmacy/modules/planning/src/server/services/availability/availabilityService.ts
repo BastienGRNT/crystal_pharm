@@ -1,6 +1,5 @@
-import { readRequiredEnvironmentVariable } from '@crystal-pharm/auth/toolkit';
-import { composeAvailabilityDecisionEmail, composeAvailabilityRequestEmail, sendEmail } from '@crystal-pharm/email';
-import { listEmployees, listTenantMembers, type TenantMember } from '@crystal-pharm/pharmacy-db';
+import { composeAvailabilityDecisionEmail, composeAvailabilityRequestEmail } from '@crystal-pharm/email';
+import { listEmployees } from '@crystal-pharm/pharmacy-db';
 import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import * as v from 'valibot';
 import {
@@ -19,11 +18,14 @@ import {
 } from '../../repositories/availabilityRuleRepository';
 import { findEmployeeTerms } from '../../repositories/employeeTermsRepository';
 import { insertPlanningNotices } from '../../repositories/planningNoticeRepository';
-
-const managerPlanningResponsibilityKey = 'manage-team-planning';
-
-export const pendingRequestsPathname = '/planning';
-export const myPlanningPathname = '/mon-planning';
+import {
+	buildPharmacyUrl,
+	findAccountOfEmployee,
+	listPlanningManagers,
+	myPlanningPathname,
+	sendIfHasEmail,
+	teamPlanningPathname
+} from '../notifications/planningManagers';
 
 export type AvailabilitySubmission = {
 	kind: string;
@@ -143,9 +145,7 @@ async function notifyManagersOfRequest(
 	employeeName: string,
 	rule: AvailabilityRule
 ): Promise<void> {
-	const managers = (await listTenantMembers(tenantId)).filter(
-		(member) => member.accountId !== submitterAccountId && member.responsibilityKeys.includes(managerPlanningResponsibilityKey)
-	);
+	const managers = await listPlanningManagers(tenantId, submitterAccountId);
 	const summary = describeAvailabilityRule(rule).toLocaleLowerCase('fr');
 	await insertPlanningNotices(
 		tenantId,
@@ -153,16 +153,16 @@ async function notifyManagersOfRequest(
 			recipientAccountId: manager.accountId,
 			kind: 'availability-requested' as const,
 			message: `${employeeName} : ${summary}.`,
-			linkPathname: pendingRequestsPathname
+			linkPathname: teamPlanningPathname
 		}))
 	);
 	await Promise.all(managers.flatMap((manager) => sendIfHasEmail(manager, (to) =>
-		composeAvailabilityRequestEmail({ to, employeeName, summary, reviewUrl: `${readRequiredEnvironmentVariable('PHARMACY_URL')}${pendingRequestsPathname}` })
+		composeAvailabilityRequestEmail({ to, employeeName, summary, reviewUrl: buildPharmacyUrl(teamPlanningPathname) })
 	)));
 }
 
 async function notifyEmployeeOfDecision(tenantId: string, rule: AvailabilityRule, isApproved: boolean): Promise<void> {
-	const account = (await listTenantMembers(tenantId)).find((member) => member.employeeId === rule.employeeId);
+	const account = await findAccountOfEmployee(tenantId, rule.employeeId);
 	if (!account) return;
 	const summary = describeAvailabilityRule(rule);
 	await insertPlanningNotices(tenantId, [
@@ -181,12 +181,8 @@ async function notifyEmployeeOfDecision(tenantId: string, rule: AvailabilityRule
 				employeeFirstName,
 				summary,
 				isApproved,
-				myPlanningUrl: `${readRequiredEnvironmentVariable('PHARMACY_URL')}${myPlanningPathname}`
+				myPlanningUrl: buildPharmacyUrl(myPlanningPathname)
 			})
 		)
 	);
-}
-
-function sendIfHasEmail(member: TenantMember, composeEmail: (to: string) => Parameters<typeof sendEmail>[0]): Promise<void>[] {
-	return member.email ? [sendEmail(composeEmail(member.email))] : [];
 }

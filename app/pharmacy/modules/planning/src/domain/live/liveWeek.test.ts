@@ -17,7 +17,8 @@ const input: LiveWeekInput = {
 	requirementWindowsByDate: weekDates.map(() => []),
 	rules: { ...defaultPlanningRules, minimumPeoplePresent: 1, minimumPharmacistsPresent: 1 },
 	terms: [{ employeeId: 'pharmacien', weeklyContractMinutes: 10 * 60, hourlyRateCents: undefined, isStudent: false, isPlannedManually: false, availabilityValidation: 'manual' }],
-	availabilityRules: []
+	availabilityRules: [],
+	plannedActivities: []
 };
 
 describe('assessWeek', () => {

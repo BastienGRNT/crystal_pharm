@@ -1,4 +1,5 @@
 import type { AvailabilityKind, AvailabilityStatus } from '../domain/availability/availabilityRules';
+import type { AbsenceStatus, RequestableLeaveKind } from '../domain/leave/leaveRequests';
 
 export type MyPlanningDay = {
 	date: string;
@@ -23,6 +24,16 @@ export type MyPlanningNoticeView = {
 	isRead: boolean;
 };
 
+export type MyLeaveView = {
+	id: string;
+	summary: string;
+	status: AbsenceStatus;
+	statusLabel: string;
+	note: string;
+	/** Seulement tant que la demande attend sa réponse. */
+	canCancel: boolean;
+};
+
 export type MyPlanningPageData = {
 	firstName: string;
 	periodLabel: string;
@@ -39,6 +50,24 @@ export type MyPlanningPageData = {
 	isAvailabilityAutomaticallyValidated: boolean;
 	addAvailabilityFormAction: string;
 	removeAvailabilityFormAction: string;
+	/** Les congés à venir ou en cours, demandés ou posés par le titulaire. */
+	leaves: MyLeaveView[];
+	requestableLeaveKinds: RequestableLeaveKind[];
+	/** Le premier jour qu'on peut demander. */
+	todayDate: string;
+	requestLeaveFormAction: string;
+	cancelLeaveFormAction: string;
+};
+
+export type LeaveRequestFailure = {
+	leaveMessage: string;
+	leaveValues: Record<string, string>;
+};
+
+/** La demande est partie : ce que le planning dit déjà de l'effectif ces jours-là. */
+export type LeaveRequestFeedback = {
+	leaveConfirmation: string;
+	isTeamSufficient: boolean;
 };
 
 export type AddAvailabilityFailure = {

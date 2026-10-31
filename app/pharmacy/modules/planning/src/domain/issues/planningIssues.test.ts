@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { PlannedActivity } from '../activities/plannedActivities';
 import { formatDuration, type Employee, type Shift, type WeekPlanning } from '../planning';
 import { buildDefaultEmployeeTerms, type EmployeeTerms } from '../rules/employeeTerms';
 import { defaultPlanningRules } from '../rules/planningRules';
@@ -20,7 +21,11 @@ const openOnMondayFrom9To19 = weekDates.map((_, dayIndex) =>
 	dayIndex === 0 ? [{ opensAt: '09:00', closesAt: '19:00' }] : []
 );
 
-function buildInput(weekPlanning: WeekPlanning, termsList: EmployeeTerms[] = []): PlanningIssueInput {
+function buildInput(
+	weekPlanning: WeekPlanning,
+	termsList: EmployeeTerms[] = [],
+	plannedActivities: PlannedActivity[] = []
+): PlanningIssueInput {
 	return {
 		weekPlanning,
 		weekDates,
@@ -28,7 +33,8 @@ function buildInput(weekPlanning: WeekPlanning, termsList: EmployeeTerms[] = [])
 		requirementWindowsByDate: weekDates.map(() => []),
 		rules: { ...defaultPlanningRules, minimumPeoplePresent: 2 },
 		termsByEmployee: new Map(termsList.map((terms) => [terms.employeeId, terms])),
-		availabilityRules: []
+		availabilityRules: [],
+		plannedActivities
 	};
 }
 
@@ -82,6 +88,44 @@ describe('detectPlanningIssues', () => {
 			})
 		);
 		expect(issues.map((issue) => issue.kind)).toContain('employee-on-absence');
+	});
+
+	it('signale un créneau posé pendant une formation, et une formation pendant une absence', () => {
+		const training: PlannedActivity = { id: 'f', employeeId: 'as', kind: 'training', date: '2026-10-19', startTime: '14:00', endTime: '17:00', label: 'Vaccination' };
+		const issues = detectPlanningIssues(
+			buildInput(
+				{
+					employees: [pharmacist, assistant],
+					shifts: [shift('ph', '2026-10-19', '09:00', '19:00'), shift('as', '2026-10-19', '09:00', '19:00')],
+					absences: [{ id: 'a', employeeId: 'as', firstDate: '2026-10-19', lastDate: '2026-10-19', kind: 'Congé' }]
+				},
+				[],
+				[training]
+			)
+		);
+		expect(issues.find((issue) => issue.kind === 'shift-on-activity')?.message).toContain('formation de 14:00 à 17:00 (vaccination)');
+		expect(issues.map((issue) => issue.kind)).toContain('activity-on-absence');
+	});
+
+	it('alerte quand une astreinte est confiée à quelqu’un qui n’est pas pharmacien', () => {
+		const issues = detectPlanningIssues(
+			buildInput({ employees: [pharmacist, assistant], shifts: [], absences: [] }, [], [
+				{ id: 'g1', employeeId: 'as', kind: 'on-call', date: '2026-10-25', startTime: '09:00', endTime: '19:00', label: '' },
+				{ id: 'g2', employeeId: 'ph', kind: 'on-call', date: '2026-10-24', startTime: '09:00', endTime: '19:00', label: '' }
+			])
+		);
+		expect(issues.filter((issue) => issue.kind === 'on-call-without-pharmacist').map((issue) => issue.employeeId)).toEqual(['as']);
+	});
+
+	it('compte les heures de formation dans le contrat', () => {
+		const issues = detectPlanningIssues(
+			buildInput(
+				{ employees: [assistant], shifts: [shift('as', '2026-10-20', '09:00', '13:00')], absences: [] },
+				[{ ...buildDefaultEmployeeTerms('as'), weeklyContractMinutes: 7 * 60 }],
+				[{ id: 'f', employeeId: 'as', kind: 'training', date: '2026-10-21', startTime: '09:00', endTime: '12:00', label: '' }]
+			)
+		);
+		expect(issues.some((issue) => issue.kind === 'contract-hours-short')).toBe(false);
 	});
 
 	it('remarque un contrat dont les heures ne sont pas atteintes', () => {

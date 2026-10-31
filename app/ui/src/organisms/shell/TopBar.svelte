@@ -1,10 +1,15 @@
 <script lang="ts">
+	import type { NotificationsSummary } from './navigation';
+	import NotificationBell from './NotificationBell.svelte';
+
 	type TopBarProps = {
 		sectionLabel: string;
 		spaceLabel?: string;
+		/** Sans elles, pas de cloche. */
+		notifications?: NotificationsSummary;
 	};
 
-	let { sectionLabel, spaceLabel }: TopBarProps = $props();
+	let { sectionLabel, spaceLabel, notifications }: TopBarProps = $props();
 </script>
 
 <div
@@ -14,4 +19,7 @@
 		{#if spaceLabel}{spaceLabel} <span class="opacity-60">/</span>{/if}
 		<b class="font-semibold text-ink">{sectionLabel}</b>
 	</p>
+	{#if notifications}
+		<NotificationBell items={notifications.items} onOpen={notifications.onOpen} />
+	{/if}
 </div>

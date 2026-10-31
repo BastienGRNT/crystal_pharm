@@ -4,6 +4,8 @@
 	import type { PlanningLegendItem } from '../components/molecules/planningLegend';
 	import PendingAvailabilityRequestsPanel from '../components/organisms/availability/PendingAvailabilityRequestsPanel.svelte';
 	import PlanningIssuesPanel from '../components/organisms/issues/PlanningIssuesPanel.svelte';
+	import PendingLeaveRequestsPanel from '../components/organisms/leave/PendingLeaveRequestsPanel.svelte';
+	import PlannedActivitiesPanel from '../components/organisms/activities/PlannedActivitiesPanel.svelte';
 	import GenerationReportPanel from '../components/organisms/generation/GenerationReportPanel.svelte';
 	import SaveWeekTemplateForm from '../components/organisms/templates/SaveWeekTemplateForm.svelte';
 	import ApplyWeekTemplateForm from '../components/organisms/templates/ApplyWeekTemplateForm.svelte';
@@ -76,6 +78,7 @@
 		<Button type="submit" icon="sparkle">Proposer la semaine</Button>
 	</form>
 	<Button href={data.addShiftPanel.openHref} variant="secondary" icon="plus">Ajouter un créneau</Button>
+	<Button href={data.activitiesPanel.openHref} variant="secondary" icon="calendar-check">Formation ou astreinte</Button>
 	<Button href={data.applyTemplatePanel.openHref} variant="secondary" icon="calendar-dots">Appliquer une semaine type</Button>
 	<Button href={data.saveTemplatePanel.openHref} variant="ghost" icon="check">Enregistrer comme semaine type</Button>
 	<Button href={data.settingsHref} variant="ghost" icon="wrench">Règles et contrats</Button>
@@ -103,6 +106,8 @@
 {#if dragFailureMessage}
 	<Alert tone="danger" title="Créneau non modifié">{dragFailureMessage}</Alert>
 {/if}
+
+<PendingLeaveRequestsPanel requests={data.pendingLeaveRequests} decideFormAction={data.decideLeaveFormAction} />
 
 <PendingAvailabilityRequestsPanel
 	requests={data.pendingAvailabilityRequests}
@@ -154,6 +159,21 @@
 			formAction={data.addShiftFormAction}
 			cancelHref={data.addShiftPanel.closeHref}
 			employees={data.employees}
+			defaultDate={data.defaultShiftDate}
+			errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
+			submittedValues={form && 'values' in form ? form.values : undefined}
+		/>
+	</SidePanel>
+{/if}
+
+{#if data.activitiesPanel.isOpen}
+	<SidePanel title="Formations et astreintes" closeHref={data.activitiesPanel.closeHref}>
+		<PlannedActivitiesPanel
+			activities={data.live.plannedActivities}
+			employees={data.employees}
+			addFormAction={data.addActivityFormAction}
+			removeFormAction={data.removeActivityFormAction}
+			cancelHref={data.activitiesPanel.closeHref}
 			defaultDate={data.defaultShiftDate}
 			errorMessage={form && 'message' in form && !('isSuccess' in form) ? form.message : undefined}
 			submittedValues={form && 'values' in form ? form.values : undefined}

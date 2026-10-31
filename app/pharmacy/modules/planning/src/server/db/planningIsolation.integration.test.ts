@@ -50,6 +50,10 @@ async function insertTwoPharmaciesWithTheirPlanning(transaction: postgres.Transa
 			values (gen_random_uuid(), ${tenantId}, ${employeeId}, '2026-10-19', '08:30', '12:30')`;
 		await transaction`insert into planning.absences (id, tenant_id, employee_id, first_date, last_date, kind)
 			values (gen_random_uuid(), ${tenantId}, ${employeeId}, '2026-10-20', '2026-10-21', 'Congé')`;
+		await transaction`insert into planning.absences (id, tenant_id, employee_id, first_date, last_date, kind, status)
+			values (gen_random_uuid(), ${tenantId}, ${employeeId}, '2026-11-02', '2026-11-06', 'Congé', 'pending')`;
+		await transaction`insert into planning.planned_activities (id, tenant_id, employee_id, kind, date, start_time, end_time)
+			values (gen_random_uuid(), ${tenantId}, ${employeeId}, 'on-call', '2026-10-25', '09:00', '19:00')`;
 	}
 }
 
@@ -76,10 +80,37 @@ describe('isolation du planning (Row-Level Security du schéma planning)', () =>
 			await setActiveTenant(transaction, firstPharmacy.tenantId);
 
 			const shifts = await transaction`select tenant_id from planning.shifts`;
-			const absences = await transaction`select tenant_id from planning.absences`;
+			const absences = await transaction`select distinct tenant_id from planning.absences`;
 
 			expect(shifts.map(({ tenant_id }) => tenant_id)).toEqual([firstPharmacy.tenantId]);
 			expect(absences.map(({ tenant_id }) => tenant_id)).toEqual([firstPharmacy.tenantId]);
+		});
+	});
+
+	it('ne montre à une pharmacie que ses demandes de congé, formations et astreintes', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setActiveTenant(transaction, firstPharmacy.tenantId);
+
+			const pendingLeaves = await transaction`select tenant_id from planning.absences where status = 'pending'`;
+			const activities = await transaction`select tenant_id from planning.planned_activities`;
+
+			expect(pendingLeaves.map(({ tenant_id }) => tenant_id)).toEqual([firstPharmacy.tenantId]);
+			expect(activities.map(({ tenant_id }) => tenant_id)).toEqual([firstPharmacy.tenantId]);
+		});
+	});
+
+	it('ne laisse ni accepter le congé ni poser une astreinte pour une autre pharmacie', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setActiveTenant(transaction, firstPharmacy.tenantId);
+
+			const approvedLeaves = await transaction`update planning.absences set status = 'approved'
+				where tenant_id = ${secondPharmacy.tenantId}`;
+
+			expect(approvedLeaves.count).toBe(0);
+			await expect(
+				transaction`insert into planning.planned_activities (id, tenant_id, employee_id, kind, date, start_time, end_time)
+					values (gen_random_uuid(), ${secondPharmacy.tenantId}, ${secondPharmacy.employeeId}, 'training', '2026-10-22', '09:00', '12:00')`
+			).rejects.toThrow(/row-level security/);
 		});
 	});
 

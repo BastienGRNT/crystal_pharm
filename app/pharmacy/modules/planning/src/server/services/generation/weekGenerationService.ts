@@ -1,7 +1,6 @@
 import { formatDayTitle, toIsoDate } from '../../../domain/calendar/week';
 import { generateWeek } from '../../../domain/generation/weekGenerator';
-import type { GenerationEmployee } from '../../../domain/generation/generationTypes';
-import { indexTermsByEmployee } from '../../../domain/rules/employeeTerms';
+import { buildGenerationInput } from '../../../domain/generation/generationInput';
 import { findPlannedWeekStatus, savePlannedWeekStatus } from '../../repositories/plannedWeekRepository';
 import { insertShift, updateShiftRow } from '../../repositories/planningRepository';
 import { loadLiveWeekInput } from '../week/weekIssuesService';
@@ -21,34 +20,7 @@ export type WeekGenerationReport = {
 export async function generateWeekPlanning(tenantId: string, monday: Date): Promise<WeekGenerationReport> {
 	const mondayDate = toIsoDate(monday);
 	const [week, status] = await Promise.all([loadLiveWeekInput(tenantId, monday), findPlannedWeekStatus(tenantId, mondayDate)]);
-	const termsByEmployee = indexTermsByEmployee(
-		week.employees.map((employee) => employee.id),
-		week.terms
-	);
-	const employees = week.employees.map((employee): GenerationEmployee => {
-		const terms = termsByEmployee.get(employee.id);
-		return {
-			id: employee.id,
-			fullName: employee.fullName,
-			isPharmacist: employee.isPharmacist,
-			isStudent: terms?.isStudent ?? false,
-			isPlannedManually: terms?.isPlannedManually ?? false,
-			weeklyContractMinutes: terms?.weeklyContractMinutes,
-			hourlyRateCents: terms?.hourlyRateCents
-		};
-	});
-
-	const result = generateWeek({
-		weekDates: week.weekDates,
-		firstEditableDate: week.firstEditableDate,
-		openingPeriodsByDate: week.openingPeriodsByDate,
-		requirementWindowsByDate: week.requirementWindowsByDate,
-		rules: week.rules,
-		employees,
-		absences: week.absences,
-		availabilityRules: week.availabilityRules,
-		existingShifts: week.shifts
-	});
+	const result = generateWeek(buildGenerationInput(week));
 
 	for (const { reason: _reason, ...shift } of result.proposedShifts) await insertShift(tenantId, shift);
 	for (const { shiftId, reason: _reason, ...shift } of result.extendedShifts) await updateShiftRow(tenantId, shiftId, shift);
