@@ -15,19 +15,21 @@ export const pharmacieDuPort: MockTenant = {
       phone: '02 99 40 00 00',
       group: demoPharmacyGroups[2]?.group,
     },
-    modules: {
+    fixedSections: {
       openingHours: {
-        enabled: true,
-        data: {
           weeklySchedule: weekClosedOnMondayAndSaturdayAfternoon,
           onDutyPeriods: [{ startsAt: isoTimestampInHoursFromNow(1), endsAt: isoTimestampInHoursFromNow(13) }],
         },
-      },
+    },
+    modules: {
       team: { enabled: false },
       services: { enabled: false },
       news: { enabled: false },
       prescriptionUpload: { enabled: true, data: {} },
       loyaltyCard: { enabled: false },
+      brands: { enabled: false },
+      appointment: { enabled: false },
+      onlineOrder: { enabled: false },
     },
   }),
 };

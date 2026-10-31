@@ -23,7 +23,6 @@ export const atelierSettingsSchema = v.object({
     },
     defaultOption: 'instrumentSerif',
   }),
-  editorialHeadline: v.optional(v.pipe(v.string(), v.title('Accroche')), 'Prendre soin, simplement.'),
 });
 
 export type AtelierSettings = v.InferOutput<typeof atelierSettingsSchema>;

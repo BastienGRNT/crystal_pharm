@@ -11,7 +11,7 @@ const OnDutyPeriodSchema = v.object({
   endsAt: v.pipe(v.string(), v.isoTimestamp()),
 });
 
-export const OpeningHoursModuleDataSchema = v.object({
+export const OpeningHoursSectionDataSchema = v.object({
   weeklySchedule: v.object({
     monday: DailyOpeningPeriodsSchema,
     tuesday: DailyOpeningPeriodsSchema,
@@ -24,6 +24,6 @@ export const OpeningHoursModuleDataSchema = v.object({
   onDutyPeriods: v.optional(v.array(OnDutyPeriodSchema), []),
 });
 
-export type OpeningHoursModuleData = v.InferOutput<typeof OpeningHoursModuleDataSchema>;
-export type Weekday = keyof OpeningHoursModuleData['weeklySchedule'];
+export type OpeningHoursSectionData = v.InferOutput<typeof OpeningHoursSectionDataSchema>;
+export type Weekday = keyof OpeningHoursSectionData['weeklySchedule'];
 export type OnDutyPeriod = v.InferOutput<typeof OnDutyPeriodSchema>;

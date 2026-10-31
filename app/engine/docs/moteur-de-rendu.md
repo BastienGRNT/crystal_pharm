@@ -85,7 +85,7 @@ En partant de `createTenantSitePage` et en faisant Ctrl+clic :
 ## Ce qu'est un layout pour le moteur
 
 Une valeur de type `PharmacySiteLayout<Réglages>` : un schéma de réglages et un composant pour chacun
-des 6 modules. Le moteur ne sait rendre que ce type. Un layout qui oublie un module, ou dont un
+des 8 modules et des 4 sections fixes. Le moteur ne sait rendre que ce type. Un layout qui oublie un module ou une section, ou dont un
 composant attend de mauvaises props, ne compile pas.
 
 Le layout et ses pages sont trouvés à partir des dossiers de `engine/layouts/src/`, comme le dossier
@@ -126,11 +126,13 @@ pour qu'il n'oublie rien. Tout s'importe depuis `@crystal-pharm/renderer`.
 
 | Outil | Ce qu'il fait | Pourquoi il existe |
 |---|---|---|
-| `PharmacySiteLayout<Réglages>` | Le type que doit avoir chaque layout | Impose les 6 modules et un schéma de réglages |
+| `PharmacySiteLayout<Réglages>` | Le type que doit avoir chaque layout | Impose les 8 modules, les 4 sections fixes et un schéma de réglages |
 | `definePage<Réglages>({ title, component })` | Type une page | Impose un titre et des mentions légales |
 | `pageKit.Page({ legalNotice, children })` | Construit la page et y ajoute les mentions légales | Les mentions légales sont obligatoires |
 | `pageKit.LegalNotice({ class })` | Rend le bloc des mentions légales | Son contenu est le même partout, seul le style change |
 | `<pageKit.Module name="team" />` | Rend le composant du layout pour ce module, ou rien s'il est désactivé | Un module désactivé ne laisse aucune section vide |
+| `<pageKit.FixedSection name="hero" />` | Rend une section fixe (`hero`, `findUs`, `onDuty`, `openingHours`) | Une section fixe est toujours affichée |
+| `<pageKit.PlacedModules accepts={[…]} />` | Rend les modules activés dans l'ordre de `moduleOrder`, limités à `accepts` | L'ordre appartient à la pharmacie, les zones au layout |
 | `submitPrescription(form)` | Valide puis envoie l'ordonnance | Le seul moyen d'atteindre l'API |
 | `validatePrescription(form)` | Valide sans envoyer | Pour le formulaire par étapes |
 

@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { Button, DatePicker, Field, IconButton, Input, Textarea } from '@crystal-pharm/ui';
 	import { createEmptyArticleDraft, type ArticleDraft } from '../../domain/siteContentLists';
+	import SiteImageChooser from '../molecules/SiteImageChooser.svelte';
 
 	type ArticleListEditorProps = {
 		articles: ArticleDraft[];
+		uploadedImagePreviewUrls: Record<string, string>;
 		/** Appelé à l'ajout d'une actualité : la première rend le module affichable. */
 		onarticleadded?: () => void;
 	};
 
-	let { articles = $bindable(), onarticleadded }: ArticleListEditorProps = $props();
+	let { articles = $bindable(), uploadedImagePreviewUrls = $bindable(), onarticleadded }: ArticleListEditorProps = $props();
 
 	// La plus récente en haut, comme sur le site.
 	function addArticle(): void {
@@ -50,6 +52,12 @@
 					<DatePicker id={controlAttributes.id} name="articlePublishedAt" bind:value={article.publishedAt} />
 				{/snippet}
 			</Field>
+			<SiteImageChooser
+				label="Image de l’actualité"
+				defaultDescription="Sans image, l’actualité s’affiche sans illustration."
+				bind:image={article.image}
+				bind:uploadedImagePreviewUrls
+			/>
 		</div>
 	{:else}
 		<p class="text-small text-ink-muted">Aucune actualité pour l’instant : une campagne, un nouveau service, vos congés…</p>

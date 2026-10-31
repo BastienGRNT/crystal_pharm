@@ -10,6 +10,8 @@ function assemble(sources: Partial<DisplayedTenantSiteSources>) {
 		layoutId: 'neighborhood',
 		layoutSettings: {},
 		enabledModules: [],
+		moduleOrder: [],
+		fixedSections: { hero: {}, findUs: {}, openingHours: undefined },
 		pharmacy: { name: 'Pharmacie du Port', address: { street: '1 quai', postalCode: '76600', city: 'Le Havre' }, phone: '02 35 00 00 00' },
 		group: undefined,
 		moduleData: {},
@@ -58,5 +60,19 @@ describe('assembleDisplayedTenantSite', () => {
 		expect(tenantSiteInput.modules.loyaltyCard).toEqual({ enabled: false });
 		expect(tenantSiteInput.pharmacy.group?.mandatoryModules).toEqual([]);
 		expect(unavailableMandatoryModules).toEqual(['loyaltyCard']);
+	});
+
+	it('masque une liste de marques vide, et affiche une liste remplie', () => {
+		const brands = { brands: [{ name: 'La Roche-Posay' }] };
+
+		expect(assemble({ enabledModules: ['brands'], moduleData: { brands: { brands: [] } } }).tenantSiteInput.modules.brands).toEqual({ enabled: false });
+		expect(assemble({ enabledModules: ['brands'], moduleData: { brands } }).tenantSiteInput.modules.brands).toEqual({ enabled: true, data: brands });
+	});
+
+	it('garde l’ordre voulu sans doublon, et montre une semaine fermée tant que les horaires manquent', () => {
+		const { tenantSiteInput } = assemble({ moduleOrder: ['news', 'team', 'news'] });
+
+		expect(tenantSiteInput.moduleOrder).toEqual(['news', 'team']);
+		expect(tenantSiteInput.fixedSections.openingHours.weeklySchedule.monday).toEqual([]);
 	});
 });

@@ -9,6 +9,8 @@ export const ServicesModuleDataSchema = v.object({
       title: v.pipe(v.string(), v.nonEmpty()),
       description: v.pipe(v.string(), v.nonEmpty()),
       iconName: v.optional(ServiceIconNameSchema),
+      /** L'icône choisie par la pharmacie : elle remplace celle d'`iconName`. */
+      iconUrl: v.optional(v.string()),
     }),
   ),
 });

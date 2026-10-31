@@ -161,6 +161,40 @@
   font-size: 0.8rem;
 }
 
+/* Marques, commande en ligne, rendez-vous, nous trouver */
+
+.layout-essential .essential-brands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 0;
+  list-style: none;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+.layout-essential .essential-block--find-us p + p,
+.layout-essential .essential-block--online-order p + .essential-link {
+  margin-top: 4px;
+}
+
+.layout-essential .essential-masthead__headline {
+  font-weight: 700;
+}
+
+.layout-essential .essential-masthead__image {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.2);
+}
+
 /* Services */
 
 .layout-essential .essential-services {
@@ -168,6 +202,13 @@
   gap: 10px;
   padding: 0;
   list-style: none;
+}
+
+.layout-essential .essential-services__icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: grayscale(1);
 }
 
 .layout-essential .essential-services__title {

@@ -3,6 +3,7 @@ import type { Employee } from '@crystal-pharm/pharmacy-db';
 import { ModuleNameSchema, type ModuleName } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { ModuleDataByName, SiteEditorBase } from '../../domain/siteDraft';
+import { listUploadedImageIdsOfContent } from '../../domain/siteImageChoices';
 import { toPreviewMediaUrl } from './previewMediaUrls.server';
 import type { SiteEditorSources } from '../repositories/tenantSiteRepository.server';
 
@@ -27,20 +28,27 @@ export function toSiteEditorBase(tenantId: string, sources: SiteEditorSources): 
 			imposesGroupNews: group.imposesGroupNews,
 			articles: group.articles.map(({ title, summary, publishedAt }) => ({ title, summary, publishedAt }))
 		},
-		availableModuleData: collectAvailableModuleData(tenantId, sources)
+		openingHours: pharmacyProfile.weeklyOpeningSchedule && { weeklySchedule: pharmacyProfile.weeklyOpeningSchedule, onDutyPeriods: [] },
+		availableModuleData: collectAvailableModuleData(tenantId, sources),
+		uploadedImagePreviewUrls: toUploadedImagePreviewUrls(tenantId, sources)
 	};
 }
 
-// Les services et les actualités se saisissent dans l'éditeur : ils viennent du brouillon, pas d'ici.
+export function toUploadedImagePreviewUrl(tenantId: string, imageId: string): string {
+	return toPreviewMediaUrl('site-image', tenantId, imageId);
+}
+
+function toUploadedImagePreviewUrls(tenantId: string, { content }: SiteEditorSources): Record<string, string> {
+	const imageIds = content ? listUploadedImageIdsOfContent(content) : [];
+	return Object.fromEntries(imageIds.map((imageId) => [imageId, toUploadedImagePreviewUrl(tenantId, imageId)]));
+}
+
+// Les services, marques, actualités, rendez-vous et commande en ligne se saisissent dans l'éditeur : ils viennent du brouillon, pas d'ici.
 function collectAvailableModuleData(
 	tenantId: string,
-	{ pharmacyProfile, employees, group }: SiteEditorSources
+	{ employees, group }: SiteEditorSources
 ): SiteEditorBase['availableModuleData'] {
 	return {
-		openingHours: pharmacyProfile.weeklyOpeningSchedule && {
-			weeklySchedule: pharmacyProfile.weeklyOpeningSchedule,
-			onDutyPeriods: []
-		},
 		team: { members: employees.map((employee) => toTeamMember(tenantId, employee)) },
 		// Le module `Prescriptions` du C# reçoit les ordonnances : rien à saisir, le module est toujours affichable.
 		prescriptionUpload: {},

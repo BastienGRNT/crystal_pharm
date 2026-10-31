@@ -1,8 +1,10 @@
-import { readTenantSiteContent, runAsTenant, type NewsSource, type TenantSiteContent } from '@crystal-pharm/content-db';
+import { deleteUnusedSiteImages, readTenantSiteContent, runAsTenant, type NewsSource, type TenantSiteContent } from '@crystal-pharm/content-db';
 import { articles, tenantSites } from '@crystal-pharm/content-db/tables';
 import { findGroupSiteProfileOfTenant, type GroupSiteProfileOfTenant } from '@crystal-pharm/group-db';
 import { getPharmacyProfile, listEmployees, type Employee, type PharmacyProfile } from '@crystal-pharm/pharmacy-db';
-import type { ModuleName, NewsModuleData, ServicesModuleData } from '@crystal-pharm/schema';
+import type { StoredAppointment, StoredArticle, StoredBrand, StoredFindUs, StoredHero, StoredOnlineOrder, StoredService } from '@crystal-pharm/content-db/domain';
+import type { ModuleName } from '@crystal-pharm/schema';
+import { listUploadedImageIdsOfContent } from '../../domain/siteImageChoices';
 import { randomUUID } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 
@@ -19,9 +21,15 @@ export type SiteEdition = {
 	layoutId: string;
 	layoutSettings: Record<string, unknown>;
 	enabledModules: ModuleName[];
-	services: ServicesModuleData['services'];
+	moduleOrder: ModuleName[];
+	hero: StoredHero | undefined;
+	findUs: StoredFindUs | undefined;
+	appointment: StoredAppointment | undefined;
+	onlineOrder: StoredOnlineOrder | undefined;
+	services: StoredService[];
+	brands: StoredBrand[];
 	/** La liste complète : celles qui n'y sont plus sont retirées du site. */
-	articles: NewsModuleData['articles'];
+	articles: StoredArticle[];
 	newsSource: NewsSource;
 };
 
@@ -46,7 +54,7 @@ export async function saveSiteEdition(tenantId: string, edition: SiteEdition): P
 				layoutId: edition.layoutId,
 				layoutSettingsByLayoutId: layoutSettingsOfChosenLayout,
 				enabledModules: edition.enabledModules,
-				services: edition.services,
+				...toEditedColumns(edition),
 				newsSource: edition.newsSource
 			})
 			.onConflictDoUpdate({
@@ -56,7 +64,7 @@ export async function saveSiteEdition(tenantId: string, edition: SiteEdition): P
 					// Fusion faite par Postgres : les réglages d'un autre layout ne sont jamais écrasés.
 					layoutSettingsByLayoutId: sql`${tenantSites.layoutSettingsByLayoutId} || ${JSON.stringify(layoutSettingsOfChosenLayout)}::jsonb`,
 					enabledModules: edition.enabledModules,
-					services: edition.services,
+					...toEditedColumns(edition),
 					newsSource: edition.newsSource,
 					updatedAt: new Date()
 				}
@@ -70,9 +78,24 @@ export async function saveSiteEdition(tenantId: string, edition: SiteEdition): P
 				tenantId,
 				title: article.title,
 				summary: article.summary,
+				image: article.image ?? null,
 				// Midi UTC : le même jour à Paris, été comme hiver.
 				publishedAt: new Date(`${article.publishedAt}T12:00:00Z`)
 			}))
 		);
 	});
+	await deleteUnusedSiteImages(tenantId, listUploadedImageIdsOfContent(edition));
+}
+
+// `null` et non `undefined` : une section vidée doit effacer ce qui était enregistré.
+function toEditedColumns(edition: SiteEdition) {
+	return {
+		moduleOrder: edition.moduleOrder,
+		hero: edition.hero ?? null,
+		findUs: edition.findUs ?? null,
+		appointment: edition.appointment ?? null,
+		onlineOrder: edition.onlineOrder ?? null,
+		services: edition.services,
+		brands: edition.brands
+	};
 }

@@ -10,13 +10,31 @@ export { definePage } from './contract/definePage';
 export type { LayoutPageProps } from './contract/LayoutPageProps';
 export type { Part } from './contract/Part';
 export type { EnabledModulesProps } from './module-props/toEnabledModulesProps';
-export type { OpeningHoursModuleProps } from './module-props/toOpeningHoursModuleProps';
-export type { OnDutyAnnouncement } from './module-props/computeOnDutyAnnouncement';
+export type { HeroSectionProps } from './section-props/toHeroSectionProps';
+export type { FindUsSectionProps } from './section-props/toFindUsSectionProps';
+export type { OpeningHoursSectionProps } from './section-props/toOpeningHoursSectionProps';
+export type { OnDutySectionProps } from './section-props/toOnDutySectionProps';
+export type { OnDutyAnnouncement } from './section-props/computeOnDutyAnnouncement';
+export type { FixedSectionName, FixedSectionPropsByName } from './section-props/FixedSectionPropsByName';
 export type { TeamModuleProps } from './module-props/toTeamModuleProps';
 export type { ServicesModuleProps } from './module-props/toServicesModuleProps';
 export type { NewsModuleProps } from './module-props/toNewsModuleProps';
 export type { PrescriptionUploadModuleProps } from './module-props/toPrescriptionUploadModuleProps';
 export type { LoyaltyCardModuleProps } from './module-props/toLoyaltyCardModuleProps';
+export type { BrandsModuleProps } from './module-props/toBrandsModuleProps';
+export type { AppointmentModuleProps } from './module-props/toAppointmentModuleProps';
+export type { OnlineOrderModuleProps } from './module-props/toOnlineOrderModuleProps';
+export type {
+  AppointmentForm,
+  AppointmentFormErrors,
+  AppointmentBookingResult,
+  AppointmentGateway,
+  AvailableSlotsResult,
+  BookAppointment,
+  ListAvailableSlots,
+} from './appointment/createBookAppointment';
+export { onlineOrderStablePath, appointmentStablePath } from './redirect/findStableRedirectLocation';
 export type { PrescriptionForm, PrescriptionFormErrors } from './prescription/validatePrescriptionForm';
 export type { SubmitPrescription } from './prescription/createSubmitPrescription';
 export { createPrescriptionFormState, type PrescriptionFormState, type PrescriptionFormStatus } from './prescription/createPrescriptionFormState';
+export { createAppointmentFormState, type AppointmentFormState, type AppointmentFormStatus, type AvailableSlotsStatus } from './appointment/createAppointmentFormState';

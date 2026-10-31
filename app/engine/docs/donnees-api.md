@@ -14,19 +14,23 @@ flowchart TD
     tenantSite --> layoutId["layoutId · 'essential' | 'neighborhood' | 'atelier'"]
     tenantSite --> layoutSettings["layoutSettings · objet, propre à chaque layout"]
     tenantSite --> pharmacy["<b>pharmacy</b> · PharmacyInfo"]
-    tenantSite --> modules["<b>modules</b> · les 6 modules"]
+    tenantSite --> fixedSections["<b>fixedSections</b> · hero, findUs, openingHours"]
+    tenantSite --> modules["<b>modules</b> · les 8 modules"]
+    tenantSite --> moduleOrder["moduleOrder? · l'ordre des modules"]
 
     pharmacy --> address["address · { street, postalCode, city }"]
     pharmacy --> group["group? · { name, logoUrl?, mandatoryModules[] }"]
 
-    modules --> openingHours["openingHours"]
     modules --> team["team"]
     modules --> services["services"]
     modules --> news["news"]
     modules --> prescriptionUpload["prescriptionUpload"]
     modules --> loyaltyCard["loyaltyCard"]
+    modules --> brands["brands"]
+    modules --> appointment["appointment"]
+    modules --> onlineOrder["onlineOrder"]
 
-    openingHours --> toggle["chaque module :<br/>{ enabled: false }<br/>ou { enabled: true, data: { … } }"]
+    team --> toggle["chaque module :<br/>{ enabled: false }<br/>ou { enabled: true, data: { … } }"]
 ```
 
 ## `TenantSite`
@@ -37,7 +41,9 @@ flowchart TD
 | `layoutId` | `string` non vide | oui | Le layout à utiliser. Un identifiant inconnu provoque une erreur qui liste les layouts disponibles |
 | `layoutSettings` | objet | non (défaut `{}`) | Les réglages du layout, validés par le schéma du layout choisi (voir plus bas) |
 | `pharmacy` | `PharmacyInfo` | oui | Les informations générales de la pharmacie |
-| `modules` | objet | oui | Les 6 modules, chacun activé ou non |
+| `fixedSections` | objet | oui | Les sections fixes : `hero` (`imageUrl?`, `headline?`), `findUs` (`location?`, `accessInstructions?`, `parking?`, `publicTransport?`), `openingHours` (obligatoire) |
+| `modules` | objet | oui | Les 8 modules, chacun activé ou non |
+| `moduleOrder` | liste de noms de modules | non | L'ordre choisi par la pharmacie, sans doublon ; les autres suivent dans l'ordre par défaut |
 
 **Règle métier :** chaque module listé dans `pharmacy.group.mandatoryModules` doit avoir
 `enabled: true`. Sinon le tenant est refusé :
@@ -64,7 +70,7 @@ Commun à tous les layouts. Le layout le reçoit en entier, en lecture seule, et
 | `group.logoUrl` | `string` | non | Sans logo, les layouts affichent le nom |
 | `group.mandatoryModules` | liste de noms de modules | non (défaut `[]`) | Les modules que le groupement impose à ses pharmacies |
 
-Noms de modules valides : `openingHours`, `team`, `services`, `news`, `prescriptionUpload`, `loyaltyCard`.
+Noms de modules valides : `team`, `services`, `brands`, `news`, `prescriptionUpload`, `appointment`, `onlineOrder`, `loyaltyCard`. Les horaires ne sont plus un module : ils sont dans `fixedSections.openingHours`. `brands` : `{ brands: [{ name, logoUrl?, url? }] }` · `appointment` : `{ mode: 'builtIn', introduction? }` ou `{ mode: 'externalLink', url }` · `onlineOrder` : `{ url, introduction? }`.
 
 ## `modules`
 
@@ -75,7 +81,9 @@ Les 6 clés sont **toutes obligatoires**. Chaque module est soit désactivé, so
 { "enabled": true, "data": { … } }
 ```
 
-### `openingHours`
+### `fixedSections.openingHours`
+
+Données directes (pas de `enabled`) : la section est toujours affichée.
 
 | Champ | Type | Règle |
 |---|---|---|
@@ -169,22 +177,22 @@ Un réglage d'un mauvais type est refusé au rendu : « Réglages invalides pour
       "mandatoryModules": ["loyaltyCard"]
     }
   },
-  "modules": {
+  "fixedSections": {
+    "hero": { "headline": "Votre santé, notre métier." },
     "openingHours": {
-      "enabled": true,
-      "data": {
-        "weeklySchedule": {
-          "monday": [{ "opensAt": "08:30", "closesAt": "12:30" }, { "opensAt": "14:00", "closesAt": "19:30" }],
-          "tuesday": [{ "opensAt": "08:30", "closesAt": "19:30" }],
-          "wednesday": [{ "opensAt": "08:30", "closesAt": "19:30" }],
-          "thursday": [{ "opensAt": "08:30", "closesAt": "19:30" }],
-          "friday": [{ "opensAt": "08:30", "closesAt": "19:30" }],
-          "saturday": [{ "opensAt": "09:00", "closesAt": "12:30" }],
-          "sunday": []
-        },
-        "onDutyPeriods": [{ "startsAt": "2026-10-24T19:00:00+02:00", "endsAt": "2026-10-25T08:00:00+02:00" }]
-      }
-    },
+      "weeklySchedule": {
+        "monday": [{ "opensAt": "08:30", "closesAt": "12:30" }, { "opensAt": "14:00", "closesAt": "19:30" }],
+        "tuesday": [{ "opensAt": "08:30", "closesAt": "19:30" }],
+        "wednesday": [{ "opensAt": "08:30", "closesAt": "19:30" }],
+        "thursday": [{ "opensAt": "08:30", "closesAt": "19:30" }],
+        "friday": [{ "opensAt": "08:30", "closesAt": "19:30" }],
+        "saturday": [{ "opensAt": "09:00", "closesAt": "12:30" }],
+        "sunday": []
+      },
+      "onDutyPeriods": [{ "startsAt": "2026-10-24T19:00:00+02:00", "endsAt": "2026-10-25T08:00:00+02:00" }]
+    }
+  },
+  "modules": {
     "team": {
       "enabled": true,
       "data": {

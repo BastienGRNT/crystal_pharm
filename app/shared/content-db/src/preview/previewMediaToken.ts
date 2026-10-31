@@ -5,14 +5,14 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 // d'édition, un jeton que `app/site` vérifie avant de la servir. Le Tenant
 // vient du serveur qui signe, jamais du navigateur : un jeton modifié est refusé.
 
-export type PreviewMediaKind = 'employee-photo' | 'group-image';
+export type PreviewMediaKind = 'employee-photo' | 'group-image' | 'site-image';
 
 export type PreviewMedia = { kind: PreviewMediaKind; tenantId: string; fileId: string };
 
 type PreviewMediaClaims = PreviewMedia & { expiresAt: number };
 
 const tokenLifetimeInSeconds = 12 * 60 * 60;
-const previewMediaKinds: readonly PreviewMediaKind[] = ['employee-photo', 'group-image'];
+const previewMediaKinds: readonly PreviewMediaKind[] = ['employee-photo', 'group-image', 'site-image'];
 
 export function signPreviewMediaToken(media: PreviewMedia, secret: string, now: Date = new Date()): string {
 	const claims: PreviewMediaClaims = { ...media, expiresAt: Math.floor(now.getTime() / 1000) + tokenLifetimeInSeconds };

@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { Button, Field, IconButton, Input, Select, Textarea } from '@crystal-pharm/ui';
 	import { createEmptyServiceDraft, serviceIconOptions, type ServiceDraft } from '../../domain/siteContentLists';
+	import SiteImageChooser from '../molecules/SiteImageChooser.svelte';
 
 	type ServiceListEditorProps = {
 		services: ServiceDraft[];
+		uploadedImagePreviewUrls: Record<string, string>;
 		/** Appelé à l'ajout d'un service : le premier rend le module affichable. */
 		onserviceadded?: () => void;
 	};
 
-	let { services = $bindable(), onserviceadded }: ServiceListEditorProps = $props();
+	let { services = $bindable(), uploadedImagePreviewUrls = $bindable(), onserviceadded }: ServiceListEditorProps = $props();
 
 	function addService(): void {
 		services.push(createEmptyServiceDraft());
@@ -56,6 +58,12 @@
 					<Textarea {...controlAttributes} rows={2} maxlength={600} bind:value={service.description} />
 				{/snippet}
 			</Field>
+			<SiteImageChooser
+				label="Icône personnalisée"
+				defaultDescription="Sans icône personnalisée, celle choisie plus haut est utilisée."
+				bind:image={service.icon}
+				bind:uploadedImagePreviewUrls
+			/>
 		</div>
 	{:else}
 		<p class="text-small text-ink-muted">Aucun service pour l’instant : vaccination, tests, conseils…</p>

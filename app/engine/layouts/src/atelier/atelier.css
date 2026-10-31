@@ -305,6 +305,12 @@
   border-top: 1px solid var(--at-color-rule);
 }
 
+.layout-atelier .at-service__icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .layout-atelier .at-service__title {
   font-family: var(--at-font-display);
   font-size: 2rem;
@@ -795,4 +801,70 @@
   .layout-atelier .at-team__member:nth-child(even) {
     transform: none;
   }
+}
+
+/* Garde, Nous trouver, Marques, Commande en ligne, Rendez-vous */
+
+.layout-atelier .at-intro__image {
+  width: 100%;
+  max-height: 46vh;
+  object-fit: cover;
+}
+
+.layout-atelier .at-on-duty {
+  padding: 12px 0;
+  background: var(--at-color-accent);
+  color: var(--at-color-on-accent);
+  font-weight: 500;
+  text-align: center;
+}
+
+.layout-atelier .at-on-duty--hotline {
+  background: none;
+  color: var(--at-color-muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.layout-atelier .at-find-us__content {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.layout-atelier .at-find-us__address {
+  font-family: var(--at-font-display);
+  font-size: 1.6rem;
+  font-style: normal;
+}
+
+.layout-atelier .at-find-us__map {
+  width: 100%;
+  height: 320px;
+  border: 0;
+}
+
+.layout-atelier .at-brands__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  align-items: center;
+  list-style: none;
+}
+
+.layout-atelier .at-brands__name {
+  font-family: var(--at-font-display);
+  font-size: 1.5rem;
+}
+
+.layout-atelier .at-brands__logo {
+  max-height: 44px;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.layout-atelier .at-form {
+  display: grid;
+  gap: 16px;
+  max-width: 480px;
 }

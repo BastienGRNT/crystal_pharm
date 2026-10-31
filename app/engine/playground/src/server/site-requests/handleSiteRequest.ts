@@ -7,12 +7,14 @@ import { mockImagesPath } from '../mocks/mockImageUrl';
 import { injectFrameAgent } from '../site-rendering/injectFrameAgent';
 import { renderPlaygroundErrorPage } from '../site-rendering/renderPlaygroundErrorPage';
 import { renderScenarioPage } from '../site-rendering/renderScenarioPage';
+import { handleAppointmentRequest } from './handleAppointmentRequest';
 import { handlePrescriptionUpload } from './handlePrescriptionUpload';
 import { serveMockImage } from './serveMockImage';
 import { serveSiteAsset } from './serveSiteAsset';
 import type { SiteRequestContext } from './SiteRequestContext';
 
 const prescriptionsApiPath = '/api/prescriptions';
+const appointmentsApiPath = '/api/appointments';
 
 /** Tout ce que demande un aperçu : la page du site, le JS et le CSS du moteur, les images des mocks, l'API simulée. */
 export async function handleSiteRequest(request: IncomingMessage, response: ServerResponse, context: SiteRequestContext): Promise<void> {
@@ -23,6 +25,8 @@ export async function handleSiteRequest(request: IncomingMessage, response: Serv
     serveMockImage(response, url.pathname);
   } else if (url.pathname === prescriptionsApiPath && request.method === 'POST') {
     await handlePrescriptionUpload(request, response, context);
+  } else if (url.pathname.startsWith(appointmentsApiPath)) {
+    handleAppointmentRequest(request, response, url);
   } else {
     await renderSitePage(response, url, context);
   }
@@ -34,6 +38,10 @@ async function renderSitePage(response: ServerResponse, url: URL, context: SiteR
   switch (rendering.outcome) {
     case 'rendered':
       sendHtml(response, rendering.status, injectFrameAgent(rendering.html));
+      return;
+    case 'redirected':
+      response.writeHead(302, { location: rendering.location, 'cache-control': 'no-store' });
+      response.end();
       return;
     case 'invalidData':
       sendHtml(response, 422, renderPlaygroundErrorPage({ title: 'Ces données ne passent pas TenantSiteSchema', details: rendering.issues }));

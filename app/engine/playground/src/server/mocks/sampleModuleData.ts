@@ -1,16 +1,29 @@
 import type { ModuleName } from '@crystal-pharm/schema';
 import { isoTimestampInHoursFromNow } from './isoTimestampInHoursFromNow';
 import { mockImageUrl } from './mockImageUrl';
-import type { EnabledModuleData } from './MockTenant';
+import type { EnabledModuleData, FixedSectionsInput } from './MockTenant';
 import { weekWithLunchBreak } from './weeklySchedules';
 
-/** Des données complètes pour chaque module : celles d'un module activé depuis le panneau quand son mock n'en a pas. */
-export function createSampleModuleData(): { [Name in ModuleName]: EnabledModuleData<Name> } {
+/** Les sections fixes ont toujours leurs données : ici, celles d'une pharmacie de garde en ce moment, avec accès détaillé. */
+export function createSampleFixedSectionsData(): Required<FixedSectionsInput> {
   return {
+    hero: { imageUrl: mockImageUrl('hero', 'Pharmacie'), headline: 'Votre santé, notre métier.' },
+    findUs: {
+      location: { latitude: 45.7578, longitude: 4.8320 },
+      accessInstructions: 'Entrée de plain-pied, rampe pour les poussettes et les fauteuils.',
+      parking: 'Parking public à 50 m, place réservée pour une dépose rapide.',
+      publicTransport: 'Métro A, arrêt Cordeliers · bus C3.',
+    },
     openingHours: {
       weeklySchedule: weekWithLunchBreak,
       onDutyPeriods: [{ startsAt: isoTimestampInHoursFromNow(-2), endsAt: isoTimestampInHoursFromNow(10) }],
     },
+  };
+}
+
+/** Des données complètes pour chaque module : celles d'un module activé depuis le panneau quand son mock n'en a pas. */
+export function createSampleModuleData(): { [Name in ModuleName]: EnabledModuleData<Name> } {
+  return {
     team: {
       members: [
         { fullName: 'Hélène Dupont', role: 'Pharmacienne titulaire', photoUrl: mockImageUrl('portrait', 'Hélène Dupont') },
@@ -53,6 +66,16 @@ export function createSampleModuleData(): { [Name in ModuleName]: EnabledModuleD
     prescriptionUpload: {
       introduction: 'Envoyez-nous votre ordonnance : nous préparons votre commande et vous appelons dès qu’elle est prête.',
     },
+    brands: {
+      brands: [
+        { name: 'La Roche-Posay', logoUrl: mockImageUrl('logo', 'La Roche-Posay'), url: 'https://www.laroche-posay.fr' },
+        { name: 'Avène', logoUrl: mockImageUrl('logo', 'Avène') },
+        { name: 'Weleda' },
+        { name: 'Biolane', url: 'https://www.biolane.fr' },
+      ],
+    },
+    appointment: { mode: 'builtIn', introduction: 'Choisissez un jour puis un créneau : nous confirmons par téléphone.' },
+    onlineOrder: { url: 'https://commande.example/pharmacie', introduction: 'Commandez en ligne, retirez à la pharmacie en 2 heures.' },
     loyaltyCard: {
       text: '1 € dépensé = 1 point. Dès 100 points, 5 € offerts sur la parapharmacie.',
       url: 'https://fidelite.example/inscription',

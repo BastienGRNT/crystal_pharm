@@ -7,18 +7,18 @@ export const pharmacieLumiere: MockTenant = {
   createTenantSite: () => ({
     tenantId: 'pharmacie-lumiere',
     layoutId: 'atelier',
-    layoutSettings: { accentTone: 'saffron', editorialHeadline: 'La pharmacie qui éclaire vos choix.' },
+    layoutSettings: { accentTone: 'saffron' },
     pharmacy: {
       name: 'Pharmacie Lumière',
       address: { street: '8 avenue Jean-Jaurès', postalCode: '13001', city: 'Marseille' },
       phone: '04 91 00 11 22',
       email: 'contact@pharmacie-lumiere.fr',
     },
+    fixedSections: {
+      hero: { headline: 'La pharmacie qui éclaire vos choix.' },
+      openingHours: { weeklySchedule: weekWithLunchBreak, onDutyPeriods: [{ startsAt: isoTimestampInHoursFromNow(-1), endsAt: isoTimestampInHoursFromNow(14) }] },
+    },
     modules: {
-      openingHours: {
-        enabled: true,
-        data: { weeklySchedule: weekWithLunchBreak, onDutyPeriods: [{ startsAt: isoTimestampInHoursFromNow(-1), endsAt: isoTimestampInHoursFromNow(14) }] },
-      },
       team: {
         enabled: true,
         data: {
@@ -40,6 +40,9 @@ export const pharmacieLumiere: MockTenant = {
       },
       prescriptionUpload: { enabled: true, data: {} },
       loyaltyCard: { enabled: false },
+      brands: { enabled: false },
+      appointment: { enabled: false },
+      onlineOrder: { enabled: true, data: { url: 'https://commande.example/lumiere' } },
     },
   }),
 };

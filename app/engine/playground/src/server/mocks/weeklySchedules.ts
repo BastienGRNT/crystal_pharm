@@ -1,6 +1,6 @@
-import type { EnabledModuleData } from './MockTenant';
+import type { FixedSectionsInput } from './MockTenant';
 
-type WeeklySchedule = EnabledModuleData<'openingHours'>['weeklySchedule'];
+type WeeklySchedule = FixedSectionsInput['openingHours']['weeklySchedule'];
 
 const morningAndAfternoon = [
   { opensAt: '08:30', closesAt: '12:30' },

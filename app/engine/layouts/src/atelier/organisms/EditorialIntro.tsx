@@ -1,24 +1,22 @@
-import type { PharmacyInfo } from '@crystal-pharm/schema';
 import { Show } from 'solid-js';
-import type { EnabledModulesProps } from '@crystal-pharm/renderer';
+import type { HeroSectionProps } from '@crystal-pharm/renderer';
 import { ArrowLink } from '../atoms/ArrowLink';
 
-export function EditorialIntro(props: { pharmacy: Readonly<PharmacyInfo>; headline: string; modules: EnabledModulesProps }) {
+const defaultHeadline = 'Prendre soin, simplement.';
+
+export function EditorialIntro(props: HeroSectionProps) {
   return (
     <section class="at-intro">
       <p class="at-intro__kicker">
         Pharmacie · {props.pharmacy.address.city}
         <Show when={props.pharmacy.group}>{(group) => <> · Membre de {group().name}</>}</Show>
       </p>
-      <h1 class="at-intro__headline">{props.headline}</h1>
+      <h1 class="at-intro__headline">{props.headline ?? defaultHeadline}</h1>
       <p class="at-intro__name">{props.pharmacy.name}</p>
+      <Show when={props.imageUrl}>{(imageUrl) => <img class="at-intro__image" src={imageUrl()} alt="" />}</Show>
       <div class="at-intro__links">
-        <Show when={props.modules.prescriptionUpload}>
-          <ArrowLink href="/ordonnance">Envoyer une ordonnance</ArrowLink>
-        </Show>
-        <Show when={props.modules.team}>
-          <ArrowLink href="/equipe">Rencontrer l'équipe</ArrowLink>
-        </Show>
+        <ArrowLink href={`tel:${props.pharmacy.phone.replace(/\s/g, '')}`}>Appeler la pharmacie</ArrowLink>
+        <ArrowLink href="#nous-trouver">Nous trouver</ArrowLink>
       </div>
       <Show when={props.pharmacy.group?.logoUrl}>
         {(groupLogoUrl) => <img class="at-intro__group-logo" src={groupLogoUrl()} alt={`Groupement ${props.pharmacy.group?.name ?? ''}`} />}

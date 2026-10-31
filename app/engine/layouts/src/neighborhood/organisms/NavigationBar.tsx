@@ -13,14 +13,18 @@ export function NavigationBar(props: { pharmacy: Readonly<PharmacyInfo>; modules
       </a>
 
       <ul class="nb-navigation__links">
-        <Show when={props.modules.openingHours}>
-          <li><a href="/#horaires">Horaires</a></li>
-        </Show>
+        <li><a href="/#horaires">Horaires</a></li>
         <Show when={props.modules.services}>
           <li><a href="/#services">Services</a></li>
         </Show>
         <Show when={props.modules.team}>
           <li><a href="/#equipe">Équipe</a></li>
+        </Show>
+        <Show when={props.modules.appointment}>
+          <li><a href="/#rendez-vous">Rendez-vous</a></li>
+        </Show>
+        <Show when={props.modules.onlineOrder}>
+          <li><a href="/#commande-en-ligne">Commande en ligne</a></li>
         </Show>
         <Show when={props.modules.loyaltyCard}>
           <li><a href="/#fidelite">Fidélité</a></li>

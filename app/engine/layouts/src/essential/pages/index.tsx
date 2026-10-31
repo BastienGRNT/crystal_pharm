@@ -8,13 +8,11 @@ export default definePage<EssentialSettings>({
     props.pageKit.Page({
       legalNotice: props.pageKit.LegalNotice({ class: 'essential-legal-notice' }),
       children: (
-        <DenseGridTemplate pharmacy={props.pharmacy}>
-          <props.pageKit.Module name="prescriptionUpload" />
-          <props.pageKit.Module name="openingHours" />
-          <props.pageKit.Module name="services" />
-          <props.pageKit.Module name="team" />
-          <props.pageKit.Module name="loyaltyCard" />
-          <props.pageKit.Module name="news" />
+        <DenseGridTemplate masthead={<props.pageKit.FixedSection name="hero" />}>
+          <props.pageKit.FixedSection name="onDuty" />
+          <props.pageKit.FixedSection name="openingHours" />
+          <props.pageKit.PlacedModules />
+          <props.pageKit.FixedSection name="findUs" />
         </DenseGridTemplate>
       ),
     }),

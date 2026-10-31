@@ -1,5 +1,5 @@
 import type { OnDutyPeriod } from '@crystal-pharm/schema';
-import { formatInParisTimeZone } from './formatInParisTimeZone';
+import { formatInParisTimeZone } from '../module-props/formatInParisTimeZone';
 
 export type OnDutyAnnouncement = {
   status: 'onDutyNow' | 'onDutyLaterToday';

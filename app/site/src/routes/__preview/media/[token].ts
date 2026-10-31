@@ -1,3 +1,4 @@
+import { readSiteImage } from '@crystal-pharm/content-db';
 import { readPreviewMediaSecret, readPreviewMediaToken, type PreviewMedia } from '@crystal-pharm/content-db/preview-media';
 import { readGroupImageOfTenant } from '@crystal-pharm/group-db';
 import { readEmployeePhoto } from '@crystal-pharm/pharmacy-db';
@@ -18,5 +19,7 @@ function readPreviewMedia({ kind, tenantId, fileId }: PreviewMedia) {
       return readEmployeePhoto(tenantId, fileId);
     case 'group-image':
       return readGroupImageOfTenant(tenantId, fileId);
+    case 'site-image':
+      return readSiteImage(tenantId, fileId).then((image) => image && { bytes: new Uint8Array(image.data), contentType: image.contentType });
   }
 }

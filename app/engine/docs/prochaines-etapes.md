@@ -23,7 +23,7 @@ engine/
   (`index.tsx` → `/`, `ordonnance.tsx` → `/ordonnance`), typés par `definePage`. Son manifeste
   (`<id>Manifest.ts`) donne son nom, sa description et ses réglages à l'édition.
 - Le moteur ne connaît aucun layout : il reçoit un `LayoutRegistry` en paramètre.
-- 6 modules : `openingHours`, `team`, `services`, `news`, `prescriptionUpload`, `loyaltyCard`.
+- 8 modules (`team`, `services`, `brands`, `news`, `prescriptionUpload`, `appointment`, `onlineOrder`, `loyaltyCard`) et 4 sections fixes (`hero`, `findUs`, `onDuty`, `openingHours`, dans `fixedSections`).
 - Un groupement peut imposer des modules (`pharmacy.group.mandatoryModules`), vérifié par le schéma.
 
 ## Les règles du projet (à respecter dans tout ce qui suit)
@@ -134,6 +134,11 @@ layout ne propose que ce qu'il sait afficher proprement (par exemple une liste d
 les composants ne changent pas.
 
 ### 5. L'ordre des modules : le layout définit des zones, la pharmacie choisit l'ordre
+
+> **Fait (version simple)** : un seul ordre pour tout le site (`moduleOrder`, sans doublon, optionnel) ;
+> les modules qui n'y figurent pas suivent dans l'ordre par défaut. Une zone se déclare avec
+> `<pageKit.PlacedModules accepts={[…]} />`. Reste ouvert : l'ordre par page, et le typage qui interdit de
+> placer deux fois un module dans deux zones (aujourd'hui, c'est `accepts` qui l'évite).
 
 La pharmacie ne doit pas pouvoir casser la mise en page. Le partage des rôles :
 
