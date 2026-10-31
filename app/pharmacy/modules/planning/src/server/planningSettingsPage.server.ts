@@ -11,9 +11,11 @@ import { describePeakWindow } from '../domain/coverage/peakWindows';
 import { summarizeWeekTemplate } from '../domain/templates/weekTemplates';
 import { requirePlanningManager } from './activeTenant.server';
 import {
+	findOvertimeRules,
 	findPlanningRules,
 	listEmployeeTermsRows,
 	updateEmployeeTerms,
+	updateOvertimeRules,
 	updatePlanningRules
 } from './services/settings/planningSettingsService';
 import { addPeakWindow, findPeakWindows, removePeakWindow } from './services/peaks/peakWindowService';
@@ -25,8 +27,9 @@ type SettingsRequest = {
 
 export async function load({ locals }: SettingsRequest): Promise<PlanningSettingsPageData> {
 	const { tenantId } = await requirePlanningManager(locals.user);
-	const [rules, termsRows, peakWindows, templates] = await Promise.all([
+	const [rules, overtimeRules, termsRows, peakWindows, templates] = await Promise.all([
 		findPlanningRules(tenantId),
+		findOvertimeRules(tenantId),
 		listEmployeeTermsRows(tenantId),
 		findPeakWindows(tenantId),
 		findWeekTemplates(tenantId)
@@ -41,6 +44,12 @@ export async function load({ locals }: SettingsRequest): Promise<PlanningSetting
 			minimumShiftHours: formatMinutesAsHoursInput(rules.minimumShiftMinutes),
 			maximumShiftsPerDay: String(rules.maximumShiftsPerDay),
 			minimumRestHours: formatMinutesAsHoursInput(rules.minimumRestMinutes)
+		},
+		overtimeRules: {
+			weeklyThresholdHours: formatMinutesAsHoursInput(overtimeRules.weeklyThresholdMinutes),
+			firstBandHours: formatMinutesAsHoursInput(overtimeRules.firstBandMinutes),
+			firstBandRatePercent: String(overtimeRules.firstBandRatePercent),
+			beyondRatePercent: String(overtimeRules.beyondRatePercent)
 		},
 		employees: termsRows.map((row) => ({
 			employeeId: row.employeeId,
@@ -101,6 +110,25 @@ export const actions = {
 		});
 		if (!result.isSaved) return fail(400, { failedSection: 'rules', message: result.message } satisfies PlanningSettingsActionResult);
 		return { savedSection: 'rules' } satisfies PlanningSettingsActionResult;
+	},
+
+	saveOvertimeRules: async ({ request, locals }) => {
+		const { tenantId } = await requirePlanningManager(locals.user);
+		const formData = await request.formData();
+		const weeklyThresholdMinutes = parseHoursToMinutes(readText(formData, 'weeklyThresholdHours'));
+		const firstBandMinutes = parseHoursToMinutes(readText(formData, 'firstBandHours'));
+		if (weeklyThresholdMinutes === undefined || firstBandMinutes === undefined) {
+			return fail(400, { failedSection: 'overtime', message: 'Saisissez des durées en heures (par exemple 35 ou 8).' } satisfies PlanningSettingsActionResult);
+		}
+
+		const result = await updateOvertimeRules(tenantId, {
+			weeklyThresholdMinutes,
+			firstBandMinutes,
+			firstBandRatePercent: Number(readText(formData, 'firstBandRatePercent')),
+			beyondRatePercent: Number(readText(formData, 'beyondRatePercent'))
+		});
+		if (!result.isSaved) return fail(400, { failedSection: 'overtime', message: result.message } satisfies PlanningSettingsActionResult);
+		return { savedSection: 'overtime' } satisfies PlanningSettingsActionResult;
 	},
 
 	saveTerms: async ({ request, locals }) => {

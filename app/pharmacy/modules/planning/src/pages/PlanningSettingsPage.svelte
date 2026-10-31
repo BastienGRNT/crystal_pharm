@@ -4,6 +4,7 @@
 	import WeekTemplatesList from '../components/organisms/settings/WeekTemplatesList.svelte';
 	import EmployeeTermsList from '../components/organisms/settings/EmployeeTermsList.svelte';
 	import PlanningRulesForm from '../components/organisms/settings/PlanningRulesForm.svelte';
+	import OvertimeRulesForm from '../components/organisms/settings/OvertimeRulesForm.svelte';
 	import type { PlanningSettingsActionResult, PlanningSettingsPageData } from './planningSettingsPageData';
 
 	type PlanningSettingsPageProps = {
@@ -15,6 +16,8 @@
 
 	const rulesFailure = $derived(form && 'failedSection' in form && form.failedSection === 'rules' ? form.message : undefined);
 	const rulesSaved = $derived(form !== null && form !== undefined && 'savedSection' in form && form.savedSection === 'rules');
+	const overtimeFailure = $derived(form && 'failedSection' in form && form.failedSection === 'overtime' ? form.message : undefined);
+	const overtimeSaved = $derived(form !== null && form !== undefined && 'savedSection' in form && form.savedSection === 'overtime');
 	const peaksFailure = $derived(form && 'failedSection' in form && form.failedSection === 'peaks' ? form.message : undefined);
 	const termsFeedback = $derived.by(() => {
 		if (!form) return undefined;
@@ -39,6 +42,17 @@
 		<h2 id="rules-heading" class="text-heading font-semibold text-ink">Règles de la pharmacie</h2>
 		<Card>
 			<PlanningRulesForm formAction="?/saveRules" values={data.rules} errorMessage={rulesFailure} isSaved={rulesSaved} />
+		</Card>
+	</section>
+
+	<section aria-labelledby="overtime-heading" class="grid gap-3">
+		<h2 id="overtime-heading" class="text-heading font-semibold text-ink">Heures supplémentaires</h2>
+		<p class="text-small text-ink-muted">
+			Par défaut, celles de la convention collective de la pharmacie d’officine : 25 % de la 36e à la 43e heure, 50 % au-delà.
+			Le planning les calcule semaine par semaine, et le taux horaire de chacun monte avec ses heures.
+		</p>
+		<Card>
+			<OvertimeRulesForm formAction="?/saveOvertimeRules" values={data.overtimeRules} errorMessage={overtimeFailure} isSaved={overtimeSaved} />
 		</Card>
 	</section>
 

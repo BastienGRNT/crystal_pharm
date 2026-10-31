@@ -21,6 +21,7 @@ import type { AbsenceStatus } from '../../domain/leave/leaveRequests';
 import type { AvailabilityKind, AvailabilityStatus } from '../../domain/availability/availabilityRules';
 import type { AvailabilityValidation } from '../../domain/rules/employeeTerms';
 import { defaultPlanningRules } from '../../domain/rules/planningRules';
+import { collectiveAgreementOvertimeRules } from '../../domain/overtime/overtimePay';
 
 export const planningSchema = pgSchema('planning');
 
@@ -104,6 +105,16 @@ export const planningSettings = planningSchema.table(
 		minimumShiftMinutes: integer('minimum_shift_minutes').notNull().default(defaultPlanningRules.minimumShiftMinutes),
 		maximumShiftsPerDay: integer('maximum_shifts_per_day').notNull().default(defaultPlanningRules.maximumShiftsPerDay),
 		minimumRestMinutes: integer('minimum_rest_minutes').notNull().default(defaultPlanningRules.minimumRestMinutes),
+		overtimeWeeklyThresholdMinutes: integer('overtime_weekly_threshold_minutes')
+			.notNull()
+			.default(collectiveAgreementOvertimeRules.weeklyThresholdMinutes),
+		overtimeFirstBandMinutes: integer('overtime_first_band_minutes').notNull().default(collectiveAgreementOvertimeRules.firstBandMinutes),
+		overtimeFirstBandRatePercent: integer('overtime_first_band_rate_percent')
+			.notNull()
+			.default(collectiveAgreementOvertimeRules.firstBandRatePercent),
+		overtimeBeyondRatePercent: integer('overtime_beyond_rate_percent')
+			.notNull()
+			.default(collectiveAgreementOvertimeRules.beyondRatePercent),
 		updatedAt: timestampWithTimeZone('updated_at').notNull().defaultNow()
 	},
 	() => [ofActiveTenant('planning_settings_of_active_tenant')]

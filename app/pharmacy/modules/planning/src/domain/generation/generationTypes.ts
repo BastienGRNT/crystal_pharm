@@ -3,6 +3,7 @@ import type { AvailabilityRule } from '../availability/availabilityRules';
 import type { OpeningHours } from '../coverage/coverage';
 import type { RequirementWindow } from '../coverage/staffing';
 import type { Absence, Shift } from '../planning';
+import type { OvertimeRules } from '../overtime/overtimePay';
 import type { PlanningRules } from '../rules/planningRules';
 
 export type GenerationEmployee = {
@@ -25,6 +26,7 @@ export type GenerationInput = {
 	openingPeriodsByDate: OpeningHours[][];
 	requirementWindowsByDate: RequirementWindow[][];
 	rules: PlanningRules;
+	overtimeRules: OvertimeRules;
 	employees: GenerationEmployee[];
 	absences: Absence[];
 	/** Seulement les règles validées. */
@@ -69,8 +71,6 @@ export const generationLimits = {
 	maximumContinuousMinutes: 6 * 60,
 	maximumDailyMinutes: 10 * 60,
 	maximumWeeklyMinutes: 48 * 60,
-	overtimeThresholdMinutes: 35 * 60,
-	overtimeMultiplier: 1.25,
 	defaultHourlyRateCents: 1500,
 	slotMinutes: 30
 } as const;
