@@ -1,13 +1,13 @@
 <script lang="ts">
-	import AbsenceBlock from '../../atoms/AbsenceBlock.svelte';
-	import ShiftChip from '../../atoms/ShiftChip.svelte';
-	import EmployeeIdentity from '../../molecules/EmployeeIdentity.svelte';
+	import { Tag } from '@crystal-pharm/ui';
 	import { moveSpan, resizeSpan, spanBetween, minimumDraggedShiftMinutes, type MinuteSpan } from '../../../domain/calendar/shiftDragging';
 	import { toTimelinePercent, type TimelineRange } from '../../../domain/calendar/timeline';
 	import { formatTimeOfDay } from '../../../domain/coverage/coverage';
 	import type { DayStatus, EmployeeHoursStatus, ShiftPreview } from '../../../domain/live/liveWeek';
 	import { toMinutesSinceMidnight } from '../../../domain/planning';
-	import { dayStatusClasses } from '../week/weekCalendar';
+	import EmployeeInitials from '../../atoms/EmployeeInitials.svelte';
+	import { readEmployeeColorClasses, readShiftBlockClasses } from '../../atoms/employeeColor';
+	import { dayStatusClasses, hoursStatusClasses } from '../week/weekCalendar';
 	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
 	import {
@@ -22,7 +22,10 @@
 
 	type PlanningTimelineProps = {
 		hours: PlanningTimelineHour[];
+		/** Une ligne par employé. */
 		rows: PlanningTimelineRow[];
+		/** La teinte de chaque employé, la même que dans la semaine. */
+		colorIndexByEmployee: Map<string, number>;
 		opening?: PlanningTimelineOpening;
 		coverage?: PlanningTimelineCoverage;
 		/** L'heure actuelle, seulement quand le jour affiché est aujourd'hui. */
@@ -35,7 +38,7 @@
 		hoursStatusByEmployee?: Map<string, EmployeeHoursStatus>;
 	};
 
-	let { hours, rows, opening, coverage, now, dragging, status, hoursStatusByEmployee }: PlanningTimelineProps = $props();
+	let { hours, rows, colorIndexByEmployee, opening, coverage, now, dragging, status, hoursStatusByEmployee }: PlanningTimelineProps = $props();
 
 	type Gesture = { barId: string | undefined; employeeId: string; span: MinuteSpan };
 	let gesture = $state<Gesture>();
@@ -104,10 +107,17 @@
 		return { startPercent, widthPercent: percentOf(gesture.span.endMinutes) - startPercent };
 	}
 
+	function describeBar(bar: PlanningTimelineBar, employeeId: string): string {
+		if (gesture?.barId !== bar.id || gesture.employeeId !== employeeId) return bar.label;
+		return `${formatTimeOfDay(gesture.span.startMinutes)} – ${formatTimeOfDay(gesture.span.endMinutes)}`;
+	}
+
 	// Une heure de l'axe trop proche du repère « maintenant » serait recouverte par lui.
 	const minimumPercentFromNow = 4;
 	const isHiddenByNowMarker = (hourPercent: number): boolean =>
 		now !== undefined && Math.abs(hourPercent - now.percent) < minimumPercentFromNow;
+
+	const resizeHandleClasses = 'absolute inset-y-0 z-20 w-2 cursor-ew-resize touch-none';
 </script>
 
 {#snippet trackBackground()}
@@ -132,18 +142,18 @@
 	{/if}
 	<div class="min-w-[840px]">
 		<div class="flex border-b border-line bg-surface-subtle text-[12px] leading-4 font-semibold text-ink-muted">
-			<div class="w-[190px] flex-none px-4 py-[9px]">Employé</div>
-			<div class="relative mr-6 ml-3 flex-1" aria-hidden="true">
+			<div class="w-[200px] flex-none px-4 py-2">Employé</div>
+			<div class="relative mr-4 ml-2 flex-1" aria-hidden="true">
 				{#each hours as hour (hour.label)}
 					{#if !isHiddenByNowMarker(hour.percent)}
-						<span class="absolute top-[9px] -translate-x-1/2 tabular-nums" style:left="{hour.percent}%">
+						<span class="absolute top-2 -translate-x-1/2 tabular-nums" style:left="{hour.percent}%">
 							{hour.label}
 						</span>
 					{/if}
 				{/each}
 				{#if now}
 					<span
-						class="absolute top-[5px] z-10 -translate-x-1/2 rounded-full bg-danger-soft px-1.5 py-0.5 text-[11.5px] leading-[14px] font-semibold text-danger tabular-nums"
+						class="absolute top-1 z-10 -translate-x-1/2 rounded-full bg-danger-soft px-2 py-1 text-[11.5px] leading-[14px] font-semibold text-danger tabular-nums"
 						style:left="{now.percent}%"
 					>
 						{now.label}
@@ -154,10 +164,10 @@
 
 		{#if coverage}
 			<div class="flex border-b border-line bg-surface-subtle">
-				<div class="w-[190px] flex-none px-4 py-2 text-[12.5px] leading-[17px] font-semibold text-ink-muted">
+				<div class="w-[200px] flex-none px-4 py-2 text-[12.5px] leading-[17px] font-semibold text-ink-muted">
 					{coverage.label}
 				</div>
-				<div class="relative mr-6 ml-3 min-h-10 flex-1">
+				<div class="relative mr-4 ml-2 min-h-10 flex-1">
 					{@render trackBackground()}
 					{#each coverage.segments as segment (segment.key)}
 						<div
@@ -177,21 +187,37 @@
 
 		<ul>
 			{#each rows as row (row.key)}
+				{@const colorIndex = colorIndexByEmployee.get(row.employeeId)}
+				{@const hoursStatus = hoursStatusByEmployee?.get(row.employeeId) ?? 'ok'}
 				<li class="flex border-line-soft not-last:border-b" data-timeline-employee-id={dragging ? row.employeeId : undefined}>
-					<div class="w-[190px] flex-none px-4 py-2">
-						<EmployeeIdentity name={row.personName} detail={row.personDetail} tag={row.personTag} hours={row.personHours} hoursStatus={hoursStatusByEmployee?.get(row.employeeId)} />
+					<div class="flex w-[200px] flex-none items-center gap-2 px-4 py-2">
+						<EmployeeInitials fullName={row.personName} {colorIndex} size="medium" />
+						<div class="min-w-0 flex-1">
+							<span class="flex items-baseline gap-2">
+								<b class="min-w-0 flex-1 truncate font-semibold text-ink">
+									{row.personName}
+									{#if row.personTag}<Tag>{row.personTag}</Tag>{/if}
+								</b>
+								{#if row.personHours}
+									<span class="text-small flex-none tabular-nums {hoursStatusClasses[hoursStatus]}">{row.personHours}</span>
+								{/if}
+							</span>
+							<small class="text-small block truncate text-ink-subtle">{row.personDetail}</small>
+						</div>
 					</div>
 
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
-						class="relative mr-6 ml-3 min-h-14 flex-1 {dragging && !row.absence ? 'touch-none' : ''}"
+						class="relative mr-4 ml-2 min-h-14 flex-1 {dragging && !row.absence ? 'touch-none' : ''}"
 						data-timeline-track
 						onpointerdown={dragging && !row.absence ? (event) => startCreationGesture(event, row.employeeId) : undefined}
 					>
 						{@render trackBackground()}
 
 						{#if row.absence}
-							<AbsenceBlock label={row.absence.label} detail={row.absence.detail} placement="timeline" />
+							<div class="absolute inset-y-2 right-0 left-0 z-10 flex items-center rounded-xs bg-absence px-2 text-[12.5px] text-on-absence">
+								<b>{row.absence.label}</b>&nbsp;· {row.absence.detail}
+							</div>
 						{:else if row.bars.length === 0}
 							<p class="text-small pointer-events-none absolute top-1/2 left-2 z-10 -translate-y-1/2 text-ink-subtle">
 								{dragging ? 'Pas de créneau · glissez pour en tracer un' : 'Pas de créneau'}
@@ -200,7 +226,7 @@
 						{#if gesture && gesture.barId === undefined && gesture.employeeId === row.employeeId}
 							<div
 								aria-hidden="true"
-								class="absolute inset-y-2.5 z-10 flex items-center rounded-xs bg-accent-soft px-2 text-slot whitespace-nowrap text-accent-text shadow-[inset_0_0_0_1px_var(--accent)]"
+								class="absolute inset-y-2 z-10 flex items-center rounded-xs px-2 text-slot whitespace-nowrap {readEmployeeColorClasses(colorIndex).soft}"
 								style:left="{percentOf(gesture.span.startMinutes)}%"
 								style:width="{percentOf(gesture.span.endMinutes) - percentOf(gesture.span.startMinutes)}%"
 							>
@@ -209,17 +235,32 @@
 						{/if}
 						{#if !row.absence}
 							{#each row.bars as bar (bar.id)}
-								<ShiftChip
-									label={gesture?.barId === bar.id && gesture.employeeId === row.employeeId ? `${formatTimeOfDay(gesture.span.startMinutes)} – ${formatTimeOfDay(gesture.span.endMinutes)}` : bar.label}
-									tone={bar.tone}
-									timelinePosition={positionOf(bar, row.employeeId)}
-									editHref={bar.editHref}
-									isDragged={gesture?.barId === bar.id}
-									onDragStart={dragging ? (event) => startBarGesture(event, bar, row.employeeId, 'move') : undefined}
-									onResizeStart={dragging ? (edge, event) => startBarGesture(event, bar, row.employeeId, edge) : undefined}
+								{@const position = positionOf(bar, row.employeeId)}
+								{@const label = describeBar(bar, row.employeeId)}
+								{@const isDragged = gesture?.barId === bar.id}
+								<div
+									role="group"
+									aria-label="{row.personName}, {label}"
+									class="absolute inset-y-2 z-10 flex items-center overflow-hidden rounded-xs px-2 text-slot whitespace-nowrap {readShiftBlockClasses(
+										colorIndex,
+										bar.tone === 'strong'
+									)} {dragging ? 'cursor-grab touch-none select-none' : ''} {isDragged ? 'z-30 cursor-grabbing opacity-80 shadow-card' : ''}"
+									style:left="{position.startPercent}%"
+									style:width="{position.widthPercent}%"
+									onpointerdown={dragging ? (event) => startBarGesture(event, bar, row.employeeId, 'move') : undefined}
 								>
-									<span class="sr-only">{row.personName}, </span>
-								</ShiftChip>
+									{#if dragging}
+										<span aria-hidden="true" class="{resizeHandleClasses} left-0" onpointerdown={(event) => startBarGesture(event, bar, row.employeeId, 'start')}></span>
+									{/if}
+									{#if bar.editHref}
+										<a href={bar.editHref} draggable="false" class="min-w-0 flex-1 truncate focus-visible:outline-2 focus-visible:outline-offset-2" aria-label="Modifier le créneau {label}">{label}</a>
+									{:else}
+										{label}
+									{/if}
+									{#if dragging}
+										<span aria-hidden="true" class="{resizeHandleClasses} right-0" onpointerdown={(event) => startBarGesture(event, bar, row.employeeId, 'end')}></span>
+									{/if}
+								</div>
 							{/each}
 						{/if}
 					</div>

@@ -33,6 +33,10 @@ export type EditShiftPanel = {
 };
 
 export type FormActions = {
+	/** Les actions qui remplissent la semaine d'un coup, rangées hors de la page. */
+	toolsPanel: AddShiftPanel;
+	/** Les demandes de congés et de disponibilités à valider. */
+	pendingPanel: AddShiftPanel;
 	addShiftPanel: AddShiftPanel;
 	/** Le créneau en cours de modification ; absent quand aucun n'est ouvert. */
 	editShiftPanel: EditShiftPanel | undefined;

@@ -11,15 +11,15 @@
 </script>
 
 {#if requests.length > 0}
-	<section class="rounded-md border border-line bg-surface shadow-card" aria-label="Demandes à traiter">
-		<h2 class="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-ink">
+	<section class="rounded-md border border-line bg-surface shadow-card" aria-label="Disponibilités à valider">
+		<h2 class="flex items-center gap-2 px-4 py-2 text-body font-semibold text-ink">
 			<Icon name="clock" class="text-accent-text" />
-			À traiter
+			Disponibilités à valider
 			<StatusBadge tone="warning">{requests.length}</StatusBadge>
 		</h2>
 		<ul class="border-t border-line-soft">
 			{#each requests as request (request.ruleId)}
-				<li class="flex flex-wrap items-center gap-3 px-4 py-2.5 not-last:border-b not-last:border-line-soft">
+				<li class="flex flex-wrap items-center gap-4 px-4 py-2 not-last:border-b not-last:border-line-soft">
 					<span class="min-w-0 flex-1 text-body">
 						<span class="font-semibold">{request.employeeName}</span> : {request.summary}
 						{#if request.note !== ''}
