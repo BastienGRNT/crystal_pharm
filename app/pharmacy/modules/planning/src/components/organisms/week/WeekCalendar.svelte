@@ -13,6 +13,10 @@
 	import type { LiveWeekInput, ShiftPreview, WeekAssessment } from '../../../domain/live/liveWeek';
 	import { plannedActivityKindLabels, type PlannedActivity } from '../../../domain/activities/plannedActivities';
 	import { formatDuration, toMinutesSinceMidnight, type Employee, type Shift } from '../../../domain/planning';
+	import { assignLanes, type LaneAssignment } from '../../../domain/calendar/lanes';
+	import { assignEmployeeColorIndexes, formatEmployeeInitials } from '../../../domain/employees/employeeAppearance';
+	import EmployeeInitials from '../../atoms/EmployeeInitials.svelte';
+	import { readEmployeeColorClasses, readShiftBlockClasses } from '../../atoms/employeeColor';
 	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
 	import { dayStatusClasses, hoursStatusClasses, hoursStatusLabels, weekCalendarHourHeightPixels } from './weekCalendar';
@@ -51,10 +55,28 @@
 		return assessment.shifts.filter((shift) => shift.date === date);
 	}
 
-	/** Chaque employé présent ce jour-là a sa voie : les créneaux de plusieurs personnes se lisent côte à côte. */
-	function listLaneEmployeeIds(date: string): string[] {
-		const employeeIdsWithShift = new Set(listShiftsOfDate(date).map((shift) => shift.employeeId));
-		return orderedEmployees.filter((employee) => employeeIdsWithShift.has(employee.id)).map((employee) => employee.id);
+	const colorIndexByEmployee = $derived(assignEmployeeColorIndexes(live.employees.map((employee) => employee.id)));
+
+	/** Un employé garde sa voie toute la journée ; deux personnes qui ne se croisent pas en partagent une. */
+	function assignEmployeeLanes(date: string): LaneAssignment {
+		const spanByEmployee = new Map<string, MinuteSpan>();
+		for (const shift of listShiftsOfDate(date)) {
+			const startMinutes = toMinutesSinceMidnight(shift.startTime);
+			const endMinutes = toMinutesSinceMidnight(shift.endTime);
+			const known = spanByEmployee.get(shift.employeeId);
+			spanByEmployee.set(shift.employeeId, {
+				startMinutes: Math.min(known?.startMinutes ?? startMinutes, startMinutes),
+				endMinutes: Math.max(known?.endMinutes ?? endMinutes, endMinutes)
+			});
+		}
+		return assignLanes([...spanByEmployee].map(([employeeId, span]) => ({ key: employeeId, ...span })));
+	}
+
+	function peakPeriodsOf(dayIndex: number): { topPercent: number; heightPercent: number }[] {
+		return (live.requirementWindowsByDate[dayIndex] ?? []).map((window) => {
+			const topPercent = percentOfBody(window.startMinutes);
+			return { topPercent, heightPercent: percentOfBody(window.endMinutes) - topPercent };
+		});
 	}
 
 	function listAbsentEmployees(date: string): Employee[] {
@@ -154,19 +176,19 @@
 </script>
 
 <div class="flex flex-col gap-3">
-	<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Employé à placer en glissant sur le calendrier">
-		<span class="text-small text-ink-muted">Placer en glissant :</span>
+	<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Employé à suivre et à placer en glissant sur le calendrier">
 		{#each orderedEmployees as employee (employee.id)}
 			{@const hoursOfEmployee = hoursByEmployee.get(employee.id)}
 			<button
 				type="button"
 				aria-pressed={brushEmployeeId === employee.id}
-				class="flex items-center gap-2 rounded-full border px-3 py-1 text-small transition-colors {brushEmployeeId === employee.id
-					? 'border-accent bg-accent-soft text-accent-text'
-					: 'border-line bg-surface text-ink hover:bg-surface-muted'}"
+				class="flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-small text-ink transition-colors {brushEmployeeId === employee.id
+					? `font-semibold ${readEmployeeColorClasses(colorIndexByEmployee.get(employee.id)).selected}`
+					: 'border-line bg-surface hover:bg-surface-muted'}"
 				onclick={() => (brushEmployeeId = brushEmployeeId === employee.id ? undefined : employee.id)}
 			>
-				<span class="font-semibold">{employee.fullName}</span>
+				<EmployeeInitials fullName={employee.fullName} colorIndex={colorIndexByEmployee.get(employee.id)} />
+				<span>{employee.fullName}</span>
 				{#if hoursOfEmployee}
 					<span class="tabular-nums {hoursStatusClasses[hoursOfEmployee.status]}">
 						{formatDuration(hoursOfEmployee.plannedMinutes)}{hoursOfEmployee.contractMinutes !== undefined ? ` / ${formatDuration(hoursOfEmployee.contractMinutes)}` : ''}
@@ -178,8 +200,8 @@
 	</div>
 	<p class="text-small text-ink-muted">
 		{brushEmployee
-			? `Glissez sur une journée pour poser un créneau à ${brushEmployee.fullName}. Glissez un créneau pour le déplacer (même d’un jour à l’autre), tirez ses bords pour l’allonger ou le raccourcir.`
-			: 'Glissez un créneau pour le déplacer (même d’un jour à l’autre), tirez ses bords pour l’allonger ou le raccourcir. Choisissez un employé ci-dessus pour en poser un nouveau en glissant.'}
+			? `Seule la semaine de ${brushEmployee.fullName} ressort. Glissez sur une journée pour lui poser un créneau.`
+			: 'Choisissez quelqu’un pour suivre sa semaine et lui poser des créneaux en glissant. Un créneau se déplace en le glissant, s’allonge en tirant ses bords.'}
 	</p>
 
 	<div class="overflow-auto rounded-md border border-line bg-surface shadow-card">
@@ -234,7 +256,7 @@
 					{/each}
 				</div>
 				{#each live.weekDates as date, dayIndex (date)}
-					{@const laneEmployeeIds = listLaneEmployeeIds(date)}
+					{@const lanes = assignEmployeeLanes(date)}
 					{@const employeeIdsWithIssue = listEmployeeIdsWithIssue(date)}
 					{@const isPastDay = date < live.firstEditableDate}
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -250,37 +272,33 @@
 						{#each hours as hour (hour)}
 							<span aria-hidden="true" class="absolute inset-x-0 border-t border-line-soft" style:top="{percentOfBody(hour * 60)}%"></span>
 						{/each}
-						{#each assessment.days[dayIndex]?.pharmacistCoverage ?? [] as segment (segment.startMinutes)}
-							{#if !segment.isCovered}
-								<span
-									aria-hidden="true"
-									class="absolute inset-x-0 bg-danger-soft"
-									style:top="{percentOfBody(segment.startMinutes)}%"
-									style:height="{percentOfBody(segment.endMinutes) - percentOfBody(segment.startMinutes)}%"
-								></span>
-							{/if}
+						{#each peakPeriodsOf(dayIndex) as peak (peak.topPercent)}
+							<span aria-hidden="true" class="absolute inset-x-0 bg-warning-soft" style:top="{peak.topPercent}%" style:height="{peak.heightPercent}%"></span>
 						{/each}
 						{#if isPastDay}
 							<span aria-hidden="true" class="absolute inset-0 bg-surface-subtle opacity-60"></span>
 						{/if}
 
 						{#each listShiftsOfDate(date) as shift (shift.id)}
-							{@const laneIndex = laneEmployeeIds.indexOf(shift.employeeId)}
+							{@const laneIndex = lanes.laneByKey.get(shift.employeeId) ?? 0}
 							{@const employee = live.employees.find((candidate) => candidate.id === shift.employeeId)}
 							{@const topPercent = percentOfBody(toMinutesSinceMidnight(shift.startTime))}
 							{@const heightPercent = percentOfBody(toMinutesSinceMidnight(shift.endTime)) - topPercent}
+							{@const isDimmed = brushEmployeeId !== undefined && brushEmployeeId !== shift.employeeId}
 							<div
 								role="group"
 								aria-label="{employee?.fullName ?? ''}, {shift.startTime} – {shift.endTime}"
-								class="absolute z-10 cursor-grab touch-none overflow-hidden rounded-xs px-1.5 py-0.5 text-slot select-none {employee?.isPharmacist
-									? 'bg-accent font-semibold text-on-accent'
-									: 'bg-accent-soft text-ink shadow-[inset_3px_0_0_var(--accent-value)]'} {employeeIdsWithIssue.has(shift.employeeId)
-									? 'outline-2 -outline-offset-2 outline-danger'
-									: ''} {shift.id === 'preview' ? 'opacity-70' : ''}"
+								title="{employee?.fullName ?? ''} · {shift.startTime}–{shift.endTime}"
+								class="absolute z-10 cursor-grab touch-none overflow-hidden rounded-xs px-1 py-0.5 text-[11px] leading-[13px] transition-opacity select-none {readShiftBlockClasses(
+									colorIndexByEmployee.get(shift.employeeId),
+									employee?.isPharmacist ?? false
+								)} {employeeIdsWithIssue.has(shift.employeeId) ? 'outline-2 -outline-offset-2 outline-danger' : ''} {shift.id === 'preview' || isDimmed
+									? 'opacity-25'
+									: ''}"
 								style:top="{topPercent}%"
 								style:height="{heightPercent}%"
-								style:left="{(laneIndex / laneEmployeeIds.length) * 100}%"
-								style:width="{100 / laneEmployeeIds.length}%"
+								style:left="calc({(laneIndex / lanes.laneCount) * 100}% + 1px)"
+								style:width="calc({100 / lanes.laneCount}% - 2px)"
 								onpointerdown={(event) => startShiftGesture(event, shift, 'move')}
 							>
 								<span aria-hidden="true" class="absolute inset-x-0 top-0 z-20 h-2 cursor-ns-resize" onpointerdown={(event) => startShiftGesture(event, shift, 'start')}></span>
@@ -290,8 +308,8 @@
 									class="block truncate focus-visible:outline-2 focus-visible:outline-offset-2"
 									aria-label="Modifier le créneau de {employee?.fullName ?? ''}"
 								>
-									{employee?.fullName.split(' ')[0] ?? ''}
-									<span class="block font-normal tabular-nums">{shift.startTime}–{shift.endTime}</span>
+									<b class="font-bold">{formatEmployeeInitials(employee?.fullName ?? '')}</b>
+									{#if lanes.laneCount <= 3}<span class="block tabular-nums">{shift.startTime}</span>{/if}
 								</a>
 								<span aria-hidden="true" class="absolute inset-x-0 bottom-0 z-20 h-2 cursor-ns-resize" onpointerdown={(event) => startShiftGesture(event, shift, 'end')}></span>
 							</div>

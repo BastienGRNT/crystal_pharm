@@ -118,6 +118,21 @@
 	--logo-base: #0f5c46;
 	--logo-facet: #7fcfad;
 	--logo-highlight: #e5efe9;
+	--category-1: #1f5fbf;
+	--category-1-soft: #e6eefb;
+	--category-2: #0d7377;
+	--category-2-soft: #dff1f1;
+	--category-3: #6542b8;
+	--category-3-soft: #eee8fa;
+	--category-4: #b02a5b;
+	--category-4-soft: #f9e4ec;
+	--category-5: #56701a;
+	--category-5-soft: #edf2dc;
+	--category-6: #46606f;
+	--category-6-soft: #e6edf1;
+	--category-7: #a63d2a;
+	--category-7-soft: #f8e6e1;
+	--on-category: #ffffff;
 	color-scheme: light;
 }
 
@@ -203,6 +218,21 @@
 		--logo-base: #3f9c78;
 		--logo-facet: #9bdcc0;
 		--logo-highlight: #f2efe8;
+		--category-1: #8fb0ff;
+		--category-1-soft: #16223d;
+		--category-2: #5fd0c9;
+		--category-2-soft: #0f2a2a;
+		--category-3: #c4a6f7;
+		--category-3-soft: #251a3a;
+		--category-4: #f28fb4;
+		--category-4-soft: #3a1626;
+		--category-5: #b5d36a;
+		--category-5-soft: #222b10;
+		--category-6: #a9c0c9;
+		--category-6-soft: #1b2a2f;
+		--category-7: #f29a85;
+		--category-7-soft: #3a1a14;
+		--on-category: #0b1416;
 		color-scheme: dark;
 	}
 }
@@ -288,6 +318,21 @@
 	--logo-base: #3f9c78;
 	--logo-facet: #9bdcc0;
 	--logo-highlight: #f2efe8;
+	--category-1: #8fb0ff;
+	--category-1-soft: #16223d;
+	--category-2: #5fd0c9;
+	--category-2-soft: #0f2a2a;
+	--category-3: #c4a6f7;
+	--category-3-soft: #251a3a;
+	--category-4: #f28fb4;
+	--category-4-soft: #3a1626;
+	--category-5: #b5d36a;
+	--category-5-soft: #222b10;
+	--category-6: #a9c0c9;
+	--category-6-soft: #1b2a2f;
+	--category-7: #f29a85;
+	--category-7-soft: #3a1a14;
+	--on-category: #0b1416;
 	color-scheme: dark;
 }
 
@@ -426,6 +471,23 @@
 	/* Une absence garde la teinte du module Équipe, quel que soit le module affiché. */
 	--color-absence: var(--equipe-soft);
 	--color-on-absence: var(--equipe-text);
+
+	/* Sept teintes pour distinguer des éléments d'une même liste (une personne, une série) ; elles reviennent au-delà de sept. */
+	--color-category-1: var(--category-1);
+	--color-category-1-soft: var(--category-1-soft);
+	--color-category-2: var(--category-2);
+	--color-category-2-soft: var(--category-2-soft);
+	--color-category-3: var(--category-3);
+	--color-category-3-soft: var(--category-3-soft);
+	--color-category-4: var(--category-4);
+	--color-category-4-soft: var(--category-4-soft);
+	--color-category-5: var(--category-5);
+	--color-category-5-soft: var(--category-5-soft);
+	--color-category-6: var(--category-6);
+	--color-category-6-soft: var(--category-6-soft);
+	--color-category-7: var(--category-7);
+	--color-category-7-soft: var(--category-7-soft);
+	--color-on-category: var(--on-category);
 
 	/* Anciens noms, gardés tant que des apps les utilisent. */
 	--color-background: var(--app);
