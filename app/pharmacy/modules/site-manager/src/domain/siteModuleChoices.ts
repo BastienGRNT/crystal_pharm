@@ -16,12 +16,6 @@ export type SiteModuleChoice = {
 type ModuleTexts = { title: string; description: string; unavailableReason: string; fixHref?: string };
 
 const moduleTexts: Record<ModuleName, ModuleTexts> = {
-	openingHours: {
-		title: 'Horaires d’ouverture',
-		description: 'Vos horaires de la semaine et vos gardes.',
-		unavailableReason: 'Renseignez d’abord vos horaires d’ouverture.',
-		fixHref: '/pharmacie?onglet=horaires'
-	},
 	team: {
 		title: 'L’équipe',
 		description: 'Les membres de votre équipe, avec leur photo et leur fonction.',
@@ -44,6 +38,24 @@ const moduleTexts: Record<ModuleName, ModuleTexts> = {
 		title: 'Envoi d’ordonnance',
 		description: 'Vos patients vous envoient leur ordonnance depuis le site.',
 		unavailableReason: 'L’envoi d’ordonnance n’est pas disponible pour ce site.'
+	},
+	brands: {
+		title: 'Marques',
+		description: 'Les marques que vous proposez, avec leur logo.',
+		unavailableReason: 'Ajoutez au moins une marque, dans le bloc Marques.',
+		fixHref: '#marques'
+	},
+	appointment: {
+		title: 'Prise de rendez-vous',
+		description: 'Vos patients réservent un créneau depuis le site, ou vont sur votre outil habituel.',
+		unavailableReason: 'Renseignez l’adresse de votre site de rendez-vous, dans le bloc Rendez-vous.',
+		fixHref: '#rendez-vous'
+	},
+	onlineOrder: {
+		title: 'Commande en ligne',
+		description: 'Un lien vers votre site de commande, aussi accessible par /commandeenligne.',
+		unavailableReason: 'Renseignez l’adresse de votre site de commande, dans le bloc Commande en ligne.',
+		fixHref: '#commande'
 	},
 	loyaltyCard: {
 		title: 'Carte de fidélité',

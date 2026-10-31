@@ -1,3 +1,4 @@
+import { Show } from 'solid-js';
 import type { ServiceIconName } from '@crystal-pharm/schema';
 
 const iconPaths: Record<ServiceIconName, string> = {
@@ -9,11 +10,18 @@ const iconPaths: Record<ServiceIconName, string> = {
   leaf: 'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10zM2 21c0-3 1.9-5.4 5-6',
 };
 
-/** Sans icône précisée, une croix de pharmacie. */
-export function ServiceIcon(props: { name?: ServiceIconName }) {
+/** L'icône choisie par la pharmacie passe avant celle du catalogue ; sans aucune, une croix de pharmacie. */
+export function ServiceIcon(props: { name?: ServiceIconName; imageUrl?: string }) {
   return (
-    <svg class="nb-service-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d={props.name ? iconPaths[props.name] : 'M12 4v16M4 12h16'} />
-    </svg>
+    <Show
+      when={props.imageUrl}
+      fallback={
+        <svg class="nb-service-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d={props.name ? iconPaths[props.name] : 'M12 4v16M4 12h16'} />
+        </svg>
+      }
+    >
+      {(imageUrl) => <img class="nb-service-icon nb-service-icon--image" src={imageUrl()} alt="" loading="lazy" />}
+    </Show>
   );
 }

@@ -55,7 +55,7 @@ async function buildPanels(
 ): Promise<Pick<CommonAppointmentsPageData, 'detailPanel' | 'addAppointmentPanel'>> {
 	const panel = parsePanel(url);
 	if (panel.kind === 'add') {
-		return { detailPanel: null, addAppointmentPanel: buildAddAppointmentPanel(query, employees, await listAppointmentReasons()) };
+		return { detailPanel: null, addAppointmentPanel: buildAddAppointmentPanel(query, employees, await listAppointmentReasons(caller)) };
 	}
 	const appointment = panel.kind === 'detail' ? await findAppointment(caller, panel.appointmentId) : undefined;
 	return {

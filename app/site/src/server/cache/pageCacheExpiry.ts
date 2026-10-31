@@ -1,6 +1,6 @@
-import type { OpeningHoursModuleData } from '@crystal-pharm/schema';
+import type { OpeningHoursSectionData } from '@crystal-pharm/schema';
 
-type WeeklySchedule = OpeningHoursModuleData['weeklySchedule'];
+type WeeklySchedule = OpeningHoursSectionData['weeklySchedule'];
 
 /** Un filet de sécurité : même si une notification se perd, une page ne vit pas plus longtemps. */
 export const maximumPageAgeMilliseconds = 60 * 60 * 1000;

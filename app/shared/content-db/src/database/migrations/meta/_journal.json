@@ -29,6 +29,13 @@
       "when": 1793233106555,
       "tag": "0003_notify_site_changes_and_read_site_in_one_statement",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793448503906,
+      "tag": "0004_add_site_fixed_sections_brands_and_images",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { ModuleNameSchema, type ModuleName, type TenantSiteSchema } from '@crystal-pharm/schema';
+import { ModuleNameSchema, type FindUsSectionData, type HeroSectionData, type ModuleName, type OpeningHoursSectionData, type TenantSiteSchema } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 
 // Les règles du site affiché, écrites une seule fois : `app/site` (le site en
@@ -16,7 +16,11 @@ export type DisplayedTenantSiteSources = {
 	layoutSettings: Record<string, unknown>;
 	/** Les modules que le Tenant a choisi d'afficher. */
 	enabledModules: readonly ModuleName[];
+	/** Le Tenant choisit l'ordre ; un module activé absent de la liste vient après, dans l'ordre par défaut. */
+	moduleOrder: readonly ModuleName[];
 	pharmacy: Omit<TenantSiteInput['pharmacy'], 'group'>;
+	/** `openingHours` vient de la fiche ; sans horaires saisis, toutes les journées comptent comme fermées. */
+	fixedSections: { hero: HeroSectionData; findUs: FindUsSectionData; openingHours: OpeningHoursSectionData | undefined };
 	group: DisplayedPharmacyGroup | undefined;
 	/** Les données de chaque module ; un module absent n'a pas encore de données. */
 	moduleData: Partial<ModuleDataByName>;
@@ -57,13 +61,21 @@ export function assembleDisplayedTenantSite(sources: DisplayedTenantSiteSources)
 					mandatoryModules: mandatoryModules.filter(isDisplayed)
 				}
 			},
+			fixedSections: {
+				hero: sources.fixedSections.hero,
+				findUs: sources.fixedSections.findUs,
+				openingHours: sources.fixedSections.openingHours ?? closedAllWeek
+			},
+			moduleOrder: [...new Set(sources.moduleOrder)],
 			modules: {
-				openingHours: toModule('openingHours'),
 				team: toModule('team'),
 				services: toModule('services'),
 				news: toModule('news'),
 				prescriptionUpload: toModule('prescriptionUpload'),
-				loyaltyCard: toModule('loyaltyCard')
+				loyaltyCard: toModule('loyaltyCard'),
+				brands: toModule('brands'),
+				appointment: toModule('appointment'),
+				onlineOrder: toModule('onlineOrder')
 			}
 		},
 		unavailableMandatoryModules: mandatoryModules.filter((moduleName) => availableModuleData[moduleName] === undefined)
@@ -72,14 +84,20 @@ export function assembleDisplayedTenantSite(sources: DisplayedTenantSiteSources)
 
 // Une liste vide laisserait une section vide sur le site : le module compte comme sans données.
 export function keepModuleDataWithContent(moduleData: Partial<ModuleDataByName>): Partial<ModuleDataByName> {
-	const { team, services, news, ...modulesWithoutList } = moduleData;
+	const { team, services, news, brands, ...modulesWithoutList } = moduleData;
 	return {
 		...modulesWithoutList,
+		...(brands && brands.brands.length > 0 && { brands }),
 		...(team && team.members.length > 0 && { team }),
 		...(services && services.services.length > 0 && { services }),
 		...(news && news.articles.length > 0 && { news })
 	};
 }
+
+const closedAllWeek: OpeningHoursSectionData = {
+	weeklySchedule: { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] },
+	onDutyPeriods: []
+};
 
 function readMandatoryModules(group: DisplayedPharmacyGroup | undefined): ModuleName[] {
 	return (group?.mandatoryModules ?? []).filter((moduleName) => v.is(ModuleNameSchema, moduleName));

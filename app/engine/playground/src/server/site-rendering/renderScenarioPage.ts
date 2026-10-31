@@ -5,6 +5,7 @@ import type { SiteRenderer } from './createSiteRendererLoader';
 
 export type ScenarioPageRendering = { tenantSiteInput: unknown } & (
   | { outcome: 'rendered'; status: 200 | 404; html: string }
+  | { outcome: 'redirected'; location: string }
   | { outcome: 'invalidData'; issues: string[] }
   | { outcome: 'renderFailed'; errorMessage: string }
 );
@@ -21,6 +22,7 @@ export async function renderScenarioPage(input: {
   try {
     const { renderTenantSiteDocument } = await input.loadSiteRenderer();
     const result = renderTenantSiteDocument(validation.tenantSite, input.requestedPath);
+    if (result.status === 302) return { tenantSiteInput, outcome: 'redirected', location: result.location };
     return { tenantSiteInput, outcome: 'rendered', ...result };
   } catch (error) {
     return { tenantSiteInput, outcome: 'renderFailed', errorMessage: error instanceof Error ? (error.stack ?? error.message) : String(error) };

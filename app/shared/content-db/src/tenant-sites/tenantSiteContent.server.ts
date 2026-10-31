@@ -1,20 +1,21 @@
-import type { ModuleName, NewsModuleData, ServicesModuleData } from '@crystal-pharm/schema';
+import type { ModuleName } from '@crystal-pharm/schema';
 import { desc, eq, sql } from 'drizzle-orm';
 import { connectToContentDatabase, runAsTenant } from '../database/contentDatabase.server';
 import { articles, tenantSites, type NewsSource } from '../database/contentTables';
+import type { EditedSiteContent } from './resolveEditedContent';
 
 /** Ce que le Tenant a saisi pour son site ; le reste vient de sa fiche et de son groupement. */
-export type TenantSiteContent = {
+export type TenantSiteContent = EditedSiteContent & {
 	layoutId: string;
 	/** Ceux du layout choisi. */
 	layoutSettings: Record<string, unknown>;
 	layoutSettingsByLayoutId: Record<string, Record<string, unknown>>;
 	enabledModules: ModuleName[];
-	services: ServicesModuleData['services'];
+	moduleOrder: ModuleName[];
 	prescriptionIntroduction: string | undefined;
 	newsSource: NewsSource;
-	/** Du plus récent au plus ancien. */
-	articles: NewsModuleData['articles'];
+	/** Les actualités, du plus récent au plus ancien. */
+	articles: EditedSiteContent['articles'];
 };
 
 /** `undefined` tant que le Tenant n'a pas créé son site. */
@@ -34,19 +35,32 @@ export async function readTenantSiteContent(tenantId: string): Promise<TenantSit
 			layoutSettings: tenantSite.layoutSettingsByLayoutId[tenantSite.layoutId] ?? {},
 			layoutSettingsByLayoutId: tenantSite.layoutSettingsByLayoutId,
 			enabledModules: tenantSite.enabledModules,
+			moduleOrder: tenantSite.moduleOrder,
 			services: tenantSite.services,
+			hero: tenantSite.hero ?? undefined,
+			findUs: tenantSite.findUs ?? undefined,
+			brands: tenantSite.brands,
+			appointment: tenantSite.appointment ?? undefined,
+			onlineOrder: tenantSite.onlineOrder ?? undefined,
 			prescriptionIntroduction: tenantSite.prescriptionIntroduction ?? undefined,
 			newsSource: tenantSite.newsSource,
 			articles: articleRows.map((articleRow) => ({
 				title: articleRow.title,
 				summary: articleRow.summary,
-				publishedAt: toParisCalendarDate(articleRow.publishedAt)
+				publishedAt: toParisCalendarDate(articleRow.publishedAt),
+				...(articleRow.image && { image: articleRow.image })
 			}))
 		};
 	});
 }
 
-type TenantSiteContentRow = Omit<TenantSiteContent, 'prescriptionIntroduction'> & { prescriptionIntroduction: string | null };
+type TenantSiteContentRow = Omit<TenantSiteContent, 'prescriptionIntroduction' | 'hero' | 'findUs' | 'appointment' | 'onlineOrder'> & {
+	prescriptionIntroduction: string | null;
+	hero: TenantSiteContent['hero'] | null;
+	findUs: TenantSiteContent['findUs'] | null;
+	appointment: TenantSiteContent['appointment'] | null;
+	onlineOrder: TenantSiteContent['onlineOrder'] | null;
+};
 
 /**
  * Le même contenu en une seule instruction, sans transaction explicite :
@@ -57,8 +71,15 @@ export async function readTenantSiteContentInOneStatement(tenantId: string): Pro
 		sql`select content.read_tenant_site_content(${tenantId}::uuid) as content`
 	);
 	if (!row?.content) return undefined;
-	const { prescriptionIntroduction, ...content } = row.content;
-	return { ...content, prescriptionIntroduction: prescriptionIntroduction ?? undefined };
+	const { prescriptionIntroduction, hero, findUs, appointment, onlineOrder, ...content } = row.content;
+	return {
+		...content,
+		prescriptionIntroduction: prescriptionIntroduction ?? undefined,
+		hero: hero ?? undefined,
+		findUs: findUs ?? undefined,
+		appointment: appointment ?? undefined,
+		onlineOrder: onlineOrder ?? undefined
+	};
 }
 
 // `engine/schema` attend une date sans heure (`2026-10-24`) : le jour de publication à Paris.

@@ -305,6 +305,12 @@
   border-top: 1px solid var(--at-color-rule);
 }
 
+.layout-atelier .at-service__icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .layout-atelier .at-service__title {
   font-family: var(--at-font-display);
   font-size: 2rem;
@@ -795,4 +801,362 @@
   .layout-atelier .at-team__member:nth-child(even) {
     transform: none;
   }
+}
+
+/* Garde, Nous trouver, Marques, Commande en ligne, Rendez-vous */
+
+.layout-atelier .at-intro__image {
+  width: 100%;
+  max-height: 46vh;
+  object-fit: cover;
+}
+
+.layout-atelier .at-on-duty {
+  padding: 12px 0;
+  background: var(--at-color-accent);
+  color: var(--at-color-on-accent);
+  font-weight: 500;
+  text-align: center;
+}
+
+.layout-atelier .at-on-duty--hotline {
+  background: none;
+  color: var(--at-color-muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.layout-atelier .at-find-us__content {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.layout-atelier .at-find-us__address {
+  font-family: var(--at-font-display);
+  font-size: 1.6rem;
+  font-style: normal;
+}
+
+.layout-atelier .at-find-us__map {
+  width: 100%;
+  height: 320px;
+  border: 0;
+}
+
+.layout-atelier .at-brands__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  align-items: center;
+  list-style: none;
+}
+
+.layout-atelier .at-brands__name {
+  font-family: var(--at-font-display);
+  font-size: 1.5rem;
+}
+
+.layout-atelier .at-brands__logo {
+  max-height: 44px;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.layout-atelier .at-form {
+  display: grid;
+  gap: 16px;
+  max-width: 480px;
+}
+
+/* Prise de rendez-vous guidée */
+
+.layout-atelier .at-wizard {
+  display: grid;
+  gap: 28px;
+  max-width: 640px;
+}
+
+.layout-atelier .at-wizard__introduction,
+.layout-atelier .at-wizard__summary,
+.layout-atelier .at-wizard__privacy,
+.layout-atelier .at-wizard__counter {
+  color: var(--at-color-muted);
+}
+
+.layout-atelier .at-wizard__counter,
+.layout-atelier .at-wizard__privacy {
+  font-size: 0.8125rem;
+}
+
+.layout-atelier .at-wizard__title {
+  margin-bottom: 12px;
+  font-family: var(--at-font-display); font-size: 2rem; font-weight: 400;
+}
+
+.layout-atelier .at-wizard__notice,
+.layout-atelier .at-wizard__preparation {
+  padding: 12px 14px;
+  border-left: 2px solid var(--at-color-accent); background: var(--at-color-surface);
+}
+
+.layout-atelier .at-wizard__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.layout-atelier .at-wizard__button {
+  display: inline-block;
+  justify-self: start;
+  margin-top: 12px;
+  padding: 12px 22px;
+  border: 0; background: var(--at-color-accent); color: var(--at-color-on-accent); font-weight: 500; letter-spacing: 0.04em;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.layout-atelier .at-wizard__button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.layout-atelier .at-wizard__button--quiet {
+  background: none; border: 1px solid var(--at-color-rule); color: var(--at-color-text);
+}
+
+.layout-atelier .at-wizard__form {
+  display: grid;
+  gap: 14px;
+}
+
+.layout-atelier .at-wizard :is(button, a):focus-visible {
+  outline: 3px solid var(--at-color-accent);
+  outline-offset: 2px;
+}
+
+.layout-atelier .at-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--at-color-muted);
+}
+
+.layout-atelier .at-steps__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.layout-atelier .at-steps__label--link {
+  cursor: pointer;
+}
+
+.layout-atelier .at-steps__number {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--at-color-rule); border-radius: 50%;
+  font-size: 0.75rem;
+}
+
+.layout-atelier .at-steps__item--current {
+  color: var(--at-color-text);
+  font-weight: 700;
+}
+
+.layout-atelier .at-steps__item--current .at-steps__number {
+  border-color: var(--at-color-accent); background: var(--at-color-accent); color: var(--at-color-on-accent);
+}
+
+.layout-atelier .at-steps__item--done .at-steps__number {
+  border-color: var(--at-color-accent); background: var(--at-color-accent); color: var(--at-color-on-accent);
+}
+
+.layout-atelier .at-reasons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-atelier .at-reason {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--at-color-rule); background: var(--at-color-surface); color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layout-atelier .at-reason:hover,
+.layout-atelier .at-reason--chosen {
+  border-color: var(--at-color-accent);
+}
+
+.layout-atelier .at-reason__label {
+  font-weight: 700;
+}
+
+.layout-atelier .at-reason__duration {
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+.layout-atelier .at-reason__description {
+  font-size: 0.875rem;
+  opacity: 0.85;
+}
+
+.layout-atelier .at-calendar {
+  display: grid;
+  gap: 10px;
+  max-width: 380px;
+  padding: 14px;
+  border: 1px solid var(--at-color-rule); background: var(--at-color-surface);
+}
+
+.layout-atelier .at-calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.layout-atelier .at-calendar__month {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.layout-atelier .at-calendar__arrow {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--at-color-rule); background: none; color: inherit;
+  font: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.layout-atelier .at-calendar__arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.layout-atelier .at-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  transition: opacity 0.15s;
+}
+
+.layout-atelier .at-calendar__grid--loading {
+  opacity: 0.5;
+}
+
+.layout-atelier .at-calendar__weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--at-color-muted);
+}
+
+.layout-atelier .at-calendar__day {
+  aspect-ratio: 1;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--at-color-muted);
+  font: inherit;
+  opacity: 0.45;
+}
+
+.layout-atelier .at-calendar__day--free {
+  color: var(--at-color-text); border: 1px solid var(--at-color-rule);
+  opacity: 1;
+  cursor: pointer;
+}
+
+.layout-atelier .at-calendar__day--free:hover,
+.layout-atelier .at-calendar__day--chosen {
+  border-color: var(--at-color-accent); background: var(--at-color-accent); color: var(--at-color-on-accent);
+}
+
+.layout-atelier .at-slots__title {
+  margin: 12px 0 8px;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  color: var(--at-color-muted);
+}
+
+.layout-atelier .at-slots__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-atelier .at-slot {
+  min-width: 76px;
+  padding: 10px 14px;
+  border: 1px solid var(--at-color-rule); background: var(--at-color-surface); color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.layout-atelier .at-slot:hover {
+  border-color: var(--at-color-accent);
+}
+
+.layout-atelier .at-recap {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 14px;
+  border: 1px solid var(--at-color-rule); background: var(--at-color-surface);
+}
+
+.layout-atelier .at-recap > div {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 10px;
+}
+
+.layout-atelier .at-recap dt {
+  color: var(--at-color-muted);
+}
+
+.layout-atelier .at-recap dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.layout-atelier .at-done {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--at-color-rule); background: var(--at-color-surface);
+}
+
+.layout-atelier .at-done__when {
+  font-weight: 700;
 }

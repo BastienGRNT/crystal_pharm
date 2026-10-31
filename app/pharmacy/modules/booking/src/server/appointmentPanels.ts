@@ -26,7 +26,8 @@ export function buildDetailPanel(
 			},
 			{ label: 'Motif', value: appointment.reason },
 			{ label: 'Avec', value: employee?.fullName ?? 'Employé inconnu', detail: employee?.jobTitle },
-			{ label: 'Téléphone', value: appointment.patientPhone }
+			{ label: 'Téléphone', value: appointment.patientPhone },
+			...(appointment.note ? [{ label: 'Message du patient', value: appointment.note }] : [])
 		],
 		confirmFormAction:
 			appointment.status === 'pending' ? buildActionHref(query, panel, 'confirmAppointment') : null,

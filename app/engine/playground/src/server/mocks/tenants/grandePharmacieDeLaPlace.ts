@@ -27,7 +27,6 @@ export const grandePharmacieDeLaPlace: MockTenant = {
     return {
       tenantId: 'grande-pharmacie-de-la-place',
       layoutId: 'neighborhood',
-      layoutSettings: { heroImageUrl: mockImageUrl('hero', 'Grande Pharmacie de la Place'), showOnDutyBanner: true },
       pharmacy: {
         name: 'Grande Pharmacie de la Place',
         address: { street: '45 place du Général-de-Gaulle', postalCode: '59000', city: 'Lille' },
@@ -36,17 +35,17 @@ export const grandePharmacieDeLaPlace: MockTenant = {
         logoUrl: mockImageUrl('logo', 'Grande Pharmacie de la Place'),
         group: demoPharmacyGroups[1]?.group,
       },
-      modules: {
+      fixedSections: {
+        hero: { headline: 'Au cœur de Lille depuis trois générations.' },
         openingHours: {
-          enabled: true,
-          data: {
-            weeklySchedule: weekWithoutBreakOpenOnSunday,
-            onDutyPeriods: [
-              { startsAt: isoTimestampInHoursFromNow(30), endsAt: isoTimestampInHoursFromNow(42) },
-              { startsAt: isoTimestampInHoursFromNow(-60), endsAt: isoTimestampInHoursFromNow(-48) },
-            ],
-          },
+          weeklySchedule: weekWithoutBreakOpenOnSunday,
+          onDutyPeriods: [
+            { startsAt: isoTimestampInHoursFromNow(30), endsAt: isoTimestampInHoursFromNow(42) },
+            { startsAt: isoTimestampInHoursFromNow(-60), endsAt: isoTimestampInHoursFromNow(-48) },
+          ],
         },
+      },
+      modules: {
         team: {
           enabled: true,
           data: {
@@ -93,6 +92,9 @@ export const grandePharmacieDeLaPlace: MockTenant = {
             imageUrl: mockImageUrl('loyaltyCard', 'Alliance'),
           },
         },
+        brands: { enabled: true, data: { brands: [{ name: 'La Roche-Posay' }, { name: 'Avène', url: 'https://www.eau-thermale-avene.fr' }, { name: 'Weleda' }] } },
+        appointment: { enabled: true, data: { mode: 'builtIn' } },
+        onlineOrder: { enabled: true, data: { url: 'https://commande.example/grande-pharmacie-place' } },
       },
     };
   },

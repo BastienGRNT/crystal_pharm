@@ -31,6 +31,7 @@
 <div class="flex flex-wrap items-center gap-3">
 	<SegmentedControl label="Affichage des rendez-vous" options={data.viewOptions} />
 	<Button href={data.addAppointmentHref} icon="plus">Ajouter un rendez-vous</Button>
+	<Button href="/booking/reglages" variant="ghost" icon="wrench">Réglages</Button>
 	<div class="ml-auto">
 		<WeekNav
 			weekLabel={data.periodNavigation.label}

@@ -335,6 +335,102 @@
         }
       }
     },
+    "/booking/configuration": {
+      "get": {
+        "tags": [
+          "AppointmentConfiguration"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentConfigurationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentConfigurationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentConfigurationDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AppointmentConfiguration"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentConfigurationDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentConfigurationDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentConfigurationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentConfigurationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentConfigurationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentConfigurationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/booking/appointments": {
       "get": {
         "tags": [
@@ -638,10 +734,359 @@
           }
         }
       }
+    },
+    "/visitor/appointments/options": {
+      "get": {
+        "tags": [
+          "VisitorAppointments"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorAppointmentOptionsDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorAppointmentOptionsDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorAppointmentOptionsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/visitor/appointments/availability": {
+      "get": {
+        "tags": [
+          "VisitorAppointments"
+        ],
+        "parameters": [
+          {
+            "name": "reasonId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableAppointmentDayDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableAppointmentDayDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableAppointmentDayDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/visitor/appointments/slots": {
+      "get": {
+        "tags": [
+          "VisitorAppointments"
+        ],
+        "parameters": [
+          {
+            "name": "reasonId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "day",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableAppointmentSlotDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableAppointmentSlotDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableAppointmentSlotDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/visitor/appointments": {
+      "post": {
+        "tags": [
+          "VisitorAppointments"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitorAppointmentRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitorAppointmentRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitorAppointmentRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorAppointmentConfirmationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorAppointmentConfirmationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorAppointmentConfirmationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AppointmentClosureDto": {
+        "required": [
+          "firstDay",
+          "lastDay",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "firstDay": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastDay": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AppointmentConfigurationDto": {
+        "required": [
+          "settings",
+          "reasons",
+          "weeklyAvailability",
+          "closures"
+        ],
+        "type": "object",
+        "properties": {
+          "settings": {
+            "$ref": "#/components/schemas/AppointmentSettingsDto"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppointmentReasonDto"
+            }
+          },
+          "weeklyAvailability": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeeklyAvailabilityWindowDto"
+            }
+          },
+          "closures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppointmentClosureDto"
+            }
+          }
+        }
+      },
       "AppointmentDto": {
         "required": [
           "id",
@@ -687,6 +1132,92 @@
           },
           "status": {
             "$ref": "#/components/schemas/AppointmentStatus"
+          },
+          "reasonId": {
+            "type": "string",
+            "format": "uuid",
+            "default": null,
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "default": null,
+            "nullable": true
+          }
+        }
+      },
+      "AppointmentReasonDto": {
+        "required": [
+          "id",
+          "label",
+          "description",
+          "preparationNote",
+          "durationMinutes",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "preparationNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AppointmentSettingsDto": {
+        "required": [
+          "isBookingOpen",
+          "confirmsAutomatically",
+          "slotStepMinutes",
+          "minimumNoticeMinutes",
+          "maximumAdvanceDays",
+          "bufferMinutes",
+          "confirmationMessage"
+        ],
+        "type": "object",
+        "properties": {
+          "isBookingOpen": {
+            "type": "boolean"
+          },
+          "confirmsAutomatically": {
+            "type": "boolean"
+          },
+          "slotStepMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minimumNoticeMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maximumAdvanceDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bufferMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "confirmationMessage": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -696,6 +1227,44 @@
           "confirmed",
           "cancelled"
         ]
+      },
+      "AvailableAppointmentDayDto": {
+        "required": [
+          "day",
+          "freeSlotCount"
+        ],
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "freeSlotCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AvailableAppointmentSlotDto": {
+        "required": [
+          "slotId",
+          "startsAt",
+          "endsAt"
+        ],
+        "type": "object",
+        "properties": {
+          "slotId": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "DocumentFormat": {
         "enum": [
@@ -793,6 +1362,21 @@
           },
           "reason": {
             "type": "string"
+          },
+          "reasonId": {
+            "type": "string",
+            "format": "uuid",
+            "default": null,
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "default": null,
+            "nullable": true
+          },
+          "confirmImmediately": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -988,6 +1572,150 @@
             "type": "boolean"
           }
         }
+      },
+      "VisitorAppointmentConfirmationDto": {
+        "required": [
+          "startsAt",
+          "endsAt",
+          "reasonLabel",
+          "isConfirmed",
+          "confirmationMessage"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reasonLabel": {
+            "type": "string"
+          },
+          "isConfirmed": {
+            "type": "boolean"
+          },
+          "confirmationMessage": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "VisitorAppointmentOptionsDto": {
+        "required": [
+          "isBookingOpen",
+          "maximumAdvanceDays",
+          "reasons"
+        ],
+        "type": "object",
+        "properties": {
+          "isBookingOpen": {
+            "type": "boolean"
+          },
+          "maximumAdvanceDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VisitorAppointmentReasonDto"
+            }
+          }
+        }
+      },
+      "VisitorAppointmentReasonDto": {
+        "required": [
+          "id",
+          "label",
+          "description",
+          "preparationNote",
+          "durationMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "preparationNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "VisitorAppointmentRequestDto": {
+        "required": [
+          "slotId",
+          "reasonId",
+          "firstName",
+          "lastName",
+          "phone"
+        ],
+        "type": "object",
+        "properties": {
+          "slotId": {
+            "type": "string"
+          },
+          "reasonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string",
+            "default": null,
+            "nullable": true
+          }
+        }
+      },
+      "WeeklyAvailabilityWindowDto": {
+        "required": [
+          "employeeId",
+          "isoDayOfWeek",
+          "startTime",
+          "endTime"
+        ],
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isoDayOfWeek": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "time"
+          }
+        }
       }
     }
   },
@@ -999,7 +1727,13 @@
       "name": "ReceivedPrescriptions"
     },
     {
+      "name": "AppointmentConfiguration"
+    },
+    {
       "name": "Appointments"
+    },
+    {
+      "name": "VisitorAppointments"
     }
   ]
 }

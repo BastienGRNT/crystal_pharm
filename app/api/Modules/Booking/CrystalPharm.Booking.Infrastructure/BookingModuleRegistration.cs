@@ -7,12 +7,14 @@ using CrystalPharm.SharedKernel.Persistence.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace CrystalPharm.Booking.Infrastructure;
 
 public static class BookingModuleRegistration
 {
     private const string ConnectionStringName = "Booking";
+    private const string PlanningConnectionStringName = "PlanningReadOnly";
 
     /// <summary>
     /// Le module Booking. L'hôte enregistre l'<see cref="SharedKernel.Tenancy.ITenantContext"/>
@@ -25,9 +27,26 @@ public static class BookingModuleRegistration
 
         services.AddTenantScopedDbContext<BookingDbContext>(options => ConfigureBookingDatabase(options, connectionString));
         services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+        services.AddScoped<IAppointmentConfigurationRepository, AppointmentConfigurationRepository>();
+        services.AddScoped<IAppointmentConfigurationService, AppointmentConfigurationService>();
         services.AddScoped<IHealthDataAccessLog, HealthDataAccessLog>();
         services.AddScoped<IAppointmentService, AppointmentService>();
+        services.AddScoped<IVisitorAppointmentService, VisitorAppointmentService>();
+        AddStaffAvailabilityReader(services, configuration);
         return services;
+    }
+
+    private static void AddStaffAvailabilityReader(IServiceCollection services, IConfiguration configuration)
+    {
+        var planningConnectionString = configuration.GetConnectionString(PlanningConnectionStringName);
+        if (string.IsNullOrWhiteSpace(planningConnectionString))
+        {
+            services.AddScoped<IStaffAvailabilityReader, NoStaffAvailabilityReader>();
+            return;
+        }
+
+        services.AddSingleton(NpgsqlDataSource.Create(planningConnectionString));
+        services.AddScoped<IStaffAvailabilityReader, StaffAvailabilityReader>();
     }
 
     /// <summary>Crée ou met à jour le schéma <c>booking</c> : en dev au démarrage, et dans les tests.</summary>

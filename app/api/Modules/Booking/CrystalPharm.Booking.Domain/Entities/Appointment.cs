@@ -7,6 +7,7 @@ namespace CrystalPharm.Booking.Domain.Entities;
 public sealed class Appointment : ITenantOwned
 {
     public const int MaximumReasonLength = 100;
+    public const int MaximumNoteLength = 500;
 
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
@@ -17,6 +18,8 @@ public sealed class Appointment : ITenantOwned
     public string PatientName { get; private set; }
     public string PatientPhone { get; private set; }
     public string Reason { get; private set; }
+    public Guid? ReasonId { get; private set; }
+    public string? Note { get; private set; }
     public AppointmentStatus Status { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
 
@@ -28,7 +31,14 @@ public sealed class Appointment : ITenantOwned
         Reason = string.Empty;
     }
 
-    private Appointment(Guid employeeId, AppointmentSlot slot, PatientContact patient, string reason, DateTimeOffset createdAt)
+    private Appointment(
+        Guid employeeId,
+        AppointmentSlot slot,
+        PatientContact patient,
+        string reason,
+        Guid? reasonId,
+        string? note,
+        DateTimeOffset createdAt)
     {
         Id = Guid.NewGuid();
         EmployeeId = employeeId;
@@ -38,6 +48,8 @@ public sealed class Appointment : ITenantOwned
         PatientName = patient.Name;
         PatientPhone = patient.Phone;
         Reason = reason;
+        ReasonId = reasonId;
+        Note = note;
         Status = AppointmentStatus.Pending;
         CreatedAt = createdAt;
     }
@@ -48,7 +60,9 @@ public sealed class Appointment : ITenantOwned
         AppointmentSlot slot,
         PatientContact patient,
         string reason,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        Guid? reasonId = null,
+        string? note = null)
     {
         if (employeeId == Guid.Empty)
         {
@@ -61,7 +75,13 @@ public sealed class Appointment : ITenantOwned
             throw new InvalidAppointmentException($"Le motif est obligatoire, {MaximumReasonLength} caractères au plus.");
         }
 
-        return new Appointment(employeeId, slot, patient, trimmedReason, createdAt);
+        var trimmedNote = note?.Trim();
+        if (trimmedNote?.Length > MaximumNoteLength)
+        {
+            throw new InvalidAppointmentException($"Les précisions du patient font {MaximumNoteLength} caractères au plus.");
+        }
+
+        return new Appointment(employeeId, slot, patient, trimmedReason, reasonId, string.IsNullOrEmpty(trimmedNote) ? null : trimmedNote, createdAt);
     }
 
     /// <returns><c>false</c> si le rendez-vous n'était plus en attente.</returns>

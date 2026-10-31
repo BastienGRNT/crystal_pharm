@@ -9,28 +9,39 @@
 	import { untrack } from 'svelte';
 	import EditorRailItem from '../components/molecules/EditorRailItem.svelte';
 	import LayoutSettingField from '../components/molecules/LayoutSettingField.svelte';
+	import AppointmentEditor from '../components/organisms/AppointmentEditor.svelte';
 	import ArticleListEditor from '../components/organisms/ArticleListEditor.svelte';
+	import BrandListEditor from '../components/organisms/BrandListEditor.svelte';
+	import FindUsEditor from '../components/organisms/FindUsEditor.svelte';
 	import GroupArticleList from '../components/organisms/GroupArticleList.svelte';
+	import HeroEditor from '../components/organisms/HeroEditor.svelte';
+	import ModuleOrderList from '../components/organisms/ModuleOrderList.svelte';
 	import NewsSourceChooser from '../components/organisms/NewsSourceChooser.svelte';
+	import OnlineOrderEditor from '../components/organisms/OnlineOrderEditor.svelte';
 	import ServiceListEditor from '../components/organisms/ServiceListEditor.svelte';
 	import SitePreviewFrame from '../components/organisms/SitePreviewFrame.svelte';
 	import { toLayoutSettings, toLayoutSettingsFormValues, type LayoutSettingsFormValues } from '../domain/layoutSettingsForm';
-	import { isArticleDraftIncomplete, isServiceDraftIncomplete } from '../domain/siteContentLists';
-	import { toTenantSiteInput } from '../domain/siteDraft';
+	import { isArticleDraftIncomplete, isBrandAddressInvalid, isBrandDraftIncomplete, isServiceDraftIncomplete } from '../domain/siteContentLists';
+	import { toTenantSiteInput, type SiteEditorBase } from '../domain/siteDraft';
 	import { listSiteModuleChoices, type SiteModuleChoice } from '../domain/siteModuleChoices';
 	import {
 		articlesFieldName,
+		brandsFieldName,
+		moduleOrderFieldName,
 		newsSourceFieldName,
+		sectionsFieldName,
 		servicesFieldName,
 		siteAddressPathname,
 		type SiteEditionFailure,
 		type SiteEditionSaved,
-		type SiteEditorPageData
+		type SiteEditorPageData,
+		type SiteImageUploaded,
+		type SiteImageUploadFailure
 	} from './siteEditorPageData';
 
 	type SiteEditorPageProps = {
 		data: SiteEditorPageData;
-		form: SiteEditionFailure | SiteEditionSaved | null | undefined;
+		form: SiteEditionFailure | SiteEditionSaved | SiteImageUploaded | SiteImageUploadFailure | null | undefined;
 	};
 
 	let { data, form }: SiteEditorPageProps = $props();
@@ -41,9 +52,15 @@
 	const initialEdition = untrack(() => failure?.submittedEdition ?? data.savedEdition);
 	let layoutId = $state(initialEdition.layoutId);
 	let enabledModules: ModuleName[] = $state([...initialEdition.enabledModules]);
+	let moduleOrder: ModuleName[] = $state([...initialEdition.moduleOrder]);
+	let sections = $state(structuredClone(initialEdition.sections));
 	let services = $state(structuredClone(initialEdition.services));
+	let brands = $state(structuredClone(initialEdition.brands));
 	let articles = $state(structuredClone(initialEdition.articles));
 	let newsSource = $state(initialEdition.newsSource);
+	// Les images envoyées ici s'ajoutent à celles déjà enregistrées : l'aperçu les montre avant l'enregistrement.
+	let uploadedImagePreviewUrls: Record<string, string> = $state(untrack(() => ({ ...data.base.uploadedImagePreviewUrls })));
+	const editorBase: SiteEditorBase = $derived({ ...data.base, uploadedImagePreviewUrls });
 	// Un formulaire par layout : en changer puis revenir retrouve ce qu'on y avait saisi.
 	const formValuesByLayoutId: Record<string, LayoutSettingsFormValues> = $state(untrack(() => toInitialFormValuesByLayoutId()));
 
@@ -64,7 +81,7 @@
 	}
 
 	function fingerprintEdition(): string {
-		return JSON.stringify([layoutId, formValuesByLayoutId[layoutId], [...enabledModules].sort(), services, articles, newsSource]);
+		return JSON.stringify([layoutId, formValuesByLayoutId[layoutId], [...enabledModules].sort(), moduleOrder, sections, services, brands, articles, newsSource]);
 	}
 
 	const layoutOptions = layoutManifests.map((manifest) => ({
@@ -79,16 +96,19 @@
 	const chosenFormValues = $derived(formValuesByLayoutId[layoutId] ?? {});
 	const layoutSettingsReading = $derived(chosenManifest && toLayoutSettings(chosenManifest, chosenFormValues));
 	const settingsFieldErrors = $derived(layoutSettingsReading && !layoutSettingsReading.success ? layoutSettingsReading.fieldErrors : {});
-	const contentDraft = $derived({ services, articles, newsSource });
+	const contentDraft = $derived({ sections, services, brands, articles, newsSource });
 	const displayedNewsSource = $derived(chooseDisplayedNewsSource(newsSource, data.base.group).source);
-	const moduleChoices = $derived(listSiteModuleChoices(data.base, contentDraft));
+	const moduleChoices = $derived(listSiteModuleChoices(editorBase, contentDraft));
 	const previewedSite = $derived(
 		layoutSettingsReading?.success
-			? toTenantSiteInput(data.base, {
+			? toTenantSiteInput(editorBase, {
 					layoutId,
 					layoutSettings: layoutSettingsReading.layoutSettings,
 					enabledModules,
+					moduleOrder,
+					sections,
 					services,
+					brands,
 					articles,
 					newsSource
 				})
@@ -102,7 +122,11 @@
 			)
 			.map((moduleChoice) => moduleChoice.title)
 	);
-	const hasIncompleteItem = $derived(services.some(isServiceDraftIncomplete) || articles.some(isArticleDraftIncomplete));
+	const hasIncompleteItem = $derived(
+		services.some(isServiceDraftIncomplete) ||
+			articles.some(isArticleDraftIncomplete) ||
+			brands.some((brand) => isBrandDraftIncomplete(brand) || isBrandAddressInvalid(brand))
+	);
 	const canSave = $derived(layoutSettingsReading?.success === true && !hasIncompleteItem && !isSaving);
 	const hasUnsavedChanges = $derived(fingerprintEdition() !== savedFingerprint);
 
@@ -123,15 +147,31 @@
 	];
 	const appearancePanelId = 'apparence';
 	const displayPanelId = 'display';
-	const panelsWithOwnEditor: ModuleName[] = ['services', 'news'];
-	// `#services` et `#actualites` existaient déjà comme ancres : elles ouvrent le bloc concerné.
-	const panelIdByHash: Record<string, string> = { services: 'services', actualites: 'news' };
-	const railIconByPanelId: Record<typeof appearancePanelId | typeof displayPanelId | 'services' | 'news', IconName> = {
+	const panelsWithOwnEditor: ModuleName[] = ['services', 'news', 'brands', 'appointment', 'onlineOrder'];
+	// Les ancres `#services`, `#actualites`… ouvrent le bloc concerné.
+	const panelIdByHash: Record<string, string> = {
+		services: 'services',
+		actualites: 'news',
+		marques: 'brands',
+		'rendez-vous': 'appointment',
+		commande: 'onlineOrder'
+	};
+	const anchorIdByPanelId: Record<string, string> = { news: 'actualites', brands: 'marques', appointment: 'rendez-vous', onlineOrder: 'commande' };
+	const railIconByPanelId: Record<string, IconName | undefined> = {
 		apparence: 'sparkle',
+		hero: 'house',
+		findUs: 'map-pin',
 		services: 'seal-check',
 		news: 'file-text',
+		brands: 'storefront',
+		appointment: 'calendar-check',
+		onlineOrder: 'package',
 		display: 'globe-simple'
 	};
+
+	function railIconOf(panelId: string): IconName {
+		return railIconByPanelId[panelId] ?? 'puzzle-piece';
+	}
 
 	// Les panneaux restent montés, cachés : leurs champs partent avec le formulaire.
 	let selectedPanelId = $state('services');
@@ -150,6 +190,7 @@
 	// SvelteKit intercepte les liens d'ancre : le clic passe par afterNavigate, le retour arrière par hashchange.
 	afterNavigate(selectPanelOfLocationHash);
 
+	const moduleTitles = $derived(Object.fromEntries(moduleChoices.map((moduleChoice) => [moduleChoice.moduleName, moduleChoice.title])));
 	const settingsErrorCount = $derived(Object.keys(settingsFieldErrors).length);
 
 	function isModuleChecked(moduleChoice: SiteModuleChoice): boolean {
@@ -178,12 +219,14 @@
 	function describeEditorPanel(moduleChoice: SiteModuleChoice): string {
 		if (moduleChoice.moduleName === 'services') return servicesSummary;
 		if (moduleChoice.moduleName === 'news') return newsSummary;
+		if (moduleChoice.moduleName === 'brands') return countLabel(brands.length, 'Aucune marque', 'marque', 'marques');
 		return moduleChoice.description;
 	}
 
 	function hasIncompleteItemIn(moduleName: ModuleName): boolean {
 		if (moduleName === 'services') return services.some(isServiceDraftIncomplete);
 		if (moduleName === 'news') return articles.some(isArticleDraftIncomplete);
+		if (moduleName === 'brands') return brands.some((brand) => isBrandDraftIncomplete(brand) || isBrandAddressInvalid(brand));
 		return false;
 	}
 
@@ -244,11 +287,17 @@
 		</div>
 		<form
 			method="POST"
+			action="?/save"
 			class="content-start gap-4 lg:grid-cols-[84px_minmax(0,1fr)] {mobileView === 'edition' ? 'grid' : 'hidden lg:grid'}"
 			use:enhance={saveWithoutReloading}
 		>
 			<input type="hidden" name={servicesFieldName} value={JSON.stringify(services)} />
 			<input type="hidden" name={articlesFieldName} value={JSON.stringify(articles)} />
+			<input type="hidden" name={brandsFieldName} value={JSON.stringify(brands)} />
+			<input type="hidden" name={sectionsFieldName} value={JSON.stringify(sections)} />
+			{#each moduleOrder as orderedModuleName (orderedModuleName)}
+				<input type="hidden" name={moduleOrderFieldName} value={orderedModuleName} />
+			{/each}
 			<input type="hidden" name={newsSourceFieldName} value={newsSource} />
 			{#each moduleChoices as moduleChoice (moduleChoice.moduleName)}
 				{#if moduleChoice.state.kind === 'optional' && enabledModules.includes(moduleChoice.moduleName)}
@@ -300,18 +349,30 @@
 
 			<nav
 				aria-label="Blocs du site"
-				class="grid grid-cols-4 gap-1 rounded-lg border border-line bg-surface p-1.5 shadow-card lg:sticky lg:top-[calc(var(--spacing-topbar)+1rem)] lg:grid-cols-1 lg:self-start"
+				class="grid grid-cols-3 gap-1 rounded-lg sm:grid-cols-5 border border-line bg-surface p-1.5 shadow-card lg:sticky lg:top-[calc(var(--spacing-topbar)+1rem)] lg:grid-cols-1 lg:self-start"
 			>
 				<EditorRailItem
-					icon={railIconByPanelId[appearancePanelId]}
+					icon={railIconOf(appearancePanelId)}
 					label="Style"
 					isSelected={selectedPanelId === appearancePanelId}
 					status={settingsErrorCount > 0 ? 'error' : undefined}
 					onselect={() => selectPanel(appearancePanelId)}
 				/>
+				<EditorRailItem
+					icon={railIconOf('hero')}
+					label="Accueil"
+					isSelected={selectedPanelId === 'hero'}
+					onselect={() => selectPanel('hero')}
+				/>
+				<EditorRailItem
+					icon={railIconOf('findUs')}
+					label="Nous trouver"
+					isSelected={selectedPanelId === 'findUs'}
+					onselect={() => selectPanel('findUs')}
+				/>
 				{#each moduleChoices.filter((moduleChoice) => panelsWithOwnEditor.includes(moduleChoice.moduleName)) as moduleChoice (moduleChoice.moduleName)}
 					<EditorRailItem
-						icon={railIconByPanelId[moduleChoice.moduleName as 'services' | 'news']}
+						icon={railIconOf(moduleChoice.moduleName)}
 						label={moduleChoice.title}
 						isSelected={selectedPanelId === moduleChoice.moduleName}
 						status={railStatusOf(moduleChoice)}
@@ -319,7 +380,7 @@
 					/>
 				{/each}
 				<EditorRailItem
-					icon={railIconByPanelId[displayPanelId]}
+					icon={railIconOf(displayPanelId)}
 					label="Affichage"
 					isSelected={selectedPanelId === displayPanelId}
 					onselect={() => selectPanel(displayPanelId)}
@@ -338,14 +399,24 @@
 					{/if}
 				</div>
 
+				<div class="grid content-start gap-4 {selectedPanelId === 'hero' ? '' : 'hidden'}">
+					{@render panelHeader('Accueil', 'L’accroche et l’image qui ouvrent votre site. Toujours affichées.')}
+					<HeroEditor bind:hero={sections.hero} bind:uploadedImagePreviewUrls />
+				</div>
+
+				<div class="grid content-start gap-4 {selectedPanelId === 'findUs' ? '' : 'hidden'}">
+					{@render panelHeader('Nous trouver', 'Les informations pour venir à la pharmacie. Toujours affichées.')}
+					<FindUsEditor bind:findUs={sections.findUs} />
+				</div>
+
 				{#each moduleChoices.filter((moduleChoice) => panelsWithOwnEditor.includes(moduleChoice.moduleName)) as moduleChoice (moduleChoice.moduleName)}
 					<div
-						id={moduleChoice.moduleName === 'news' ? 'actualites' : moduleChoice.moduleName}
+						id={anchorIdByPanelId[moduleChoice.moduleName] ?? moduleChoice.moduleName}
 						class="grid scroll-mt-16 content-start gap-4 {selectedPanelId === moduleChoice.moduleName ? '' : 'hidden'}"
 					>
 						{@render panelHeader(moduleChoice.title, describeEditorPanel(moduleChoice), moduleChoice)}
 						{#if moduleChoice.moduleName === 'services'}
-							<ServiceListEditor bind:services onserviceadded={() => enableModule('services')} />
+							<ServiceListEditor bind:services bind:uploadedImagePreviewUrls onserviceadded={() => enableModule('services')} />
 						{:else if moduleChoice.moduleName === 'news'}
 							{#if data.base.group}
 								<NewsSourceChooser group={data.base.group} bind:newsSource onchange={showGroupNewsWhenAvailable} />
@@ -353,8 +424,14 @@
 							{#if displayedNewsSource === 'group' && data.base.group}
 								<GroupArticleList groupName={data.base.group.name} articles={data.base.group.articles} />
 							{:else}
-								<ArticleListEditor bind:articles onarticleadded={() => enableModule('news')} />
+								<ArticleListEditor bind:articles bind:uploadedImagePreviewUrls onarticleadded={() => enableModule('news')} />
 							{/if}
+						{:else if moduleChoice.moduleName === 'brands'}
+							<BrandListEditor bind:brands bind:uploadedImagePreviewUrls onbrandadded={() => enableModule('brands')} />
+						{:else if moduleChoice.moduleName === 'appointment'}
+							<AppointmentEditor bind:appointment={sections.appointment} />
+						{:else if moduleChoice.moduleName === 'onlineOrder'}
+							<OnlineOrderEditor bind:onlineOrder={sections.onlineOrder} />
 						{/if}
 					</div>
 				{/each}
@@ -379,6 +456,11 @@
 								{@render moduleSwitch(moduleChoice)}
 							</div>
 						{/each}
+					</div>
+					<div class="grid gap-2">
+						<p class="body-strong text-ink">Ordre des blocs</p>
+						<p class="text-small text-ink-muted">Les blocs affichés suivent cet ordre sur votre site. L’accueil, « Nous trouver », la garde et les horaires gardent leur place.</p>
+						<ModuleOrderList bind:moduleOrder titleOf={(moduleName) => moduleTitles[moduleName] ?? moduleName} />
 					</div>
 				</div>
 

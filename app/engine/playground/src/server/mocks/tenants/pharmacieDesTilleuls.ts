@@ -7,7 +7,6 @@ export const pharmacieDesTilleuls: MockTenant = {
   createTenantSite: () => ({
     tenantId: 'pharmacie-des-tilleuls',
     layoutId: 'neighborhood',
-    layoutSettings: { slogan: 'Sous les tilleuls, depuis 1987.' },
     pharmacy: {
       name: 'Pharmacie des Tilleuls',
       address: { street: '3 place des Tilleuls', postalCode: '44000', city: 'Nantes' },
@@ -15,8 +14,11 @@ export const pharmacieDesTilleuls: MockTenant = {
       email: 'bonjour@pharmacie-tilleuls.fr',
       logoUrl: mockImageUrl('logo', 'Pharmacie des Tilleuls'),
     },
+    fixedSections: {
+      hero: { headline: 'Sous les tilleuls, depuis 1987.' },
+      openingHours: { weeklySchedule: weekWithoutBreakOpenOnSunday },
+    },
     modules: {
-      openingHours: { enabled: true, data: { weeklySchedule: weekWithoutBreakOpenOnSunday } },
       team: {
         enabled: true,
         data: {
@@ -40,6 +42,9 @@ export const pharmacieDesTilleuls: MockTenant = {
       news: { enabled: false },
       prescriptionUpload: { enabled: true, data: {} },
       loyaltyCard: { enabled: false },
+      brands: { enabled: false },
+      appointment: { enabled: true, data: { mode: 'externalLink', url: 'https://rdv.example/tilleuls' } },
+      onlineOrder: { enabled: false },
     },
   }),
 };

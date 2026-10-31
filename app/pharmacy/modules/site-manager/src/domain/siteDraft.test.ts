@@ -2,6 +2,7 @@ import { TenantSiteSchema } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { toTenantSiteInput, type SiteDraft, type SiteEditorBase } from './siteDraft';
+import { createEmptySectionDrafts } from './siteSectionDrafts';
 import { listSiteModuleChoices } from './siteModuleChoices';
 
 const baseWithoutGroup: SiteEditorBase = {
@@ -12,6 +13,8 @@ const baseWithoutGroup: SiteEditorBase = {
 		phone: '01 23 45 67 89'
 	},
 	group: undefined,
+	openingHours: undefined,
+	uploadedImagePreviewUrls: {},
 	availableModuleData: {
 		team: { members: [{ fullName: 'Marie Dupont', role: 'Pharmacienne' }] },
 		prescriptionUpload: {},
@@ -41,7 +44,10 @@ const emptyDraft: SiteDraft = {
 	layoutId: 'essential',
 	layoutSettings: {},
 	enabledModules: [],
+	moduleOrder: [],
+	sections: createEmptySectionDrafts(),
 	services: [],
+	brands: [],
 	articles: [],
 	newsSource: 'pharmacy'
 };
@@ -90,10 +96,12 @@ describe('listSiteModuleChoices', () => {
 		);
 
 		expect(statesByModule).toEqual({
-			openingHours: 'unavailable',
 			team: 'optional',
 			services: 'unavailable',
 			news: 'unavailable',
+			brands: 'unavailable',
+			appointment: 'optional',
+			onlineOrder: 'unavailable',
 			prescriptionUpload: 'optional',
 			loyaltyCard: 'mandatory'
 		});
@@ -101,7 +109,9 @@ describe('listSiteModuleChoices', () => {
 
 	it('makes news imposed by the group as soon as an article is complete', () => {
 		const newsChoice = listSiteModuleChoices(baseWithGroup, {
+			sections: createEmptySectionDrafts(),
 			services: [],
+			brands: [],
 			articles: [pharmacyArticle],
 			newsSource: 'pharmacy'
 		}).find((moduleChoice) => moduleChoice.moduleName === 'news');
@@ -170,5 +180,51 @@ describe('les actualités affichées', () => {
 			reason: 'Votre groupement n’a encore publié aucune actualité.',
 			fixHref: undefined
 		});
+	});
+});
+
+describe('les images et sections saisies', () => {
+	it('turns every image choice into an address for the preview', () => {
+		const base = { ...baseWithoutGroup, uploadedImagePreviewUrls: { '00000000-0000-4000-8000-0000000000aa': 'https://preview.example/token' } };
+		const tenantSiteInput = toTenantSiteInput(base, {
+			...emptyDraft,
+			enabledModules: ['brands', 'services'],
+			sections: {
+				...createEmptySectionDrafts(),
+				hero: { headline: 'Bienvenue', image: { kind: 'upload', imageId: '00000000-0000-4000-8000-0000000000aa' } }
+			},
+			brands: [{ name: 'Avène', url: '', logo: { kind: 'link', url: 'https://avene.example/logo.png' } }],
+			services: [{ title: 'Tests', description: 'Rapides.', iconName: '', icon: { kind: 'link', url: 'https://icone.example/a.svg' } }]
+		});
+
+		expect(tenantSiteInput.fixedSections.hero).toEqual({ headline: 'Bienvenue', imageUrl: 'https://preview.example/token' });
+		expect(tenantSiteInput.modules.brands).toEqual({ enabled: true, data: { brands: [{ name: 'Avène', logoUrl: 'https://avene.example/logo.png' }] } });
+		expect(tenantSiteInput.modules.services).toMatchObject({ data: { services: [{ iconUrl: 'https://icone.example/a.svg' }] } });
+		expect(v.safeParse(TenantSiteSchema, tenantSiteInput).success).toBe(true);
+	});
+
+	it('offers the built-in appointments by default and an external link when chosen', () => {
+		const builtIn = toTenantSiteInput(baseWithoutGroup, { ...emptyDraft, enabledModules: ['appointment'] });
+		const external = toTenantSiteInput(baseWithoutGroup, {
+			...emptyDraft,
+			enabledModules: ['appointment', 'onlineOrder'],
+			sections: {
+				...createEmptySectionDrafts(),
+				appointment: { mode: 'externalLink', introduction: '', url: 'https://rdv.example' },
+				onlineOrder: { url: 'https://commande.example', introduction: '' }
+			}
+		});
+
+		expect(builtIn.modules.appointment).toEqual({ enabled: true, data: { mode: 'builtIn' } });
+		expect(external.modules.appointment).toEqual({ enabled: true, data: { mode: 'externalLink', url: 'https://rdv.example' } });
+		expect(external.modules.onlineOrder).toEqual({ enabled: true, data: { url: 'https://commande.example' } });
+	});
+
+	it('keeps the order the Manager chose and a closed week when no opening hours are filled in', () => {
+		const tenantSiteInput = toTenantSiteInput(baseWithoutGroup, { ...emptyDraft, moduleOrder: ['news', 'team'] });
+
+		expect(tenantSiteInput.moduleOrder).toEqual(['news', 'team']);
+		expect(tenantSiteInput.fixedSections.openingHours.weeklySchedule.monday).toEqual([]);
+		expect(v.safeParse(TenantSiteSchema, tenantSiteInput).success).toBe(true);
 	});
 });

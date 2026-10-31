@@ -1,6 +1,15 @@
-import type { ModuleName, ServicesModuleData } from '@crystal-pharm/schema';
+import type { ModuleName } from '@crystal-pharm/schema';
 import { sql } from 'drizzle-orm';
-import { boolean, check, index, jsonb, pgPolicy, pgSchema, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, customType, index, jsonb, pgPolicy, pgSchema, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import type { SiteImage } from '../tenant-sites/siteImage';
+import type {
+	StoredAppointment,
+	StoredBrand,
+	StoredFindUs,
+	StoredHero,
+	StoredOnlineOrder,
+	StoredService
+} from '../tenant-sites/storedSiteContent';
 
 export const contentSchema = pgSchema('content');
 
@@ -14,6 +23,8 @@ const requestedSubdomain = sql.raw(`nullif(current_setting('app.requested_subdom
 /** D'où viennent les actualités affichées : celles du Tenant ou celles de son groupement. */
 export const newsSources = ['pharmacy', 'group'] as const;
 export type NewsSource = (typeof newsSources)[number];
+
+const binaryData = customType<{ data: Buffer }>({ dataType: () => 'bytea' });
 
 const timestampWithTimeZone = (columnName: string) => timestamp(columnName, { withTimezone: true });
 
@@ -37,7 +48,14 @@ export const tenantSites = contentSchema.table(
 			.notNull()
 			.default({}),
 		enabledModules: jsonb('enabled_modules').$type<ModuleName[]>().notNull().default([]),
-		services: jsonb('services').$type<ServicesModuleData['services']>().notNull().default([]),
+		services: jsonb('services').$type<StoredService[]>().notNull().default([]),
+		/** L'ordre voulu des modules ; un module activé qui n'y figure pas vient après, dans l'ordre par défaut. */
+		moduleOrder: jsonb('module_order').$type<ModuleName[]>().notNull().default([]),
+		hero: jsonb('hero').$type<StoredHero>(),
+		findUs: jsonb('find_us').$type<StoredFindUs>(),
+		brands: jsonb('brands').$type<StoredBrand[]>().notNull().default([]),
+		appointment: jsonb('appointment').$type<StoredAppointment>(),
+		onlineOrder: jsonb('online_order').$type<StoredOnlineOrder>(),
 		prescriptionIntroduction: text('prescription_introduction'),
 		/** Le choix du Tenant ; son groupement peut l'imposer (cf. `group-db`). */
 		newsSource: text('news_source').$type<NewsSource>().notNull().default('pharmacy'),
@@ -65,6 +83,7 @@ export const articles = contentSchema.table(
 		tenantId: uuid('tenant_id').notNull(),
 		title: text('title').notNull(),
 		summary: text('summary').notNull(),
+		image: jsonb('image').$type<SiteImage>(),
 		publishedAt: timestampWithTimeZone('published_at').notNull(),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
 	},
@@ -103,6 +122,30 @@ export const siteSubdomains = contentSchema.table(
 		pgPolicy('site_subdomains_requested_by_gateway', {
 			for: 'select',
 			using: sql`subdomain = ${requestedSubdomain}`
+		})
+	]
+);
+
+/**
+ * Une image envoyée par un Tenant pour son site (logo de marque, illustration…).
+ * Petite (2 Mo au plus) : elle reste en base, derrière la même isolation que le
+ * reste du contenu. Jamais modifiée : un remplacement est une nouvelle ligne.
+ */
+export const siteImages = contentSchema.table(
+	'site_images',
+	{
+		id: uuid('id').primaryKey(),
+		tenantId: uuid('tenant_id').notNull(),
+		contentType: text('content_type').notNull(),
+		data: binaryData('data').notNull(),
+		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('site_images_tenant_id_index').on(table.tenantId),
+		pgPolicy('site_images_of_active_tenant', {
+			for: 'all',
+			using: sql`tenant_id = ${activeTenantId} or ${isPlatform}`,
+			withCheck: sql`tenant_id = ${activeTenantId} or ${isPlatform}`
 		})
 	]
 );
