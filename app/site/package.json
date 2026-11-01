@@ -18,6 +18,7 @@
     "@crystal-pharm/pharmacy-db": "workspace:*",
     "@crystal-pharm/renderer": "workspace:*",
     "@crystal-pharm/schema": "workspace:*",
+    "@crystal-pharm/site-traffic-db": "workspace:*",
     "@solidjs/meta": "0.29.4",
     "@solidjs/router": "0.16.3",
     "@solidjs/start": "2.0.6",

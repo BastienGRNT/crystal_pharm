@@ -4,6 +4,8 @@ import type { TenantSite } from '@crystal-pharm/schema';
 import { Title } from '@solidjs/meta';
 import { HttpHeader, HttpStatusCode } from '@solidjs/start';
 import { Show } from 'solid-js';
+import { getRequestEvent, isServer } from 'solid-js/web';
+import { markSitePageAsFound } from '../server/site-request/siteRequest';
 
 type TenantSitePageViewProps = {
   tenantSite: TenantSite;
@@ -45,12 +47,21 @@ export function TenantSitePageView(props: TenantSitePageViewProps) {
     >
       {(page) => (
         <>
+          <SitePageFoundMarker />
           <Title>{page().title}</Title>
           {page().Page({})}
         </>
       )}
     </Show>
   );
+}
+
+// Le code 404 de la page introuvable n'arrive pas toujours au navigateur (la réponse part en flux avant la lecture du site) :
+// la page trouvée le dit elle-même au serveur, qui ne garde et ne compte qu'elle.
+function SitePageFoundMarker() {
+  const event = isServer ? getRequestEvent() : undefined;
+  if (event) markSitePageAsFound(event.locals);
+  return null;
 }
 
 export function UnavailablePage(props: { statusCode: 404 | 503; message: string }) {

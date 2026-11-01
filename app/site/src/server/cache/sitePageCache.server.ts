@@ -13,6 +13,10 @@ export function findCachedPage(key: string): CachedPage | undefined {
   return cachedPages.find(key, new Date());
 }
 
+export function findCachedPageEntry(key: string): CachedPageEntry | undefined {
+  return cachedPages.findEntry(key, new Date());
+}
+
 export function readEvictionCount(): number {
   return evictionCount;
 }
