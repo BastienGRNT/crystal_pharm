@@ -48,8 +48,10 @@ import {
 	updateWeeklyOpeningSchedule
 } from '@crystal-pharm/pharmacy-db';
 import type { PharmacyContactDetailsInput, WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
+import { deleteSiteTrafficOfTenant } from '@crystal-pharm/site-traffic-db';
 import { readAppUrl } from '../appUrls.server';
 import { seedDemoHealthData } from './demoHealthData.server';
+import { seedDemoSiteTraffic } from './demoSiteTraffic.server';
 import { arePharmacyDemoSeedersRegistered, deletePharmacyDemoSeedersData, runPharmacyDemoSeeders } from './pharmacyDemoSeeders.server';
 import {
 	demoCounterAccounts,
@@ -148,6 +150,7 @@ async function deleteDemoData(): Promise<void> {
 		let tenantId = await findActiveTenantIdOfAccount(accountId);
 		while (tenantId) {
 			await deletePharmacyDemoSeedersData(tenantId);
+			await deleteSiteTrafficOfTenant(tenantId);
 			await deleteTenant(tenantId);
 			tenantId = await findActiveTenantIdOfAccount(accountId);
 		}
@@ -198,6 +201,7 @@ async function seedDemoData(): Promise<string> {
 	await giveDemoTeamTheirAccounts(tenantIdsByPersonaKey);
 	await inviteDemoEmployeeByEmail(saintLouisTenantId, pendingInvitationEmployee);
 	await runPharmacyDemoSeeders(saintLouisTenantId);
+	await seedDemoSiteTraffic(saintLouisTenantId);
 	return seedSaintLouisHealthData(saintLouisTenantId);
 }
 

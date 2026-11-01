@@ -14,7 +14,8 @@
 		"@crystal-pharm/content-db": "workspace:*",
 		"@crystal-pharm/email": "workspace:*",
 		"@crystal-pharm/group-db": "workspace:*",
-		"@crystal-pharm/pharmacy-db": "workspace:*"
+		"@crystal-pharm/pharmacy-db": "workspace:*",
+		"@crystal-pharm/site-traffic-db": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^24.19.2",

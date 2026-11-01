@@ -59,7 +59,8 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
    ├─ engine/               LE MOTEUR (Solid) : schema · renderer · layouts
    └─ shared/               TS sans interface, partagé entre apps :
                             auth · pharmacy-db · group-db · billing-db ·
-                            content-db · api-client · email · dev-tools
+                            content-db · site-traffic-db · api-client ·
+                            email · dev-tools
 ```
 
 ## Qui fait quoi
@@ -230,7 +231,7 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
 - Un schéma = un seul outil de migration **et un seul propriétaire**. Drizzle :
   `auth` → `shared/auth`, `pharmacy` → `shared/pharmacy-db`, `groups` →
   `shared/group-db`, `billing` → `shared/billing-db`, `content` →
-  `shared/content-db`, `planning` →
+  `shared/content-db`, `site_traffic` → `shared/site-traffic-db`, `planning` →
   `pharmacy/modules/planning`, `platform_auth` → `admin`. EF Core : `booking`,
   `prescriptions` → le C#.
 - Table de suivi Drizzle dans le schéma du propriétaire : drizzle-kit le crée
