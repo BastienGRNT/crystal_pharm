@@ -15,9 +15,12 @@ export async function changeSiteSubdomain(tenantId: string, subdomain: string): 
 	try {
 		await runAsTenant(tenantId, async (transaction) => {
 			await retireCurrentSubdomain(transaction, tenantId);
-			// La Row-Level Security ne montre que les adresses du Tenant : une adresse d'un autre fait échouer l'insertion.
-			if (await isSubdomainOfTenant(transaction, subdomain)) {
-				await transaction.update(siteSubdomains).set({ isCurrent: true }).where(eq(siteSubdomains.subdomain, subdomain));
+			// Une adresse d'un autre Tenant fait échouer l'insertion (clé primaire) : elle est prise.
+			if (await isSubdomainOfTenant(transaction, tenantId, subdomain)) {
+				await transaction
+					.update(siteSubdomains)
+					.set({ isCurrent: true })
+					.where(and(eq(siteSubdomains.tenantId, tenantId), eq(siteSubdomains.subdomain, subdomain)));
 			} else {
 				await transaction.insert(siteSubdomains).values({ subdomain, tenantId, isCurrent: true });
 			}
@@ -36,8 +39,12 @@ async function retireCurrentSubdomain(transaction: ContentTransaction, tenantId:
 		.where(and(eq(siteSubdomains.tenantId, tenantId), eq(siteSubdomains.isCurrent, true)));
 }
 
-async function isSubdomainOfTenant(transaction: ContentTransaction, subdomain: string): Promise<boolean> {
-	const rows = await transaction.select({ subdomain: siteSubdomains.subdomain }).from(siteSubdomains).where(eq(siteSubdomains.subdomain, subdomain));
+// Le filtre sur le Tenant double la Row-Level Security : un rôle qui la contourne prendrait sinon l'adresse d'un autre pour la sienne.
+async function isSubdomainOfTenant(transaction: ContentTransaction, tenantId: string, subdomain: string): Promise<boolean> {
+	const rows = await transaction
+		.select({ subdomain: siteSubdomains.subdomain })
+		.from(siteSubdomains)
+		.where(and(eq(siteSubdomains.tenantId, tenantId), eq(siteSubdomains.subdomain, subdomain)));
 	return rows.length > 0;
 }
 
