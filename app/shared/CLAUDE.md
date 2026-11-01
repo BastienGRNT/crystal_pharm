@@ -15,7 +15,7 @@ les règles ci-dessous.
 
 ## Dépendances entre packages partagés
 
-`auth`, `email` et `api-client` ne dépendent d'aucun autre package partagé.
+`auth`, `email`, `api-client` et `site-traffic-db` ne dépendent d'aucun autre package partagé.
 `pharmacy-db` dépend seulement de `auth` (un compte appartient à des
 Tenants). `group-db` dépend de `auth` et de `pharmacy-db`. `billing-db`
 dépend de `auth`, `email`, `pharmacy-db` et `group-db`. `content-db` dépend seulement
@@ -227,6 +227,17 @@ corrige dans le C#, puis on régénère.
   données »).
 - Les infos de la pharmacie ne sont pas ici : `app/site` les lit dans
   `pharmacy-db`.
+
+## `site-traffic-db` — le schéma `site_traffic`
+
+- La fréquentation des sites publics : les pages vues par heure et par page,
+  et celles qui commencent une visite (arrivées d'ailleurs que du site). Rien
+  qui désigne un Visitor (ni cookie, ni adresse IP, ni navigateur) : un
+  compteur agrégé, sans consentement à demander.
+- `app/site` est le seul à écrire, par `recordPageViews`, hors du chemin de la
+  requête : il additionne en mémoire et écrit par lots. `site-manager` lit, par
+  `readSiteTraffic` ; le résumé montré (`./domain`) est une fonction pure.
+- Jours et heures en heure de la pharmacie (`Europe/Paris`).
 
 ## Ce que le site affiche — notification et lecture
 
