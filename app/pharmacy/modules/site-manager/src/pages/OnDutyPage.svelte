@@ -141,7 +141,7 @@
 			<div class="grid justify-items-start gap-3 rounded-xl border border-line bg-surface p-5 shadow-card">
 				<h2 class="font-display text-[19px] leading-6 text-ink">Le numéro de garde 3237</h2>
 				<p class="text-small text-ink-muted">Un bloc de votre site : activez-le et placez-le où vous voulez, dans « Affichage ».</p>
-				<Button variant="secondary" size="compact" href="/site-manager#affichage">Régler son affichage</Button>
+				<Button variant="secondary" size="compact" href="/site-manager/edition#affichage">Régler son affichage</Button>
 			</div>
 		</aside>
 	</div>

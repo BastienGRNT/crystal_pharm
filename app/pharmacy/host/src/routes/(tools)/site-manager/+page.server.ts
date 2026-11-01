@@ -1,1 +1,1 @@
-export { load, actions } from '@crystal-pharm/site-manager/server';
+export { loadSiteOverviewPage as load } from '@crystal-pharm/site-manager/server';
