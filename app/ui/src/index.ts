@@ -117,6 +117,8 @@ export { default as ColumnChart } from './molecules/charts/ColumnChart.svelte';
 export type { ColumnChartColumn } from './molecules/charts/columnChart';
 export { default as HeatGrid } from './molecules/charts/HeatGrid.svelte';
 export type { HeatGridCell, HeatGridRow } from './molecules/charts/heatGrid';
+export { default as LevelBarEditor } from './molecules/charts/LevelBarEditor.svelte';
+export type { LevelBarEditorColumn } from './molecules/charts/levelBarEditor';
 export { default as ResizeHandle } from './atoms/actions/ResizeHandle.svelte';
 export { default as ResizableViewport } from './organisms/viewport/ResizableViewport.svelte';
 export type { ViewportPreset, ViewportZoom } from './organisms/viewport/resizableViewport';

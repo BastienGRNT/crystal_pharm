@@ -8,7 +8,6 @@ import {
 } from '../domain/rules/hoursInput';
 import type { PlanningSettingsActionResult, PlanningSettingsPageData } from '../pages/planningSettingsPageData';
 import { toCalendarDay } from '../domain/calendar/week';
-import { describePeakWindow } from '../domain/coverage/peakWindows';
 import { parsePlanningSettingsTab, planningSettingsTabParameter } from '../domain/settings/planningSettingsTabs';
 import { summarizeWeekTemplate } from '../domain/templates/weekTemplates';
 import { requirePlanningManager } from './activeTenant.server';
@@ -32,7 +31,7 @@ import {
 	formatPayrollMonthParameter,
 	listRecentPayrollMonths
 } from '../domain/accountant-export/monthlyPayrollExport';
-import { addPeakWindow, findPeakWindows, removePeakWindow } from './services/peaks/peakWindowService';
+import { findPeakWeek, replacePeakWindowsOfWeek } from './services/peaks/peakWindowService';
 import { findWeekTemplates, removeWeekTemplate } from './services/templates/weekTemplateService';
 
 const monthsOfferedForExport = 13;
@@ -48,18 +47,18 @@ type SettingsPageRequest = SettingsRequest & { url: URL };
 export async function load({ locals, url }: SettingsPageRequest): Promise<PlanningSettingsPageData> {
 	const { tenantId } = await requirePlanningManager(locals.user);
 	const today = toCalendarDay(new Date());
-	const [rules, overtimeRules, accountantEmail, termsRows, peakWindows, templates] = await Promise.all([
+	const [rules, overtimeRules, accountantEmail, termsRows, peakWeek, templates] = await Promise.all([
 		findPlanningRules(tenantId),
 		findOvertimeRules(tenantId),
 		findAccountantEmail(tenantId),
 		listEmployeeTermsRows(tenantId),
-		findPeakWindows(tenantId),
+		findPeakWeek(tenantId),
 		findWeekTemplates(tenantId)
 	]);
 	return {
 		planningHref: '/planning',
 		selectedTab: parsePlanningSettingsTab(url.searchParams.get(planningSettingsTabParameter)),
-		peakWindows: peakWindows.map((peakWindow) => ({ id: peakWindow.id, label: describePeakWindow(peakWindow) })),
+		peakWeek: { ...peakWeek, teamSize: termsRows.length, openingHoursHref: '/pharmacie?onglet=horaires' },
 		templates: templates.map(summarizeWeekTemplate),
 		rules: {
 			minimumPharmacistsPresent: String(rules.minimumPharmacistsPresent),
@@ -116,22 +115,10 @@ function readEmployeeTermsSubmission(formData: FormData, employeeId: string): Em
 }
 
 export const actions = {
-	addPeakWindow: async ({ request, locals }) => {
+	savePeakWindows: async ({ request, locals }) => {
 		const { tenantId } = await requirePlanningManager(locals.user);
-		const formData = await request.formData();
-		const result = await addPeakWindow(tenantId, {
-			weekday: readText(formData, 'weekday'),
-			startTime: readText(formData, 'startTime'),
-			endTime: readText(formData, 'endTime'),
-			requiredCount: readText(formData, 'requiredCount')
-		});
+		const result = await replacePeakWindowsOfWeek(tenantId, readText(await request.formData(), 'peakWindows'));
 		if (!result.isSaved) return fail(400, { failedSection: 'peaks', message: result.message } satisfies PlanningSettingsActionResult);
-		return { savedSection: 'peaks' } satisfies PlanningSettingsActionResult;
-	},
-
-	removePeakWindow: async ({ request, locals }) => {
-		const { tenantId } = await requirePlanningManager(locals.user);
-		await removePeakWindow(tenantId, readText(await request.formData(), 'peakWindowId'));
 		return { savedSection: 'peaks' } satisfies PlanningSettingsActionResult;
 	},
 

@@ -22,8 +22,3 @@ export function listRequirementWindowsOfDate(peakWindows: readonly PeakWindow[],
 			requiredCount: peakWindow.requiredCount
 		}));
 }
-
-const weekdayLabels = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-
-export const describePeakWindow = (peakWindow: PeakWindow): string =>
-	`${weekdayLabels[peakWindow.weekday] ?? ''}, de ${peakWindow.startTime} à ${peakWindow.endTime} : ${peakWindow.requiredCount} personnes`;
