@@ -4,14 +4,17 @@
 		label: string;
 		value: number;
 		maximum: number;
+		/** Une limite (places, quota) alerte en approchant du plein ; un objectif (adoption) le fête. */
+		meaning?: 'limit' | 'goal';
 	};
 
-	let { label, value, maximum }: ProgressBarProps = $props();
+	let { label, value, maximum, meaning = 'limit' }: ProgressBarProps = $props();
 
 	const filledPercentage = $derived(maximum > 0 ? Math.min(100, Math.round((value / maximum) * 100)) : 0);
 	const fillClass = $derived(fillClassFor(filledPercentage));
 
 	function fillClassFor(percentage: number): string {
+		if (meaning === 'goal') return percentage >= 100 ? 'bg-success' : 'bg-accent';
 		if (percentage >= 100) return 'bg-danger';
 		if (percentage >= 85) return 'bg-warning';
 		return 'bg-accent';

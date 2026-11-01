@@ -34,7 +34,7 @@
 
 <svelte:window onkeydown={closeOnEscape} />
 
-<div class="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-2 font-sans" data-module="admin">
+<div class="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-2 font-sans max-lg:bottom-[calc(var(--spacing-tabbar)+12px)]" data-module="admin">
 	{#if isOpen}
 		<section
 			id={panelId}

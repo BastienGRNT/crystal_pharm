@@ -1,18 +1,26 @@
 import type { ActionListItem, DayTimelineBar, DayTimelineRange, DayTimelineRow, TimeListItem } from '@crystal-pharm/ui';
 import { homePathnames } from '../../../homePathnames';
 import type { TodayNow, TodayOverview, TodayShortcut } from '../../../pages/tools-home/toolsHomePageData';
-import type { TodayAppointmentsSummary, TodayTeamSummary } from './todaySources';
+import { capitalize, describeDay, toCalendarDay } from './calendarDays';
+import { listCounterFigures, listPrescriptionTasks, type AppointmentsInput, type PrescriptionsInput } from './counterFigures';
+import { describeOnDuty } from './onDutyNotice';
+import type { TodayAppointmentsSummary, TodayOnDutyPeriod, TodayTeamSummary } from './todaySources';
 
 type MinuteRange = { startMinutes: number; endMinutes: number };
 
 export type TodayOverviewInput = {
 	isoDate: string;
 	nowMinutes: number;
+	currentInstant: Date;
 	/** Les plages d'ouverture du jour ; `undefined` quand la fiche n'a pas encore d'horaires. */
 	openingPeriods: MinuteRange[] | undefined;
 	team: { href: string; summary: TodayTeamSummary } | undefined;
 	/** `summary` manque quand le C# n'a pas répondu. */
-	appointments: { href: string; summary: TodayAppointmentsSummary | undefined } | undefined;
+	appointments: AppointmentsInput | undefined;
+	/** `summary` manque quand le C# n'a pas répondu. */
+	prescriptions: PrescriptionsInput | undefined;
+	/** `href` manque quand le compte n'a pas accès aux gardes. */
+	onDuty: { href: string | undefined; period: TodayOnDutyPeriod | undefined } | undefined;
 	/** L'action de la page qui confirme un rendez-vous (`?/confirmAppointment`). */
 	confirmAppointmentFormAction: string;
 };
@@ -24,7 +32,6 @@ const maximumPendingAppointmentTasks = 5;
 const defaultRange: MinuteRange = { startMinutes: 8 * minutesPerHour, endMinutes: 20 * minutesPerHour };
 
 const dayTitleFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-const shortDayFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 
 /**
  * L'accueil répond à deux questions au comptoir : que se passe-t-il maintenant, et
@@ -38,10 +45,16 @@ export function buildTodayOverview(input: TodayOverviewInput): TodayOverview {
 			(team?.summary.pharmacistCoverageGaps.length ?? 0) >
 		0;
 
+	const onDuty = input.onDuty?.period && describeOnDuty(input.onDuty.period, input.currentInstant, input.onDuty.href);
+
 	return {
 		dateLabel: capitalize(dayTitleFormat.format(toCalendarDay(input.isoDate))),
-		openingStatus: input.openingPeriods && describeOpeningStatus(input.openingPeriods, input.nowMinutes),
+		openingStatus: onDuty?.isInProgress
+			? { label: 'Ouvert · de garde', tone: 'success' }
+			: input.openingPeriods && describeOpeningStatus(input.openingPeriods, input.nowMinutes),
 		now: describeNow(input),
+		onDuty,
+		figures: listCounterFigures(input.prescriptions, input.appointments),
 		tasks: listTasks(input),
 		timeline: (team || input.appointments) && hasSomethingToDraw ? buildTimeline(input) : undefined,
 		appointmentItems: input.appointments && buildAppointmentItems(input.appointments, input.nowMinutes),
@@ -111,7 +124,7 @@ function summarizeDay({ team, appointments }: TodayOverviewInput): string {
 	return parts.join(' · ');
 }
 
-/** Les heures sans pharmacien d'abord (la loi), puis la fiche, puis les rendez-vous à confirmer. */
+/** Les heures sans pharmacien d'abord (la loi), puis les patients en retard, la fiche, les rendez-vous à confirmer. */
 function listTasks(input: TodayOverviewInput): ActionListItem[] {
 	const tasks: ActionListItem[] = [];
 	const team = input.team;
@@ -126,6 +139,7 @@ function listTasks(input: TodayOverviewInput): ActionListItem[] {
 			actions: team ? [{ label: 'Corriger le planning', isPrimary: true, href: `${team.href}${team.summary.dayQuery}` }] : []
 		});
 	}
+	tasks.push(...listPrescriptionTasks(input.prescriptions));
 	if (!input.openingPeriods) {
 		tasks.push({
 			id: 'opening-schedule',
@@ -173,7 +187,7 @@ function listShortcuts({ team, appointments }: TodayOverviewInput): TodayShortcu
 		shortcuts.push({ key: 'new-appointment', label: 'Nouveau rendez-vous', href: `${appointments.href}${appointments.summary.newAppointmentQuery}`, module: 'rdv' });
 	}
 	if (team) {
-		shortcuts.push({ key: 'new-shift', label: 'Ajouter un créneau', href: `${team.href}${team.summary.addShiftQuery}`, module: 'planning' });
+		shortcuts.push({ key: 'new-shift', label: 'Ajouter quelqu’un au planning', href: `${team.href}${team.summary.addShiftQuery}`, module: 'planning' });
 	}
 	return shortcuts;
 }
@@ -311,14 +325,6 @@ export function listClosedRanges(openingPeriods: MinuteRange[], range: MinuteRan
 	return closedRanges;
 }
 
-/** « aujourd’hui », « demain », sinon « lun. 26 oct. ». */
-function describeDay(isoDay: string, todayIsoDate: string): string {
-	const daysFromToday = Math.round((toCalendarDay(isoDay).getTime() - toCalendarDay(todayIsoDate).getTime()) / (24 * 60 * 60 * 1000));
-	if (daysFromToday === 0) return 'aujourd’hui';
-	if (daysFromToday === 1) return 'demain';
-	return shortDayFormat.format(toCalendarDay(isoDay));
-}
-
 function isInProgressAt(range: MinuteRange, minutesSinceMidnight: number): boolean {
 	return range.startMinutes <= minutesSinceMidnight && minutesSinceMidnight < range.endMinutes;
 }
@@ -354,10 +360,6 @@ function toBarPosition(interval: MinuteRange, range: MinuteRange): DayTimelineRa
 	return { startPercent, widthPercent: toPercent(interval.endMinutes, range) - startPercent };
 }
 
-function toCalendarDay(isoDay: string): Date {
-	return new Date(`${isoDay}T00:00:00Z`);
-}
-
 function formatTimeOfDay(minutesSinceMidnight: number): string {
 	const hours = Math.floor(minutesSinceMidnight / minutesPerHour);
 	return `${String(hours).padStart(2, '0')}:${String(minutesSinceMidnight % minutesPerHour).padStart(2, '0')}`;
@@ -373,8 +375,4 @@ function formatDuration(totalMinutes: number): string {
 	const minutes = totalMinutes % minutesPerHour;
 	const hoursText = `${hours}${nonBreakingSpace}h`;
 	return minutes === 0 ? hoursText : `${hoursText}${nonBreakingSpace}${String(minutes).padStart(2, '0')}`;
-}
-
-function capitalize(text: string): string {
-	return text.charAt(0).toLocaleUpperCase('fr') + text.slice(1);
 }

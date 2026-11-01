@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Crystal Pharm</title>
+		<!--
+			Page de secours, rendue quand l'erreur survient avant l'app (dans un hook) :
+			la feuille de style de ui n'est pas chargée, ces valeurs recopient ses tokens clairs.
+		-->
+		<style>
+			body { margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: #f3f1ec; color: #1a1e1c; font: 15px/1.5 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+			main { display: grid; gap: 16px; max-width: 440px; }
+			p { margin: 0; }
+			.status { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #5f6561; }
+			h1 { margin: 0; font-size: 24px; line-height: 1.25; }
+			.description { color: #4f5552; }
+			a { justify-self: start; display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 6px; background: #0b6b4f; color: #fff; font-weight: 600; text-decoration: none; }
+		</style>
+	</head>
+	<body>
+		<main>
+			<p class="status">Erreur %sveltekit.status%</p>
+			<h1 id="titre">Un souci de notre côté</h1>
+			<p class="description" id="panne">La page n’a pas pu s’afficher. Réessayez dans un instant ; si cela continue, écrivez-nous.</p>
+			<p class="description" id="refus" hidden>%sveltekit.error.message%</p>
+			<a href="/">Revenir à l’accueil</a>
+		</main>
+		<script>
+			// Seul un refus porte un message écrit pour la personne ; une panne garde le texte générique.
+			if (['400', '401', '403'].includes('%sveltekit.status%')) {
+				document.getElementById('titre').textContent = 'Accès réservé';
+				document.getElementById('panne').hidden = true;
+				document.getElementById('refus').hidden = false;
+			}
+		</script>
+	</body>
+</html>

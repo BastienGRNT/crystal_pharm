@@ -29,14 +29,13 @@
 	{#if articleId}<input type="hidden" name="articleId" value={articleId} />{/if}
 	{#if fieldErrors[wholeFormErrorKey]}<Alert tone="danger">{fieldErrors[wholeFormErrorKey]}</Alert>{/if}
 
-	<Field label="Titre" errorMessage={fieldErrors.title}>
+	<Field label="Titre" hint="Ex. : -10 % sur la parapharmacie" errorMessage={fieldErrors.title}>
 		{#snippet control(controlAttributes)}
 			<Input
 				{...controlAttributes}
 				name="title"
 				required
 				maxlength={maximumGroupArticleTitleLength}
-				placeholder="-10 % sur la parapharmacie"
 				bind:value={article.title}
 			/>
 		{/snippet}

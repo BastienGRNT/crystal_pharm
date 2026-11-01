@@ -2,7 +2,7 @@ import type { components } from '@crystal-pharm/api-client';
 import { formatEmployeeFullName } from '@crystal-pharm/pharmacy-db/domain';
 import { listEmployees } from '@crystal-pharm/pharmacy-db';
 import type { Appointment, BookableEmployee } from '../../domain/appointment';
-import { listActiveReasonLabels } from '../../domain/appointmentConfiguration';
+import { listActiveReasonChoices, type AppointmentReasonChoice } from '../../domain/appointmentConfiguration';
 import { getAppointmentConfiguration } from './appointmentConfigurationApi.server';
 import { createBookingApiClient, type BookingCaller } from './bookingApiClient.server';
 
@@ -33,6 +33,7 @@ function toAppointment(appointmentDto: AppointmentDto): Appointment {
 		endTime: toHoursAndMinutes(appointmentDto.endTime),
 		patientName: appointmentDto.patientName,
 		patientPhone: appointmentDto.patientPhone,
+		patientEmail: appointmentDto.patientEmail,
 		reason: appointmentDto.reason,
 		employeeId: appointmentDto.employeeId,
 		status: appointmentDto.status,
@@ -45,10 +46,10 @@ function unexpectedResponse(operation: string, response: Response): Error {
 	return new Error(`The booking API refused ${operation} with status ${response.status}.`);
 }
 
-export async function listAppointmentReasons(caller: BookingCaller): Promise<string[]> {
+export async function listAppointmentReasons(caller: BookingCaller): Promise<AppointmentReasonChoice[]> {
 	const { reasons } = await getAppointmentConfiguration(caller);
-	const configuredLabels = listActiveReasonLabels(reasons);
-	return configuredLabels.length > 0 ? configuredLabels : [...fallbackAppointmentReasons];
+	const configuredChoices = listActiveReasonChoices(reasons);
+	return configuredChoices.length > 0 ? configuredChoices : fallbackAppointmentReasons.map((label) => ({ label }));
 }
 
 export async function listBookableEmployees(caller: BookingCaller): Promise<BookableEmployee[]> {
@@ -82,7 +83,8 @@ export async function createAppointment(caller: BookingCaller, newAppointment: N
 		body: {
 			...newAppointment,
 			reasonId: null,
-			confirmImmediately: false,
+			// Pris par l'équipe elle-même : il n'attend la confirmation de personne.
+			confirmImmediately: true,
 			note: null,
 			startTime: toTimeOfDay(newAppointment.startTime),
 			endTime: toTimeOfDay(newAppointment.endTime)

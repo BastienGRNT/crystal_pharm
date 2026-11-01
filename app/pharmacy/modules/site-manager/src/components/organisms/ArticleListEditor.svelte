@@ -37,9 +37,9 @@
 				<p class="body-strong text-ink">Actualité {articleIndex + 1}</p>
 				<IconButton icon="trash" label="Retirer cette actualité" onclick={() => removeArticle(article)} />
 			</div>
-			<Field label="Titre" errorMessage={findMissingTextError(article.title, article.summary, 'Donnez un titre à cette actualité.')}>
+			<Field label="Titre" hint="Ex. : Campagne de vaccination contre la grippe" errorMessage={findMissingTextError(article.title, article.summary, 'Donnez un titre à cette actualité.')}>
 				{#snippet control(controlAttributes)}
-					<Input {...controlAttributes} maxlength={160} placeholder="Campagne de vaccination contre la grippe" bind:value={article.title} />
+					<Input {...controlAttributes} maxlength={160} bind:value={article.title} />
 				{/snippet}
 			</Field>
 			<Field label="Résumé" errorMessage={findMissingTextError(article.summary, article.title, 'Résumez cette actualité en quelques lignes.')}>

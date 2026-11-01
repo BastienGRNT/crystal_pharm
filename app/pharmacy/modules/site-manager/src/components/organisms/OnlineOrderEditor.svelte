@@ -18,9 +18,9 @@
 			<Input {...controlAttributes} maxlength={2000} placeholder="https://…" bind:value={onlineOrder.url} />
 		{/snippet}
 	</Field>
-	<Field label="Texte d’accueil (facultatif)">
+	<Field label="Texte d’accueil (facultatif)" hint="Ex. : Commandez en ligne, retirez en 2 heures.">
 		{#snippet control(controlAttributes)}
-			<Textarea {...controlAttributes} rows={2} maxlength={600} placeholder="Commandez en ligne, retirez en 2 heures." bind:value={onlineOrder.introduction} />
+			<Textarea {...controlAttributes} rows={2} maxlength={600} bind:value={onlineOrder.introduction} />
 		{/snippet}
 	</Field>
 	<p class="text-small text-ink-muted">

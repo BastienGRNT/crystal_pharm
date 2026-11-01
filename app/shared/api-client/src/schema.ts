@@ -29,10 +29,14 @@ export interface paths {
                         LastName?: string;
                         BirthDate?: string;
                         Phone?: string;
+                        Email?: string;
                         PlannedVisitAt?: string;
                         HasAlreadyVisited?: string;
+                        IsRenewal?: string;
+                        NoteFromPatient?: string;
                         SocialSecurityNumber?: string;
                         PrescriptionFile?: components["schemas"]["IFormFile"];
+                        AdditionalPrescriptionPages?: components["schemas"]["IFormFile"][];
                         VitalCardPhoto?: components["schemas"]["IFormFile"];
                         MutualCardFront?: components["schemas"]["IFormFile"];
                         MutualCardBack?: components["schemas"]["IFormFile"];
@@ -173,7 +177,37 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    submissionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -227,6 +261,140 @@ export interface paths {
             };
         };
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/received-prescriptions/{submissionId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    submissionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PrescriptionStatusChangeDto"];
+                    "text/json": components["schemas"]["PrescriptionStatusChangeDto"];
+                    "application/*+json": components["schemas"]["PrescriptionStatusChangeDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReceivedPrescriptionDto"];
+                        "application/json": components["schemas"]["ReceivedPrescriptionDto"];
+                        "text/json": components["schemas"]["ReceivedPrescriptionDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/received-prescriptions/{submissionId}/team-note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    submissionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PrescriptionTeamNoteDto"];
+                    "text/json": components["schemas"]["PrescriptionTeamNoteDto"];
+                    "application/*+json": components["schemas"]["PrescriptionTeamNoteDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReceivedPrescriptionDto"];
+                        "application/json": components["schemas"]["ReceivedPrescriptionDto"];
+                        "text/json": components["schemas"]["ReceivedPrescriptionDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         post?: never;
         delete?: never;
         options?: never;
@@ -805,6 +973,8 @@ export interface components {
             reasonId: string | null;
             /** @default null */
             note: string | null;
+            /** @default null */
+            patientEmail: string | null;
         };
         AppointmentReasonDto: {
             /** Format: uuid */
@@ -884,11 +1054,23 @@ export interface components {
             note: string | null;
             /** @default false */
             confirmImmediately: boolean;
+            /** @default null */
+            patientEmail: string | null;
+        };
+        /** @enum {unknown} */
+        PrescriptionStatus: "received" | "inPreparation" | "waitingForProducts" | "ready" | "collected";
+        PrescriptionStatusChangeDto: {
+            status: components["schemas"]["PrescriptionStatus"];
+            /** Format: date */
+            expectedProductsOn: string | null;
         };
         PrescriptionSubmissionResult: {
             /** Format: uuid */
             submissionId: string;
             alreadyReceived: boolean;
+        };
+        PrescriptionTeamNoteDto: {
+            note: string | null;
         };
         ProblemDetails: {
             type?: string | null;
@@ -916,10 +1098,19 @@ export interface components {
             /** Format: date */
             birthDate: string;
             phone: string;
+            email: string | null;
             /** Format: date-time */
-            plannedVisitAt: string;
+            plannedVisitAt: string | null;
             hasAlreadyVisited: boolean;
+            isRenewal: boolean;
+            noteFromPatient: string | null;
             socialSecurityNumber: string | null;
+            status: components["schemas"]["PrescriptionStatus"];
+            /** Format: date-time */
+            statusChangedAt: string;
+            /** Format: date */
+            expectedProductsOn: string | null;
+            teamNote: string | null;
             documents: components["schemas"]["ReceivedDocumentDto"][];
         };
         ReceivedPrescriptionSummaryDto: {
@@ -931,8 +1122,16 @@ export interface components {
             lastName: string;
             phone: string;
             /** Format: date-time */
-            plannedVisitAt: string;
+            plannedVisitAt: string | null;
             hasAlreadyVisited: boolean;
+            isRenewal: boolean;
+            noteFromPatient: string | null;
+            canBeNotifiedByEmail: boolean;
+            status: components["schemas"]["PrescriptionStatus"];
+            /** Format: date-time */
+            statusChangedAt: string;
+            /** Format: date */
+            expectedProductsOn: string | null;
             /** Format: int32 */
             documentCount: number;
         };
@@ -980,6 +1179,8 @@ export interface components {
             phone: string;
             /** @default null */
             note: string | null;
+            /** @default null */
+            email: string | null;
         };
         WeeklyAvailabilityWindowDto: {
             /** Format: uuid */

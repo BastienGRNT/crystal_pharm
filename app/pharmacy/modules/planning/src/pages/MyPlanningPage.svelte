@@ -46,7 +46,7 @@
 </div>
 
 {#if !data.isWeekPublished}
-	<p class="text-body text-ink-muted">Cette semaine est en préparation : votre titulaire ne l’a pas encore publiée.</p>
+	<p class="text-body text-ink-muted">Cette semaine est en préparation : votre titulaire ne l’a pas encore partagée.</p>
 {:else}
 	<ul class="grid gap-2 sm:grid-cols-7">
 		{#each data.days as day (day.date)}

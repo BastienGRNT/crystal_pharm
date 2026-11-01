@@ -1,7 +1,8 @@
 /*
- * Les tokens des outils, direction « Santé » : traduits du design system
- * Crystal Pharm (tokens.json), colonne de navigation sombre et une couleur
- * par module.
+ * Les tokens des outils, direction « Officine » : un fond papier, un seul
+ * vert de marque pour tous les modules (des couleurs par module donnaient
+ * l'impression de quatre logiciels), un texte assez grand pour se lire debout
+ * au comptoir.
  */
 
 @font-face {
@@ -38,53 +39,27 @@
 
 :root,
 [data-theme='light'] {
-	--app: #f6f8fa;
+	--app: #f3f1ec;
 	--surface: #ffffff;
-	--surface-subtle: #f8fafb;
-	--surface-muted: #eef2f4;
-	--field: #f1f4f7;
-	--line: #e1e7eb;
-	--line-soft: #eef2f4;
-	--line-strong: #7d8e97;
-	--ink: #14232b;
-	--ink-muted: #4d5f68;
-	--ink-subtle: #5f7079;
-	--rail: #0e2a2f;
-	--rail-raised: #17414a;
-	--rail-ink: #a9c4c1;
-	--on-rail: #e7f0ef;
-	--brand: #0e7c6b;
+	--surface-subtle: #f9f8f5;
+	--surface-muted: #ece9e2;
+	--field: #f6f4f0;
+	--line: #e0dbd1;
+	--line-soft: #ebe7df;
+	--line-strong: #8b8579;
+	--ink: #1a1e1c;
+	--ink-muted: #4f5552;
+	--ink-subtle: #5f6561;
+	--rail: #123a30;
+	--rail-raised: #1d4d41;
+	--rail-ink: #a8c9bc;
+	--on-rail: #eef5f1;
+	--brand: #0b6b4f;
+	--brand-hover: #08573f;
+	--brand-soft: #e2f0e8;
+	--brand-text: #0a6149;
+	--brand-on-rail: #7fd8b2;
 	--on-brand: #ffffff;
-	--accueil: #3e5560;
-	--accueil-hover: #334750;
-	--accueil-soft: #e8eef0;
-	--accueil-text: #3e5560;
-	--on-accueil: #ffffff;
-	--accueil-on-rail: #b6cbd2;
-	--site: #6a3fb5;
-	--site-hover: #58329a;
-	--site-soft: #f0eafb;
-	--site-text: #6a3fb5;
-	--on-site: #ffffff;
-	--site-on-rail: #c9b0f7;
-	--rdv: #2459c2;
-	--rdv-hover: #1d4aa3;
-	--rdv-soft: #e8effc;
-	--rdv-text: #2459c2;
-	--on-rdv: #ffffff;
-	--rdv-on-rail: #8db1ff;
-	--ordo: #b0570b;
-	--ordo-hover: #924708;
-	--ordo-soft: #fdf0e3;
-	--ordo-text: #9c4d09;
-	--on-ordo: #ffffff;
-	--ordo-on-rail: #f7b26a;
-	--planning: #0e7c6b;
-	--planning-hover: #0b6457;
-	--planning-soft: #e2f3ef;
-	--planning-text: #0b6c5d;
-	--on-planning: #ffffff;
-	--planning-on-rail: #6fd6c0;
 	--equipe: #8a2f6b;
 	--equipe-hover: #722658;
 	--equipe-soft: #f7eaf2;
@@ -138,53 +113,27 @@
 
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme='light']) {
-		--app: #0b1416;
-		--surface: #111c1f;
-		--surface-subtle: #142226;
-		--surface-muted: #1c2c31;
-		--field: #18272b;
-		--line: #24363c;
-		--line-soft: #1b2b30;
-		--line-strong: #647b85;
-		--ink: #e7eef0;
-		--ink-muted: #a6b6bd;
-		--ink-subtle: #8fa2aa;
-		--rail: #081a1d;
-		--rail-raised: #123238;
-		--rail-ink: #a9c4c1;
-		--on-rail: #e7f0ef;
-		--brand: #5fd1b8;
-		--on-brand: #06140f;
-		--accueil: #a9c0c9;
-		--accueil-hover: #c0d3da;
-		--accueil-soft: #1b2a2f;
-		--accueil-text: #b6cbd2;
-		--on-accueil: #0b1416;
-		--accueil-on-rail: #b6cbd2;
-		--site: #c4a6f7;
-		--site-hover: #d5bffa;
-		--site-soft: #251a3a;
-		--site-text: #cdb3f8;
-		--on-site: #150b26;
-		--site-on-rail: #c9b0f7;
-		--rdv: #8fb0ff;
-		--rdv-hover: #a8c1ff;
-		--rdv-soft: #16223d;
-		--rdv-text: #a8c1ff;
-		--on-rdv: #0b1020;
-		--rdv-on-rail: #8db1ff;
-		--ordo: #f2a65a;
-		--ordo-hover: #f6bb7f;
-		--ordo-soft: #33220f;
-		--ordo-text: #f6b373;
-		--on-ordo: #1d1004;
-		--ordo-on-rail: #f7b26a;
-		--planning: #5fd1b8;
-		--planning-hover: #7fdcc7;
-		--planning-soft: #0f2a25;
-		--planning-text: #7adcc6;
-		--on-planning: #06140f;
-		--planning-on-rail: #6fd6c0;
+		--app: #0f1412;
+		--surface: #161c19;
+		--surface-subtle: #1a211e;
+		--surface-muted: #222b27;
+		--field: #1d2521;
+		--line: #2a3430;
+		--line-soft: #212a26;
+		--line-strong: #6d7a74;
+		--ink: #ebefec;
+		--ink-muted: #aab5b0;
+		--ink-subtle: #95a19b;
+		--rail: #0b221c;
+		--rail-raised: #163a30;
+		--rail-ink: #a8c9bc;
+		--on-rail: #eef5f1;
+		--brand: #6fd3a8;
+		--brand-hover: #8fdebb;
+		--brand-soft: #133026;
+		--brand-text: #86dcb6;
+		--brand-on-rail: #7fd8b2;
+		--on-brand: #06140d;
 		--equipe: #f09ad0;
 		--equipe-hover: #f4b0da;
 		--equipe-soft: #2f1427;
@@ -238,53 +187,27 @@
 }
 
 [data-theme='dark'] {
-	--app: #0b1416;
-	--surface: #111c1f;
-	--surface-subtle: #142226;
-	--surface-muted: #1c2c31;
-	--field: #18272b;
-	--line: #24363c;
-	--line-soft: #1b2b30;
-	--line-strong: #647b85;
-	--ink: #e7eef0;
-	--ink-muted: #a6b6bd;
-	--ink-subtle: #8fa2aa;
-	--rail: #081a1d;
-	--rail-raised: #123238;
-	--rail-ink: #a9c4c1;
-	--on-rail: #e7f0ef;
-	--brand: #5fd1b8;
-	--on-brand: #06140f;
-	--accueil: #a9c0c9;
-	--accueil-hover: #c0d3da;
-	--accueil-soft: #1b2a2f;
-	--accueil-text: #b6cbd2;
-	--on-accueil: #0b1416;
-	--accueil-on-rail: #b6cbd2;
-	--site: #c4a6f7;
-	--site-hover: #d5bffa;
-	--site-soft: #251a3a;
-	--site-text: #cdb3f8;
-	--on-site: #150b26;
-	--site-on-rail: #c9b0f7;
-	--rdv: #8fb0ff;
-	--rdv-hover: #a8c1ff;
-	--rdv-soft: #16223d;
-	--rdv-text: #a8c1ff;
-	--on-rdv: #0b1020;
-	--rdv-on-rail: #8db1ff;
-	--ordo: #f2a65a;
-	--ordo-hover: #f6bb7f;
-	--ordo-soft: #33220f;
-	--ordo-text: #f6b373;
-	--on-ordo: #1d1004;
-	--ordo-on-rail: #f7b26a;
-	--planning: #5fd1b8;
-	--planning-hover: #7fdcc7;
-	--planning-soft: #0f2a25;
-	--planning-text: #7adcc6;
-	--on-planning: #06140f;
-	--planning-on-rail: #6fd6c0;
+	--app: #0f1412;
+	--surface: #161c19;
+	--surface-subtle: #1a211e;
+	--surface-muted: #222b27;
+	--field: #1d2521;
+	--line: #2a3430;
+	--line-soft: #212a26;
+	--line-strong: #6d7a74;
+	--ink: #ebefec;
+	--ink-muted: #aab5b0;
+	--ink-subtle: #95a19b;
+	--rail: #0b221c;
+	--rail-raised: #163a30;
+	--rail-ink: #a8c9bc;
+	--on-rail: #eef5f1;
+	--brand: #6fd3a8;
+	--brand-hover: #8fdebb;
+	--brand-soft: #133026;
+	--brand-text: #86dcb6;
+	--brand-on-rail: #7fd8b2;
+	--on-brand: #06140d;
 	--equipe: #f09ad0;
 	--equipe-hover: #f4b0da;
 	--equipe-soft: #2f1427;
@@ -337,64 +260,25 @@
 }
 
 /*
- * L'accent suit le module : brand par défaut, la couleur du module dès qu'un
- * ancêtre porte data-module. Un composant n'utilise jamais une couleur de
- * module en dur, seulement l'accent.
+ * L'accent est le vert de la marque dans toute l'app des pharmacies ; seuls
+ * l'espace Platform et celui des groupements changent d'accent, par le
+ * data-module de leur <body>, pour qu'on sache toujours où l'on est.
+ * Un composant n'utilise jamais une couleur en dur, seulement l'accent.
  */
 :root,
 [data-module] {
 	--accent-value: var(--brand);
-	--accent-hover-value: var(--brand);
-	--accent-soft-value: var(--surface-muted);
-	--accent-text-value: var(--brand);
-	--accent-on-rail-value: var(--rail-ink);
+	--accent-hover-value: var(--brand-hover);
+	--accent-soft-value: var(--brand-soft);
+	--accent-text-value: var(--brand-text);
+	--accent-on-rail-value: var(--brand-on-rail);
 	--on-accent-value: var(--on-brand);
 }
 
-[data-module='accueil'] {
-	--accent-value: var(--accueil);
-	--accent-hover-value: var(--accueil-hover);
-	--accent-soft-value: var(--accueil-soft);
-	--accent-text-value: var(--accueil-text);
-	--accent-on-rail-value: var(--accueil-on-rail);
-	--on-accent-value: var(--on-accueil);
-}
 
-[data-module='site'] {
-	--accent-value: var(--site);
-	--accent-hover-value: var(--site-hover);
-	--accent-soft-value: var(--site-soft);
-	--accent-text-value: var(--site-text);
-	--accent-on-rail-value: var(--site-on-rail);
-	--on-accent-value: var(--on-site);
-}
 
-[data-module='rdv'] {
-	--accent-value: var(--rdv);
-	--accent-hover-value: var(--rdv-hover);
-	--accent-soft-value: var(--rdv-soft);
-	--accent-text-value: var(--rdv-text);
-	--accent-on-rail-value: var(--rdv-on-rail);
-	--on-accent-value: var(--on-rdv);
-}
 
-[data-module='ordo'] {
-	--accent-value: var(--ordo);
-	--accent-hover-value: var(--ordo-hover);
-	--accent-soft-value: var(--ordo-soft);
-	--accent-text-value: var(--ordo-text);
-	--accent-on-rail-value: var(--ordo-on-rail);
-	--on-accent-value: var(--on-ordo);
-}
 
-[data-module='planning'] {
-	--accent-value: var(--planning);
-	--accent-hover-value: var(--planning-hover);
-	--accent-soft-value: var(--planning-soft);
-	--accent-text-value: var(--planning-text);
-	--accent-on-rail-value: var(--planning-on-rail);
-	--on-accent-value: var(--on-planning);
-}
 
 [data-module='equipe'] {
 	--accent-value: var(--equipe);
@@ -446,6 +330,8 @@
 	--color-on-rail: var(--on-rail);
 	--color-brand: var(--brand);
 	--color-on-brand: var(--on-brand);
+	--color-brand-soft: var(--brand-soft);
+	--color-brand-text: var(--brand-text);
 	--color-success: var(--success);
 	--color-success-soft: var(--success-soft);
 	--color-warning: var(--warning);
@@ -509,6 +395,8 @@
 	--radius-control: 6px;
 
 	--spacing-rail: 84px;
+	--spacing-sidebar: 244px;
+	--spacing-tabbar: 64px;
 	--spacing-topbar: 52px;
 	--spacing-module-bar: 3px;
 	--spacing-control: 36px;
@@ -525,8 +413,8 @@
 }
 
 @utility title-1 {
-	font-size: 22px;
-	line-height: 28px;
+	font-size: 24px;
+	line-height: 30px;
 	font-weight: 600;
 	letter-spacing: -0.01em;
 }
@@ -539,39 +427,39 @@
 }
 
 @utility title-2 {
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 15.5px;
+	line-height: 22px;
 	font-weight: 600;
 }
 
 @utility text-kpi {
-	font-size: 24px;
-	line-height: 30px;
+	font-size: 28px;
+	line-height: 34px;
 	font-weight: 600;
 	font-variant-numeric: tabular-nums;
 }
 
 @utility text-body {
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 15px;
+	line-height: 22px;
 	font-weight: 400;
 }
 
 @utility body-strong {
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 15px;
+	line-height: 22px;
 	font-weight: 600;
 }
 
 @utility text-small {
-	font-size: 12.5px;
-	line-height: 17px;
+	font-size: 13.5px;
+	line-height: 19px;
 	font-weight: 400;
 }
 
 @utility text-label {
-	font-size: 12px;
-	line-height: 16px;
+	font-size: 12.5px;
+	line-height: 17px;
 	font-weight: 600;
 }
 
@@ -591,8 +479,8 @@
 @layer base {
 	body {
 		font-family: var(--font-sans);
-		font-size: 14px;
-		line-height: 20px;
+		font-size: 15px;
+		line-height: 22px;
 		color: var(--ink);
 		background: var(--app);
 		-webkit-font-smoothing: antialiased;

@@ -73,7 +73,7 @@
 		{#snippet detail()}
 			{#if contract?.billingMode === 'flat_rate'}
 				Forfait {formatEuros(charge.flatRateCents)}{charge.overagePharmacyCount > 0
-					? ` + ${charge.overagePharmacyCount} pharmacie(s) au-delà du quota × ${formatEuros(charge.overageUnitPriceCents)}`
+					? ` + ${charge.overagePharmacyCount} pharmacie${charge.overagePharmacyCount > 1 ? 's' : ''} au-delà du quota × ${formatEuros(charge.overageUnitPriceCents)}`
 					: ''}.
 			{:else}
 				D’après les modules actifs de ses pharmacies.
@@ -81,7 +81,7 @@
 		{/snippet}
 	</StatCard>
 	<StatCard label="Responsables" icon="users-three" value={String(data.groupMembers.length)}>
-		{#snippet detail()}{data.pendingGroupMemberInvitations.length} invitation(s) en attente{/snippet}
+		{#snippet detail()}{data.pendingGroupMemberInvitations.length} invitation{data.pendingGroupMemberInvitations.length > 1 ? 's' : ''} en attente{/snippet}
 	</StatCard>
 </div>
 

@@ -10,14 +10,18 @@
   --essential-color-highlight: #0b0b0b;
   --essential-color-on-highlight: #f2f1ec;
   --essential-font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
-  --essential-rule-width: 3px;
+  --essential-color-open: #0a7a35;
+  --essential-color-closing: #a35200;
+  --essential-color-on-duty: #1d3aa8;
+  --essential-color-on-status: #ffffff;
+  --essential-rule-width: 4px;
 
   min-height: 100vh;
   background: var(--essential-color-paper);
   color: var(--essential-color-ink);
   font-family: var(--essential-font-family);
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 15px;
+  line-height: 1.45;
 }
 
 .layout-essential *,
@@ -83,23 +87,141 @@
   filter: grayscale(1) contrast(1.4);
 }
 
-/* La grille : les filets noirs entre les blocs sont le fond qui apparaît dans les interstices. */
+/*
+ * La grille : chaque bloc trace la moitié du filet qui le sépare de ses voisins (une ombre pleine, sans flou).
+ * Un fond noir dans les interstices laisserait des cases noires au bout d'une rangée incomplète.
+ */
 
 .layout-essential .essential-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  grid-auto-flow: row dense;
   gap: var(--essential-rule-width);
-  background: var(--essential-color-ink);
+  overflow: clip;
 }
 
 .layout-essential .essential-block {
   min-width: 0;
   padding: 16px;
   background: var(--essential-color-paper);
+  box-shadow: 0 0 0 calc(var(--essential-rule-width) / 2) var(--essential-color-ink);
+}
+
+/* L'état d'ouverture, sous le nom : la seule bande en couleur du layout. */
+
+.layout-essential .essential-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding: 14px 16px;
+  border-bottom: var(--essential-rule-width) solid var(--essential-color-ink);
+  background: var(--essential-color-status);
+  color: var(--essential-color-on-status);
+  text-transform: uppercase;
+}
+
+.layout-essential .essential-status--open {
+  --essential-color-status: var(--essential-color-open);
+}
+
+.layout-essential .essential-status--closingSoon {
+  --essential-color-status: var(--essential-color-closing);
+}
+
+.layout-essential .essential-status--closed {
+  --essential-color-status: var(--essential-color-ink);
+}
+
+.layout-essential .essential-status--onDuty {
+  --essential-color-status: var(--essential-color-on-duty);
+}
+
+.layout-essential .essential-status__label {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.layout-essential .essential-status__detail {
+  font-weight: 700;
+}
+
+.layout-essential .essential-status__phone {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.layout-essential .essential-status__phone:hover {
+  text-decoration: underline;
+}
+
+/* Barre d'actions : seulement sur téléphone, toujours sous le pouce. */
+
+.layout-essential .essential-action-bar {
+  display: none;
+}
+
+.layout-essential .essential-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .layout-essential {
+    padding-bottom: 64px;
+  }
+
+  .layout-essential .essential {
+    margin: 0;
+    border-inline: 0;
+  }
+
+  .layout-essential .essential-legal-notice {
+    margin: 0;
+    border-inline: 0;
+  }
+
+  .layout-essential .essential-action-bar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    border-top: var(--essential-rule-width) solid var(--essential-color-ink);
+    background: var(--essential-color-paper);
+  }
+
+  .layout-essential .essential-action-bar__item {
+    display: grid;
+    place-items: center;
+    min-height: 60px;
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .layout-essential .essential-action-bar__item + .essential-action-bar__item {
+    border-left: var(--essential-rule-width) solid var(--essential-color-ink);
+  }
+
+  .layout-essential .essential-action-bar__item--main {
+    background: var(--essential-color-ink);
+    color: var(--essential-color-paper);
+  }
 }
 
 .layout-essential .essential-block--news,
-.layout-essential .essential-prescription {
+.layout-essential .essential-prescription,
+.layout-essential .essential-on-duty {
   grid-column: 1 / -1;
 }
 
@@ -118,8 +240,8 @@
 /* Horaires */
 
 .layout-essential .essential-on-duty {
-  margin-bottom: 12px;
-  padding: 10px 8px;
+  padding: 12px 16px;
+  box-shadow: 0 0 0 calc(var(--essential-rule-width) / 2) var(--essential-color-ink);
   background: var(--essential-color-highlight);
   color: var(--essential-color-on-highlight);
   font-weight: 700;
@@ -814,4 +936,76 @@
 
 .layout-essential .essential-done__when {
   font-weight: 700;
+}
+
+/* Ordonnance : les pages ajoutées et l'accusé d'envoi */
+
+.layout-essential .essential-pages {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-essential .essential-pages__page {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border: 2px solid var(--essential-color-ink);
+}
+
+.layout-essential .essential-pages__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout-essential .essential-pages__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.layout-essential .essential-pages__button {
+  padding: 10px 14px;
+  border: 2px solid var(--essential-color-ink);
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.layout-essential .essential-pages__button--main {
+  background: var(--essential-color-ink);
+  color: var(--essential-color-paper);
+}
+
+.layout-essential .essential-pages__button:focus-within {
+  outline: var(--essential-rule-width) solid var(--essential-color-ink);
+  outline-offset: 2px;
+}
+
+.layout-essential .essential-form__checks {
+  padding: 0;
+  border: 0;
+}
+
+.layout-essential .essential-checkbox input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--essential-color-ink);
+}
+
+.layout-essential .essential-form__sent {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+}
+
+.layout-essential .essential-form__sent-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }

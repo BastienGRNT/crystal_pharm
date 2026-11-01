@@ -1,14 +1,24 @@
-import { createSignal, Match, Show, Switch } from 'solid-js';
-import { createPrescriptionFormState, type PrescriptionForm, type PrescriptionUploadModuleProps } from '@crystal-pharm/renderer';
+import { PrescriptionNoteMaximumLength } from '@crystal-pharm/schema';
+import { createSignal, Match, onMount, Show, Switch } from 'solid-js';
+import {
+  createPrescriptionFormState,
+  forgetPatient,
+  readRememberedPatient,
+  rememberPatient,
+  type PrescriptionForm,
+  type PrescriptionUploadModuleProps,
+} from '@crystal-pharm/renderer';
 import { SectionTitle } from '../atoms/SectionTitle';
 import { FormField } from '../molecules/FormField';
+import { PlannedVisitChoices } from '../molecules/PlannedVisitChoices';
+import { PrescriptionPagesList } from '../molecules/PrescriptionPagesList';
 import { StepIndicator } from '../molecules/StepIndicator';
 import { CounterTimeSaversStep } from './CounterTimeSaversStep';
 
 type Step = { title: string; fields: ReadonlyArray<keyof PrescriptionForm> };
 
-const aboutYouStep: Step = { title: 'Vous', fields: ['firstName', 'lastName', 'birthDate', 'phone'] };
-const prescriptionStep: Step = { title: "L'ordonnance", fields: ['prescriptionFile', 'plannedVisitAt', 'hasAlreadyVisited'] };
+const prescriptionStep: Step = { title: "L'ordonnance", fields: ['prescriptionFile', 'additionalPrescriptionPages', 'isRenewal', 'plannedVisitAt', 'hasAlreadyVisited'] };
+const aboutYouStep: Step = { title: 'Vous', fields: ['firstName', 'lastName', 'birthDate', 'phone', 'email', 'noteFromPatient'] };
 const counterTimeSaversStep: Step = {
   title: 'Au comptoir',
   fields: ['socialSecurityNumber', 'vitalCardPhoto', 'mutualCardFront', 'mutualCardBack'],
@@ -19,16 +29,30 @@ export function PrescriptionSteps(props: PrescriptionUploadModuleProps) {
   const state = createPrescriptionFormState(props);
   const { form, updateField, errorsByField, status } = state;
   const [stepIndex, setStepIndex] = createSignal(0);
+  const [isRemembered, setIsRemembered] = createSignal(false);
+
+  onMount(() => {
+    const rememberedPatient = readRememberedPatient();
+    if (!rememberedPatient) return;
+    state.prefill(rememberedPatient);
+    setIsRemembered(true);
+  });
 
   /** Un client déjà venu saute l'étape carte Vitale et mutuelle : la pharmacie les a déjà. */
   const steps = (): ReadonlyArray<Step> =>
-    form.hasAlreadyVisited ? [aboutYouStep, prescriptionStep] : [aboutYouStep, prescriptionStep, counterTimeSaversStep];
+    form.hasAlreadyVisited ? [prescriptionStep, aboutYouStep] : [prescriptionStep, aboutYouStep, counterTimeSaversStep];
   const isLastStep = () => stepIndex() === steps().length - 1;
 
   async function send() {
     const errors = await state.send();
     const firstInvalidStepIndex = steps().findIndex((step) => step.fields.some((fieldName) => errors[fieldName] !== undefined));
     if (firstInvalidStepIndex >= 0) setStepIndex(firstInvalidStepIndex);
+    if (status() !== 'sent') return;
+    if (isRemembered()) {
+      rememberPatient({ firstName: form.firstName, lastName: form.lastName, birthDate: form.birthDate, phone: form.phone, email: form.email });
+    } else {
+      forgetPatient();
+    }
   }
 
   return (
@@ -38,9 +62,11 @@ export function PrescriptionSteps(props: PrescriptionUploadModuleProps) {
         <Show
           when={status() !== 'sent'}
           fallback={
-            <p class="at-prescription__sent" role="status">
-              Reçue. Nous préparons votre commande et vous appelons dès qu'elle est prête.
-            </p>
+            <div class="at-prescription__sent" role="status">
+              <p class="at-prescription__sent-title">Reçue, merci {form.firstName}.</p>
+              <p>{form.email ? `Un email part à ${form.email} dès que c'est prêt.` : `Nous vous appelons au ${form.phone} si nous avons une question.`}</p>
+              <p>À apporter : l'ordonnance originale, en papier, et votre carte Vitale.</p>
+            </div>
           }
         >
           <p class="at-prescription__introduction">
@@ -60,6 +86,24 @@ export function PrescriptionSteps(props: PrescriptionUploadModuleProps) {
             <Switch>
               <Match when={stepIndex() === 0}>
                 <div class="at-steps__step">
+                  <PrescriptionPagesList
+                    pages={state.prescriptionPages()}
+                    error={errorsByField().prescriptionFile ?? errorsByField().additionalPrescriptionPages}
+                    onChange={state.setPrescriptionPages}
+                  />
+                  <label class="at-checkbox">
+                    <input type="checkbox" checked={form.isRenewal} onChange={(event) => updateField('isRenewal', event.currentTarget.checked)} />
+                    <span>C'est un renouvellement</span>
+                  </label>
+                  <PlannedVisitChoices value={form.plannedVisitAt} error={errorsByField().plannedVisitAt} onChange={(value) => updateField('plannedVisitAt', value)} />
+                  <label class="at-checkbox">
+                    <input type="checkbox" checked={form.hasAlreadyVisited} onChange={(event) => updateField('hasAlreadyVisited', event.currentTarget.checked)} />
+                    <span>Je suis déjà client : vous avez ma carte Vitale et ma mutuelle</span>
+                  </label>
+                </div>
+              </Match>
+              <Match when={stepIndex() === 1}>
+                <div class="at-steps__step">
                   <FormField label="Prénom" error={errorsByField().firstName}>
                     <input class="at-input" autocomplete="given-name" value={form.firstName} onInput={(event) => updateField('firstName', event.currentTarget.value)} />
                   </FormField>
@@ -72,33 +116,12 @@ export function PrescriptionSteps(props: PrescriptionUploadModuleProps) {
                   <FormField label="Téléphone" error={errorsByField().phone}>
                     <input class="at-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
                   </FormField>
-                </div>
-              </Match>
-              <Match when={stepIndex() === 1}>
-                <div class="at-steps__step">
-                  <FormField label="Photo ou PDF de l'ordonnance" error={errorsByField().prescriptionFile}>
-                    <span class="at-file">
-                      <input
-                        class="at-file__input"
-                        type="file"
-                        accept="image/*,application/pdf"
-                        onInput={(event) => updateField('prescriptionFile', event.currentTarget.files?.[0])}
-                      />
-                      <span class="at-file__label">{form.prescriptionFile?.name ?? 'Choisir un fichier'}</span>
-                    </span>
+                  <FormField label="Email (facultatif)" hint="Pour être prévenu quand c'est prêt." error={errorsByField().email}>
+                    <input class="at-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
                   </FormField>
-                  <FormField label="Heure de passage prévue" error={errorsByField().plannedVisitAt}>
-                    <input
-                      class="at-input"
-                      type="datetime-local"
-                      value={form.plannedVisitAt}
-                      onInput={(event) => updateField('plannedVisitAt', event.currentTarget.value)}
-                    />
+                  <FormField label="Un mot pour l'équipe (facultatif)" error={errorsByField().noteFromPatient}>
+                    <textarea class="at-input" rows="2" maxlength={PrescriptionNoteMaximumLength} value={form.noteFromPatient} onInput={(event) => updateField('noteFromPatient', event.currentTarget.value)} />
                   </FormField>
-                  <label class="at-checkbox">
-                    <input type="checkbox" checked={form.hasAlreadyVisited} onChange={(event) => updateField('hasAlreadyVisited', event.currentTarget.checked)} />
-                    <span>Je suis déjà venu dans cette pharmacie</span>
-                  </label>
                 </div>
               </Match>
               <Match when={stepIndex() === 2}>
@@ -107,13 +130,17 @@ export function PrescriptionSteps(props: PrescriptionUploadModuleProps) {
             </Switch>
             <Show when={isLastStep()}>
               <dl class="at-summary">
-                <dt>Nom</dt>
+                <dt>Pour</dt>
                 <dd>
                   {form.firstName} {form.lastName}
                 </dd>
                 <dt>Ordonnance</dt>
-                <dd>{form.prescriptionFile?.name}</dd>
+                <dd>{state.prescriptionPages().length > 1 ? `${state.prescriptionPages().length} pages` : '1 page'}</dd>
               </dl>
+              <label class="at-checkbox">
+                <input type="checkbox" checked={isRemembered()} onChange={(event) => setIsRemembered(event.currentTarget.checked)} />
+                <span>Retenir mes coordonnées sur cet appareil (pas sur un ordinateur partagé)</span>
+              </label>
             </Show>
             <div class="at-steps__actions">
               <Show when={stepIndex() > 0}>
@@ -122,7 +149,7 @@ export function PrescriptionSteps(props: PrescriptionUploadModuleProps) {
                 </button>
               </Show>
               <button class="at-button" type="submit" disabled={status() === 'sending'}>
-                {!isLastStep() ? 'Suivant →' : status() === 'sending' ? 'Envoi…' : 'Envoyer'}
+                {!isLastStep() ? 'Suivant →' : status() === 'sending' ? 'Envoi…' : 'Envoyer mon ordonnance'}
               </button>
             </div>
             <Show when={status() === 'failed'}>
@@ -130,6 +157,7 @@ export function PrescriptionSteps(props: PrescriptionUploadModuleProps) {
                 L'envoi a échoué. Réessayez, ou appelez la pharmacie.
               </p>
             </Show>
+            <p class="at-prescription__privacy">Transmis chiffré, chez un hébergeur agréé données de santé, effacé après votre passage.</p>
           </form>
         </Show>
       </div>

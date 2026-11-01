@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatEuros, parseEurosToCents, priceForPeriod } from '@crystal-pharm/billing-db/domain';
+	import { describeFreeMonths, formatEuros, parseEurosToCents, priceForPeriod } from '@crystal-pharm/billing-db/domain';
 	import { Alert, ChoiceGroup } from '@crystal-pharm/ui';
 	import type { GroupFormErrors, GroupFormValues } from '$lib/groupForm/groupFormValues';
 
@@ -32,7 +32,7 @@
 		{ value: 'monthly', label: 'Chaque mois', description: `${formatEuros(flatRatePriceCents)} HT par mois.` },
 		{
 			value: 'yearly',
-			label: `Chaque année · ${annualFreeMonths} mois offerts`,
+			label: `Chaque année · ${describeFreeMonths(annualFreeMonths)}`,
 			description: `${formatEuros(priceForPeriod(flatRatePriceCents, 'yearly', annualFreeMonths))} HT par an au lieu de ${formatEuros(flatRatePriceCents * 12)}.`
 		}
 	]);

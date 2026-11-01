@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { findTool, formatEuros } from '@crystal-pharm/billing-db/domain';
+	import { describeIncludedTools, findTool, formatEuros } from '@crystal-pharm/billing-db/domain';
 	import { Alert, Button, Card, EmptyState, Icon, PageHeader, ProgressBar, StatCard } from '@crystal-pharm/ui';
 	import { formatDay } from '$lib/dateFormats';
-	import { groupPathnames } from '$lib/groupPathnames';
+	import { groupPathnames, pharmaciesWithoutToolPathname } from '$lib/groupPathnames';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const usedPlaces = $derived(data.group.memberPharmacyCount + data.group.pendingInvitationCount);
 	const hasNoPharmacyYet = $derived(usedPlaces === 0);
+	const freePlaces = $derived(Math.max(data.group.pharmacyQuota - usedPlaces, 0));
 </script>
 
 <svelte:head>
@@ -50,7 +51,8 @@
 		{#snippet detail()}
 			<div class="grid gap-1.5">
 				<ProgressBar label="Places utilisées" value={usedPlaces} maximum={data.group.pharmacyQuota} />
-				{usedPlaces} places utilisées sur {data.group.pharmacyQuota}
+				{#if data.group.pendingInvitationCount > 0}+ {data.group.pendingInvitationCount} invitée{data.group.pendingInvitationCount > 1 ? 's' : ''} ·{/if}
+				{freePlaces} place{freePlaces > 1 ? 's' : ''} libre{freePlaces > 1 ? 's' : ''} sur {data.group.pharmacyQuota}
 			</div>
 		{/snippet}
 	</StatCard>
@@ -82,15 +84,33 @@
 	<div class="grid gap-3.5 lg:grid-cols-2">
 		<Card>
 			<div class="grid gap-3">
-				<h2 class="title-2 text-ink">Modules utilisés par vos pharmacies</h2>
+				<div class="grid gap-0.5">
+					<h2 class="title-2 text-ink">Modules utilisés par vos pharmacies</h2>
+					<p class="text-small text-ink-muted">Une pharmacie qui n’utilise pas un module que vous prenez en charge passe à côté de votre offre.</p>
+				</div>
 				{#each data.catalog.toolPrices as toolPrice (toolPrice.toolKey)}
 					{@const activeCount = data.activePharmacyCountByToolKey[toolPrice.toolKey] ?? 0}
+					{@const missingCount = data.group.memberPharmacyCount - activeCount}
+					{@const includedTools = describeIncludedTools(toolPrice.toolKey)}
 					<div class="grid gap-1">
-						<p class="flex justify-between text-small">
-							<span class="text-ink">{findTool(toolPrice.toolKey).label}</span>
+						<p class="flex flex-wrap items-baseline justify-between gap-x-3 text-small">
+							<span class="text-ink">
+								{findTool(toolPrice.toolKey).label}
+								{#if includedTools}<span class="text-ink-subtle">· {includedTools}</span>{/if}
+							</span>
 							<span class="text-ink-muted tabular-nums">{activeCount} / {data.group.memberPharmacyCount}</span>
 						</p>
-						<ProgressBar label="Pharmacies qui utilisent {findTool(toolPrice.toolKey).label}" value={activeCount} maximum={Math.max(data.group.memberPharmacyCount, 1)} />
+						<ProgressBar
+							label="Pharmacies qui utilisent {findTool(toolPrice.toolKey).label}"
+							value={activeCount}
+							maximum={Math.max(data.group.memberPharmacyCount, 1)}
+							meaning="goal"
+						/>
+						{#if missingCount > 0}
+							<a href={pharmaciesWithoutToolPathname(toolPrice.toolKey)} class="justify-self-start text-small text-accent-text underline">
+								{missingCount === 1 ? 'Voir la pharmacie qui ne l’utilise pas' : `Voir les ${missingCount} qui ne l’utilisent pas`}
+							</a>
+						{/if}
 					</div>
 				{/each}
 			</div>

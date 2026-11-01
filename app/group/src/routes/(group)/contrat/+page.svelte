@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import {
 		describeGroupContractInWords,
+		describeFreeMonths,
 		describeGroupContractTerms,
 		formatEuros,
 		priceForPeriod
@@ -91,11 +92,11 @@
 			{#snippet detail()}
 				{#if isYearly}
 					Soit {formatEuros(priceForPeriod(data.charge.monthlyTotalCents, 'yearly', data.catalog.annualFreeMonths))} HT par an,
-					{data.catalog.annualFreeMonths} mois offerts.
+					{describeFreeMonths(data.catalog.annualFreeMonths)}.
 				{:else if contract?.billingMode === 'flat_rate'}
-					Votre forfait{data.charge.overagePharmacyCount > 0 ? `, plus ${data.charge.overagePharmacyCount} pharmacie(s) au-delà` : ''}.
+					Votre forfait{data.charge.overagePharmacyCount > 0 ? `, plus ${data.charge.overagePharmacyCount} pharmacie${data.charge.overagePharmacyCount > 1 ? 's' : ''} au-delà` : ''}.
 				{:else}
-					Pour vos {data.memberPharmacyCount} pharmacie(s), d’après ce qu’elles utilisent.
+					Pour vos {data.memberPharmacyCount} pharmacie{data.memberPharmacyCount > 1 ? 's' : ''}, d’après ce qu’elles utilisent.
 				{/if}
 			{/snippet}
 		</StatCard>

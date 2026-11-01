@@ -184,7 +184,10 @@
 		</div>
 	</Card>
 
-	<div><Button type="submit" icon="check">Enregistrer les prix</Button></div>
+	<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+		<Button type="submit" icon="check">Enregistrer les prix</Button>
+		<p class="text-small text-ink-muted">S’applique aux nouveaux abonnements : une pharmacie déjà abonnée garde son prix.</p>
+	</div>
 </form>
 
 <form method="POST" action="?/saveFlatRateOffers" class="mt-4 grid max-w-[760px] gap-3.5">
@@ -205,9 +208,9 @@
 			{#each flatRateOfferInputs as offerInput, offerIndex (offerIndex)}
 				<div class="grid gap-3 border-t border-line-soft pt-4 first:border-t-0 first:pt-0 sm:grid-cols-[minmax(0,1fr)_150px_170px_auto] sm:items-end">
 					<input type="hidden" name="offerId" value={offerInput.offerId} />
-					<Field label="Nom de l’offre">
+					<Field label="Nom de l’offre" hint="Ex. : Réseau 200">
 						{#snippet control(controlAttributes)}
-							<Input {...controlAttributes} name="offerLabel" placeholder="Réseau 200" bind:value={offerInput.label} />
+							<Input {...controlAttributes} name="offerLabel" bind:value={offerInput.label} />
 						{/snippet}
 					</Field>
 					<Field label="Places">

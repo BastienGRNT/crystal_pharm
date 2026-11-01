@@ -9,7 +9,7 @@ export default definePage<AtelierSettings>({
     props.pageKit.Page({
       legalNotice: props.pageKit.LegalNotice({ class: 'at-legal-notice' }),
       children: (
-        <AsymmetricGridTemplate pharmacy={props.pharmacy} modules={props.modules} currentPath="/equipe">
+        <AsymmetricGridTemplate pharmacy={props.pharmacy} modules={props.modules} openingStatus={props.openingStatus} currentPath="/equipe">
           <Show when={props.modules.team} fallback={<p class="at-unavailable">Cette page n'est pas disponible.</p>}>
             <props.pageKit.Module name="team" />
           </Show>

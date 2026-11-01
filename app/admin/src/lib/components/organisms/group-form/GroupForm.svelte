@@ -34,11 +34,15 @@
 
 	// Le formulaire part des valeurs reçues puis vit sa vie : la page est rechargée après chaque envoi.
 	let values = $state(untrack(() => structuredClone(initialValues)));
-	// Refusé par le serveur : on rouvre l'étape à corriger.
-	let currentStepIndex = $state(
-		untrack(() => Math.min(lastStepIndex, ...Object.keys(fieldErrors).map((fieldName) => findStepOfField(fieldName as GroupFormFieldName))))
-	);
+	// Refusé par le serveur : on rouvre l'étape à corriger. Sinon, une création part du début et une modification de la vérification.
+	let currentStepIndex = $state(untrack(() => findOpeningStepIndex()));
 	let stepErrors = $state<GroupFormErrors>({});
+
+	function findOpeningStepIndex(): number {
+		const stepsWithErrors = Object.keys(fieldErrors).map((fieldName) => findStepOfField(fieldName as GroupFormFieldName));
+		if (stepsWithErrors.length > 0) return Math.min(...stepsWithErrors);
+		return isCreation ? 0 : verificationStepIndex;
+	}
 	let formElement: HTMLFormElement | undefined = $state();
 
 	const shownErrors = $derived({ ...fieldErrors, ...stepErrors });
@@ -101,7 +105,7 @@
 		<input type="hidden" name="toolTerms.{toolKey}.discountPercent" value={values.toolTerms[toolKey].discountPercent} />
 	{/each}
 
-	<StepIndicator label="Étapes du contrat" steps={groupFormSteps} {currentStepIndex} />
+	<StepIndicator label="Étapes du contrat" steps={groupFormSteps} {currentStepIndex} onStepSelect={isCreation ? undefined : goToStep} />
 
 	<div class="grid items-start gap-4 {currentStepIndex === verificationStepIndex ? '' : 'lg:grid-cols-[minmax(0,1fr)_360px]'}">
 		<Card>

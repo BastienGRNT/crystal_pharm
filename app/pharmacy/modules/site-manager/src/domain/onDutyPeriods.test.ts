@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { readOnDutyPeriodDrafts, toOnDutyPeriod, toOnDutyPeriodDraft } from './onDutyPeriods';
+import {
+	createNextOnDutyPeriodDraft,
+	describeOnDutyPeriodEnd,
+	readOnDutyPeriodDrafts,
+	toOnDutyPeriod,
+	toOnDutyPeriodDraft
+} from './onDutyPeriods';
 
 describe('les gardes de la pharmacie', () => {
 	it('keeps a same-day period on the same day, with the Paris offset of that day', () => {
@@ -49,5 +55,15 @@ describe('les gardes de la pharmacie', () => {
 				{ startsAt: '2026-11-10T19:00:00+01:00', endsAt: '2026-11-11T08:00:00+01:00' }
 			]
 		});
+	});
+
+	it('proposes the next period a week after the last one, with its hours', () => {
+		const lastPeriod = { day: '2026-11-07', startTime: '20:00', endTime: '08:00' };
+		expect(createNextOnDutyPeriodDraft([lastPeriod], new Date('2026-11-01T10:00:00Z'))).toEqual({ ...lastPeriod, day: '2026-11-14' });
+	});
+
+	it('writes the end of a night period with its day', () => {
+		expect(describeOnDutyPeriodEnd({ day: '2026-11-07', startTime: '20:00', endTime: '08:00' })).toBe('Fin dimanche 8 novembre à 08:00');
+		expect(describeOnDutyPeriodEnd({ day: '2026-11-07', startTime: '09:00', endTime: '20:00' })).toBe('Fin le même jour à 20:00');
 	});
 });

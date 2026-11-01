@@ -33,6 +33,15 @@ namespace CrystalPharm.Prescriptions.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("birth_date");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
+
+                    b.Property<DateOnly?>("ExpectedProductsOn")
+                        .HasColumnType("date")
+                        .HasColumnName("expected_products_on");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -49,11 +58,20 @@ namespace CrystalPharm.Prescriptions.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("idempotency_key");
 
+                    b.Property<bool>("IsRenewal")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_renewal");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
+
+                    b.Property<string>("NoteFromPatient")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note_from_patient");
 
                     b.Property<string>("Phone")
                         .IsRequired()
@@ -61,7 +79,7 @@ namespace CrystalPharm.Prescriptions.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("phone");
 
-                    b.Property<DateTime>("PlannedVisitAt")
+                    b.Property<DateTime?>("PlannedVisitAt")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("planned_visit_at");
 
@@ -70,9 +88,24 @@ namespace CrystalPharm.Prescriptions.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(15)")
                         .HasColumnName("social_security_number");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("StatusChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("status_changed_at");
+
                     b.Property<DateTimeOffset>("SubmittedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("submitted_at");
+
+                    b.Property<string>("TeamNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("team_note");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
@@ -87,6 +120,9 @@ namespace CrystalPharm.Prescriptions.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId", "PlannedVisitAt")
                         .HasDatabaseName("ix_submissions_tenant_id_planned_visit_at");
+
+                    b.HasIndex("TenantId", "Status", "StatusChangedAt")
+                        .HasDatabaseName("ix_submissions_tenant_id_status_status_changed_at");
 
                     b.ToTable("submissions", "prescriptions");
                 });

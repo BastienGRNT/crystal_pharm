@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using CrystalPharm.Api.Authentication;
 using CrystalPharm.Prescriptions.Application.Dtos;
+using CrystalPharm.Prescriptions.Domain.Entities;
 using Npgsql;
 
 namespace CrystalPharm.Api.IntegrationTests;
@@ -151,5 +152,147 @@ public sealed class ReceivedPrescriptionsApiTests(ApiFixture api)
         }
 
         Assert.Equal(["prescriptions.read", "prescriptions.list", "prescriptions.document"], actions);
+    }
+
+    [Fact]
+    public async Task A_manager_moves_a_submission_to_waiting_for_products_with_the_expected_day()
+    {
+        var tenantId = Guid.NewGuid();
+        var submissionId = await SubmitAsync(tenantId, "Attente");
+        var expectedOn = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(2);
+        using var client = ClientOfManager(tenantId);
+
+        var response = await client.PutAsJsonAsync(
+            $"received-prescriptions/{submissionId}/status",
+            new PrescriptionStatusChangeDto(PrescriptionStatus.WaitingForProducts, expectedOn),
+            ApiJson);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = await response.Content.ReadFromJsonAsync<ReceivedPrescriptionDto>(ApiJson);
+        Assert.Equal(PrescriptionStatus.WaitingForProducts, updated!.Status);
+        Assert.Equal(expectedOn, updated.ExpectedProductsOn);
+    }
+
+    [Fact]
+    public async Task Moving_on_from_waiting_for_products_forgets_the_expected_day()
+    {
+        var tenantId = Guid.NewGuid();
+        var submissionId = await SubmitAsync(tenantId, "Prete");
+        using var client = ClientOfManager(tenantId);
+        await client.PutAsJsonAsync(
+            $"received-prescriptions/{submissionId}/status",
+            new PrescriptionStatusChangeDto(PrescriptionStatus.WaitingForProducts, DateOnly.FromDateTime(DateTime.UtcNow)),
+            ApiJson);
+
+        var response = await client.PutAsJsonAsync(
+            $"received-prescriptions/{submissionId}/status",
+            new PrescriptionStatusChangeDto(PrescriptionStatus.Ready, DateOnly.FromDateTime(DateTime.UtcNow)),
+            ApiJson);
+
+        var updated = await response.Content.ReadFromJsonAsync<ReceivedPrescriptionDto>(ApiJson);
+        Assert.Equal(PrescriptionStatus.Ready, updated!.Status);
+        Assert.Null(updated.ExpectedProductsOn);
+    }
+
+    [Fact]
+    public async Task An_expected_day_in_the_past_is_refused()
+    {
+        var tenantId = Guid.NewGuid();
+        var submissionId = await SubmitAsync(tenantId, "Passe");
+
+        var response = await ClientOfManager(tenantId).PutAsJsonAsync(
+            $"received-prescriptions/{submissionId}/status",
+            new PrescriptionStatusChangeDto(PrescriptionStatus.WaitingForProducts, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1)),
+            ApiJson);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_team_note_is_kept_on_the_submission()
+    {
+        var tenantId = Guid.NewGuid();
+        var submissionId = await SubmitAsync(tenantId, "Note");
+        using var client = ClientOfManager(tenantId);
+
+        await client.PutAsJsonAsync($"received-prescriptions/{submissionId}/team-note", new PrescriptionTeamNoteDto("  Rappeler pour le générique  "), ApiJson);
+
+        var detail = await client.GetFromJsonAsync<ReceivedPrescriptionDto>($"received-prescriptions/{submissionId}", ApiJson);
+        Assert.Equal("Rappeler pour le générique", detail!.TeamNote);
+    }
+
+    [Fact]
+    public async Task Another_tenant_can_neither_follow_up_nor_delete_a_submission()
+    {
+        var tenantId = Guid.NewGuid();
+        var submissionId = await SubmitAsync(tenantId, "Protege");
+        using var intruder = ClientOfManager(Guid.NewGuid());
+
+        var statusResponse = await intruder.PutAsJsonAsync(
+            $"received-prescriptions/{submissionId}/status", new PrescriptionStatusChangeDto(PrescriptionStatus.Collected, null), ApiJson);
+        var noteResponse = await intruder.PutAsJsonAsync(
+            $"received-prescriptions/{submissionId}/team-note", new PrescriptionTeamNoteDto("intrus"), ApiJson);
+        var deleteResponse = await intruder.DeleteAsync($"received-prescriptions/{submissionId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, statusResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, noteResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, deleteResponse.StatusCode);
+        var detail = await ClientOfManager(tenantId).GetFromJsonAsync<ReceivedPrescriptionDto>($"received-prescriptions/{submissionId}", ApiJson);
+        Assert.Equal(PrescriptionStatus.Received, detail!.Status);
+        Assert.Null(detail.TeamNote);
+    }
+
+    [Fact]
+    public async Task Deleting_a_submission_removes_its_rows_and_its_files()
+    {
+        var tenantId = Guid.NewGuid();
+        var submissionId = await SubmitAsync(tenantId, "Efface");
+        using var client = ClientOfManager(tenantId);
+
+        var response = await client.DeleteAsync($"received-prescriptions/{submissionId}");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"received-prescriptions/{submissionId}")).StatusCode);
+        Assert.Equal(0, await CountAsync("select count(*) from prescriptions.documents where submission_id = @id", submissionId));
+        var submissionDirectory = Path.Combine(api.PrescriptionStorageDirectory, tenantId.ToString("N"), submissionId.ToString("N"));
+        Assert.True(!Directory.Exists(submissionDirectory) || Directory.GetFiles(submissionDirectory).Length == 0);
+    }
+
+    [Fact]
+    public async Task Submissions_past_their_retention_are_erased_when_the_list_is_read()
+    {
+        var tenantId = Guid.NewGuid();
+        var expiredId = await SubmitAsync(tenantId, "Ancien");
+        var collectedLongAgoId = await SubmitAsync(tenantId, "Retire");
+        var recentId = await SubmitAsync(tenantId, "Recent");
+        await ExecuteAsSuperuserAsync(
+            "update prescriptions.submissions set submitted_at = now() - interval '91 days' where id = @id", expiredId);
+        await ExecuteAsSuperuserAsync(
+            "update prescriptions.submissions set status = 'Collected', status_changed_at = now() - interval '31 days' where id = @id",
+            collectedLongAgoId);
+
+        var listed = await ClientOfManager(tenantId).GetFromJsonAsync<ReceivedPrescriptionSummaryDto[]>("received-prescriptions", ApiJson);
+
+        Assert.Equal([recentId], listed!.Select(summary => summary.Id));
+        Assert.Equal(0, await CountAsync(
+            "select count(*) from prescriptions.submissions where id = any(@id)", new[] { expiredId, collectedLongAgoId }));
+    }
+
+    private async Task<long> CountAsync(string sql, object id)
+    {
+        await using var connection = new NpgsqlConnection(api.SuperuserConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("id", id);
+        return (long)(await command.ExecuteScalarAsync())!;
+    }
+
+    private async Task ExecuteAsSuperuserAsync(string sql, Guid id)
+    {
+        await using var connection = new NpgsqlConnection(api.SuperuserConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("id", id);
+        await command.ExecuteNonQueryAsync();
     }
 }

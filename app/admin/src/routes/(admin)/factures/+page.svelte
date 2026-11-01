@@ -19,8 +19,11 @@
 <div class="grid gap-3.5 sm:grid-cols-2">
 	<StatCard label="À encaisser par virement" icon="clock-countdown" value={formatEuros(data.dueTotalCents)}>
 		{#snippet detail()}
-			{data.dueInvoiceCount === 0 ? 'Aucune facture en attente.' : `${data.dueInvoiceCount} facture(s) à régler, TTC.`}
+			{data.dueInvoiceCount === 0 ? 'Aucune facture en attente.' : data.dueInvoiceCount === 1 ? '1 facture à régler, TTC.' : `${data.dueInvoiceCount} factures à régler, TTC.`}
 		{/snippet}
+	</StatCard>
+	<StatCard label="Facturé en {data.currentMonthLabel}" icon="receipt" value="{formatEuros(data.currentMonthInvoicedSubtotalCents)} HT">
+		{#snippet detail()}Factures moins avoirs, depuis le 1er du mois.{/snippet}
 	</StatCard>
 </div>
 

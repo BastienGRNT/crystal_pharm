@@ -12,9 +12,9 @@
 </script>
 
 <div class="grid gap-4">
-	<Field label="Phrase d’accroche">
+	<Field label="Phrase d’accroche" hint="Ex. : Votre pharmacie de quartier">
 		{#snippet control(controlAttributes)}
-			<Input {...controlAttributes} maxlength={160} placeholder="Votre pharmacie de quartier" bind:value={hero.headline} />
+			<Input {...controlAttributes} maxlength={160} bind:value={hero.headline} />
 		{/snippet}
 	</Field>
 	<SiteImageChooser

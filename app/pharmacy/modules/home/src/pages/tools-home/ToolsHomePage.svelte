@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { findTool, type ToolKey } from '@crystal-pharm/billing-db/domain';
-	import { ActionList, Alert, Button, Card, DayTimeline, Icon, PageHeader, StatusBadge, TimeList } from '@crystal-pharm/ui';
+	import { ActionList, Alert, Button, Card, DayTimeline, Icon, PageHeader, StatCard, StatusBadge, TimeList } from '@crystal-pharm/ui';
 	import ToolTile from '../../components/molecules/ToolTile.svelte';
 	import NowCard from '../../components/organisms/NowCard.svelte';
 	import { activeToolCardStatuses } from '../../domain/toolCards';
@@ -26,6 +26,7 @@
 	const coveringGroupName = $derived(data.coveringGroup?.isContractActive ? data.coveringGroup.groupName : undefined);
 	// Un module actif est déjà dans la colonne de gauche : l'accueil ne montre en grand que ceux à activer.
 	const toolCardsToActivate = $derived(data.toolCards.filter((toolCard) => !activeToolCardStatuses.includes(toolCard.status)));
+	const figureDetailClasses = { neutral: 'text-ink-muted', warning: 'font-semibold text-warning', danger: 'font-semibold text-danger' };
 </script>
 
 <svelte:head>
@@ -103,12 +104,44 @@
 {/if}
 
 {#if hasActiveTool}
+	{#if data.today.onDuty?.isSoon}
+		<section
+			aria-label="Garde"
+			class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-accent bg-accent-soft px-4 py-3.5"
+		>
+			<span class="grid size-10 flex-none place-items-center rounded-md bg-accent text-on-accent">
+				<Icon name="moon" size={22} />
+			</span>
+			<p class="grid min-w-0 flex-1">
+				<strong class="title-2 text-ink">{data.today.onDuty.title}</strong>
+				<span class="text-body text-ink-muted">{data.today.onDuty.detail} · affichée sur votre site</span>
+			</p>
+			{#if data.today.onDuty.href}
+				<Button href={data.today.onDuty.href} variant="secondary">Voir les gardes</Button>
+			{/if}
+		</section>
+	{/if}
+
+	{#if data.today.figures.length > 0}
+		<section aria-label="En chiffres" class="grid gap-3 sm:grid-cols-3">
+			{#each data.today.figures as figure (figure.key)}
+				<div data-module={figure.module} class="grid">
+					<StatCard label={figure.label} value={figure.value} icon={figure.icon} href={figure.href}>
+						{#snippet detail()}
+							<span class={figureDetailClasses[figure.detailTone]}>{figure.detail}</span>
+						{/snippet}
+					</StatCard>
+				</div>
+			{/each}
+		</section>
+	{/if}
+
 	<div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[auto_1fr]">
 		<div class="lg:col-start-1 lg:row-start-1">
 			<NowCard now={data.today.now} />
 		</div>
 
-		<aside class="grid content-start gap-5 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+		<aside class="grid content-start gap-5 max-lg:-order-1 lg:col-start-2 lg:row-span-2 lg:row-start-1">
 			<section aria-labelledby="a-traiter-titre" class="overflow-hidden rounded-lg border border-line bg-surface shadow-card">
 				<div class="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
 					<h2 id="a-traiter-titre" class="title-2 text-ink">À traiter</h2>
@@ -119,9 +152,20 @@
 				{#if data.today.tasks.length > 0}
 					<ActionList label="À traiter" items={data.today.tasks} />
 				{:else}
-					<p class="text-body px-4 py-4 text-ink-muted">Rien à traiter. Tout est à jour.</p>
+					<p class="text-body flex items-center gap-2 px-4 py-4 text-ink-muted">
+						<Icon name="check" size={16} class="text-success" /> Rien ne vous attend.
+					</p>
 				{/if}
 			</section>
+
+			{#if data.today.onDuty && !data.today.onDuty.isSoon}
+				<p class="flex items-start gap-2.5 rounded-md border border-line bg-surface px-3 py-2.5 text-small text-ink-muted">
+					<Icon name="moon" size={16} class="mt-0.5 flex-none text-ink-subtle" />
+					<span>
+						<b class="font-semibold text-ink">{data.today.onDuty.title}</b> · {data.today.onDuty.detail}
+					</span>
+				</p>
+			{/if}
 
 			{#if data.today.shortcuts.length > 0}
 				<nav aria-labelledby="raccourcis-titre" class="grid gap-2">

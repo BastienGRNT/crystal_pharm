@@ -153,6 +153,53 @@ public sealed class PrescriptionsApiTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task A_prescription_of_several_pages_keeps_each_page_with_the_follow_up_details()
+    {
+        var form = FormWith(new()
+        {
+            ["email"] = " Camille.Durand@Example.org ",
+            ["isRenewal"] = "true",
+            ["noteFromPatient"] = "Pas de générique pour le Levothyrox",
+            ["plannedVisitAt"] = "",
+        });
+        AddFile(form, "additionalPrescriptionPages", JpegBytes);
+        AddFile(form, "additionalPrescriptionPages", PdfBytes);
+
+        var response = await ClientOfSite(Guid.NewGuid()).SendAsync(SubmitRequest(Guid.NewGuid().ToString(), form));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var result = await ResultOfAsync(response);
+        Assert.Equal(3, await CountAsync(
+            "select count(*) from prescriptions.documents where submission_id = @id and kind = 'Prescription'", ("id", result.SubmissionId)));
+        Assert.Equal(1, await CountAsync(
+            "select count(*) from prescriptions.submissions where id = @id and email = 'camille.durand@example.org' and is_renewal and planned_visit_at is null and status = 'Received'",
+            ("id", result.SubmissionId)));
+    }
+
+    [Fact]
+    public async Task More_than_four_prescription_pages_are_refused()
+    {
+        var form = FormWith();
+        for (var page = 0; page < 4; page++)
+        {
+            AddFile(form, "additionalPrescriptionPages", JpegBytes);
+        }
+
+        var response = await ClientOfSite(Guid.NewGuid()).SendAsync(SubmitRequest(Guid.NewGuid().ToString(), form));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_malformed_email_is_refused()
+    {
+        var response = await ClientOfSite(Guid.NewGuid()).SendAsync(
+            SubmitRequest(Guid.NewGuid().ToString(), FormWith(new() { ["email"] = "camille-at-example" })));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task A_patient_who_already_visited_keeps_no_vital_card_nor_mutual_card()
     {
         var form = FormWith(

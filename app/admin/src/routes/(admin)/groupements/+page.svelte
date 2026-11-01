@@ -38,7 +38,7 @@
 				<td>
 					<a href="/groupements/{group.groupId}" class="body-strong text-ink underline-offset-2 hover:underline">{group.name}</a>
 					{#if group.pendingInvitationCount > 0}
-						<p class="text-small text-ink-muted">{group.pendingInvitationCount} invitation(s) en attente</p>
+						<p class="text-small text-ink-muted">{group.pendingInvitationCount} invitation{group.pendingInvitationCount > 1 ? 's' : ''} en attente</p>
 					{/if}
 				</td>
 				<td class="w-[200px]">

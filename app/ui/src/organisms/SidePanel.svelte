@@ -6,10 +6,14 @@
 		title: string;
 		/** Le lien qui ferme le panneau : l'URL de la page sans le panneau. */
 		closeHref: string;
+		/** `wide` : quand le panneau montre un document à lire, pas seulement un formulaire. */
+		size?: 'regular' | 'wide';
 		children: Snippet;
 	};
 
-	let { title, closeHref, children }: SidePanelProps = $props();
+	let { title, closeHref, size = 'regular', children }: SidePanelProps = $props();
+
+	const widthClasses = { regular: 'max-w-[400px]', wide: 'max-w-[640px]' };
 
 	const componentId = $props.id();
 	const titleId = `side-panel-title-${componentId}`;
@@ -28,7 +32,7 @@
 
 <svelte:window onkeydown={closeOnEscape} />
 
-<div class="fixed inset-0 z-10 flex justify-end">
+<div class="fixed inset-0 z-40 flex justify-end">
 	<a href={closeHref} aria-hidden="true" tabindex="-1" class="absolute inset-0 bg-ink/30"></a>
 
 	<div
@@ -37,7 +41,7 @@
 		aria-modal="true"
 		aria-labelledby={titleId}
 		tabindex="-1"
-		class="relative flex h-full w-full max-w-[400px] flex-col border-l border-line bg-surface shadow-float outline-none"
+		class="relative flex h-full w-full {widthClasses[size]} flex-col border-l border-line bg-surface shadow-float outline-none"
 	>
 		<header class="flex h-topbar flex-none items-center justify-between border-b border-line px-5">
 			<h2 id={titleId} class="title-2 text-ink">{title}</h2>

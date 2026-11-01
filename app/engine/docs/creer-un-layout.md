@@ -133,10 +133,24 @@ accroche, par exemple) vit dans le composant, qui prend `props.headline ?? maVal
 | `loyaltyCard` | `text`, `url`, `imageUrl?` | `LoyaltyCardModuleProps` |
 | `brands` | `brands[]` (`name`, `logoUrl?`, `url?`) | `BrandsModuleProps` |
 | `onlineOrder` | `introduction?`, `orderPath` (toujours `/commandeenligne` : n'affiche jamais l'adresse externe) | `OnlineOrderModuleProps` |
-| `appointment` | `mode: 'builtIn'` → `introduction?`, `listAvailableSlots`, `bookAppointment`, `validateAppointment` ; `mode: 'externalLink'` → `appointmentPath` (toujours `/rendezvous`) | `AppointmentModuleProps` |
+| `appointment` | `mode: 'builtIn'` → `introduction?`, `today`, `pharmacyName`, `getOptions`, `listAvailableDays`, `listAvailableSlots`, `bookAppointment`, `validateAppointment` ; `mode: 'externalLink'` → `appointmentPath` (toujours `/rendezvous`) | `AppointmentModuleProps` |
 
-Pour le rendez-vous intégré, `createAppointmentFormState(props)` fournit l'état du formulaire (champs,
-erreurs, jour choisi, créneaux, envoi) : le layout ne fait que l'afficher.
+`announcement.status` vaut `onDutyNow` ou `onDutyLaterToday`. La garde **en cours** est déjà dite par
+le statut d'ouverture (§5, `openingStatus`) : n'affiche le bandeau de garde que pour `onDutyLaterToday`,
+sinon le visiteur lit deux fois la même chose.
+
+Pour le rendez-vous intégré, `createAppointmentWizardState({ actions: props, today: props.today })`
+fournit tout l'état (motif → jour → heure → coordonnées → `done`) : le layout ne fait que l'afficher.
+
+- Pas d'étape de relecture : le récapitulatif (motif, jour, heure, avec « Changer » →
+  `goBackTo('time')`) s'affiche **au-dessus** des coordonnées, et le bouton de cette étape appelle
+  `send()`. Une étape de moins, c'est un abandon de moins.
+- `contact` contient `firstName`, `lastName`, `phone`, `email` (facultatif : c'est par lui que part la
+  confirmation, dis-le) et `note`. `prefillContact(...)` remplit ce qui est encore vide.
+- `sendStatus()` : `requested` (→ `confirmation()`), `slotTaken` (les créneaux se rechargent seuls),
+  `reasonUnavailable`, `failed`.
+
+Exemple complet : `engine/layouts/src/essential/organisms/AppointmentWizard.tsx`.
 
 ### Les adresses stables
 
@@ -208,8 +222,11 @@ Les champs du formulaire (`PrescriptionForm`) :
 | Champ | Obligatoire | Note |
 |---|---|---|
 | `firstName`, `lastName`, `birthDate` (`2026-03-14`), `phone` | oui | `<input type="date">` pour la date de naissance |
-| `plannedVisitAt` (`2026-03-14T17:30`) | oui | l'heure de passage prévue, `<input type="datetime-local">` |
-| `prescriptionFile` | oui | photo ou PDF |
+| `prescriptionFile`, `additionalPrescriptionPages` | oui (la 1re page) | photo ou PDF ; jusqu'à `MaximumPrescriptionPages` pages : passe par `prescriptionPages()` et `setPrescriptionPages(pages)` plutôt que par les deux champs |
+| `email` | non | c'est par lui que le patient est prévenu quand c'est prêt : dis-le |
+| `plannedVisitAt` (`2026-03-14T17:30`) | non | vide = « dès que c'est prêt » ; propose les choix de `listPlannedVisitChoices(new Date())` (dans un `onMount`), plus un `datetime-local` pour un autre jour |
+| `isRenewal` | non | « c'est un renouvellement » |
+| `noteFromPatient` | non | un mot pour l'équipe, `PrescriptionNoteMaximumLength` caractères au plus |
 | `hasAlreadyVisited` | — | « je suis déjà venu » : la carte Vitale et la mutuelle sont alors écartées à l'envoi, **masque-les** |
 | `socialSecurityNumber` **ou** `vitalCardPhoto` | non | au choix ; propose un sélecteur photo / numéro plutôt que deux champs |
 | `mutualCardFront`, `mutualCardBack` | non | un seul choix côté interface (`setMutualCardFiles`) : un PDF, ou une à deux photos ; le 1er fichier va dans `Front`, le 2e dans `Back` |
@@ -222,6 +239,13 @@ visiteur comme un gain de temps, pas comme une corvée.
 | `updateField(nom, valeur)` | Change un champ et efface son erreur |
 | `validateFields(noms)` | Valide ces champs seulement, affiche leurs erreurs, dit s'ils sont valides : pour passer à l'étape suivante |
 | `send()` | Valide, envoie, met à jour `status()` (`editing`, `sending`, `sent`, `failed`), renvoie les erreurs par champ |
+| `prefill(patient)` | Remplit l'identité et le contact encore vides |
+| `prescriptionPages()`, `setPrescriptionPages(pages)` | Les pages de l'ordonnance, dans l'ordre |
+
+**Retenir le patient sur cet appareil** : `readRememberedPatient()` (dans un `onMount`, puis
+`prefill`), `rememberPatient(...)` ou `forgetPatient()` après un envoi réussi. Une case à cocher,
+**décochée par défaut** sauf si le patient était déjà retenu. Seule l'identité est gardée, jamais un
+document ni une note : c'est une donnée de santé.
 
 Sans l'état fourni, `props.submitPrescription(form)` valide puis envoie (`{ outcome: 'sent' }`,
 `{ outcome: 'invalid', errorsByField }` ou `{ outcome: 'failed' }`), et `props.validatePrescription(form)`
@@ -284,6 +308,7 @@ Le `title` devient le titre de l'onglet du navigateur : « Accueil · Pharmacie 
 | `props.settings` | Tes réglages, valeurs par défaut comprises |
 | `props.modules` | Les props de chaque module, `undefined` s'il est désactivé |
 | `props.pageKit` | `Page`, `LegalNotice`, `Module`, `PlacedModules`, `FixedSection` |
+| `props.openingStatus()` | `OpeningStatus` : `state` (`open`, `closingSoon`, `closed`, `onDuty`), `label` (« Ouvert », « Fermé »…), `detail` (« jusqu'à 19 h 30 », « ouvre demain à 9 h »). Un accessor qui se met à jour seul : c'est la première chose que cherche un visiteur, mets-le en haut de chaque page |
 
 ## 6. Le layout : une valeur de type `PharmacySiteLayout`
 

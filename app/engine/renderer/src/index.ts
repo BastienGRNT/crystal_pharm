@@ -15,6 +15,7 @@ export type { FindUsSectionProps } from './section-props/toFindUsSectionProps';
 export type { OpeningHoursSectionProps } from './section-props/toOpeningHoursSectionProps';
 export type { OnDutySectionProps } from './section-props/toOnDutySectionProps';
 export type { OnDutyAnnouncement } from './section-props/computeOnDutyAnnouncement';
+export { toSpokenTime, type OpeningStatus } from './opening-status/computeOpeningStatus';
 export type { FixedSectionName, FixedSectionPropsByName } from './section-props/FixedSectionPropsByName';
 export type { TeamModuleProps } from './module-props/toTeamModuleProps';
 export type { ServicesModuleProps } from './module-props/toServicesModuleProps';
@@ -39,6 +40,8 @@ export type {
 export { onlineOrderStablePath, appointmentStablePath } from './redirect/findStableRedirectLocation';
 export type { PrescriptionForm, PrescriptionFormErrors } from './prescription/validatePrescriptionForm';
 export type { SubmitPrescription } from './prescription/createSubmitPrescription';
+export { listPlannedVisitChoices, type PlannedVisitChoice } from './prescription/listPlannedVisitChoices';
+export { readRememberedPatient, rememberPatient, forgetPatient, type RememberedPatient } from './patient-memory/rememberedPatient';
 export { createPrescriptionFormState, type PrescriptionFormState, type PrescriptionFormStatus } from './prescription/createPrescriptionFormState';
 export {
   createAppointmentWizardState,

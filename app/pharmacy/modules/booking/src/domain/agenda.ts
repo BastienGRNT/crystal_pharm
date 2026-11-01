@@ -22,6 +22,14 @@ export function toMinutesSinceMidnight(time: string): number {
 	return hours * minutesPerHour + minutes;
 }
 
+/** « 08:45 » + 30 → « 09:15 » ; rien au-delà de minuit : un rendez-vous ne déborde jamais sur le lendemain. */
+export function addMinutesToTime(time: string, minutes: number): string | undefined {
+	const endInMinutes = toMinutesSinceMidnight(time) + minutes;
+	if (endInMinutes >= 24 * minutesPerHour) return undefined;
+	const hours = String(Math.floor(endInMinutes / minutesPerHour)).padStart(2, '0');
+	return `${hours}:${String(endInMinutes % minutesPerHour).padStart(2, '0')}`;
+}
+
 /** Les heures pleines affichées : la plage par défaut, élargie pour ne couper aucun rendez-vous. */
 export function computeAgendaHourRange(items: readonly TimedItem[], defaultRange: AgendaHourRange): AgendaHourRange {
 	let { firstHour, lastHour } = defaultRange;

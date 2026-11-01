@@ -8,7 +8,16 @@ import {
 } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 
-export type AppointmentForm = { slotId: string; reasonId: string; firstName: string; lastName: string; phone: string; note: string };
+export type AppointmentForm = {
+  slotId: string;
+  reasonId: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  /** Facultatif : vide si le patient ne veut ni confirmation ni rappel par email. */
+  email: string;
+  note: string;
+};
 export type AppointmentFormErrors = Partial<Record<keyof AppointmentForm, string>>;
 
 export type AppointmentOptionsResult = { outcome: 'loaded'; options: AppointmentOptions } | { outcome: 'failed' };

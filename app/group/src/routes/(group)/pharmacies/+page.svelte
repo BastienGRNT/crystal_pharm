@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { findTool, formatEuros } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, ConfirmButton, DataTable, EmptyState, PageHeader, ProgressBar, TagList } from '@crystal-pharm/ui';
+	import { findTool, formatEuros, isToolKey, sellableToolKeys } from '@crystal-pharm/billing-db/domain';
+	import { Alert, Button, Card, ConfirmButton, DataTable, EmptyState, FilterTabs, Icon, Input, PageHeader, ProgressBar, TagList } from '@crystal-pharm/ui';
 	import PharmacyInvitationPanel from '$lib/components/organisms/PharmacyInvitationPanel.svelte';
 	import { formatDay, formatDaysUntil } from '$lib/dateFormats';
-	import { groupPathnames } from '$lib/groupPathnames';
+	import { groupPathnames, pharmaciesWithoutToolPathname } from '$lib/groupPathnames';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -17,6 +17,36 @@
 	const sentInvitationCount = $derived(Number(page.url.searchParams.get('invitations') ?? 0));
 	const alreadyInvitedEmails = $derived(page.url.searchParams.get('dejaInvitees')?.split(',') ?? []);
 	const succeededAction = $derived(form && 'succeededAction' in form ? form : undefined);
+
+	const missingToolParameter = $derived(page.url.searchParams.get('sans') ?? '');
+	const missingToolKey = $derived(isToolKey(missingToolParameter) ? missingToolParameter : undefined);
+	let searchText = $state('');
+
+	const toolFilterTabs = $derived([
+		{ label: 'Toutes', href: groupPathnames.pharmacies, isCurrent: missingToolKey === undefined, count: data.memberPharmacies.length },
+		...sellableToolKeys.map((toolKey) => ({
+			label: `Sans ${findTool(toolKey).label}`,
+			href: pharmaciesWithoutToolPathname(toolKey),
+			isCurrent: missingToolKey === toolKey,
+			count: data.memberPharmacies.filter((memberPharmacy) => !memberPharmacy.activeToolKeys.includes(toolKey)).length
+		}))
+	]);
+
+	const visibleMemberPharmacies = $derived.by(() => {
+		const normalizedSearch = normalizeForSearch(searchText.trim());
+		return data.memberPharmacies.filter(
+			(memberPharmacy) =>
+				(missingToolKey === undefined || !memberPharmacy.activeToolKeys.includes(missingToolKey)) &&
+				normalizeForSearch(`${memberPharmacy.name} ${memberPharmacy.postalCode} ${memberPharmacy.city}`).includes(normalizedSearch)
+		);
+	});
+
+	// « saint michel » doit trouver « Saint-Michel » : sans accents, tirets ni majuscules.
+	function normalizeForSearch(text: string): string {
+		return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-']/g, ' ').toLowerCase();
+	}
+
+	const plural = (count: number, singular: string, pluralForm: string): string => `${count} ${count === 1 ? singular : pluralForm}`;
 </script>
 
 <svelte:head>
@@ -53,12 +83,13 @@
 		<div class="grid gap-1">
 			<ProgressBar label="Places utilisées" value={usedPlaces} maximum={data.group.pharmacyQuota} />
 			<p class="text-small text-ink-muted">
-				{data.group.memberPharmacyCount} membres · {data.group.pendingInvitationCount} invitations en attente · {Math.max(data.group.pharmacyQuota - usedPlaces, 0)} places libres
+				{plural(data.group.memberPharmacyCount, 'membre', 'membres')} · {plural(data.group.pendingInvitationCount, 'invitation', 'invitations')} en attente ·
+				{plural(Math.max(data.group.pharmacyQuota - usedPlaces, 0), 'place libre', 'places libres')}
 			</p>
 			{#if data.overageUnitPriceCents !== undefined}
 				<p class="text-small text-ink-muted">
 					{#if overageMemberCount > 0}
-						{overageMemberCount} pharmacie(s) au-delà de votre forfait : + {formatEuros(overageMemberCount * data.overageUnitPriceCents)} HT par mois.
+						{overageMemberCount} pharmacie{overageMemberCount > 1 ? 's' : ''} au-delà de votre forfait : + {formatEuros(overageMemberCount * data.overageUnitPriceCents)} HT par mois.
 					{:else}
 						Au-delà de {data.group.pharmacyQuota}, chaque pharmacie ajoute {formatEuros(data.overageUnitPriceCents)} HT par mois à votre forfait.
 					{/if}
@@ -79,6 +110,24 @@
 			{#snippet actions()}<Button href={groupPathnames.invitePharmacies} icon="user-plus">Inviter des pharmacies</Button>{/snippet}
 		</EmptyState>
 	{:else}
+		<div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+			<FilterTabs label="Filtrer par module" tabs={toolFilterTabs} />
+			<label class="relative w-full sm:w-64">
+				<span class="sr-only">Rechercher une pharmacie</span>
+				<Icon name="magnifying-glass" size={16} class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-ink-subtle" />
+				<Input type="search" bind:value={searchText} placeholder="Nom, ville ou code postal" class="pl-8" />
+			</label>
+		</div>
+		{#if missingToolKey}
+			<p class="text-small text-ink-muted">
+				Ces pharmacies n’ont pas activé {findTool(missingToolKey).label}. Un mot à leur titulaire suffit souvent.
+			</p>
+		{/if}
+		{#if visibleMemberPharmacies.length === 0}
+			<p class="rounded-lg border border-dashed border-line-strong px-4 py-6 text-center text-body text-ink-muted">
+				{missingToolKey && searchText === '' ? `Toutes vos pharmacies utilisent ${findTool(missingToolKey).label}.` : 'Aucune pharmacie ne correspond à votre recherche.'}
+			</p>
+		{:else}
 		<DataTable caption="Pharmacies membres">
 			{#snippet head()}
 				<th>Pharmacie</th>
@@ -87,7 +136,7 @@
 				{#if !isFlatRate}<th class="text-right">Votre coût HT / mois</th>{/if}
 				<th><span class="sr-only">Actions</span></th>
 			{/snippet}
-			{#each data.memberPharmacies as memberPharmacy (memberPharmacy.membershipId)}
+			{#each visibleMemberPharmacies as memberPharmacy (memberPharmacy.membershipId)}
 				<tr>
 					<td>
 						<span class="body-strong">{memberPharmacy.name}</span><br />
@@ -112,6 +161,7 @@
 				</tr>
 			{/each}
 		</DataTable>
+		{/if}
 	{/if}
 </section>
 

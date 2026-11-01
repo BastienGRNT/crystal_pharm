@@ -34,9 +34,9 @@
 				<IconButton icon="trash" label="Retirer ce service" onclick={() => removeService(service)} />
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
-			<Field label="Nom" errorMessage={findMissingTextError(service.title, service.description, 'Donnez un nom à ce service.')}>
+			<Field label="Nom" hint="Ex. : Vaccination" errorMessage={findMissingTextError(service.title, service.description, 'Donnez un nom à ce service.')}>
 				{#snippet control(controlAttributes)}
-					<Input {...controlAttributes} maxlength={120} placeholder="Vaccination" bind:value={service.title} />
+					<Input {...controlAttributes} maxlength={120} bind:value={service.title} />
 				{/snippet}
 			</Field>
 			<Field label="Icône">

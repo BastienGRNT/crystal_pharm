@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { findIncludingToolKeys, findOfferLabel, findTool, formatEuros, isToolKey } from '@crystal-pharm/billing-db/domain';
+	import { findIncludingToolKeys, findTool, formatEuros, isToolKey } from '@crystal-pharm/billing-db/domain';
 	import { Alert, Button, Card, ConfirmButton, Icon, InvoiceTable, PageHeader, type IconName } from '@crystal-pharm/ui';
 	import ToolSubscriptionForm from '../../components/organisms/ToolSubscriptionForm.svelte';
+	import { sumMonthlyGroupSavings } from '../../domain/toolCards';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
 	import type { SubscriptionActionFailure, SubscriptionPageData } from './subscriptionPageData';
 
@@ -15,16 +16,27 @@
 
 	const requestedToolKey = $derived(searchParams.get('module') ?? undefined);
 	const requestedToolLabel = $derived(requestedToolKey && isToolKey(requestedToolKey) ? findTool(requestedToolKey).label : undefined);
-	const requestedToolOfferLabels = $derived(
-		requestedToolKey && isToolKey(requestedToolKey) ? findIncludingToolKeys(requestedToolKey).map(findOfferLabel) : []
+	const requestedToolIncludingLabels = $derived(
+		requestedToolKey && isToolKey(requestedToolKey) ? findIncludingToolKeys(requestedToolKey).map((toolKey) => findTool(toolKey).label) : []
 	);
 	const cancellationEnd = $derived(searchParams.get('jusquau'));
+	const subscribedOffers = $derived(data.subscribedOffers?.offers ?? []);
+	const groupSavingsCents = $derived(sumMonthlyGroupSavings(data.toolCards));
+	const coveredToolsWording = $derived(
+		data.toolCards
+			.filter((toolCard) => toolCard.coverageSummary !== undefined)
+			.map((toolCard) => `${toolCard.label} (${toolCard.coverageSummary?.toLocaleLowerCase('fr-FR')})`)
+			.join(', ')
+	);
 
-	const commitments: { icon: IconName; label: string }[] = [
-		{ icon: 'seal-check', label: 'Sans engagement' },
-		{ icon: 'arrow-counter-clockwise', label: 'Satisfait ou remboursé pendant 30 jours' },
-		{ icon: 'lock-simple', label: 'Données de santé chez un hébergeur agréé HDS' }
-	];
+	// Une promesse qui ne vaut plus pour cette pharmacie (remboursement passé ses 30 jours) affaiblit toutes les autres.
+	const commitments = $derived.by(() => {
+		const isPastMoneyBackGuarantee = data.subscription !== undefined && !data.subscription.isMoneyBackGuaranteed;
+		const list: { icon: IconName; label: string }[] = [{ icon: 'seal-check', label: 'Sans engagement au mois' }];
+		if (!isPastMoneyBackGuarantee) list.push({ icon: 'arrow-counter-clockwise', label: 'Satisfait ou remboursé pendant 30 jours' });
+		list.push({ icon: 'lock-simple', label: 'Données de santé chez un hébergeur certifié HDS' });
+		return list;
+	});
 </script>
 
 <svelte:head>
@@ -62,8 +74,8 @@
 	<Alert tone="success">Votre abonnement continue, comme avant.</Alert>
 {:else if requestedToolLabel}
 	<Alert tone="info" title="Le module {requestedToolLabel} n’est pas activé">
-		{#if requestedToolOfferLabels.length > 0}
-			Il est compris dans {requestedToolOfferLabels.join(' ou ')} : activez-la ci-dessous pour l’utiliser.
+		{#if requestedToolIncludingLabels.length > 0}
+			Il est compris avec {requestedToolIncludingLabels.join(' ou ')} : la formule cochée ci-dessous le contient.
 		{:else}
 			Activez-le ci-dessous pour l’utiliser.
 		{/if}
@@ -72,55 +84,18 @@
 
 {#if data.groupName && data.coverages.length > 0}
 	<Alert tone="info" title="Membre de {data.groupName}">
-		Certains modules sont offerts ou moins chers grâce à votre groupement.
+		{data.groupName} prend en charge {coveredToolsWording}.
+		{#if groupSavingsCents > 0}Vous économisez <span class="body-strong">{formatEuros(groupSavingsCents)} HT par mois</span>.{/if}
 		{#if data.coverageEndsAt}Sa prise en charge s’arrête le {formatLastDayBefore(data.coverageEndsAt)} au soir.{/if}
 	</Alert>
 {/if}
-
-<ToolSubscriptionForm
-	catalog={data.catalog}
-	coverages={data.coverages}
-	paidToolKeys={data.paidToolKeys}
-	subscription={data.subscription}
-	groupName={data.groupName}
-	highlightedToolKey={requestedToolKey}
-	mustAcceptTerms={data.mustAcceptTerms}
-	failureMessage={form?.failureMessage}
-/>
 
 {#if data.subscribedOffers?.paymentStatus === 'past_due'}
 	<Alert tone="warning" title="Paiement en retard">
 		Votre dernier prélèvement a été refusé. Vos modules restent actifs pendant quelques jours.
 		{#if data.subscribedOffers.nextRetryAt}Nous réessaierons le {formatDay(data.subscribedOffers.nextRetryAt)}.{/if}
-	</Alert>
-{/if}
 
-{#if data.subscribedOffers && data.subscribedOffers.offers.length > 0}
-	<Card>
-		<h2 class="title-2 text-ink">Vos offres</h2>
-		<ul class="mt-2 grid gap-2">
-			{#each data.subscribedOffers.offers as offer (offer.offerKey)}
-				<li class="grid gap-0.5">
-					<div class="flex flex-wrap items-baseline justify-between gap-2">
-						<span class="body-strong text-ink">{offer.label} <span class="text-small text-ink-muted">· version {offer.versionNumber}</span></span>
-						<span class="body-strong tabular-nums text-ink">{formatEuros(offer.billedMonthlyPriceCents)} HT / mois</span>
-					</div>
-					{#if offer.priceAgreement}
-						<p class="text-small text-ink-muted">
-							Prix négocié (au lieu de {formatEuros(offer.versionPriceCents)}),
-							{offer.priceAgreement.endsAt ? `jusqu’au ${formatLastDayBefore(offer.priceAgreement.endsAt)}` : 'sans limite de durée'}.
-						</p>
-					{/if}
-					{#if offer.upcomingVersionPriceCents !== undefined}
-						<p class="text-small text-success">Le prix baisse à {formatEuros(offer.upcomingVersionPriceCents)} dès le prochain renouvellement.</p>
-					{/if}
-					{#if offer.endsAt}
-						<p class="text-small text-ink-muted">Retirée : active jusqu’au {formatLastDayBefore(offer.endsAt)}.</p>
-					{/if}
-				</li>
-			{/each}
-		</ul>
-	</Card>
+	</Alert>
 {/if}
 
 {#if data.subscription}
@@ -146,6 +121,27 @@
 						{/if}
 					{/if}
 				</p>
+				{#if subscribedOffers.length > 0}
+					<ul class="mt-2 grid gap-1.5" aria-label="Ce que comprend votre abonnement">
+						{#each subscribedOffers as offer (offer.offerKey)}
+							<li class="flex flex-wrap items-baseline gap-x-2 text-body">
+								<Icon name="check-circle" size={16} class="translate-y-0.5 text-success" />
+								<span class="body-strong text-ink">{offer.label}</span>
+								{#if offer.endsAt}
+									<span class="text-small text-ink-muted">retirée, active jusqu’au {formatLastDayBefore(offer.endsAt)}</span>
+								{:else if offer.priceAgreement}
+									<span class="text-small text-ink-muted">
+										prix négocié {formatEuros(offer.billedMonthlyPriceCents)} HT / mois au lieu de {formatEuros(offer.versionPriceCents)}{offer.priceAgreement.endsAt
+											? `, jusqu’au ${formatLastDayBefore(offer.priceAgreement.endsAt)}`
+											: ''}
+									</span>
+								{:else if offer.upcomingVersionPriceCents !== undefined}
+									<span class="text-small text-success">passe à {formatEuros(offer.upcomingVersionPriceCents)} HT / mois au renouvellement</span>
+								{/if}
+							</li>
+						{/each}
+					</ul>
+				{/if}
 			</div>
 			{#if data.subscription.endsAt}
 				<form method="POST" action="?/resume"><Button type="submit" icon="arrow-counter-clockwise">Reprendre mon abonnement</Button></form>
@@ -175,6 +171,17 @@
 		</div>
 	</Card>
 {/if}
+
+<ToolSubscriptionForm
+	catalog={data.catalog}
+	coverages={data.coverages}
+	paidToolKeys={data.paidToolKeys}
+	subscription={data.subscription}
+	groupName={data.groupName}
+	highlightedToolKey={requestedToolKey}
+	mustAcceptTerms={data.mustAcceptTerms}
+	failureMessage={form?.failureMessage}
+/>
 
 {#if data.invoices.length > 0}
 	<section aria-labelledby="factures-titre" class="grid gap-2">

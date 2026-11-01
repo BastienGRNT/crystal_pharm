@@ -83,13 +83,13 @@
 		{/if}
 		{#if overQuotaCount > 0 && overageUnitPriceCents !== undefined}
 			<Alert tone="info" title="Au-delà de votre forfait">
-				{overQuotaCount} pharmacie(s) de plus que votre forfait de {pharmacyQuota}. Chacune ajoute
+				{overQuotaCount} pharmacie{overQuotaCount > 1 ? 's' : ''} de plus que votre forfait de {pharmacyQuota}. Chacune ajoute
 				{formatEuros(overageUnitPriceCents)} HT par mois à votre facture, seulement si elle accepte, soit au plus
 				{formatEuros(overQuotaCount * overageUnitPriceCents)} HT par mois.
 			</Alert>
 		{:else if overQuotaCount > 0}
 			<Alert tone="warning">
-				Vous dépassez votre quota de {overQuotaCount} pharmacie(s). Retirez des lignes, ou contactez Crystal Pharm pour l’augmenter.
+				Vous dépassez votre quota de {overQuotaCount} pharmacie{overQuotaCount > 1 ? 's' : ''}. Retirez des lignes, ou contactez Crystal Pharm pour l’augmenter.
 			</Alert>
 		{/if}
 		{#if failureMessage}<Alert tone="danger">{failureMessage}</Alert>{/if}

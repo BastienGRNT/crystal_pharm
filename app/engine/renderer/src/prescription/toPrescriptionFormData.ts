@@ -5,7 +5,8 @@ export function toPrescriptionFormData(request: PrescriptionUploadRequest): Form
   const formData = new FormData();
   for (const [fieldName, value] of Object.entries(request)) {
     if (value === undefined) continue;
-    formData.set(fieldName, typeof value === 'boolean' ? String(value) : value);
+    if (Array.isArray(value)) value.forEach((page) => formData.append(fieldName, page));
+    else formData.set(fieldName, typeof value === 'boolean' ? String(value) : value);
   }
   return formData;
 }

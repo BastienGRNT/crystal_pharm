@@ -77,6 +77,7 @@
 		<AddAppointmentForm
 			panel={data.addAppointmentPanel}
 			errorMessage={form?.message}
+			failedFieldName={form?.failedFieldName}
 			submittedValues={form?.values}
 		/>
 	</SidePanel>

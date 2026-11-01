@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Alert, Button, Card, DatePicker, EmptyState, Field, PageHeader, TimePicker } from '@crystal-pharm/ui';
+	import { Alert, Button, Card, DatePicker, EmptyState, Field, PageHeader, TimePicker, UnsavedChangesGuard } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
-	import { createEmptyOnDutyPeriodDraft } from '../domain/onDutyPeriods';
+	import { createNextOnDutyPeriodDraft, describeOnDutyPeriodEnd } from '../domain/onDutyPeriods';
 	import { onDutyPeriodsFieldName, type OnDutyFailure, type OnDutyPageData, type OnDutySaved } from './onDutyPageData';
 
 	type OnDutyPageProps = {
@@ -14,9 +14,11 @@
 
 	const failure = $derived(form && 'formError' in form ? form : undefined);
 	let periods = $state(structuredClone(untrack(() => failure?.submittedPeriods ?? data.periods)));
+	let savedFingerprint = $state(untrack(() => JSON.stringify(data.periods)));
+	const hasUnsavedChanges = $derived(JSON.stringify(periods) !== savedFingerprint);
 
 	function addPeriod(): void {
-		periods.push(createEmptyOnDutyPeriodDraft(new Date()));
+		periods.push(createNextOnDutyPeriodDraft(periods, new Date()));
 	}
 
 	function removePeriod(periodIndex: number): void {
@@ -31,7 +33,7 @@
 		{/snippet}
 	</PageHeader>
 
-	{#if form && 'isSaved' in form}
+	{#if form && 'isSaved' in form && !hasUnsavedChanges}
 		<Alert tone="success" title="Gardes enregistrées">Le bandeau s’affiche sur votre site pendant chaque garde.</Alert>
 	{/if}
 	{#if failure}
@@ -42,7 +44,15 @@
 	{/if}
 
 	<Card spacing="spacious">
-		<form method="POST" use:enhance class="grid gap-5">
+		<form
+			method="POST"
+			class="grid gap-5"
+			use:enhance={() =>
+				async ({ result, update }) => {
+					if (result.type === 'success') savedFingerprint = JSON.stringify(periods);
+					await update({ reset: false });
+				}}
+		>
 			<input type="hidden" name={onDutyPeriodsFieldName} value={JSON.stringify(periods)} />
 			<div class="flex flex-wrap items-start justify-between gap-3">
 				<div>
@@ -51,7 +61,7 @@
 						Pendant une garde, un bandeau « En garde actuellement, jusqu’à … » s’affiche en haut de votre site. Le jour d’une garde, il annonce « En garde ce soir, à partir de … ». Si la fin est avant le début, la garde se termine le lendemain.
 					</p>
 				</div>
-				<Button type="button" icon="plus" onclick={addPeriod}>Ajouter une garde</Button>
+				<Button type="button" variant="secondary" icon="plus" onclick={addPeriod}>Ajouter une garde</Button>
 			</div>
 
 			{#if periods.length === 0}
@@ -75,13 +85,16 @@
 							<TimePicker id={attributes.id} name="periodEndTime" bind:value={period.endTime} stepMinutes={15} />
 						{/snippet}
 					</Field>
-					<p class="text-small text-ink-muted">{period.endTime <= period.startTime ? 'Jusqu’au lendemain' : 'Le même jour'}</p>
+					<p class="text-small text-ink-muted sm:pb-2.5">{describeOnDutyPeriodEnd(period)}</p>
 					<Button type="button" variant="ghost" icon="trash" onclick={() => removePeriod(periodIndex)}>Retirer</Button>
 				</div>
 			{/each}
 
-			<div>
-				<Button type="submit" icon="check" disabled={!data.isSiteCreated}>Enregistrer les gardes</Button>
+			<div class="flex flex-wrap items-center gap-3 border-t border-line-soft pt-4">
+				<Button type="submit" icon="check" disabled={!data.isSiteCreated || !hasUnsavedChanges}>Enregistrer les gardes</Button>
+				{#if hasUnsavedChanges}
+					<p class="text-small text-ink-muted" role="status">Modifications non enregistrées</p>
+				{/if}
 			</div>
 		</form>
 	</Card>
@@ -96,3 +109,5 @@
 		</div>
 	</Card>
 </div>
+
+<UnsavedChangesGuard {hasUnsavedChanges} />

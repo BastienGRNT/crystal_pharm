@@ -5,7 +5,7 @@ import { addDays, addMonths, buildCalendarCells, firstDayOfMonth, lastDayOfMonth
 import type { AppointmentActions, AppointmentForm, AppointmentFormErrors } from './createBookAppointment';
 import { formatInParisTimeZone } from '../module-props/formatInParisTimeZone';
 
-export type AppointmentWizardStep = 'reason' | 'day' | 'time' | 'contact' | 'review' | 'done';
+export type AppointmentWizardStep = 'reason' | 'day' | 'time' | 'contact' | 'done';
 export type AppointmentOptionsStatus = 'loading' | 'ready' | 'failed';
 export type AppointmentLoadStatus = 'idle' | 'loading' | 'listed' | 'failed';
 export type AppointmentSendStatus = 'editing' | 'sending' | 'requested' | 'slotTaken' | 'reasonUnavailable' | 'failed';
@@ -16,7 +16,7 @@ export type TimedSlot = AvailableAppointmentSlot & { timeLabel: string };
 export type TimeOfDaySlots = { timeOfDay: TimeOfDay; slots: TimedSlot[] };
 
 const timeOfDayOrder: TimeOfDay[] = ['morning', 'afternoon', 'evening'];
-const stepOrder: AppointmentWizardStep[] = ['reason', 'day', 'time', 'contact', 'review', 'done'];
+const stepOrder: AppointmentWizardStep[] = ['reason', 'day', 'time', 'contact', 'done'];
 
 function toTimeOfDay(startsAt: string): TimeOfDay {
   const hour = Number(formatInParisTimeZone(new Date(startsAt), { hour: '2-digit', hour12: false })) % 24;
@@ -29,7 +29,7 @@ function toTimeLabel(startsAt: string): string {
 }
 
 /**
- * L'état d'une prise de rendez-vous guidée (motif → jour → heure → coordonnées → récapitulatif) :
+ * L'état d'une prise de rendez-vous guidée (motif → jour → heure → coordonnées, avec le récapitulatif sous les yeux) :
  * le layout n'écrit plus que le rendu. `today` est le jour du rendu, au format `2026-03-14`.
  */
 export function createAppointmentWizardState(input: { actions: AppointmentActions; today: string }) {
@@ -49,7 +49,7 @@ export function createAppointmentWizardState(input: { actions: AppointmentAction
   const [sendStatus, setSendStatus] = createSignal<AppointmentSendStatus>('editing');
   const [errorsByField, setErrorsByField] = createSignal<AppointmentFormErrors>({});
   const [confirmation, setConfirmation] = createSignal<AppointmentConfirmation>();
-  const [contact, setContact] = createStore({ firstName: '', lastName: '', phone: '', note: '' });
+  const [contact, setContact] = createStore({ firstName: '', lastName: '', phone: '', email: '', note: '' });
 
   const chosenReason = createMemo((): AppointmentReasonOption | undefined =>
     options()?.reasons.find((reason) => reason.id === chosenReasonId()),
@@ -169,11 +169,11 @@ export function createAppointmentWizardState(input: { actions: AppointmentAction
     return { slotId: chosenSlotId() ?? '', reasonId: chosenReasonId() ?? '', ...contact };
   }
 
-  /** Vérifie les coordonnées avant le récapitulatif ; le serveur revalide tout à l'envoi. */
-  function reviewContact(validate: (form: AppointmentForm) => AppointmentFormErrors): void {
-    const errors = validate(toForm());
-    setErrorsByField(errors);
-    if (Object.keys(errors).length === 0) setStep('review');
+  /** Remplit ce que le patient a déjà saisi lors d'une demande précédente, sans écraser ce qu'il vient de taper. */
+  function prefillContact(knownContact: Partial<Pick<AppointmentForm, 'firstName' | 'lastName' | 'phone' | 'email'>>): void {
+    for (const [fieldName, value] of Object.entries(knownContact) as [keyof typeof knownContact, string | undefined][]) {
+      if (value && contact[fieldName] === '') setContact(fieldName, value);
+    }
   }
 
   /** Revenir en arrière garde tout ce qui a été choisi. */
@@ -234,8 +234,8 @@ export function createAppointmentWizardState(input: { actions: AppointmentAction
     chooseSlot,
     contact,
     updateContact,
+    prefillContact,
     errorsByField,
-    reviewContact,
     goBackTo,
     sendStatus,
     send,

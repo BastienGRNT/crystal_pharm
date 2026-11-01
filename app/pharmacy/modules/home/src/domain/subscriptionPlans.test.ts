@@ -1,6 +1,6 @@
 import type { ToolCatalog } from '@crystal-pharm/billing-db/domain';
 import { describe, expect, it } from 'vitest';
-import { buildSubscriptionPlans, findPlanOfToolKeys } from './subscriptionPlans';
+import { buildSubscriptionPlans, findPlanOfToolKeys, findPlanToSuggest } from './subscriptionPlans';
 
 const catalog: ToolCatalog = {
 	toolPrices: [
@@ -52,5 +52,22 @@ describe('findPlanOfToolKeys', () => {
 		expect(findPlanOfToolKeys(plans, ['site', 'planning'])?.planKey).toBe('pack');
 		expect(findPlanOfToolKeys(plans, ['planning'])?.planKey).toBe('planning');
 		expect(findPlanOfToolKeys(plans, [])).toBeUndefined();
+	});
+});
+
+describe('findPlanToSuggest', () => {
+	it('coche le pack d’office', () => {
+		expect(findPlanToSuggest(buildSubscriptionPlans(catalog, []), undefined)?.planKey).toBe('pack');
+	});
+
+	it('coche le pack quand le module demandé y est compris, même sans être vendu seul', () => {
+		expect(findPlanToSuggest(buildSubscriptionPlans(catalog, []), 'booking')?.planKey).toBe('pack');
+	});
+
+	it('coche la formule du module demandé quand le groupement a retiré le pack', () => {
+		const plans = buildSubscriptionPlans(catalog, [{ toolKey: 'site', discountPercent: 0, groupSharePercent: 100 }]);
+
+		expect(findPlanToSuggest(plans, 'planning')?.planKey).toBe('planning');
+		expect(findPlanToSuggest(plans, undefined)).toBeUndefined();
 	});
 });

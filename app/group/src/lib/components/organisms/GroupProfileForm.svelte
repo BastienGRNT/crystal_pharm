@@ -9,7 +9,7 @@
 		type PharmacyGroupProfileInput
 	} from '@crystal-pharm/group-db/domain';
 	import { wholeFormErrorKey, type FieldErrors } from '@crystal-pharm/pharmacy-db/domain';
-	import { Alert, Button, Card, Field, ImagePicker, Input, Textarea } from '@crystal-pharm/ui';
+	import { Alert, Button, Card, Field, ImagePicker, Input, Textarea, UnsavedChangesGuard } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 
 	type GroupProfileFormProps = {
@@ -22,10 +22,17 @@
 
 	// Le formulaire part du contenu reçu puis vit sa vie : la page est rechargée après chaque envoi.
 	const profile = $state(untrack(() => ({ ...initialProfile })));
+	const savedFingerprint = untrack(() => JSON.stringify(profile));
+	let hasChosenImage = $state(false);
+	const hasUnsavedChanges = $derived(hasChosenImage || JSON.stringify(profile) !== savedFingerprint);
+
+	function noticeChosenImage(event: Event): void {
+		if (event.target instanceof HTMLInputElement && event.target.type === 'file') hasChosenImage = true;
+	}
 	const imageHint = `JPEG, PNG, WebP ou SVG, ${maximumPharmacyGroupImageMegabytes} Mo au plus.`;
 </script>
 
-<form method="POST" enctype="multipart/form-data" class="grid gap-3.5">
+<form method="POST" enctype="multipart/form-data" class="grid gap-3.5" onchange={noticeChosenImage}>
 	<Card>
 		<div class="grid gap-4">
 			<h2 class="title-2 text-ink">Identité</h2>
@@ -75,7 +82,7 @@
 
 			<Field
 				label="Lien vers la carte"
-				hint="La page où un patient obtient ou consulte sa carte."
+				hint="La page où un patient obtient ou consulte sa carte. Ex. : https://www.mon-groupement.fr/carte"
 				errorMessage={fieldErrors.loyaltyCardUrl}
 			>
 				{#snippet control(controlAttributes)}
@@ -84,7 +91,6 @@
 						name="loyaltyCardUrl"
 						inputmode="url"
 						autocomplete="url"
-						placeholder="https://www.mon-groupement.fr/carte"
 						bind:value={profile.loyaltyCardUrl}
 					/>
 				{/snippet}
@@ -92,7 +98,7 @@
 
 			<Field
 				label="Message"
-				hint="{maximumLoyaltyCardMessageLength} caractères au plus."
+				hint="Ex. : « Retrouvez votre carte de fidélité en pharmacie. » {maximumLoyaltyCardMessageLength} caractères au plus."
 				errorMessage={fieldErrors.loyaltyCardMessage}
 			>
 				{#snippet control(controlAttributes)}
@@ -101,7 +107,6 @@
 						name="loyaltyCardMessage"
 						rows={2}
 						maxlength={maximumLoyaltyCardMessageLength}
-						placeholder="Retrouvez votre carte de fidélité en pharmacie."
 						bind:value={profile.loyaltyCardMessage}
 					/>
 				{/snippet}
@@ -113,7 +118,12 @@
 		<Alert tone="danger">{fieldErrors[wholeFormErrorKey]}</Alert>
 	{/if}
 
-	<div>
-		<Button type="submit">Enregistrer</Button>
+	<div class="flex flex-wrap items-center gap-3">
+		<Button type="submit" icon="check">Enregistrer</Button>
+		{#if hasUnsavedChanges}
+			<p class="text-small text-ink-muted" role="status">Modifications non enregistrées</p>
+		{/if}
 	</div>
 </form>
+
+<UnsavedChangesGuard {hasUnsavedChanges} />

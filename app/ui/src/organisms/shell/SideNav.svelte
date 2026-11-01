@@ -3,12 +3,15 @@
 	import LogoMark from '../../atoms/LogoMark.svelte';
 	import AccountMenu from './AccountMenu.svelte';
 	import type { NavigationLink, SignedInUserSummary } from './navigation';
+	import NavigationCount from './NavigationCount.svelte';
 
 	type SideNavProps = {
 		navigationLinks: readonly NavigationLink[];
 		accountLinks: readonly NavigationLink[];
 		currentNavigationHref: string | undefined;
 		hrefsNeedingAttention: readonly string[];
+		countsByHref: Readonly<Record<string, number>>;
+		spaceLabel?: string;
 		signedInUser: SignedInUserSummary;
 		onSignOut: () => void;
 	};
@@ -18,62 +21,74 @@
 		accountLinks,
 		currentNavigationHref,
 		hrefsNeedingAttention,
+		countsByHref,
+		spaceLabel,
 		signedInUser,
 		onSignOut
 	}: SideNavProps = $props();
+
+	const linkClasses =
+		'relative flex h-10 items-center gap-3 rounded-md px-3 text-[15px] leading-5 font-medium text-ink-muted no-underline hover:bg-surface-muted hover:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:font-semibold aria-[current=page]:text-accent-text';
 </script>
 
 <nav
 	aria-label="Navigation principale"
-	class="sticky top-0 z-30 flex h-screen w-rail flex-none flex-col items-center gap-1 bg-rail py-3"
+	class="sticky top-0 z-30 flex h-dvh w-sidebar flex-none flex-col self-start border-r border-line bg-surface-subtle max-lg:hidden"
 >
-	<a href="/" aria-label="Crystal Pharm, accueil" class="mt-0.5 mb-3">
-		<LogoMark />
+	<a href="/" class="flex items-center gap-2.5 px-5 pt-5 pb-4 no-underline">
+		<LogoMark size={30} surface="page" />
+		<span class="grid min-w-0">
+			<span class="truncate text-[15.5px] leading-5 font-semibold text-ink">{spaceLabel ?? 'Crystal Pharm'}</span>
+			{#if spaceLabel}
+				<span class="text-[12px] leading-4 font-medium tracking-[0.04em] text-ink-subtle uppercase">Crystal Pharm</span>
+			{/if}
+		</span>
 	</a>
 
-	{#each navigationLinks as navigationLink (navigationLink.href)}
-		<a
-			href={navigationLink.href}
-			data-module={navigationLink.module}
-			aria-current={navigationLink.href === currentNavigationHref ? 'page' : undefined}
-			class="text-rail relative grid w-[calc(var(--spacing-rail)-10px)] justify-items-center gap-[3px] rounded-md pt-[7px] pb-1.5 text-center text-rail-ink no-underline hover:bg-rail-raised aria-[current=page]:bg-rail-raised aria-[current=page]:text-on-rail aria-[current=page]:before:absolute aria-[current=page]:before:inset-y-2.5 aria-[current=page]:before:-left-[5px] aria-[current=page]:before:w-[3px] aria-[current=page]:before:rounded-[3px] aria-[current=page]:before:bg-accent-on-rail aria-[current=page]:before:content-['']"
-		>
-			{#if navigationLink.icon}
-				<Icon name={navigationLink.icon} size={22} class="text-accent-on-rail" />
-			{/if}
-			{navigationLink.label}
-			{#if hrefsNeedingAttention.includes(navigationLink.href)}
-				<span aria-hidden="true" class="absolute top-1.5 right-3.5 size-2 rounded-full bg-notify ring-2 ring-rail"></span>
-				<span class="sr-only">, à compléter</span>
-			{/if}
-		</a>
-	{/each}
+	<ul class="grid gap-0.5 px-3">
+		{#each navigationLinks as navigationLink (navigationLink.href)}
+			<li>
+				<a
+					href={navigationLink.href}
+					aria-current={navigationLink.href === currentNavigationHref ? 'page' : undefined}
+					class={linkClasses}
+				>
+					{#if navigationLink.icon}
+						<Icon name={navigationLink.icon} size={20} class="flex-none" />
+					{/if}
+					<span class="flex-1 truncate">{navigationLink.label}</span>
+					<NavigationCount
+						count={countsByHref[navigationLink.href]}
+						needsAttention={hrefsNeedingAttention.includes(navigationLink.href)}
+					/>
+				</a>
+			</li>
+		{/each}
+	</ul>
 
 	<span class="flex-1"></span>
 
 	{#if accountLinks.length > 0}
-		<ul class="mb-1 grid justify-items-center gap-1 border-t border-rail-raised px-1.5 pt-2.5">
+		<ul class="mx-3 grid gap-0.5 border-t border-line pt-3 pb-2">
 			{#each accountLinks as accountLink (accountLink.href)}
 				<li>
 					<a
 						href={accountLink.href}
-						aria-label={accountLink.label}
-						title={accountLink.label}
 						aria-current={accountLink.href === currentNavigationHref ? 'page' : undefined}
-						class="relative grid size-control place-items-center rounded-md text-rail-ink hover:bg-rail-raised hover:text-on-rail aria-[current=page]:bg-rail-raised aria-[current=page]:text-on-rail"
+						class={linkClasses}
 					>
 						{#if accountLink.icon}
-							<Icon name={accountLink.icon} size={20} />
+							<Icon name={accountLink.icon} size={20} class="flex-none" />
 						{/if}
-						{#if hrefsNeedingAttention.includes(accountLink.href)}
-							<span aria-hidden="true" class="absolute top-1 right-1 size-2 rounded-full bg-notify ring-2 ring-rail"></span>
-							<span class="sr-only">, à compléter</span>
-						{/if}
+						<span class="flex-1 truncate">{accountLink.label}</span>
+						<NavigationCount needsAttention={hrefsNeedingAttention.includes(accountLink.href)} />
 					</a>
 				</li>
 			{/each}
 		</ul>
 	{/if}
 
-	<AccountMenu {signedInUser} {onSignOut} />
+	<div class="border-t border-line p-3">
+		<AccountMenu {signedInUser} {onSignOut} placement="above" />
+	</div>
 </nav>

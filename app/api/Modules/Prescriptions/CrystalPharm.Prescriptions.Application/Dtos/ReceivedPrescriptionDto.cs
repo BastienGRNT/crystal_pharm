@@ -8,15 +8,21 @@ public sealed record ReceivedDocumentDto(Guid Id, DocumentKind Kind, DocumentFor
     public static ReceivedDocumentDto From(SubmittedDocument document) => new(document.Id, document.Kind, document.Format, document.SizeInBytes);
 }
 
-/// <summary>Un envoi dans la liste : de quoi le reconnaître, sans le numéro de sécurité sociale.</summary>
+/// <summary>Un envoi dans la liste : de quoi le reconnaître et le traiter, sans le numéro de sécurité sociale.</summary>
 public sealed record ReceivedPrescriptionSummaryDto(
     Guid Id,
     DateTimeOffset SubmittedAt,
     string FirstName,
     string LastName,
     string Phone,
-    DateTime PlannedVisitAt,
+    DateTime? PlannedVisitAt,
     bool HasAlreadyVisited,
+    bool IsRenewal,
+    string? NoteFromPatient,
+    bool CanBeNotifiedByEmail,
+    PrescriptionStatus Status,
+    DateTimeOffset StatusChangedAt,
+    DateOnly? ExpectedProductsOn,
     int DocumentCount)
 {
     public static ReceivedPrescriptionSummaryDto From(PrescriptionSubmission submission) =>
@@ -28,6 +34,12 @@ public sealed record ReceivedPrescriptionSummaryDto(
             submission.Phone,
             submission.PlannedVisitAt,
             submission.HasAlreadyVisited,
+            submission.IsRenewal,
+            submission.NoteFromPatient,
+            submission.Email is not null,
+            submission.Status,
+            submission.StatusChangedAt,
+            submission.ExpectedProductsOn,
             submission.Documents.Count);
 }
 
@@ -38,9 +50,16 @@ public sealed record ReceivedPrescriptionDto(
     string LastName,
     DateOnly BirthDate,
     string Phone,
-    DateTime PlannedVisitAt,
+    string? Email,
+    DateTime? PlannedVisitAt,
     bool HasAlreadyVisited,
+    bool IsRenewal,
+    string? NoteFromPatient,
     string? SocialSecurityNumber,
+    PrescriptionStatus Status,
+    DateTimeOffset StatusChangedAt,
+    DateOnly? ExpectedProductsOn,
+    string? TeamNote,
     IReadOnlyList<ReceivedDocumentDto> Documents)
 {
     public static ReceivedPrescriptionDto From(PrescriptionSubmission submission) =>
@@ -51,9 +70,16 @@ public sealed record ReceivedPrescriptionDto(
             submission.LastName,
             submission.BirthDate,
             submission.Phone,
+            submission.Email,
             submission.PlannedVisitAt,
             submission.HasAlreadyVisited,
+            submission.IsRenewal,
+            submission.NoteFromPatient,
             submission.SocialSecurityNumber,
+            submission.Status,
+            submission.StatusChangedAt,
+            submission.ExpectedProductsOn,
+            submission.TeamNote,
             submission.Documents.Select(ReceivedDocumentDto.From).ToArray());
 }
 

@@ -9,7 +9,7 @@
 
 <Alert tone={report.unfilledGaps.length > 0 ? 'warning' : 'success'} title="Semaine proposée">
 	<p>
-		{report.addedCount === 0 ? 'Rien à ajouter : les règles sont déjà respectées.' : `${report.addedCount} créneau${report.addedCount > 1 ? 'x' : ''} posé${report.addedCount > 1 ? 's' : ''}, ajustez-les ou publiez la semaine.`}
+		{report.addedCount === 0 ? 'Rien à ajouter : les règles sont déjà respectées.' : `${report.addedCount} créneau${report.addedCount > 1 ? 'x' : ''} posé${report.addedCount > 1 ? 's' : ''}, ajustez-les puis montrez la semaine à l’équipe.`}
 		<a href={closeHref} class="font-medium underline">Fermer</a>
 	</p>
 	{#if report.unfilledGaps.length > 0}

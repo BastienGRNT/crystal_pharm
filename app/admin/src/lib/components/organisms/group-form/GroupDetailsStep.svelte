@@ -16,9 +16,9 @@
 		<h2 class="title-2 text-ink">Le groupement</h2>
 		<p class="text-small text-ink-muted">Son nom, qui contacter, et combien de pharmacies il prévoit.</p>
 	</div>
-	<Field label="Nom du groupement" errorMessage={fieldErrors.name}>
+	<Field label="Nom du groupement" hint="Ex. : Pharma+" errorMessage={fieldErrors.name}>
 		{#snippet control(controlAttributes)}
-			<Input {...controlAttributes} bind:value={values.name} placeholder="Pharma+" />
+			<Input {...controlAttributes} bind:value={values.name} />
 		{/snippet}
 	</Field>
 	<div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px]">

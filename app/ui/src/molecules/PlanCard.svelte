@@ -49,11 +49,11 @@
 </script>
 
 <label
-	class="relative flex flex-col gap-4 rounded-lg border bg-surface p-5 shadow-card transition-colors duration-[120ms] select-none has-[:checked]:border-accent has-[:checked]:ring-2 has-[:checked]:ring-accent-soft has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent {disabled
+	class="group relative flex flex-col gap-4 rounded-lg border bg-surface p-5 shadow-card transition-colors duration-[120ms] select-none has-[:checked]:border-accent has-[:checked]:ring-2 has-[:checked]:ring-accent-soft has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent {disabled
 		? 'cursor-default border-line bg-surface-subtle opacity-70'
-		: 'cursor-pointer hover:border-line-strong'} {featuredLabel && !disabled ? 'border-accent lg:-my-3 lg:py-8' : 'border-line'}"
+		: 'cursor-pointer hover:border-line-strong'} {featuredLabel && !disabled ? 'border-accent max-lg:order-first lg:-my-3 lg:py-8' : 'border-line'}"
 >
-	<input type="radio" {name} {value} {disabled} bind:group={selectedValue} class="peer sr-only" />
+	<input type="radio" {name} {value} {disabled} bind:group={selectedValue} class="sr-only" />
 	{#if featuredLabel && !disabled}
 		<span class="absolute -top-3 left-1/2 -translate-x-1/2"><Tag tone="accent">{featuredLabel}</Tag></span>
 	{/if}
@@ -64,7 +64,7 @@
 		</span>
 		<span
 			aria-hidden="true"
-			class="grid size-6 flex-none place-items-center rounded-full border border-line-strong text-transparent peer-checked:border-accent peer-checked:bg-accent peer-checked:text-on-accent"
+			class="grid size-6 flex-none place-items-center rounded-full border border-line-strong text-transparent group-has-[:checked]:border-accent group-has-[:checked]:bg-accent group-has-[:checked]:text-on-accent"
 		>
 			<Icon name="check" size={14} />
 		</span>

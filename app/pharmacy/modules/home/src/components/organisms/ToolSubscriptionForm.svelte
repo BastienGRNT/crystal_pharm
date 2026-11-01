@@ -2,6 +2,7 @@
 	import {
 		addVat,
 		computeAmountDueToday,
+		describeFreeMonths,
 		formatEuros,
 		monthlyEquivalentOfYearlyPrice,
 		priceForPeriod,
@@ -11,10 +12,10 @@
 		type ToolCoverage,
 		type ToolKey
 	} from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Checkbox, ChoiceGroup, PlanCard, Tag, TextLink } from '@crystal-pharm/ui';
+	import { Alert, Button, Checkbox, ChoiceGroup, PlanCard, StickyActionBar, Tag, TextLink } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 	import { formatDay } from '../../dateFormats';
-	import { buildSubscriptionPlans, findPlanOfToolKeys, listPlanFeatures, packPlanKey, type SubscriptionPlan } from '../../domain/subscriptionPlans';
+	import { buildSubscriptionPlans, findPlanOfToolKeys, findPlanToSuggest, listPlanFeatures, packPlanKey, type SubscriptionPlan } from '../../domain/subscriptionPlans';
 	import { homePathnames } from '../../homePathnames';
 	import type { SubscriptionSummary } from '../../pages/subscription/subscriptionPageData';
 
@@ -39,7 +40,7 @@
 		untrack(
 			() =>
 				findPlanOfToolKeys(plans, paidToolKeys)?.planKey ??
-				plans.find((plan) => plan.planKey === highlightedToolKey && !plan.isAlreadyIncluded)?.planKey ??
+				(paidToolKeys.length === 0 ? findPlanToSuggest(plans, highlightedToolKey)?.planKey : undefined) ??
 				''
 		)
 	);
@@ -79,7 +80,7 @@
 
 	const billingPeriodOptions = $derived([
 		{ value: 'monthly', label: 'Chaque mois' },
-		{ value: 'yearly', label: freeMonths > 0 ? `À l’année · ${freeMonths} mois offerts` : 'À l’année' }
+		{ value: 'yearly', label: freeMonths > 0 ? `À l’année · ${describeFreeMonths(freeMonths)}` : 'À l’année' }
 	]);
 
 	function formatPeriodPrice(monthlyCents: number): string {
@@ -106,15 +107,14 @@
 		<input type="hidden" name="toolKeys" value={toolKey} />
 	{/each}
 
-	<div class="flex flex-wrap items-center justify-between gap-3">
-		<ChoiceGroup name="choice-billingPeriod" legend="Rythme de paiement" options={billingPeriodOptions} bind:value={billingPeriod} />
-		{#if isYearly && freeMonths > 0}
-			<p class="text-small text-ink-muted">Vous payez {12 - freeMonths} mois pour 12.</p>
-		{/if}
-	</div>
-
 	<section id="modules" aria-labelledby="modules-titre" class="grid scroll-mt-20 gap-3">
-		<h2 id="modules-titre" class="title-2 text-ink">Choisissez votre formule</h2>
+		<h2 id="modules-titre" class="title-2 text-ink">{subscription && !subscription.endsAt ? 'Changer de formule' : 'Choisissez votre formule'}</h2>
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<ChoiceGroup name="choice-billingPeriod" legend="Rythme de paiement" options={billingPeriodOptions} bind:value={billingPeriod} />
+			{#if isYearly && freeMonths > 0}
+				<p class="text-small text-ink-muted">Vous payez {12 - freeMonths} mois pour 12.</p>
+			{/if}
+		</div>
 		<div class="grid items-stretch gap-4 pt-3 {plans.length >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}">
 			{#each plans as plan (plan.planKey)}
 				<PlanCard
@@ -122,7 +122,7 @@
 					value={plan.planKey}
 					bind:selectedValue={selectedPlanKey}
 					disabled={plan.isAlreadyIncluded}
-					featuredLabel={plan.isFeatured ? 'Recommandé · le plus avantageux' : undefined}
+					featuredLabel={plan.isFeatured ? 'Meilleur prix par module' : undefined}
 					title={plan.title}
 					description={plan.description}
 					amountLabel={formatPeriodPrice(plan.pharmacyMonthlyPriceCents)}
@@ -152,7 +152,7 @@
 
 	{#if failureMessage}<Alert tone="danger">{failureMessage}</Alert>{/if}
 
-	<div class="sticky bottom-3 z-1 grid gap-3 rounded-lg border border-line bg-surface p-4 shadow-float">
+	<StickyActionBar>
 		{#if isTermsCheckboxShown}
 			<Checkbox name="termsAccepted" required>
 				J’accepte les <TextLink href={homePathnames.termsOfSale} opensInNewTab>conditions générales de vente</TextLink> et
@@ -165,7 +165,7 @@
 					<span class="title-1 tabular-nums text-ink">{formatPeriodPrice(selectionQuote.pharmacyMonthlyTotalCents)}</span>
 					<span class="text-body text-ink-muted">HT {isYearly ? 'par an' : 'par mois'}</span>
 					{#if selectionQuote.isPackApplied}<Tag tone="accent">Prix du pack</Tag>{/if}
-					{#if isYearly && freeMonths > 0 && selectionQuote.pharmacyMonthlyTotalCents > 0}<Tag tone="success">{freeMonths} mois offerts</Tag>{/if}
+					{#if isYearly && freeMonths > 0 && selectionQuote.pharmacyMonthlyTotalCents > 0}<Tag tone="success">{describeFreeMonths(freeMonths)}</Tag>{/if}
 				</p>
 				<p class="text-small text-ink-muted">
 					{#if !isChanged}
@@ -189,5 +189,5 @@
 				{amountDueTodayCents > 0 ? `Payer ${formatEuros(amountDueToday.totalCents)} TTC et activer` : 'Enregistrer mon choix'}
 			</Button>
 		</div>
-	</div>
+	</StickyActionBar>
 </form>

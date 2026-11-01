@@ -31,7 +31,7 @@
 			{#if data.dueInvoiceCount === 0}
 				Tous les virements sont arrivés.
 			{:else}
-				<a href="/factures?a-regler" class="text-accent-text underline">{data.dueInvoiceCount} facture(s) à régler, TTC</a>
+				<a href="/factures?a-regler" class="text-accent-text underline">{data.dueInvoiceCount === 1 ? '1 facture à régler' : `${data.dueInvoiceCount} factures à régler`}, TTC</a>
 			{/if}
 		{/snippet}
 	</StatCard>
@@ -41,7 +41,10 @@
 		{/snippet}
 	</StatCard>
 	<StatCard label="Sans rien d’activé" icon="lock-simple" value={String(data.pharmacyCountByStatus.inactive)}>
-		{#snippet detail()}Pharmacies inscrites qui n’utilisent encore aucun module.{/snippet}
+		{#snippet detail()}
+			Inscrites, sans module actif.
+			{#if data.pharmacyCountByStatus.inactive > 0}<a href="/pharmacies?situation=inactive" class="text-accent-text underline">Les rappeler</a>{/if}
+		{/snippet}
 	</StatCard>
 	<StatCard label="Groupements" icon="buildings" value={String(data.groupCount)}>
 		{#snippet detail()}<a href="/groupements" class="text-accent-text underline">Voir les groupements</a>{/snippet}

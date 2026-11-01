@@ -23,9 +23,9 @@
 <div class="grid gap-3">
 	<ChoiceGroup name="appointmentMode" legend="Comment prendre rendez-vous" options={modeOptions} layout="cards" value={appointment.mode} onchange={chooseMode} />
 	{#if appointment.mode === 'builtIn'}
-		<Field label="Texte d’accueil (facultatif)">
+		<Field label="Texte d’accueil (facultatif)" hint="Ex. : Vaccination, entretien pharmaceutique…">
 			{#snippet control(controlAttributes)}
-				<Textarea {...controlAttributes} rows={2} maxlength={600} placeholder="Vaccination, entretien pharmaceutique…" bind:value={appointment.introduction} />
+				<Textarea {...controlAttributes} rows={2} maxlength={600} bind:value={appointment.introduction} />
 			{/snippet}
 		</Field>
 	{:else}
