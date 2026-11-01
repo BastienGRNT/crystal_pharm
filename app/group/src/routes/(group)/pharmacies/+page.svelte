@@ -101,7 +101,7 @@
 	</div>
 </section>
 
-<section aria-labelledby="membres-titre" class="grid gap-3">
+<section aria-labelledby="membres-titre" class="grid grid-cols-[minmax(0,1fr)] gap-3">
 	<h2 id="membres-titre" class={sectionTitleClasses}>Membres</h2>
 	{#if data.memberPharmacies.length === 0}
 		<EmptyState

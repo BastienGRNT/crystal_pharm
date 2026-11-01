@@ -24,7 +24,7 @@
 	let isOverflowOpen = $state(false);
 
 	const tabClasses =
-		"relative grid h-full w-full content-center justify-items-center gap-1 text-[12px] leading-[14px] font-semibold text-rail-ink no-underline aria-[current=page]:text-on-rail aria-[current=page]:before:absolute aria-[current=page]:before:inset-x-[24%] aria-[current=page]:before:top-0 aria-[current=page]:before:h-[3px] aria-[current=page]:before:rounded-b-[3px] aria-[current=page]:before:bg-accent-on-rail aria-[current=page]:before:content-['']";
+		"relative grid h-full w-full content-center justify-items-center gap-1 px-0.5 text-[11px] leading-[14px] font-semibold text-rail-ink no-underline aria-[current=page]:text-on-rail aria-[current=page]:before:absolute aria-[current=page]:before:inset-x-[24%] aria-[current=page]:before:top-0 aria-[current=page]:before:h-[3px] aria-[current=page]:before:rounded-b-[3px] aria-[current=page]:before:bg-accent-on-rail aria-[current=page]:before:content-['']";
 </script>
 
 <!-- Sur un téléphone, le menu passe sous le pouce : une colonne fixe mangerait le quart de l'écran. -->

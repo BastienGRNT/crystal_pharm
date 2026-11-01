@@ -1,11 +1,9 @@
-Polices embarquées par le design system, toutes deux sous SIL Open Font License 1.1 :
+Police embarquée par le design system, sous SIL Open Font License 1.1 :
 
-- Atkinson Hyperlegible Next — Copyright Braille Institute of America, Inc.
-  (AtkinsonHyperlegibleNext-latin.woff2, AtkinsonHyperlegibleNext-latin-ext.woff2)
-- Young Serif — Copyright The Young Serif Project Authors (https://github.com/noirblancrouge/YoungSerif)
-  (YoungSerif-latin.woff2, YoungSerif-latin-ext.woff2)
+- Manrope — Copyright 2018 The Manrope Project Authors (https://github.com/sharanda/manrope)
+  (Manrope-latin.woff2, Manrope-latin-ext.woff2)
 
-Les fichiers sont des sous-ensembles (latin, latin étendu) des polices d'origine, non modifiés par ailleurs.
+Les fichiers sont des sous-ensembles (latin, latin étendu) de la police d'origine, non modifiés par ailleurs.
 
 -----------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007

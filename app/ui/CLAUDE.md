@@ -2,8 +2,8 @@
 
 Commun aux trois apps Svelte (`pharmacy`, `group`, `admin`) : rien ici ne
 connaît l'une d'elles. Direction « Étiquette » : fond crème, bandeau d'encre,
-Young Serif pour les titres et les chiffres, Atkinson Hyperlegible Next pour
-le texte, perforations et encoches de ticket.
+Manrope partout (épaissie par `font-display` pour les titres et les
+chiffres), perforations et encoches de ticket.
 
 - `tokens/theme.css` : la seule source des couleurs, polices, rayons et
   espacements (clair et sombre), y compris une couleur par module (`ModuleKey`
