@@ -6,3 +6,9 @@ export type SegmentedControlOption = {
 	isCurrent: boolean;
 	icon?: IconName;
 };
+
+export type SegmentedToggleOption<Value extends string> = {
+	value: Value;
+	label: string;
+	icon?: IconName;
+};

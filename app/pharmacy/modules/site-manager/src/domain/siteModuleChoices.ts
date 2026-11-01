@@ -25,13 +25,13 @@ const moduleTexts: Record<ModuleName, ModuleTexts> = {
 	services: {
 		title: 'Services',
 		description: 'Les services que propose la pharmacie.',
-		unavailableReason: 'Ajoutez au moins un service, plus bas sur cette page.',
+		unavailableReason: 'Ajoutez au moins un service.',
 		fixHref: '#services'
 	},
 	news: {
 		title: 'Actualités',
 		description: 'Vos dernières actualités, de la plus récente à la plus ancienne.',
-		unavailableReason: 'Ajoutez au moins une actualité, plus bas sur cette page.',
+		unavailableReason: 'Écrivez au moins une actualité.',
 		fixHref: '#actualites'
 	},
 	prescriptionUpload: {
@@ -42,19 +42,19 @@ const moduleTexts: Record<ModuleName, ModuleTexts> = {
 	brands: {
 		title: 'Marques',
 		description: 'Les marques que vous proposez, avec leur logo.',
-		unavailableReason: 'Ajoutez au moins une marque, dans le bloc Marques.',
+		unavailableReason: 'Ajoutez au moins une marque.',
 		fixHref: '#marques'
 	},
 	appointment: {
 		title: 'Prise de rendez-vous',
 		description: 'Vos patients réservent un créneau depuis le site, ou vont sur votre outil habituel.',
-		unavailableReason: 'Renseignez l’adresse de votre site de rendez-vous, dans le bloc Rendez-vous.',
+		unavailableReason: 'Renseignez l’adresse de votre site de rendez-vous.',
 		fixHref: '#rendez-vous'
 	},
 	onlineOrder: {
 		title: 'Commande en ligne',
 		description: 'Un lien vers votre site de commande, aussi accessible par /commandeenligne.',
-		unavailableReason: 'Renseignez l’adresse de votre site de commande, dans le bloc Commande en ligne.',
+		unavailableReason: 'Renseignez l’adresse de votre site de commande.',
 		fixHref: '#commande'
 	},
 	dutyHotline: {

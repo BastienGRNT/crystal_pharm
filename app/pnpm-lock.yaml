@@ -460,6 +460,9 @@ importers:
       '@crystal-pharm/schema':
         specifier: workspace:*
         version: link:../../../engine/schema
+      '@crystal-pharm/site-traffic-db':
+        specifier: workspace:*
+        version: link:../../../shared/site-traffic-db
       '@crystal-pharm/ui':
         specifier: workspace:*
         version: link:../../../ui
