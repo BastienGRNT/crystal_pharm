@@ -1,5 +1,5 @@
 import { deleteUnusedSiteImages, readTenantSiteContent, runAsTenant, type NewsSource, type TenantSiteContent } from '@crystal-pharm/content-db';
-import { articles, tenantSites } from '@crystal-pharm/content-db/tables';
+import { articles, siteImages, siteSubdomains, tenantSites } from '@crystal-pharm/content-db/tables';
 import { findGroupSiteProfileOfTenant, type GroupSiteProfileOfTenant } from '@crystal-pharm/group-db';
 import { getPharmacyProfile, listEmployees, type Employee, type PharmacyProfile } from '@crystal-pharm/pharmacy-db';
 import type { StoredAppointment, StoredArticle, StoredBrand, StoredFindUs, StoredHero, StoredOnlineOrder, StoredService } from '@crystal-pharm/content-db/domain';
@@ -85,6 +85,16 @@ export async function saveSiteEdition(tenantId: string, edition: SiteEdition): P
 		);
 	});
 	await deleteUnusedSiteImages(tenantId, listUploadedImageIdsOfContent(edition));
+}
+
+/** Tout le site d'un Tenant, adresses comprises : elles redeviennent libres. */
+export async function deleteSiteOfTenant(tenantId: string): Promise<void> {
+	await runAsTenant(tenantId, async (transaction) => {
+		await transaction.delete(articles).where(eq(articles.tenantId, tenantId));
+		await transaction.delete(siteImages).where(eq(siteImages.tenantId, tenantId));
+		await transaction.delete(siteSubdomains).where(eq(siteSubdomains.tenantId, tenantId));
+		await transaction.delete(tenantSites).where(eq(tenantSites.tenantId, tenantId));
+	});
 }
 
 // `null` et non `undefined` : une section vidée doit effacer ce qui était enregistré.

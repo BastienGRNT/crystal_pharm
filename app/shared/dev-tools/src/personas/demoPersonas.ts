@@ -7,6 +7,8 @@ export type DemoTeamRole = {
 	/** La pharmacie : celle du persona qui en est Owner. */
 	ownerPersonaKey: string;
 	responsibilityKeys: readonly ResponsibilityKey[];
+	/** Nommé Owner après avoir accepté son invitation : un deuxième titulaire. */
+	isAppointedOwner?: boolean;
 };
 
 export type DemoPersona = {
@@ -15,6 +17,8 @@ export type DemoPersona = {
 	label: string;
 	/** Le parcours que ce compte permet de tester. */
 	description: string;
+	/** Ce qui distingue ce compte au premier coup d'œil, et ce que la recherche trouve. */
+	badges: readonly string[];
 	email: string;
 	firstName: string;
 	lastName: string;
@@ -27,6 +31,7 @@ export type DemoCounterAccount = DemoTeamRole & {
 	personaKey: string;
 	label: string;
 	description: string;
+	badges: readonly string[];
 	username: string;
 };
 
@@ -42,6 +47,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'pharmacy',
 		label: 'Pharmacie toute neuve',
 		description: 'Compte créé, bienvenue pas encore faite.',
+		badges: ['Bienvenue'],
 		email: demoEmail('nouvelle'),
 		firstName: 'Nina',
 		lastName: 'Nouvelle'
@@ -50,7 +56,8 @@ export const demoPersonas: readonly DemoPersona[] = [
 		personaKey: 'independante',
 		space: 'pharmacy',
 		label: 'Pharmacie Centrale · seule',
-		description: 'Sans groupement ni abonnement : rien n’est activé.',
+		description: 'Sans groupement ni abonnement : rien n’est activé. Un prix négocié l’attend : le site à 19,99 € HT.',
+		badges: ['Sans abonnement', 'Accord de prix'],
 		email: demoEmail('independante'),
 		firstName: 'Inès',
 		lastName: 'Durand'
@@ -60,6 +67,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'pharmacy',
 		label: 'Pharmacie de la Gare · abonnée',
 		description: 'Abonnée seule au site, payé à l’année, dans ses 30 jours.',
+		badges: ['Site', 'Annuel'],
 		email: demoEmail('abonnee'),
 		firstName: 'Antoine',
 		lastName: 'Bonnet'
@@ -69,6 +77,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'pharmacy',
 		label: 'Pharmacie du Marché · paiement en retard',
 		description: 'Abonnée au site, prélèvement refusé : les modules restent ouverts par la grâce, le bandeau s’affiche.',
+		badges: ['Site', 'Retard de paiement'],
 		email: demoEmail('enretard'),
 		firstName: 'Renée',
 		lastName: 'Marchand'
@@ -78,24 +87,48 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'pharmacy',
 		label: 'Pharmacie du Port · Pharma+',
 		description: 'Membre de Pharma+ : site offert, planning à −20 %.',
+		badges: ['Pharma+', 'Planning'],
 		email: demoEmail('membre'),
 		firstName: 'Marie',
 		lastName: 'Lefèvre'
 	},
 	{
+		personaKey: 'ancienmembre',
+		space: 'pharmacy',
+		label: 'Pharmacie des Remparts · a quitté Pharma+',
+		description: 'Partie de Pharma+ : le site reste offert jusqu’à la fin du mois, puis se ferme sans abonnement.',
+		badges: ['Départ de groupement', 'Fin de prise en charge'],
+		email: demoEmail('ancienmembre'),
+		firstName: 'Bruno',
+		lastName: 'Rousseau'
+	},
+	{
 		personaKey: 'pharmacien',
 		space: 'pharmacy',
 		label: 'Saint-Louis · titulaire',
-		description: 'Tous les droits, abonnement et accès compris. Tout est activé, avec son équipe et ses comptes.',
+		description: 'Tous les droits. Tout est activé : site publié, planning, rendez-vous et ordonnances, une équipe, une invitation en attente.',
+		badges: ['Titulaire', 'Tout activé', 'Site publié', 'RDV', 'Ordonnances'],
 		email: demoEmail('pharmacien'),
 		firstName: 'Léa',
 		lastName: 'Garcia'
+	},
+	{
+		personaKey: 'cotitulaire',
+		space: 'pharmacy',
+		label: 'Saint-Louis · cotitulaire',
+		description: 'Deuxième titulaire, nommé par Léa : tous les droits, comme elle.',
+		badges: ['Titulaire', 'Deux titulaires'],
+		email: demoEmail('cotitulaire'),
+		firstName: 'Nicolas',
+		lastName: 'Weber',
+		teamRole: { ownerPersonaKey: 'pharmacien', responsibilityKeys: [], isAppointedOwner: true }
 	},
 	{
 		personaKey: 'adjoint',
 		space: 'pharmacy',
 		label: 'Saint-Louis · pharmacien adjoint',
 		description: 'Responsabilité « Planning de l’équipe » seulement.',
+		badges: ['Planning'],
 		email: demoEmail('adjoint'),
 		firstName: 'Thomas',
 		lastName: 'Lambert',
@@ -106,6 +139,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'pharmacy',
 		label: 'Saint-Louis · préparatrice',
 		description: 'Responsabilités « Rendez-vous » et « Ordonnances ».',
+		badges: ['RDV', 'Ordonnances'],
 		email: demoEmail('preparatrice'),
 		firstName: 'Camille',
 		lastName: 'Fontaine',
@@ -116,6 +150,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'pharmacy',
 		label: 'Saint-Louis · préparateur',
 		description: 'Responsabilités « Site » et « Fiche de la pharmacie ».',
+		badges: ['Site', 'Fiche'],
 		email: demoEmail('preparateur'),
 		firstName: 'Julien',
 		lastName: 'Mercier',
@@ -126,6 +161,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'pharmacy',
 		label: 'Saint-Louis · apprentie',
 		description: 'Membre de l’équipe sans aucune responsabilité.',
+		badges: ['Aucun droit'],
 		email: demoEmail('apprentie'),
 		firstName: 'Emma',
 		lastName: 'Chevalier',
@@ -136,6 +172,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'pharmacy',
 		label: 'Pharmacie des Tilleuls · invitée',
 		description: 'Invitée par Pharma+, pas encore répondu.',
+		badges: ['Invitation Pharma+'],
 		email: demoEmail('invitee'),
 		firstName: 'Hugo',
 		lastName: 'Martin'
@@ -144,7 +181,8 @@ export const demoPersonas: readonly DemoPersona[] = [
 		personaKey: 'pharmaplus',
 		space: 'group',
 		label: 'Pharma+ · à l’usage, sur facture',
-		description: 'Contrat actif : 3 pharmacies, une invitation en attente, deux actualités.',
+		description: 'Contrat actif : 3 pharmacies, une partie ce mois-ci, une invitation en attente, deux actualités.',
+		badges: ['À l’usage', 'Facture'],
 		email: demoEmail('pharmaplus'),
 		firstName: 'Paul',
 		lastName: 'Garnier'
@@ -154,6 +192,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'group',
 		label: 'Réseau Santé · forfait, par carte',
 		description: 'Tout offert, forfait 10 pharmacies à 150 € HT / mois, payé à l’année par carte, à activer.',
+		badges: ['Forfait', 'Carte', 'À activer'],
 		email: demoEmail('reseau'),
 		firstName: 'Sophie',
 		lastName: 'Roux'
@@ -163,6 +202,7 @@ export const demoPersonas: readonly DemoPersona[] = [
 		space: 'admin',
 		label: 'Équipe Crystal Pharm',
 		description: 'L’administration : catalogue, groupements, pharmacies.',
+		badges: ['Platform'],
 		email: demoEmail('admin'),
 		firstName: 'Alex',
 		lastName: 'Admin'
@@ -174,6 +214,7 @@ export const demoCounterAccounts: readonly DemoCounterAccount[] = [
 		personaKey: 'comptoir',
 		label: 'Saint-Louis · compte comptoir',
 		description: 'Partagé, sans email : « Rendez-vous » et « Ordonnances ».',
+		badges: ['Comptoir', 'RDV', 'Ordonnances'],
 		username: 'comptoir.saintlouis',
 		ownerPersonaKey: 'pharmacien',
 		responsibilityKeys: ['handle-appointments', 'handle-prescriptions']

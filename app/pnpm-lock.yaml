@@ -602,6 +602,9 @@ importers:
       '@crystal-pharm/billing-db':
         specifier: workspace:*
         version: link:../billing-db
+      '@crystal-pharm/content-db':
+        specifier: workspace:*
+        version: link:../content-db
       '@crystal-pharm/email':
         specifier: workspace:*
         version: link:../email

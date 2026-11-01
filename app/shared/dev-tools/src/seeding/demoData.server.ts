@@ -7,6 +7,8 @@ import {
 import {
 	acceptPharmacyInvitationAndRebuildToolAccess,
 	completeCheckout,
+	grantPriceAgreement,
+	leaveGroupAndRebuildToolAccess,
 	makeSubscriptionOverdueOfTenant,
 	requestToolSelection,
 	saveFlatRateOffers,
@@ -15,7 +17,13 @@ import {
 	type GroupContractInput
 } from '@crystal-pharm/billing-db';
 import type { BillingPeriod, ToolKey } from '@crystal-pharm/billing-db/domain';
-import { clearDevelopmentOutbox, composeGroupMemberInvitationEmail, composePharmacyInvitationEmail, sendEmail } from '@crystal-pharm/email';
+import {
+	clearDevelopmentOutbox,
+	composeGroupMemberInvitationEmail,
+	composePharmacyInvitationEmail,
+	composeTenantMemberInvitationEmail,
+	sendEmail
+} from '@crystal-pharm/email';
 import {
 	acceptGroupMemberInvitation,
 	createGroupArticle,
@@ -30,6 +38,7 @@ import type { InvitationListEntry } from '@crystal-pharm/group-db/domain';
 import {
 	acceptTenantMemberInvitation,
 	addEmployee,
+	appointTenantOwner,
 	createCounterAccountOfTenant,
 	createTenantForAccount,
 	inviteEmployeeToCreateAccount,
@@ -40,7 +49,8 @@ import {
 } from '@crystal-pharm/pharmacy-db';
 import type { PharmacyContactDetailsInput, WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
 import { readAppUrl } from '../appUrls.server';
-import { runPharmacyDemoSeeders } from './pharmacyDemoSeeders.server';
+import { seedDemoHealthData } from './demoHealthData.server';
+import { arePharmacyDemoSeedersRegistered, deletePharmacyDemoSeedersData, runPharmacyDemoSeeders } from './pharmacyDemoSeeders.server';
 import {
 	demoCounterAccounts,
 	demoEmail,
@@ -106,17 +116,8 @@ const reseauSanteContract: GroupContractInput = {
 	}
 };
 
-/**
- * Crée les démos au premier clic sur un compte de démo, et les recrée toutes dès qu'un
- * compte manque (un parcours ajouté depuis) : les semer par-dessus les dupliquerait.
- */
-export async function ensureDemoData(): Promise<void> {
-	if (await areAllCustomerPersonasSeeded()) return;
-	await resetDemoData();
-}
-
 // Les comptes de la Platform vivent dans `platform_auth` : ils ne sont pas semés ici.
-async function areAllCustomerPersonasSeeded(): Promise<boolean> {
+export async function isDemoDataComplete(): Promise<boolean> {
 	for (const persona of demoPersonas.filter((candidate) => candidate.space !== 'admin')) {
 		if (!(await findCustomerAccountIdByEmail(persona.email))) return false;
 	}
@@ -126,11 +127,17 @@ async function areAllCustomerPersonasSeeded(): Promise<boolean> {
 	return true;
 }
 
-/** Efface toutes les démos (comptes, pharmacies, groupements, emails), puis les recrée. */
-export async function resetDemoData(): Promise<void> {
+/**
+ * Efface toutes les démos (comptes, pharmacies, groupements, emails), puis les recrée.
+ * Renvoie le message à afficher : les données de santé peuvent manquer si l'API C# ne tourne pas.
+ */
+export async function resetDemoData(): Promise<string> {
+	if (!arePharmacyDemoSeedersRegistered()) {
+		throw new Error('Demo data are reset by pharmacy/host only: the module seeders are registered there.');
+	}
 	await deleteDemoData();
 	clearDevelopmentOutbox();
-	await seedDemoData();
+	return seedDemoData();
 }
 
 async function deleteDemoData(): Promise<void> {
@@ -140,6 +147,7 @@ async function deleteDemoData(): Promise<void> {
 		if (!accountId) continue;
 		let tenantId = await findActiveTenantIdOfAccount(accountId);
 		while (tenantId) {
+			await deletePharmacyDemoSeedersData(tenantId);
 			await deleteTenant(tenantId);
 			tenantId = await findActiveTenantIdOfAccount(accountId);
 		}
@@ -150,7 +158,7 @@ async function deleteDemoData(): Promise<void> {
 	await deleteCustomerAccountsWithEmailEnding(demoEmailDomain);
 }
 
-async function seedDemoData(): Promise<void> {
+async function seedDemoData(): Promise<string> {
 	await seedCatalog();
 	for (const persona of demoPersonas.filter((candidate) => candidate.space !== 'admin')) {
 		await ensureCustomerAccount({ ...persona, password: demoPassword });
@@ -160,6 +168,10 @@ async function seedDemoData(): Promise<void> {
 	for (const [personaKey, pharmacy] of Object.entries(personaPharmacies())) {
 		tenantIdsByPersonaKey.set(personaKey, await createDemoPharmacy(pharmacy));
 	}
+	await grantPriceAgreement(
+		{ beneficiary: { tenantId: requireTenantId(tenantIdsByPersonaKey, 'independante') }, offerKey: 'site', monthlyPriceCents: 1999 },
+		new Date()
+	);
 	const fillerTenantIds = [];
 	for (const pharmacy of fillerPharmacies()) fillerTenantIds.push(await createDemoPharmacy(pharmacy));
 
@@ -171,6 +183,8 @@ async function seedDemoData(): Promise<void> {
 	for (const [fillerIndex, pharmacy] of fillerPharmacies().entries()) {
 		await joinGroup(pharmaPlusId, pharmacy.accountEmail, fillerTenantIds[fillerIndex] ?? '');
 	}
+	await joinGroup(pharmaPlusId, demoEmail('ancienmembre'), requireTenantId(tenantIdsByPersonaKey, 'ancienmembre'));
+	await leaveGroupAndRebuildToolAccess(requireTenantId(tenantIdsByPersonaKey, 'ancienmembre'));
 	await invitePharmacyByEmail(pharmaPlusId, demoEmail('invitee'), 'Pharmacie des Tilleuls');
 	await inviteGroupMemberByEmail(reseauSanteId, demoEmail('responsable'));
 
@@ -179,9 +193,22 @@ async function seedDemoData(): Promise<void> {
 	await makeSubscriptionOverdueOfTenant(requireTenantId(tenantIdsByPersonaKey, 'enretard'));
 	await subscribe('membre', requireTenantId(tenantIdsByPersonaKey, 'membre'), ['planning'], 'monthly');
 	await subscribe('pharmacien', requireTenantId(tenantIdsByPersonaKey, 'pharmacien'), ['site', 'planning'], 'monthly');
-	await addDemoTeam(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'));
+	const saintLouisTenantId = requireTenantId(tenantIdsByPersonaKey, 'pharmacien');
+	await addDemoTeam(saintLouisTenantId);
 	await giveDemoTeamTheirAccounts(tenantIdsByPersonaKey);
-	await runPharmacyDemoSeeders(requireTenantId(tenantIdsByPersonaKey, 'pharmacien'));
+	await inviteDemoEmployeeByEmail(saintLouisTenantId, pendingInvitationEmployee);
+	await runPharmacyDemoSeeders(saintLouisTenantId);
+	return seedSaintLouisHealthData(saintLouisTenantId);
+}
+
+/** Les rendez-vous et ordonnances, écrits par le C# ; sans API, le reste des démos est là quand même. */
+async function seedSaintLouisHealthData(tenantId: string): Promise<string> {
+	const ownerAccountId = await requireDemoAccountId(requireDemoPersona('pharmacien'));
+	const employeeIds = (await listEmployees(tenantId)).map((employee) => employee.employeeId);
+	const seeding = await seedDemoHealthData({ accountId: ownerAccountId, tenantId }, employeeIds);
+	if (!seeding.isSeeded) return `Démos recréées, sans rendez-vous ni ordonnances : ${seeding.failureMessage}`;
+	const { appointmentCount, prescriptionCount } = seeding.summary;
+	return `Démos recréées · ${appointmentCount} rendez-vous et ${prescriptionCount} ordonnances à Saint-Louis.`;
 }
 
 /** Les comptes de l'équipe, déclarés par leur persona : un par rôle à tester. */
@@ -220,6 +247,7 @@ function personaPharmacies(): Record<string, DemoPharmacy> {
 		abonnee: demoPharmacyOf('abonnee', { name: 'Pharmacie de la Gare', street: '3 avenue de la Gare', postalCode: '33000', city: 'Bordeaux' }),
 		enretard: demoPharmacyOf('enretard', { name: 'Pharmacie du Marché', street: '2 place du Marché', postalCode: '31000', city: 'Toulouse' }),
 		membre: demoPharmacyOf('membre', { name: 'Pharmacie du Port', street: '8 quai du Port', postalCode: '13002', city: 'Marseille' }),
+		ancienmembre: demoPharmacyOf('ancienmembre', { name: 'Pharmacie des Remparts', street: '9 rue des Remparts', postalCode: '84000', city: 'Avignon' }),
 		pharmacien: demoPharmacyOf('pharmacien', { name: 'Pharmacie Saint-Louis', street: '14 rue Saint-Louis', postalCode: '67000', city: 'Strasbourg' }),
 		invitee: demoPharmacyOf('invitee', { name: 'Pharmacie des Tilleuls', street: '27 allée des Tilleuls', postalCode: '44000', city: 'Nantes' })
 	};
@@ -256,13 +284,18 @@ async function createDemoPharmacy(pharmacy: DemoPharmacy): Promise<string> {
 	return tenantCreation.tenantId;
 }
 
-// La titulaire et son équipe : deux pharmaciens pour la règle de présence, des préparateurs pour le reste.
+// Une préparatrice invitée qui n'a pas encore créé son compte : l'email d'invitation attend dans la boîte de dev.
+const pendingInvitationEmployee = { firstName: 'Sarah', lastName: 'Klein', jobTitle: 'Préparatrice', email: demoEmail('sarah.klein') };
+
+// Les titulaires et leur équipe : des pharmaciens pour la règle de présence, des préparateurs pour le reste.
 const demoTeam = [
 	{ firstName: 'Léa', lastName: 'Garcia', jobTitle: 'Pharmacienne titulaire' },
+	{ firstName: 'Nicolas', lastName: 'Weber', jobTitle: 'Pharmacien cotitulaire' },
 	{ firstName: 'Thomas', lastName: 'Lambert', jobTitle: 'Pharmacien adjoint' },
 	{ firstName: 'Camille', lastName: 'Fontaine', jobTitle: 'Préparatrice' },
 	{ firstName: 'Julien', lastName: 'Mercier', jobTitle: 'Préparateur' },
-	{ firstName: 'Emma', lastName: 'Chevalier', jobTitle: 'Apprentie préparatrice' }
+	{ firstName: 'Emma', lastName: 'Chevalier', jobTitle: 'Apprentie préparatrice' },
+	{ firstName: pendingInvitationEmployee.firstName, lastName: pendingInvitationEmployee.lastName, jobTitle: pendingInvitationEmployee.jobTitle }
 ];
 
 async function addDemoTeam(tenantId: string): Promise<void> {
@@ -287,6 +320,29 @@ async function giveDemoEmployeeAnAccount(tenantId: string, persona: DemoPersona,
 	});
 	if (!invitation.isSent) throw new Error(`The demo employee ${persona.personaKey} was not invited: ${invitation.failureMessage}`);
 	await acceptTenantMemberInvitation(invitation.invitationToken, { accountId, email: persona.email });
+	if (!teamRole.isAppointedOwner) return;
+	const appointment = await appointTenantOwner(tenantId, accountId);
+	if (!appointment.isChanged) throw new Error(`The demo co-owner ${persona.personaKey} was refused: ${appointment.failureMessage}`);
+}
+
+/** Comme l'écran « Équipe » : l'invitation part par email, et attend que la personne crée son compte. */
+async function inviteDemoEmployeeByEmail(tenantId: string, invitedEmployee: typeof pendingInvitationEmployee): Promise<void> {
+	const employee = (await listEmployees(tenantId)).find((candidate) => candidate.firstName.toDisplayFormat() === invitedEmployee.firstName);
+	if (!employee) throw new Error(`The demo employee ${invitedEmployee.firstName} does not exist.`);
+	const invitation = await inviteEmployeeToCreateAccount(tenantId, {
+		employeeId: employee.employeeId,
+		emailInput: invitedEmployee.email,
+		responsibilityKeyInputs: ['handle-prescriptions']
+	});
+	if (!invitation.isSent) throw new Error(`The demo employee ${invitedEmployee.firstName} was not invited: ${invitation.failureMessage}`);
+	await sendEmail(
+		composeTenantMemberInvitationEmail({
+			to: invitation.email,
+			employeeFirstName: invitation.employeeFirstName,
+			pharmacyName: invitation.pharmacyName,
+			invitationUrl: `${readAppUrl('pharmacy')}/rejoindre/${invitation.invitationToken}`
+		})
+	);
 }
 
 async function createDemoGroup(

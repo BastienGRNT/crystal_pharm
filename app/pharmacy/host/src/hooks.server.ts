@@ -6,11 +6,13 @@ import { createToolAccessHandle } from '@crystal-pharm/home/server';
 import { protectedTools } from '$lib/toolLinks';
 
 if (import.meta.env.DEV) {
-	const [{ registerPharmacyDemoSeeder }, { seedPlanningDemoData }] = await Promise.all([
+	const [{ registerPharmacyDemoSeeder }, { seedPlanningDemoData }, { seedSiteManagerDemoData, deleteSiteManagerDemoData }] = await Promise.all([
 		import('@crystal-pharm/dev-tools'),
-		import('@crystal-pharm/planning/server')
+		import('@crystal-pharm/planning/server'),
+		import('@crystal-pharm/site-manager/server')
 	]);
-	registerPharmacyDemoSeeder(seedPlanningDemoData);
+	registerPharmacyDemoSeeder('planning', { seed: seedPlanningDemoData });
+	registerPharmacyDemoSeeder('site-manager', { seed: seedSiteManagerDemoData, deleteTenantData: deleteSiteManagerDemoData });
 }
 
 export const init: ServerInit = () => {
