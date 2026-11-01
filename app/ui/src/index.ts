@@ -88,7 +88,11 @@ export type {
 	DeveloperToolbarAction,
 	DeveloperToolbarActionGroup,
 	DeveloperToolbarContent,
-	DeveloperToolbarEmail
+	DeveloperToolbarContext,
+	DeveloperToolbarEmail,
+	DeveloperToolbarFact,
+	DeveloperToolbarFactTone,
+	DeveloperToolbarNotice
 } from './organisms/developer/developerToolbar';
 export { default as AuthenticationScreen } from './organisms/authentication/AuthenticationScreen.svelte';
 export type {

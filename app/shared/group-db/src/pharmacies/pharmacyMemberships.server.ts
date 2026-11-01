@@ -41,6 +41,10 @@ export async function findCurrentGroupOfTenant(tenantId: string): Promise<Curren
 	return membership;
 }
 
+export async function findCoveringGroupOfTenant(tenantId: string, now = new Date()): Promise<CoveringGroupOfTenant | undefined> {
+	return runWithGroupAccess({ tenantId }, (transaction) => readCoveringGroupOfTenant(transaction, tenantId, now));
+}
+
 /** Pour qui a déjà une transaction ouverte : en ouvrir une deuxième bloquerait le pool de connexions. */
 export async function readCoveringGroupOfTenant(
 	transaction: GroupTransaction,
