@@ -4,7 +4,7 @@
 	import { findLayoutManifest, layoutManifests, type LayoutSettingsField } from '@crystal-pharm/layouts/manifest';
 	import { chooseDisplayedNewsSource, type NewsSource } from '@crystal-pharm/group-db/domain';
 	import type { ModuleName } from '@crystal-pharm/schema';
-	import { Alert, Button, ChoiceGroup, PageHeader, Switch, Tag, TextLink, type IconName } from '@crystal-pharm/ui';
+	import { Alert, Button, ChoiceGroup, PageHeader, StickyActionBar, Switch, Tag, TextLink, UnsavedChangesGuard, type IconName } from '@crystal-pharm/ui';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { untrack } from 'svelte';
 	import EditorRailItem from '../components/molecules/EditorRailItem.svelte';
@@ -249,12 +249,8 @@
 	};
 </script>
 
-<svelte:window
-	onhashchange={selectPanelOfLocationHash}
-	onbeforeunload={(event) => {
-		if (hasUnsavedChanges) event.preventDefault();
-	}}
-/>
+<svelte:window onhashchange={selectPanelOfLocationHash} />
+<UnsavedChangesGuard {hasUnsavedChanges} />
 
 <div class="grid gap-4 lg:mr-[calc(45vw-0.75rem)]">
 	<PageHeader
@@ -466,7 +462,8 @@
 					</div>
 				</div>
 
-			<div class="sticky bottom-4 flex items-center justify-end gap-3 rounded-lg border border-line bg-surface p-3 shadow-card">
+			<StickyActionBar>
+			<div class="flex flex-wrap items-center justify-end gap-3">
 				<p class="text-small text-ink-muted">
 					{#if isSaving}
 						Enregistrement…
@@ -489,6 +486,7 @@
 				</p>
 				<Button type="submit" icon="check" disabled={!canSave || !hasUnsavedChanges}>Enregistrer le site</Button>
 			</div>
+			</StickyActionBar>
 			</div>
 		</form>
 		</div>

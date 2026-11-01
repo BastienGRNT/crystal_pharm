@@ -6,6 +6,7 @@ import { toEnabledModulesProps } from './module-props/toEnabledModulesProps';
 import { findStableRedirectLocation } from './redirect/findStableRedirectLocation';
 import { toFixedSectionsProps } from './section-props/toFixedSectionsProps';
 import { createPageKit } from './page-kit/createPageKit';
+import { createOpeningStatus } from './opening-status/createOpeningStatus';
 import { createSubmitPrescription, type SendPrescription } from './prescription/createSubmitPrescription';
 
 export type TenantSitePage =
@@ -56,11 +57,14 @@ export function createTenantSitePage(input: {
   return {
     status: 'found',
     title: `${page.title} · ${tenantSite.pharmacy.name}`,
-    Page: () => (
-      // Le thème écrase, sur ce même élément, les variables CSS par défaut que le layout y déclare.
-      <div class={`layout-${layout.id}`} style={layoutSettings.themeCssVariables}>
-        {page.render({ pharmacy: tenantSite.pharmacy, settings: layoutSettings, modules: enabledModulesProps, pageKit })}
-      </div>
-    ),
+    Page: () => {
+      const openingStatus = createOpeningStatus(tenantSite.fixedSections.openingHours, input.renderedAt);
+      return (
+        // Le thème écrase, sur ce même élément, les variables CSS par défaut que le layout y déclare.
+        <div class={`layout-${layout.id}`} style={layoutSettings.themeCssVariables}>
+          {page.render({ pharmacy: tenantSite.pharmacy, settings: layoutSettings, modules: enabledModulesProps, pageKit, openingStatus })}
+        </div>
+      );
+    },
   };
 }

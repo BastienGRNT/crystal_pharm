@@ -1,2 +1,2 @@
-/** Les clés de data-module : chacune fixe la couleur d'accent de son module (tokens/theme.css). */
+/** Les clés de data-module : `grp`, `admin` et `equipe` changent l'accent (tokens/theme.css) ; les autres gardent le vert de la marque. */
 export type ModuleKey = 'accueil' | 'site' | 'rdv' | 'ordo' | 'planning' | 'equipe' | 'grp' | 'admin';

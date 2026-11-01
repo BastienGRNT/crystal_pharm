@@ -6,4 +6,5 @@ public sealed record VisitorAppointmentRequestDto(
     string FirstName,
     string LastName,
     string Phone,
-    string? Note = null);
+    string? Note = null,
+    string? Email = null);

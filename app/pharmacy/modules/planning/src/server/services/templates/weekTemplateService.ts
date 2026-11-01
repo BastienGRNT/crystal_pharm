@@ -73,5 +73,12 @@ export async function applyWeekTemplate(tenantId: string, monday: Date, template
 		addedCount += 1;
 	}
 
-	return { isSaved: true, message: `${addedCount} créneau(x) posé(s), ${skippedCount} ignoré(s).` };
+	return { isSaved: true, message: describeAppliedTemplate(addedCount, skippedCount) };
+}
+
+function describeAppliedTemplate(addedCount: number, skippedCount: number): string {
+	const added = addedCount === 0 ? 'Aucun créneau posé' : `${addedCount} ${addedCount === 1 ? 'créneau posé' : 'créneaux posés'}`;
+	if (skippedCount === 0) return `${added}.`;
+	const skipped = `${skippedCount} ${skippedCount === 1 ? 'laissé de côté' : 'laissés de côté'}`;
+	return `${added}, ${skipped} (absence, indisponibilité ou créneau déjà pris).`;
 }

@@ -57,7 +57,7 @@
 
 <div class="grid gap-5">
 	<div class="grid gap-1">
-		<h2 class="title-2 text-ink">Qui paie les modules de ses pharmacies ?</h2>
+		<h2 class="font-display text-[24px] leading-8 text-ink">Qui paie les modules de ses pharmacies ?</h2>
 		{#each inclusionSentences as inclusionSentence (inclusionSentence)}
 			<p class="text-small text-ink-muted">{inclusionSentence}</p>
 		{/each}

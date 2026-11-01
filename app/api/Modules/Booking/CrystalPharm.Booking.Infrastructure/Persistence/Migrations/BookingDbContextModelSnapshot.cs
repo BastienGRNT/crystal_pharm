@@ -50,6 +50,11 @@ namespace CrystalPharm.Booking.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("note");
 
+                    b.Property<string>("PatientEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("patient_email");
+
                     b.Property<string>("PatientName")
                         .IsRequired()
                         .HasMaxLength(100)

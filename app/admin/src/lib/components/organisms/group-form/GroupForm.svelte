@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { FlatRateOffer } from '@crystal-pharm/billing-db';
 	import { parseEurosToCents, sellableToolKeys, type GroupBillingTerms, type ToolCatalog } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, StepIndicator } from '@crystal-pharm/ui';
+	import { Alert, Button, StepIndicator } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 	import GroupContractSummary from '$lib/components/organisms/GroupContractSummary.svelte';
 	import {
@@ -34,11 +34,15 @@
 
 	// Le formulaire part des valeurs reçues puis vit sa vie : la page est rechargée après chaque envoi.
 	let values = $state(untrack(() => structuredClone(initialValues)));
-	// Refusé par le serveur : on rouvre l'étape à corriger.
-	let currentStepIndex = $state(
-		untrack(() => Math.min(lastStepIndex, ...Object.keys(fieldErrors).map((fieldName) => findStepOfField(fieldName as GroupFormFieldName))))
-	);
+	// Refusé par le serveur : on rouvre l'étape à corriger. Sinon, une création part du début et une modification de la vérification.
+	let currentStepIndex = $state(untrack(() => findOpeningStepIndex()));
 	let stepErrors = $state<GroupFormErrors>({});
+
+	function findOpeningStepIndex(): number {
+		const stepsWithErrors = Object.keys(fieldErrors).map((fieldName) => findStepOfField(fieldName as GroupFormFieldName));
+		if (stepsWithErrors.length > 0) return Math.min(...stepsWithErrors);
+		return isCreation ? 0 : verificationStepIndex;
+	}
 	let formElement: HTMLFormElement | undefined = $state();
 
 	const shownErrors = $derived({ ...fieldErrors, ...stepErrors });
@@ -81,7 +85,7 @@
 	}
 </script>
 
-<form method="POST" bind:this={formElement} onsubmit={submitOnlyFromLastStep} class="grid scroll-mt-20 gap-4">
+<form method="POST" bind:this={formElement} onsubmit={submitOnlyFromLastStep} class="grid scroll-mt-20 gap-6">
 	<!-- Ce qui part au serveur : les réponses telles qu'elles sont, quelle que soit l'étape affichée. -->
 	<input type="hidden" name="name" value={values.name} />
 	<input type="hidden" name="contactEmail" value={values.contactEmail} />
@@ -101,10 +105,10 @@
 		<input type="hidden" name="toolTerms.{toolKey}.discountPercent" value={values.toolTerms[toolKey].discountPercent} />
 	{/each}
 
-	<StepIndicator label="Étapes du contrat" steps={groupFormSteps} {currentStepIndex} />
+	<StepIndicator label="Étapes du contrat" steps={groupFormSteps} {currentStepIndex} onStepSelect={isCreation ? undefined : goToStep} />
 
-	<div class="grid items-start gap-4 {currentStepIndex === verificationStepIndex ? '' : 'lg:grid-cols-[minmax(0,1fr)_360px]'}">
-		<Card>
+	<div class="grid items-start gap-6 {currentStepIndex === verificationStepIndex ? '' : 'lg:grid-cols-[minmax(0,1fr)_380px]'}">
+		<div class="rounded-xl border border-line bg-surface p-7 shadow-card max-sm:p-4">
 			<div class="grid gap-6">
 				{#if currentStepIndex === 0}
 					<GroupDetailsStep bind:values fieldErrors={shownErrors} {isCreation} />
@@ -116,7 +120,7 @@
 					<PaymentStep bind:values annualFreeMonths={catalog.annualFreeMonths} fieldErrors={shownErrors} />
 				{:else}
 					<div class="grid gap-1">
-						<h2 class="title-2 text-ink">{values.name || 'Le groupement'}, en clair</h2>
+						<h2 class="font-display text-[24px] leading-8 text-ink">{values.name || 'Le groupement'}, en clair</h2>
 						<p class="text-small text-ink-muted">
 							{values.pharmacyQuota} pharmacies prévues{values.contactEmail ? ` · ${values.contactEmail}` : ''}{isCreation &&
 							values.firstGroupMemberEmail
@@ -129,7 +133,7 @@
 
 				{#if fieldErrors.form}<Alert tone="danger">{fieldErrors.form}</Alert>{/if}
 
-				<div class="flex flex-wrap items-center justify-between gap-2 border-t border-line-soft pt-4">
+				<div class="flex flex-wrap items-center justify-between gap-2 border-t-2 border-dashed border-line-strong/40 pt-5">
 					<div class="flex flex-wrap gap-2">
 						{#if currentStepIndex > 0}
 							<Button variant="secondary" icon="caret-left" onclick={() => goToStep(currentStepIndex - 1)}>Précédent</Button>
@@ -149,16 +153,23 @@
 					</div>
 				</div>
 			</div>
-		</Card>
+		</div>
 
 		{#if currentStepIndex !== verificationStepIndex}
-			<aside class="lg:sticky lg:top-[72px]">
-				<Card>
-					<div class="grid gap-3">
-						<h2 class="title-2 text-ink">En résumé</h2>
-						<GroupContractSummary {catalog} coverages={previewCoverages} {billing} groupName={values.name} />
-					</div>
-				</Card>
+			<!-- Le contrat se compose sous les yeux, comme un reçu qui s'imprime à chaque réponse. -->
+			<aside aria-labelledby="group-form-summary-title" class="grid overflow-hidden rounded-xl border border-line bg-surface shadow-card lg:sticky lg:top-6">
+				<div class="grid gap-0.5 bg-rail px-5 py-4 text-on-rail">
+					<p class="text-eyebrow text-accent-on-rail">En résumé</p>
+					<h2 id="group-form-summary-title" class="truncate font-display text-[21px] leading-7">{values.name || 'Le groupement'}</h2>
+					{#if Number(values.pharmacyQuota) > 0}
+						<p class="text-small text-rail-ink">{values.pharmacyQuota} pharmacies prévues</p>
+					{/if}
+				</div>
+				<div class="relative border-t-2 border-dashed border-line-strong/40 p-5">
+					<span aria-hidden="true" class="absolute -top-2 -left-2 size-4 rounded-full border border-line bg-app"></span>
+					<span aria-hidden="true" class="absolute -top-2 -right-2 size-4 rounded-full border border-line bg-app"></span>
+					<GroupContractSummary {catalog} coverages={previewCoverages} {billing} groupName={values.name} />
+				</div>
 			</aside>
 		{/if}
 	</div>

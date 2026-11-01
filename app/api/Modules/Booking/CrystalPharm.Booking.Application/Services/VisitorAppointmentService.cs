@@ -103,7 +103,8 @@ public sealed class VisitorAppointmentService(
                     reason.Label,
                     reason.Id,
                     request.Note,
-                    configuration.Settings.ConfirmsAutomatically),
+                    configuration.Settings.ConfirmsAutomatically,
+                    request.Email),
                 cancellationToken);
 
             if (schedulingResult is AppointmentSchedulingResult.Scheduled scheduled)

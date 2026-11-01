@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	addMinutesToTime,
 	assignOverlapLanes,
 	computeAgendaHourRange,
 	listAgendaHours,
@@ -66,5 +67,11 @@ describe('assignOverlapLanes', () => {
 		]);
 		expect(lanes.get('c')).toEqual({ laneIndex: 1, laneCount: 2 });
 		expect(lanes.get('d')).toEqual({ laneIndex: 0, laneCount: 1 });
+	});
+
+	it('adds the duration of a reason to a start time, without crossing midnight', () => {
+		expect(addMinutesToTime('08:45', 30)).toBe('09:15');
+		expect(addMinutesToTime('11:30', 90)).toBe('13:00');
+		expect(addMinutesToTime('23:50', 15)).toBeUndefined();
 	});
 });

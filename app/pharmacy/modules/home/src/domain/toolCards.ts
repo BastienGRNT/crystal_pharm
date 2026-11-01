@@ -69,3 +69,10 @@ function describeStatus(
 	if (!subscribedTool) return 'available';
 	return subscribedTool.endsAt || subscriptionEndsAt ? 'ending' : 'subscribed';
 }
+
+/** Ce que le groupement fait gagner chaque mois sur les modules actifs : le chiffre qui rend sa prise en charge concrète. */
+export function sumMonthlyGroupSavings(toolCards: readonly ToolCard[]): number {
+	return toolCards
+		.filter((toolCard) => toolCard.coverageSummary !== undefined && activeToolCardStatuses.includes(toolCard.status))
+		.reduce((total, toolCard) => total + Math.max(0, toolCard.listPriceCents - toolCard.pharmacyPriceCents), 0);
+}

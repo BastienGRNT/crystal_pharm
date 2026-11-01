@@ -14,6 +14,7 @@ internal sealed class AppointmentConfiguration : IEntityTypeConfiguration<Appoin
         builder.Property(appointment => appointment.Id).ValueGeneratedNever();
         builder.Property(appointment => appointment.PatientName).HasMaxLength(PatientContact.MaximumNameLength);
         builder.Property(appointment => appointment.PatientPhone).HasMaxLength(PatientContact.MaximumPhoneLength);
+        builder.Property(appointment => appointment.PatientEmail).HasMaxLength(PatientContact.MaximumEmailLength);
         builder.Property(appointment => appointment.Reason).HasMaxLength(Appointment.MaximumReasonLength);
         builder.Property(appointment => appointment.Note).HasMaxLength(Appointment.MaximumNoteLength);
         builder.Property(appointment => appointment.Status)

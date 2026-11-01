@@ -1,4 +1,5 @@
 import { formatAppointmentHours, type Appointment } from '../domain/appointment';
+import type { AppointmentReasonChoice } from '../domain/appointmentConfiguration';
 import { formatFullDay, fromIsoDate, toIsoDate } from '../domain/day';
 import type { AddAppointmentPanel, AppointmentDetailPanel } from '../pages/appointmentsPageData';
 import { buildActionHref, buildPageHref, type AppointmentsPageQuery } from './appointmentsPageQuery';
@@ -27,25 +28,30 @@ export function buildDetailPanel(
 			{ label: 'Motif', value: appointment.reason },
 			{ label: 'Avec', value: employee?.fullName ?? 'Employé inconnu', detail: employee?.jobTitle },
 			{ label: 'Téléphone', value: appointment.patientPhone },
+			...(appointment.patientEmail ? [{ label: 'Email', value: appointment.patientEmail }] : []),
 			...(appointment.note ? [{ label: 'Message du patient', value: appointment.note }] : [])
 		],
 		confirmFormAction:
 			appointment.status === 'pending' ? buildActionHref(query, panel, 'confirmAppointment') : null,
 		cancelFormAction:
-			appointment.status === 'cancelled' ? null : buildActionHref(query, panel, 'cancelAppointment')
+			appointment.status === 'cancelled' ? null : buildActionHref(query, panel, 'cancelAppointment'),
+		patientEmail: appointment.status === 'cancelled' ? null : appointment.patientEmail
 	};
 }
 
 export function buildAddAppointmentPanel(
 	query: AppointmentsPageQuery,
 	employees: EmployeeDirectory,
-	reasons: readonly string[]
+	reasons: readonly AppointmentReasonChoice[]
 ): AddAppointmentPanel {
 	return {
 		closeHref: buildPageHref(query),
 		formAction: buildActionHref(query, { kind: 'add' }, 'createAppointment'),
 		employeeOptions: [...employees.values()].map((employee) => ({ value: employee.id, label: employee.fullName })),
-		reasonOptions: reasons.map((reason) => ({ value: reason, label: reason })),
+		reasonOptions: reasons.map((reason) => ({ value: reason.label, label: reason.label })),
+		reasonDurationsInMinutes: Object.fromEntries(
+			reasons.flatMap((reason) => (reason.durationMinutes ? [[reason.label, reason.durationMinutes]] : []))
+		),
 		defaultDate: toIsoDate(query.day)
 	};
 }

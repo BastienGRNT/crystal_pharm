@@ -1,225 +1,173 @@
 /*
- * Les tokens des outils, direction « Santé » : traduits du design system
- * Crystal Pharm (tokens.json), colonne de navigation sombre et une couleur
- * par module.
+ * Les tokens des outils, direction « Étiquette » : l'officine d'aujourd'hui
+ * avec la mémoire du flacon. Un papier crème, une encre bleu nuit pour le
+ * texte et le bandeau de navigation, le vert de la croix pour agir, l'ambre
+ * du flacon pour ce qui attend. Une seule police, Manrope : nette et
+ * professionnelle, épaissie pour les titres et les grands chiffres.
  */
 
 @font-face {
-	font-family: 'IBM Plex Sans';
-	src: url('./fonts/IBMPlexSans-400.woff2') format('woff2');
-	font-weight: 400;
+	font-family: 'Manrope';
+	src: url('./fonts/Manrope-latin.woff2') format('woff2');
+	font-weight: 200 800;
 	font-style: normal;
 	font-display: swap;
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
-	font-family: 'IBM Plex Sans';
-	src: url('./fonts/IBMPlexSans-500.woff2') format('woff2');
-	font-weight: 500;
+	font-family: 'Manrope';
+	src: url('./fonts/Manrope-latin-ext.woff2') format('woff2');
+	font-weight: 200 800;
 	font-style: normal;
 	font-display: swap;
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-@font-face {
-	font-family: 'IBM Plex Sans';
-	src: url('./fonts/IBMPlexSans-600.woff2') format('woff2');
-	font-weight: 600;
-	font-style: normal;
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'IBM Plex Sans';
-	src: url('./fonts/IBMPlexSans-700.woff2') format('woff2');
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
-}
-
+/*
+ * `rail` désigne le bandeau de navigation (la colonne d'avant) : l'encre de
+ * la marque, d'où sortent les onglets des modules.
+ */
 :root,
 [data-theme='light'] {
-	--app: #f6f8fa;
-	--surface: #ffffff;
-	--surface-subtle: #f8fafb;
-	--surface-muted: #eef2f4;
-	--field: #f1f4f7;
-	--line: #e1e7eb;
-	--line-soft: #eef2f4;
-	--line-strong: #7d8e97;
-	--ink: #14232b;
-	--ink-muted: #4d5f68;
-	--ink-subtle: #5f7079;
-	--rail: #0e2a2f;
-	--rail-raised: #17414a;
-	--rail-ink: #a9c4c1;
-	--on-rail: #e7f0ef;
-	--brand: #0e7c6b;
+	--app: #f4efe5;
+	--surface: #fffdf8;
+	--surface-subtle: #faf6ee;
+	--surface-muted: #ece5d7;
+	--field: #ffffff;
+	--line: #e0d6c4;
+	--line-soft: #ebe4d6;
+	--line-strong: #8f8572;
+	--ink: #17223a;
+	--ink-muted: #475169;
+	--ink-subtle: #5a6378;
+	--rail: #17223a;
+	--rail-raised: #25334f;
+	--rail-ink: #b8c1d6;
+	--on-rail: #f8f4ec;
+	--warning-on-rail: #f6c46e;
+	--danger-on-rail: #ff9d90;
+	--brand: #0e7a55;
+	--brand-hover: #0a6345;
+	--brand-soft: #dcefe4;
+	--brand-text: #0b6848;
+	--brand-on-rail: #5fe0a6;
 	--on-brand: #ffffff;
-	--accueil: #3e5560;
-	--accueil-hover: #334750;
-	--accueil-soft: #e8eef0;
-	--accueil-text: #3e5560;
-	--on-accueil: #ffffff;
-	--accueil-on-rail: #b6cbd2;
-	--site: #6a3fb5;
-	--site-hover: #58329a;
-	--site-soft: #f0eafb;
-	--site-text: #6a3fb5;
-	--on-site: #ffffff;
-	--site-on-rail: #c9b0f7;
-	--rdv: #2459c2;
-	--rdv-hover: #1d4aa3;
-	--rdv-soft: #e8effc;
-	--rdv-text: #2459c2;
-	--on-rdv: #ffffff;
-	--rdv-on-rail: #8db1ff;
-	--ordo: #b0570b;
-	--ordo-hover: #924708;
-	--ordo-soft: #fdf0e3;
-	--ordo-text: #9c4d09;
-	--on-ordo: #ffffff;
-	--ordo-on-rail: #f7b26a;
-	--planning: #0e7c6b;
-	--planning-hover: #0b6457;
-	--planning-soft: #e2f3ef;
-	--planning-text: #0b6c5d;
-	--on-planning: #ffffff;
-	--planning-on-rail: #6fd6c0;
+	--signal: #19b46e;
 	--equipe: #8a2f6b;
 	--equipe-hover: #722658;
-	--equipe-soft: #f7eaf2;
-	--equipe-text: #8a2f6b;
+	--equipe-soft: #f6e6f0;
+	--equipe-text: #84296a;
 	--on-equipe: #ffffff;
 	--equipe-on-rail: #f2a3d3;
-	--admin: #5c6a10;
-	--admin-hover: #4b570b;
-	--admin-soft: #f1f4dd;
-	--admin-text: #556310;
+	--admin: #7a2d5a;
+	--admin-hover: #63224a;
+	--admin-soft: #f4e3ec;
+	--admin-text: #74295a;
 	--on-admin: #ffffff;
-	--admin-on-rail: #c9da7c;
-	--grp: #0e2a2f;
-	--grp-hover: #17414a;
-	--grp-soft: #e6eef0;
-	--grp-text: #14232b;
-	--on-grp: #e7f0ef;
-	--grp-on-rail: #a9c4c1;
-	--success: #0b6656;
-	--success-soft: #e3f4ef;
-	--warning: #9a5800;
-	--warning-soft: #fdf1dc;
-	--danger: #b42318;
-	--danger-soft: #fdeaea;
-	--notify: #e5484d;
-	--badge: #f5b84b;
+	--admin-on-rail: #f1a9d0;
+	--grp: #234f8b;
+	--grp-hover: #1b4075;
+	--grp-soft: #e0e9f6;
+	--grp-text: #1f4880;
+	--on-grp: #ffffff;
+	--grp-on-rail: #94bbf3;
+	--success: #0b6b4b;
+	--success-soft: #dcefe4;
+	--warning: #9c4f00;
+	--warning-soft: #fbead1;
+	--danger: #b1261d;
+	--danger-soft: #fbe5e1;
+	--notify: #d9452a;
+	--badge: #f1b544;
 	--on-badge: #2b1a00;
-	--focus-ring: #2459c2;
-	--shadow-card-value: 0 1px 2px rgba(20,35,43,0.04);
-	--shadow-float-value: 0 8px 24px -12px rgba(20,35,43,0.25);
-	--logo-base: #0f5c46;
-	--logo-facet: #7fcfad;
-	--logo-highlight: #e5efe9;
-	--category-1: #1f5fbf;
-	--category-1-soft: #e6eefb;
+	--focus-ring: #2d5bd0;
+	--shadow-card-value: 0 1px 0 rgba(23,34,58,0.05), 0 2px 6px -4px rgba(23,34,58,0.12);
+	--shadow-float-value: 0 18px 40px -18px rgba(23,34,58,0.35), 0 2px 6px -2px rgba(23,34,58,0.08);
+	--shadow-press-value: inset 0 -2px 0 rgba(0,0,0,0.18);
+	--logo-base: #0e7a55;
+	--logo-facet: #19b46e;
+	--logo-highlight: #fffdf8;
+	--category-1: #2457b8;
+	--category-1-soft: #e3ebf9;
 	--category-2: #0d7377;
-	--category-2-soft: #dff1f1;
+	--category-2-soft: #dcf0ef;
 	--category-3: #6542b8;
-	--category-3-soft: #eee8fa;
+	--category-3-soft: #ece6f8;
 	--category-4: #b02a5b;
-	--category-4-soft: #f9e4ec;
+	--category-4-soft: #f8e2ea;
 	--category-5: #56701a;
-	--category-5-soft: #edf2dc;
-	--category-6: #46606f;
-	--category-6-soft: #e6edf1;
-	--category-7: #a63d2a;
-	--category-7-soft: #f8e6e1;
+	--category-5-soft: #ebf0d9;
+	--category-6: #a45a0c;
+	--category-6-soft: #f8e9d6;
+	--category-7: #46607a;
+	--category-7-soft: #e4eaf0;
 	--on-category: #ffffff;
 	color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme='light']) {
-		--app: #0b1416;
-		--surface: #111c1f;
-		--surface-subtle: #142226;
-		--surface-muted: #1c2c31;
-		--field: #18272b;
-		--line: #24363c;
-		--line-soft: #1b2b30;
-		--line-strong: #647b85;
-		--ink: #e7eef0;
-		--ink-muted: #a6b6bd;
-		--ink-subtle: #8fa2aa;
-		--rail: #081a1d;
-		--rail-raised: #123238;
-		--rail-ink: #a9c4c1;
-		--on-rail: #e7f0ef;
-		--brand: #5fd1b8;
-		--on-brand: #06140f;
-		--accueil: #a9c0c9;
-		--accueil-hover: #c0d3da;
-		--accueil-soft: #1b2a2f;
-		--accueil-text: #b6cbd2;
-		--on-accueil: #0b1416;
-		--accueil-on-rail: #b6cbd2;
-		--site: #c4a6f7;
-		--site-hover: #d5bffa;
-		--site-soft: #251a3a;
-		--site-text: #cdb3f8;
-		--on-site: #150b26;
-		--site-on-rail: #c9b0f7;
-		--rdv: #8fb0ff;
-		--rdv-hover: #a8c1ff;
-		--rdv-soft: #16223d;
-		--rdv-text: #a8c1ff;
-		--on-rdv: #0b1020;
-		--rdv-on-rail: #8db1ff;
-		--ordo: #f2a65a;
-		--ordo-hover: #f6bb7f;
-		--ordo-soft: #33220f;
-		--ordo-text: #f6b373;
-		--on-ordo: #1d1004;
-		--ordo-on-rail: #f7b26a;
-		--planning: #5fd1b8;
-		--planning-hover: #7fdcc7;
-		--planning-soft: #0f2a25;
-		--planning-text: #7adcc6;
-		--on-planning: #06140f;
-		--planning-on-rail: #6fd6c0;
+		--app: #0f141e;
+		--surface: #161d2a;
+		--surface-subtle: #1a2232;
+		--surface-muted: #232c3e;
+		--field: #121926;
+		--line: #2a3448;
+		--line-soft: #212a3b;
+		--line-strong: #6f7b93;
+		--ink: #eef0f4;
+		--ink-muted: #b2bacb;
+		--ink-subtle: #9aa4b8;
+		--rail: #0a0e17;
+		--rail-raised: #1c2537;
+		--rail-ink: #a3adc4;
+		--on-rail: #f1ede4;
+		--warning-on-rail: #f6c46e;
+		--danger-on-rail: #ff9d90;
+		--brand: #5fd3a0;
+		--brand-hover: #82dfb6;
+		--brand-soft: #12302a;
+		--brand-text: #7ddcb1;
+		--brand-on-rail: #5fe0a6;
+		--on-brand: #06140d;
+		--signal: #3ccf8a;
 		--equipe: #f09ad0;
 		--equipe-hover: #f4b0da;
 		--equipe-soft: #2f1427;
 		--equipe-text: #f4b0da;
 		--on-equipe: #1f0a18;
 		--equipe-on-rail: #f2a3d3;
-		--admin: #c4d46c;
-		--admin-hover: #d3e08b;
-		--admin-soft: #22290b;
-		--admin-text: #cfdd84;
-		--on-admin: #141a03;
-		--admin-on-rail: #c9da7c;
-		--grp: #cfe3e0;
-		--grp-hover: #e7f0ef;
-		--grp-soft: #1c2c31;
-		--grp-text: #e7eef0;
-		--on-grp: #0b1416;
-		--grp-on-rail: #a9c4c1;
-		--success: #5fd1b0;
-		--success-soft: #0e2a24;
-		--warning: #f0b955;
-		--warning-soft: #33260c;
-		--danger: #ff8f86;
-		--danger-soft: #3a1515;
-		--notify: #ff6b6f;
-		--badge: #f5b84b;
+		--admin: #ef9fca;
+		--admin-hover: #f5b9d9;
+		--admin-soft: #321625;
+		--admin-text: #f2b0d4;
+		--on-admin: #22091a;
+		--admin-on-rail: #f1a9d0;
+		--grp: #8fb6f2;
+		--grp-hover: #afcaf6;
+		--grp-soft: #172540;
+		--grp-text: #a6c4f4;
+		--on-grp: #0a1428;
+		--grp-on-rail: #94bbf3;
+		--success: #5fd1a6;
+		--success-soft: #0f2a24;
+		--warning: #f2b860;
+		--warning-soft: #33250f;
+		--danger: #ff8f84;
+		--danger-soft: #3a1717;
+		--notify: #ff7356;
+		--badge: #f1b544;
 		--on-badge: #2b1a00;
 		--focus-ring: #8fb0ff;
-		--shadow-card-value: 0 1px 2px rgba(0,0,0,0.4);
-		--shadow-float-value: 0 8px 24px -12px rgba(0,0,0,0.7);
-		--logo-base: #3f9c78;
-		--logo-facet: #9bdcc0;
-		--logo-highlight: #f2efe8;
+		--shadow-card-value: 0 1px 0 rgba(0,0,0,0.35);
+		--shadow-float-value: 0 18px 40px -18px rgba(0,0,0,0.8);
+		--shadow-press-value: inset 0 -2px 0 rgba(0,0,0,0.28);
+		--logo-base: #3fb381;
+		--logo-facet: #8fe3bd;
+		--logo-highlight: #f1ede4;
 		--category-1: #8fb0ff;
-		--category-1-soft: #16223d;
+		--category-1-soft: #17223d;
 		--category-2: #5fd0c9;
 		--category-2-soft: #0f2a2a;
 		--category-3: #c4a6f7;
@@ -228,98 +176,76 @@
 		--category-4-soft: #3a1626;
 		--category-5: #b5d36a;
 		--category-5-soft: #222b10;
-		--category-6: #a9c0c9;
-		--category-6-soft: #1b2a2f;
-		--category-7: #f29a85;
-		--category-7-soft: #3a1a14;
+		--category-6: #f2b26a;
+		--category-6-soft: #33240f;
+		--category-7: #a9bdd2;
+		--category-7-soft: #1d2836;
 		--on-category: #0b1416;
 		color-scheme: dark;
 	}
 }
 
 [data-theme='dark'] {
-	--app: #0b1416;
-	--surface: #111c1f;
-	--surface-subtle: #142226;
-	--surface-muted: #1c2c31;
-	--field: #18272b;
-	--line: #24363c;
-	--line-soft: #1b2b30;
-	--line-strong: #647b85;
-	--ink: #e7eef0;
-	--ink-muted: #a6b6bd;
-	--ink-subtle: #8fa2aa;
-	--rail: #081a1d;
-	--rail-raised: #123238;
-	--rail-ink: #a9c4c1;
-	--on-rail: #e7f0ef;
-	--brand: #5fd1b8;
-	--on-brand: #06140f;
-	--accueil: #a9c0c9;
-	--accueil-hover: #c0d3da;
-	--accueil-soft: #1b2a2f;
-	--accueil-text: #b6cbd2;
-	--on-accueil: #0b1416;
-	--accueil-on-rail: #b6cbd2;
-	--site: #c4a6f7;
-	--site-hover: #d5bffa;
-	--site-soft: #251a3a;
-	--site-text: #cdb3f8;
-	--on-site: #150b26;
-	--site-on-rail: #c9b0f7;
-	--rdv: #8fb0ff;
-	--rdv-hover: #a8c1ff;
-	--rdv-soft: #16223d;
-	--rdv-text: #a8c1ff;
-	--on-rdv: #0b1020;
-	--rdv-on-rail: #8db1ff;
-	--ordo: #f2a65a;
-	--ordo-hover: #f6bb7f;
-	--ordo-soft: #33220f;
-	--ordo-text: #f6b373;
-	--on-ordo: #1d1004;
-	--ordo-on-rail: #f7b26a;
-	--planning: #5fd1b8;
-	--planning-hover: #7fdcc7;
-	--planning-soft: #0f2a25;
-	--planning-text: #7adcc6;
-	--on-planning: #06140f;
-	--planning-on-rail: #6fd6c0;
+	--app: #0f141e;
+	--surface: #161d2a;
+	--surface-subtle: #1a2232;
+	--surface-muted: #232c3e;
+	--field: #121926;
+	--line: #2a3448;
+	--line-soft: #212a3b;
+	--line-strong: #6f7b93;
+	--ink: #eef0f4;
+	--ink-muted: #b2bacb;
+	--ink-subtle: #9aa4b8;
+	--rail: #0a0e17;
+	--rail-raised: #1c2537;
+	--rail-ink: #a3adc4;
+	--on-rail: #f1ede4;
+	--warning-on-rail: #f6c46e;
+	--danger-on-rail: #ff9d90;
+	--brand: #5fd3a0;
+	--brand-hover: #82dfb6;
+	--brand-soft: #12302a;
+	--brand-text: #7ddcb1;
+	--brand-on-rail: #5fe0a6;
+	--on-brand: #06140d;
+	--signal: #3ccf8a;
 	--equipe: #f09ad0;
 	--equipe-hover: #f4b0da;
 	--equipe-soft: #2f1427;
 	--equipe-text: #f4b0da;
 	--on-equipe: #1f0a18;
 	--equipe-on-rail: #f2a3d3;
-	--admin: #c4d46c;
-	--admin-hover: #d3e08b;
-	--admin-soft: #22290b;
-	--admin-text: #cfdd84;
-	--on-admin: #141a03;
-	--admin-on-rail: #c9da7c;
-	--grp: #cfe3e0;
-	--grp-hover: #e7f0ef;
-	--grp-soft: #1c2c31;
-	--grp-text: #e7eef0;
-	--on-grp: #0b1416;
-	--grp-on-rail: #a9c4c1;
-	--success: #5fd1b0;
-	--success-soft: #0e2a24;
-	--warning: #f0b955;
-	--warning-soft: #33260c;
-	--danger: #ff8f86;
-	--danger-soft: #3a1515;
-	--notify: #ff6b6f;
-	--badge: #f5b84b;
+	--admin: #ef9fca;
+	--admin-hover: #f5b9d9;
+	--admin-soft: #321625;
+	--admin-text: #f2b0d4;
+	--on-admin: #22091a;
+	--admin-on-rail: #f1a9d0;
+	--grp: #8fb6f2;
+	--grp-hover: #afcaf6;
+	--grp-soft: #172540;
+	--grp-text: #a6c4f4;
+	--on-grp: #0a1428;
+	--grp-on-rail: #94bbf3;
+	--success: #5fd1a6;
+	--success-soft: #0f2a24;
+	--warning: #f2b860;
+	--warning-soft: #33250f;
+	--danger: #ff8f84;
+	--danger-soft: #3a1717;
+	--notify: #ff7356;
+	--badge: #f1b544;
 	--on-badge: #2b1a00;
 	--focus-ring: #8fb0ff;
-	--shadow-card-value: 0 1px 2px rgba(0,0,0,0.4);
-	--shadow-float-value: 0 8px 24px -12px rgba(0,0,0,0.7);
-	--logo-base: #3f9c78;
-	--logo-facet: #9bdcc0;
-	--logo-highlight: #f2efe8;
+	--shadow-card-value: 0 1px 0 rgba(0,0,0,0.35);
+	--shadow-float-value: 0 18px 40px -18px rgba(0,0,0,0.8);
+	--shadow-press-value: inset 0 -2px 0 rgba(0,0,0,0.28);
+	--logo-base: #3fb381;
+	--logo-facet: #8fe3bd;
+	--logo-highlight: #f1ede4;
 	--category-1: #8fb0ff;
-	--category-1-soft: #16223d;
+	--category-1-soft: #17223d;
 	--category-2: #5fd0c9;
 	--category-2-soft: #0f2a2a;
 	--category-3: #c4a6f7;
@@ -328,72 +254,29 @@
 	--category-4-soft: #3a1626;
 	--category-5: #b5d36a;
 	--category-5-soft: #222b10;
-	--category-6: #a9c0c9;
-	--category-6-soft: #1b2a2f;
-	--category-7: #f29a85;
-	--category-7-soft: #3a1a14;
+	--category-6: #f2b26a;
+	--category-6-soft: #33240f;
+	--category-7: #a9bdd2;
+	--category-7-soft: #1d2836;
 	--on-category: #0b1416;
 	color-scheme: dark;
 }
 
 /*
- * L'accent suit le module : brand par défaut, la couleur du module dès qu'un
- * ancêtre porte data-module. Un composant n'utilise jamais une couleur de
- * module en dur, seulement l'accent.
+ * L'accent est le vert de la marque dans toute l'app des pharmacies ; seuls
+ * l'espace Platform (prune) et celui des groupements (bleu de Prusse)
+ * changent d'accent, par le data-module de leur <body>, pour qu'on sache
+ * toujours où l'on est. Un composant n'utilise jamais une couleur en dur,
+ * seulement l'accent.
  */
 :root,
 [data-module] {
 	--accent-value: var(--brand);
-	--accent-hover-value: var(--brand);
-	--accent-soft-value: var(--surface-muted);
-	--accent-text-value: var(--brand);
-	--accent-on-rail-value: var(--rail-ink);
+	--accent-hover-value: var(--brand-hover);
+	--accent-soft-value: var(--brand-soft);
+	--accent-text-value: var(--brand-text);
+	--accent-on-rail-value: var(--brand-on-rail);
 	--on-accent-value: var(--on-brand);
-}
-
-[data-module='accueil'] {
-	--accent-value: var(--accueil);
-	--accent-hover-value: var(--accueil-hover);
-	--accent-soft-value: var(--accueil-soft);
-	--accent-text-value: var(--accueil-text);
-	--accent-on-rail-value: var(--accueil-on-rail);
-	--on-accent-value: var(--on-accueil);
-}
-
-[data-module='site'] {
-	--accent-value: var(--site);
-	--accent-hover-value: var(--site-hover);
-	--accent-soft-value: var(--site-soft);
-	--accent-text-value: var(--site-text);
-	--accent-on-rail-value: var(--site-on-rail);
-	--on-accent-value: var(--on-site);
-}
-
-[data-module='rdv'] {
-	--accent-value: var(--rdv);
-	--accent-hover-value: var(--rdv-hover);
-	--accent-soft-value: var(--rdv-soft);
-	--accent-text-value: var(--rdv-text);
-	--accent-on-rail-value: var(--rdv-on-rail);
-	--on-accent-value: var(--on-rdv);
-}
-
-[data-module='ordo'] {
-	--accent-value: var(--ordo);
-	--accent-hover-value: var(--ordo-hover);
-	--accent-soft-value: var(--ordo-soft);
-	--accent-text-value: var(--ordo-text);
-	--accent-on-rail-value: var(--ordo-on-rail);
-	--on-accent-value: var(--on-ordo);
-}
-
-[data-module='planning'] {
-	--accent-value: var(--planning);
-	--accent-hover-value: var(--planning-hover);
-	--accent-soft-value: var(--planning-soft);
-	--accent-text-value: var(--planning-text);
-	--accent-on-rail-value: var(--planning-on-rail);
-	--on-accent-value: var(--on-planning);
 }
 
 [data-module='equipe'] {
@@ -414,7 +297,6 @@
 	--on-accent-value: var(--on-admin);
 }
 
-/* Le groupement garde la teinte de la colonne, éclaircie en thème sombre pour rester lisible. */
 [data-module='grp'] {
 	--accent-value: var(--grp);
 	--accent-hover-value: var(--grp-hover);
@@ -444,8 +326,13 @@
 	--color-rail-raised: var(--rail-raised);
 	--color-rail-ink: var(--rail-ink);
 	--color-on-rail: var(--on-rail);
+	--color-warning-on-rail: var(--warning-on-rail);
+	--color-danger-on-rail: var(--danger-on-rail);
 	--color-brand: var(--brand);
 	--color-on-brand: var(--on-brand);
+	--color-brand-soft: var(--brand-soft);
+	--color-brand-text: var(--brand-text);
+	--color-signal: var(--signal);
 	--color-success: var(--success);
 	--color-success-soft: var(--success-soft);
 	--color-warning: var(--warning);
@@ -497,109 +384,168 @@
 
 	--shadow-card: var(--shadow-card-value);
 	--shadow-float: var(--shadow-float-value);
+	--shadow-press: var(--shadow-press-value);
 }
 
 @theme {
-	--font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	/* La même police que le texte : `font-display` ne fait que l'épaissir, sans avoir à poser un `font-bold` partout. */
+	--font-display: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--font-display--font-variation-settings: 'wght' 760;
 
 	--radius-xs: 4px;
-	--radius-sm: 6px;
-	--radius-md: 8px;
-	--radius-lg: 14px;
-	--radius-control: 6px;
+	--radius-sm: 7px;
+	--radius-md: 10px;
+	--radius-lg: 16px;
+	--radius-xl: 22px;
+	--radius-control: 9px;
 
 	--spacing-rail: 84px;
-	--spacing-topbar: 52px;
+	--spacing-sidebar: 244px;
+	--spacing-tabbar: 64px;
+	--spacing-topbar: 60px;
+	--spacing-band: 64px;
 	--spacing-module-bar: 3px;
-	--spacing-control: 36px;
-	--spacing-control-sm: 30px;
-	--spacing-control-touch: 46px;
-	--spacing-avatar: 32px;
+	--spacing-control: 40px;
+	--spacing-control-sm: 32px;
+	--spacing-control-touch: 48px;
+	--spacing-avatar: 34px;
+	--spacing-page: 1280px;
 }
 
+/* La voix de la marque : un titre de page, un grand chiffre. */
 @utility text-display {
-	font-size: 32px;
-	line-height: 40px;
-	font-weight: 600;
-	letter-spacing: -0.015em;
+	font-family: var(--font-display);
+	font-size: 40px;
+	line-height: 46px;
+	font-weight: 760;
+	letter-spacing: -0.025em;
 }
 
 @utility title-1 {
-	font-size: 22px;
-	line-height: 28px;
-	font-weight: 600;
-	letter-spacing: -0.01em;
+	font-family: var(--font-display);
+	font-size: 30px;
+	line-height: 36px;
+	font-weight: 760;
+	letter-spacing: -0.025em;
 }
 
 @utility title-mobile {
+	font-family: var(--font-display);
 	font-size: 26px;
 	line-height: 32px;
-	font-weight: 600;
-	letter-spacing: -0.015em;
+	font-weight: 760;
+	letter-spacing: -0.025em;
 }
 
 @utility title-2 {
-	font-size: 14px;
-	line-height: 20px;
-	font-weight: 600;
+	font-size: 17px;
+	line-height: 24px;
+	font-weight: 700;
+	letter-spacing: -0.005em;
 }
 
 @utility text-kpi {
-	font-size: 24px;
-	line-height: 30px;
-	font-weight: 600;
-	font-variant-numeric: tabular-nums;
+	font-family: var(--font-display);
+	font-size: 34px;
+	line-height: 38px;
+	font-weight: 760;
+	letter-spacing: -0.025em;
+	font-variant-numeric: lining-nums tabular-nums;
 }
 
 @utility text-body {
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 15.5px;
+	line-height: 23px;
 	font-weight: 400;
 }
 
 @utility body-strong {
-	font-size: 14px;
-	line-height: 20px;
-	font-weight: 600;
+	font-size: 15.5px;
+	line-height: 23px;
+	font-weight: 700;
 }
 
 @utility text-small {
-	font-size: 12.5px;
-	line-height: 17px;
+	font-size: 14px;
+	line-height: 20px;
 	font-weight: 400;
 }
 
 @utility text-label {
+	font-size: 14px;
+	line-height: 19px;
+	font-weight: 700;
+}
+
+/* L'en-tête d'une étiquette : petites capitales espacées, pour nommer une zone sans crier. */
+@utility text-eyebrow {
 	font-size: 12px;
 	line-height: 16px;
-	font-weight: 600;
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
 }
 
 @utility text-rail {
-	font-size: 10.5px;
+	font-size: 11px;
 	line-height: 13px;
-	font-weight: 500;
+	font-weight: 600;
 }
 
 @utility text-slot {
-	font-size: 12.5px;
+	font-size: 13px;
 	line-height: 16px;
-	font-weight: 500;
+	font-weight: 600;
 	font-variant-numeric: tabular-nums;
 }
 
+/* Un tiroir arrive du bord droit : on voit d'où il vient, donc où il repart. */
+@keyframes drawer-in {
+	from {
+		transform: translateX(32px);
+		opacity: 0;
+	}
+}
+
+@keyframes veil-in {
+	from {
+		opacity: 0;
+	}
+}
+
+@utility animate-drawer-in {
+	animation: drawer-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+	@media (prefers-reduced-motion: reduce) {
+		animation: none;
+	}
+}
+
+@utility animate-veil-in {
+	animation: veil-in 200ms ease-out;
+	@media (prefers-reduced-motion: reduce) {
+		animation: none;
+	}
+}
+
 @layer base {
+	/* Les gros caractères de Manrope paraissent lâches à l'espacement d'un texte courant. */
+	.font-display {
+		letter-spacing: -0.02em;
+	}
+
 	body {
 		font-family: var(--font-sans);
-		font-size: 14px;
-		line-height: 20px;
+		font-size: 15.5px;
+		line-height: 23px;
 		color: var(--ink);
 		background: var(--app);
 		-webkit-font-smoothing: antialiased;
+		font-feature-settings: 'tnum' 0;
 	}
 
-	:where(a, button, input, select, textarea):focus-visible {
-		outline: 2px solid var(--accent-value);
+	:where(a, button, input, select, textarea, summary):focus-visible {
+		outline: 2px solid var(--focus-ring);
 		outline-offset: 2px;
 	}
 }

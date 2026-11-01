@@ -17,6 +17,7 @@ public sealed class Appointment : ITenantOwned
     public TimeOnly EndTime { get; private set; }
     public string PatientName { get; private set; }
     public string PatientPhone { get; private set; }
+    public string? PatientEmail { get; private set; }
     public string Reason { get; private set; }
     public Guid? ReasonId { get; private set; }
     public string? Note { get; private set; }
@@ -47,6 +48,7 @@ public sealed class Appointment : ITenantOwned
         EndTime = slot.EndTime;
         PatientName = patient.Name;
         PatientPhone = patient.Phone;
+        PatientEmail = patient.Email;
         Reason = reason;
         ReasonId = reasonId;
         Note = note;

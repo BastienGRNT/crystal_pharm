@@ -1,7 +1,10 @@
-import { For, Show, type JSX } from 'solid-js';
+import { createSignal, For, onMount, Show, type JSX } from 'solid-js';
 import {
   buildAppointmentCalendarFile,
   createAppointmentWizardState,
+  forgetPatient,
+  readRememberedPatient,
+  rememberPatient,
   type AppointmentModuleProps,
   type AppointmentWizardState,
   type AppointmentWizardStep,
@@ -16,7 +19,6 @@ const stepLabels: { step: AppointmentWizardStep; label: string }[] = [
   { step: 'day', label: 'Jour' },
   { step: 'time', label: 'Heure' },
   { step: 'contact', label: 'Vos coordonnées' },
-  { step: 'review', label: 'Récapitulatif' },
 ];
 const timeOfDayLabels: Record<TimeOfDay, string> = { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir' };
 const weekdayInitials = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -82,8 +84,7 @@ export function AppointmentWizard(props: BuiltInAppointmentProps) {
                 <Show when={state.step() === 'reason'}><ReasonStep state={state} /></Show>
                 <Show when={state.step() === 'day'}><DayStep state={state} /></Show>
                 <Show when={state.step() === 'time'}><TimeStep state={state} /></Show>
-                <Show when={state.step() === 'contact'}><ContactStep state={state} appointment={props} /></Show>
-                <Show when={state.step() === 'review'}><ReviewStep state={state} /></Show>
+                <Show when={state.step() === 'contact'}><ContactStep state={state} /></Show>
               </Show>
             </Show>
           )}
@@ -246,18 +247,47 @@ function TimeStep(props: { state: AppointmentWizardState }) {
   );
 }
 
-function ContactStep(props: { state: AppointmentWizardState; appointment: BuiltInAppointmentProps }) {
+function ContactStep(props: { state: AppointmentWizardState }) {
   const { state } = props;
   const errors = state.errorsByField;
+  const [isRemembered, setIsRemembered] = createSignal(false);
+
+  onMount(() => {
+    const rememberedPatient = readRememberedPatient();
+    if (!rememberedPatient) return;
+    state.prefillContact(rememberedPatient);
+    setIsRemembered(true);
+  });
+
+  async function send(): Promise<void> {
+    await state.send();
+    if (state.sendStatus() !== 'requested') return;
+    if (isRemembered()) {
+      rememberPatient({ firstName: state.contact.firstName, lastName: state.contact.lastName, phone: state.contact.phone, email: state.contact.email });
+    } else {
+      forgetPatient();
+    }
+  }
+
   return (
     <section>
       <StepHeading>Vos coordonnées</StepHeading>
+      <dl class="essential-recap">
+        <div><dt>Motif</dt><dd>{state.chosenReason()?.label} · {formatDuration(state.chosenReason()?.durationMinutes ?? 0)}</dd></div>
+        <div>
+          <dt>Quand</dt>
+          <dd>
+            {formatDay(state.chosenDay() ?? '', 'long')}, {state.chosenSlot() ? formatTime(state.chosenSlot()?.startsAt ?? '') : ''}{' '}
+            <button type="button" class="essential-wizard__link" onClick={() => state.goBackTo('time')}>Changer</button>
+          </dd>
+        </div>
+      </dl>
       <form
         class="essential-wizard__form"
         novalidate
         onSubmit={(event) => {
           event.preventDefault();
-          state.reviewContact((form) => props.appointment.validateAppointment(form));
+          void send();
         }}
       >
         <FormField label="Prénom" error={errors().firstName}>
@@ -269,43 +299,31 @@ function ContactStep(props: { state: AppointmentWizardState; appointment: BuiltI
         <FormField label="Téléphone" error={errors().phone}>
           <input class="essential-input" type="tel" autocomplete="tel" value={state.contact.phone} onInput={(event) => state.updateContact('phone', event.currentTarget.value)} />
         </FormField>
-        <FormField label="Un message pour l'équipe (facultatif)" error={errors().note}>
-          <textarea class="essential-input" rows="3" maxlength={noteMaximumLength} value={state.contact.note} onInput={(event) => state.updateContact('note', event.currentTarget.value)} />
-          <span class="essential-wizard__counter">{state.contact.note.length} / {noteMaximumLength}</span>
+        <FormField label="Email (facultatif)" hint="Pour recevoir la confirmation." error={errors().email}>
+          <input class="essential-input" type="email" autocomplete="email" value={state.contact.email} onInput={(event) => state.updateContact('email', event.currentTarget.value)} />
         </FormField>
+        <FormField label="Un message pour l'équipe (facultatif)" error={errors().note}>
+          <textarea class="essential-input" rows="2" maxlength={noteMaximumLength} value={state.contact.note} onInput={(event) => state.updateContact('note', event.currentTarget.value)} />
+        </FormField>
+        <label class="essential-checkbox">
+          <input type="checkbox" checked={isRemembered()} onChange={(event) => setIsRemembered(event.currentTarget.checked)} />
+          <span>Retenir mes coordonnées sur cet appareil</span>
+        </label>
+        <Show when={state.chosenReason()?.preparationNote}>
+          {(note) => <p class="essential-wizard__preparation"><strong>À prévoir :</strong> {note()}</p>}
+        </Show>
+        <Show when={state.sendStatus() === 'reasonUnavailable'}>
+          <p class="essential-wizard__notice" role="alert">Ce motif n'est plus proposé. Choisissez-en un autre.</p>
+        </Show>
+        <Show when={state.sendStatus() === 'failed'}>
+          <p class="essential-wizard__notice" role="alert">L'envoi a échoué. Réessayez ou appelez-nous.</p>
+        </Show>
+        <button type="submit" class="essential-wizard__button" disabled={state.sendStatus() === 'sending'}>
+          {state.sendStatus() === 'sending' ? 'Réservation…' : 'Réserver ce créneau'}
+        </button>
         <p class="essential-wizard__privacy">Ces informations ne servent qu'à gérer ce rendez-vous.</p>
-        <button type="submit" class="essential-wizard__button">Vérifier ma demande</button>
       </form>
       <BackButton state={state} to="time" />
-    </section>
-  );
-}
-
-function ReviewStep(props: { state: AppointmentWizardState }) {
-  const { state } = props;
-  return (
-    <section>
-      <StepHeading>Vérifiez votre demande</StepHeading>
-      <dl class="essential-recap">
-        <div><dt>Motif</dt><dd>{state.chosenReason()?.label} · {formatDuration(state.chosenReason()?.durationMinutes ?? 0)}</dd></div>
-        <div><dt>Quand</dt><dd>{formatDay(state.chosenDay() ?? '', 'long')}, {state.chosenSlot() ? formatTime(state.chosenSlot()?.startsAt ?? '') : ''}</dd></div>
-        <div><dt>Nom</dt><dd>{state.contact.firstName} {state.contact.lastName}</dd></div>
-        <div><dt>Téléphone</dt><dd>{state.contact.phone}</dd></div>
-        <Show when={state.contact.note.trim()}>{(note) => <div><dt>Message</dt><dd>{note()}</dd></div>}</Show>
-      </dl>
-      <Show when={state.chosenReason()?.preparationNote}>
-        {(note) => <p class="essential-wizard__preparation"><strong>À prévoir :</strong> {note()}</p>}
-      </Show>
-      <Show when={state.sendStatus() === 'reasonUnavailable'}>
-        <p class="essential-wizard__notice" role="alert">Ce motif n'est plus proposé. Choisissez-en un autre.</p>
-      </Show>
-      <Show when={state.sendStatus() === 'failed'}>
-        <p class="essential-wizard__notice" role="alert">L'envoi a échoué. Réessayez ou appelez-nous.</p>
-      </Show>
-      <button type="button" class="essential-wizard__button" disabled={state.sendStatus() === 'sending'} onClick={() => void state.send()}>
-        {state.sendStatus() === 'sending' ? 'Envoi…' : 'Confirmer ma demande'}
-      </button>
-      <BackButton state={state} to="contact" />
     </section>
   );
 }
@@ -319,7 +337,7 @@ function Done(props: { state: AppointmentWizardState; pharmacyName: string }) {
           <p class="essential-done__when">
             {confirmation().reasonLabel} · {formatInstantDay(confirmation().startsAt)}, {formatTime(confirmation().startsAt)}
           </p>
-          <p>{confirmation().isConfirmed ? 'Nous vous attendons.' : 'La pharmacie vous confirme le rendez-vous par téléphone.'}</p>
+          <p>{confirmation().isConfirmed ? 'Nous vous attendons.' : "L'équipe confirme votre rendez-vous au plus vite, par téléphone ou par email."}</p>
           <Show when={confirmation().confirmationMessage}>{(message) => <p class="essential-wizard__preparation">{message()}</p>}</Show>
           <Show when={props.state.chosenReason()?.preparationNote}>
             {(note) => <p class="essential-wizard__preparation"><strong>À prévoir :</strong> {note()}</p>}

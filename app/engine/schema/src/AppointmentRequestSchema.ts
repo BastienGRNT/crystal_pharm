@@ -1,4 +1,5 @@
 import * as v from 'valibot';
+import { OptionalEmailSchema } from './PrescriptionUploadRequestSchema';
 
 const requiredText = (message: string) => v.pipe(v.string(), v.trim(), v.nonEmpty(message));
 
@@ -50,6 +51,8 @@ export const AppointmentRequestSchema = v.object({
   firstName: requiredText('Indiquez votre prénom.'),
   lastName: requiredText('Indiquez votre nom.'),
   phone: v.pipe(v.string(), v.trim(), v.regex(/^(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}$/, 'Indiquez un numéro de téléphone valide, par exemple 06 12 34 56 78.')),
+  /** Pour la confirmation et le rappel la veille. */
+  email: v.optional(OptionalEmailSchema),
   note: v.optional(
     v.pipe(v.string(), v.trim(), v.maxLength(AppointmentNoteMaximumLength, `Votre message est limité à ${AppointmentNoteMaximumLength} caractères.`)),
   ),

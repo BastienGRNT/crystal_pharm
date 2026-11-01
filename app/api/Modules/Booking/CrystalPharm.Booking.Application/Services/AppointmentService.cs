@@ -38,7 +38,7 @@ public sealed class AppointmentService(
         var appointment = Appointment.Schedule(
             newAppointment.EmployeeId,
             new AppointmentSlot(newAppointment.Day, newAppointment.StartTime, newAppointment.EndTime),
-            new PatientContact(newAppointment.PatientName, newAppointment.PatientPhone),
+            new PatientContact(newAppointment.PatientName, newAppointment.PatientPhone, newAppointment.PatientEmail),
             newAppointment.Reason,
             timeProvider.GetUtcNow(),
             newAppointment.ReasonId,

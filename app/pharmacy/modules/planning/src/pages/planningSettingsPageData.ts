@@ -1,5 +1,7 @@
+import type { SelectMenuOption } from '@crystal-pharm/ui';
 import type { WeekTemplateSummary } from '../domain/templates/weekTemplates';
 import type { AvailabilityValidation } from '../domain/rules/employeeTerms';
+import type { PlanningSettingsTab } from '../domain/settings/planningSettingsTabs';
 
 /** Les règles de la pharmacie, telles qu'un champ de formulaire les montre. */
 export type PlanningRulesFormValues = {
@@ -21,8 +23,8 @@ export type AccountantExportFormValues = {
 	accountantEmail: string;
 	/** Le mois proposé : le précédent, au format « 2026-10 ». */
 	defaultMonth: string;
-	/** Le dernier mois que l'on peut choisir : le mois en cours. */
-	latestMonth: string;
+	/** Le mois en cours et l'année écoulée, en toutes lettres. */
+	monthOptions: SelectMenuOption[];
 	downloadAction: string;
 };
 
@@ -43,6 +45,7 @@ export type WeekTemplateView = WeekTemplateSummary;
 
 export type PlanningSettingsPageData = {
 	planningHref: string;
+	selectedTab: PlanningSettingsTab;
 	peakWindows: PeakWindowView[];
 	templates: WeekTemplateView[];
 	rules: PlanningRulesFormValues;

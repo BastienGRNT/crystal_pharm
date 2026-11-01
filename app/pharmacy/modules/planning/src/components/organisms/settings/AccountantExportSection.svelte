@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Field, Input } from '@crystal-pharm/ui';
+	import { Button, Field, Input, SelectMenu } from '@crystal-pharm/ui';
 	import type { AccountantExportFormValues } from '../../../pages/planningSettingsPageData';
 
 	type AccountantExportSectionProps = {
@@ -28,7 +28,7 @@
 		<div class="w-48">
 			<Field label="Mois">
 				{#snippet control(attributes)}
-					<Input {...attributes} name="month" type="month" required max={values.latestMonth} value={values.defaultMonth} />
+					<SelectMenu id={attributes.id} name="month" options={values.monthOptions} placeholder="Choisir" value={values.defaultMonth} />
 				{/snippet}
 			</Field>
 		</div>

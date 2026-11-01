@@ -1,6 +1,6 @@
 import { toMinutesSinceMidnight } from '../domain/agenda';
 import { sortAppointmentsByStartTime, type AppointmentStatus } from '../domain/appointment';
-import { fromIsoDate, getMondayOfWeek, listWeekDays, toIsoDate } from '../domain/day';
+import { addDays, fromIsoDate, getMondayOfWeek, listWeekDays, toIsoDate } from '../domain/day';
 import { listAppointmentsOfDays } from './api/appointmentsApi.server';
 import type { BookingCaller } from './api/bookingApiClient.server';
 import { statusParameters } from './appointmentsPageQuery';
@@ -18,7 +18,7 @@ export type TodayAppointment = {
 	detailQuery: string;
 };
 
-/** Un rendez-vous de la semaine qui attend sa confirmation. */
+/** Un rendez-vous de cette semaine ou de la suivante qui attend sa confirmation. */
 export type PendingAppointment = {
 	id: string;
 	/** Le jour, au format AAAA-MM-JJ. */
@@ -32,7 +32,7 @@ export type TodayAppointments = {
 	appointments: TodayAppointment[];
 	/** Dans l'ordre de la semaine. */
 	pendingAppointments: PendingAppointment[];
-	/** Les rendez-vous en attente de la semaine : ceux que montre `pendingQuery`. */
+	/** Les rendez-vous en attente sur les deux semaines : `pendingQuery` montre la semaine du premier. */
 	pendingCount: number;
 	pendingQuery: string;
 	/** Le formulaire d'un nouveau rendez-vous. */
@@ -41,12 +41,16 @@ export type TodayAppointments = {
 
 /** Les rendez-vous du jour (sans les annulés) et ceux qui attendent une confirmation, tels que l'accueil les résume. */
 export async function getTodayAppointments(caller: BookingCaller, todayIsoDate: string): Promise<TodayAppointments> {
-	const weekDays = listWeekDays(getMondayOfWeek(fromIsoDate(todayIsoDate))).map(toIsoDate);
-	const weekAppointments = sortAppointmentsByStartTime(await listAppointmentsOfDays(caller, weekDays));
-	const pendingAppointments = weekAppointments.filter((appointment) => appointment.status === 'pending');
+	// Deux semaines : une demande du lundi suivant, envoyée le vendredi, s'attend dès le week-end.
+	const monday = getMondayOfWeek(fromIsoDate(todayIsoDate));
+	const days = [...listWeekDays(monday), ...listWeekDays(addDays(monday, 7))].map(toIsoDate);
+	const appointmentsOfTwoWeeks = sortAppointmentsByStartTime(await listAppointmentsOfDays(caller, days));
+	const pendingAppointments = appointmentsOfTwoWeeks.filter(
+		(appointment) => appointment.status === 'pending' && appointment.day >= todayIsoDate
+	);
 
 	return {
-		appointments: weekAppointments.flatMap((appointment) =>
+		appointments: appointmentsOfTwoWeeks.flatMap((appointment) =>
 			appointment.day === todayIsoDate && appointment.status !== 'cancelled'
 				? [
 						{
@@ -69,7 +73,11 @@ export async function getTodayAppointments(caller: BookingCaller, todayIsoDate: 
 			detailQuery: `?${new URLSearchParams({ jour: appointment.day, rdv: appointment.id })}`
 		})),
 		pendingCount: pendingAppointments.length,
-		pendingQuery: `?${new URLSearchParams({ jour: todayIsoDate, vue: 'semaine', statut: statusParameters.pending })}`,
+		pendingQuery: `?${new URLSearchParams({
+			jour: pendingAppointments[0]?.day ?? todayIsoDate,
+			vue: 'semaine',
+			statut: statusParameters.pending
+		})}`,
 		newAppointmentQuery: `?${new URLSearchParams({ jour: todayIsoDate, nouveau: '1' })}`
 	};
 }

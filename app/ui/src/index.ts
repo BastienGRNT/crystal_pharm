@@ -1,7 +1,9 @@
 export { default as Avatar } from './atoms/Avatar.svelte';
 export { default as Button } from './atoms/actions/Button.svelte';
+export type { ButtonSize, ButtonVariant } from './atoms/actions/button';
 export { default as Checkbox } from './atoms/fields/Checkbox.svelte';
 export { default as CheckList } from './molecules/CheckList.svelte';
+export { default as CollapsibleRow } from './molecules/CollapsibleRow.svelte';
 export type { CheckListItem } from './molecules/checkList';
 export { default as ChoiceGroup } from './molecules/fields/ChoiceGroup.svelte';
 export type { ChoiceGroupOption } from './molecules/fields/choiceGroup';
@@ -38,6 +40,7 @@ export type { TimeListItem, TimeListItemTone } from './molecules/timeList';
 export { default as TextLink } from './atoms/actions/TextLink.svelte';
 export { default as ToggleCard } from './molecules/fields/ToggleCard.svelte';
 export { default as ColorInput } from './molecules/fields/ColorInput.svelte';
+export { default as NumberStepper } from './molecules/fields/NumberStepper.svelte';
 export { default as UnitInput } from './molecules/fields/UnitInput.svelte';
 export { default as Alert } from './molecules/Alert.svelte';
 export { default as ActionList } from './molecules/ActionList.svelte';
@@ -49,6 +52,7 @@ export { default as DescriptionList } from './molecules/DescriptionList.svelte';
 export type { DescriptionItem } from './molecules/descriptionList';
 export { default as EmptyState } from './molecules/EmptyState.svelte';
 export { default as FilterTabs } from './molecules/navigation/FilterTabs.svelte';
+export { default as PageTabs } from './molecules/navigation/PageTabs.svelte';
 export type { FilterTab } from './molecules/navigation/filterTabs';
 export { default as Field } from './molecules/fields/Field.svelte';
 export type { FieldControlAttributes } from './molecules/fields/field';
@@ -59,11 +63,17 @@ export { default as PlanCard } from './molecules/PlanCard.svelte';
 export { default as ProgressBar } from './atoms/ProgressBar.svelte';
 export { default as SegmentedControl } from './molecules/navigation/SegmentedControl.svelte';
 export type { SegmentedControlOption } from './molecules/navigation/segmentedControl';
+export { default as FormSection } from './molecules/FormSection.svelte';
+export { default as PageSectionNav } from './molecules/navigation/PageSectionNav.svelte';
+export type { PageSection } from './molecules/navigation/pageSectionNav';
 export { default as SelectMenu } from './molecules/fields/pickers/SelectMenu.svelte';
 export type { SelectMenuOption } from './molecules/fields/pickers/selectMenu';
 export { default as StatCard } from './molecules/StatCard.svelte';
+export { default as CapacityGrid } from './molecules/CapacityGrid.svelte';
+export { default as StickyActionBar } from './molecules/StickyActionBar.svelte';
 export { default as StatusBadge } from './atoms/StatusBadge.svelte';
 export type { StatusBadgeTone } from './atoms/statusBadge';
+export { default as ErrorScreen } from './organisms/ErrorScreen.svelte';
 export { default as SetupScreen } from './organisms/SetupScreen.svelte';
 export { default as ThemeToggle } from './molecules/ThemeToggle.svelte';
 export { default as TimePicker } from './molecules/fields/pickers/TimePicker.svelte';
@@ -82,6 +92,7 @@ export type {
 } from './organisms/developer/developerToolbar';
 export { default as AuthenticationScreen } from './organisms/authentication/AuthenticationScreen.svelte';
 export type {
+	AuthenticationHighlight,
 	AuthenticationSpace,
 	AuthenticationSubmission,
 	LoginCredentials,
@@ -90,6 +101,7 @@ export type {
 export { default as LoginForm } from './organisms/authentication/LoginForm.svelte';
 export { default as RegisterForm } from './organisms/authentication/RegisterForm.svelte';
 export { default as SidePanel } from './organisms/SidePanel.svelte';
+export { default as UnsavedChangesGuard } from './organisms/UnsavedChangesGuard.svelte';
 export { default as StepIndicator } from './molecules/navigation/StepIndicator.svelte';
 export { default as SuggestionInput } from './molecules/fields/pickers/SuggestionInput.svelte';
 export type { SuggestionInputOption } from './molecules/fields/pickers/suggestionInput';

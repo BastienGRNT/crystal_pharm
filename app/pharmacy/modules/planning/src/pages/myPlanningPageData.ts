@@ -3,7 +3,9 @@ import type { AbsenceStatus, RequestableLeaveKind } from '../domain/leave/leaveR
 
 export type MyPlanningDay = {
 	date: string;
-	title: string;
+	/** « Lun ». */
+	weekdayLabel: string;
+	dayOfMonth: number;
 	isToday: boolean;
 	shiftLabels: string[];
 	absenceLabel: string | undefined;
@@ -34,6 +36,9 @@ export type MyLeaveView = {
 	canCancel: boolean;
 };
 
+/** La demande ouverte dans le panneau latéral, d'après l'URL (`?demande=`). */
+export type MyPlanningRequestPanel = 'leave' | 'availability';
+
 export type MyPlanningPageData = {
 	firstName: string;
 	periodLabel: string;
@@ -57,6 +62,9 @@ export type MyPlanningPageData = {
 	todayDate: string;
 	requestLeaveFormAction: string;
 	cancelLeaveFormAction: string;
+	openedRequestPanel: MyPlanningRequestPanel | undefined;
+	/** Les liens qui ouvrent et ferment les panneaux, sans perdre la semaine affichée. */
+	requestPanelHrefs: Record<MyPlanningRequestPanel | 'closed', string>;
 };
 
 export type LeaveRequestFailure = {

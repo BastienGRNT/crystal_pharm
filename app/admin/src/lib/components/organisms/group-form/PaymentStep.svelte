@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatEuros, parseEurosToCents, priceForPeriod } from '@crystal-pharm/billing-db/domain';
+	import { describeFreeMonths, formatEuros, parseEurosToCents, priceForPeriod } from '@crystal-pharm/billing-db/domain';
 	import { Alert, ChoiceGroup } from '@crystal-pharm/ui';
 	import type { GroupFormErrors, GroupFormValues } from '$lib/groupForm/groupFormValues';
 
@@ -32,7 +32,7 @@
 		{ value: 'monthly', label: 'Chaque mois', description: `${formatEuros(flatRatePriceCents)} HT par mois.` },
 		{
 			value: 'yearly',
-			label: `Chaque année · ${annualFreeMonths} mois offerts`,
+			label: `Chaque année · ${describeFreeMonths(annualFreeMonths)}`,
 			description: `${formatEuros(priceForPeriod(flatRatePriceCents, 'yearly', annualFreeMonths))} HT par an au lieu de ${formatEuros(flatRatePriceCents * 12)}.`
 		}
 	]);
@@ -44,7 +44,7 @@
 
 <div class="grid gap-5">
 	<div class="grid gap-1">
-		<h2 class="title-2 text-ink">Comment le groupement règle ?</h2>
+		<h2 class="font-display text-[24px] leading-8 text-ink">Comment le groupement règle ?</h2>
 		<p class="text-small text-ink-muted">Le moyen de paiement et le rythme des échéances.</p>
 	</div>
 

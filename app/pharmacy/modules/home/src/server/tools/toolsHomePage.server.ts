@@ -11,7 +11,13 @@ import { homePathnames } from '../../homePathnames';
 import type { ConfirmAppointmentFailure, ToolsHomePageData } from '../../pages/tools-home/toolsHomePageData';
 import { requireActiveTenantMember } from '../activeTenant.server';
 import { appointmentIdFieldName, buildTodayOverview, type TodayOverviewInput } from './today/todayOverview';
-import type { TodayAppointmentsSummary, TodayManager, TodaySources } from './today/todaySources';
+import type {
+	TodayAppointmentsSummary,
+	TodayManager,
+	TodayOnDutyPeriod,
+	TodayPrescriptionsSummary,
+	TodaySources
+} from './today/todaySources';
 
 const confirmAppointmentActionName = 'confirmAppointment';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -35,12 +41,16 @@ export async function loadToolsHomePage(
 	]);
 	const todayInput = await readToday(
 		{ accountId, tenantId },
-		keepToolsPermittedToMember(toolAccess.accessibleToolKeys, memberAccess),
+		{
+			accessible: toolAccess.accessibleToolKeys,
+			permitted: keepToolsPermittedToMember(toolAccess.accessibleToolKeys, memberAccess)
+		},
 		pharmacyProfile.weeklyOpeningSchedule,
 		todaySources
 	);
 	return {
-		greetingName: readFirstName(locals.user),
+		// Le compte comptoir est partagé : « Bonjour, Comptoir » ne salue personne.
+		greetingName: memberAccess.memberKind === 'counter' ? '' : readFirstName(locals.user),
 		today: buildTodayOverview(todayInput),
 		toolCards: describeToolCards(toolAccess),
 		coveringGroup: toolAccess.coveringGroup && {
@@ -71,22 +81,37 @@ export async function loadToolsHomePage(
 	};
 }
 
+/**
+ * `permitted` : les modules que ce compte ouvre. La garde, elle, concerne toute l'équipe :
+ * elle s'affiche dès que la pharmacie a un site, même pour qui ne peut pas la modifier.
+ */
+type TodayToolKeys = { accessible: readonly ToolKey[]; permitted: readonly ToolKey[] };
+
 async function readToday(
 	manager: TodayManager,
-	accessibleToolKeys: readonly ToolKey[],
+	toolKeys: TodayToolKeys,
 	weeklyOpeningSchedule: WeeklyOpeningSchedule | undefined,
 	todaySources: TodaySources
 ): Promise<TodayOverviewInput> {
 	const now = new Date();
 	const isoDate = toLocalIsoDate(now);
-	const hasBooking = accessibleToolKeys.includes('booking');
-	const [teamSummary, appointmentsSummary] = await Promise.all([
-		accessibleToolKeys.includes('planning') ? todaySources.team.getTodayTeam(manager.tenantId, isoDate) : undefined,
-		hasBooking ? readAppointmentsOrNothing(todaySources, manager, isoDate) : undefined
+	const hasBooking = toolKeys.permitted.includes('booking');
+	const hasPrescriptions = toolKeys.permitted.includes('prescriptions');
+	const hasSite = toolKeys.accessible.includes('site');
+	const [teamSummary, appointmentsSummary, prescriptionsSummary, onDutyPeriod] = await Promise.all([
+		toolKeys.permitted.includes('planning') ? todaySources.team.getTodayTeam(manager.tenantId, isoDate) : undefined,
+		hasBooking ? readAppointmentsOrNothing(todaySources, manager, isoDate) : undefined,
+		hasPrescriptions ? readPrescriptionsOrNothing(todaySources, manager, now) : undefined,
+		hasSite ? readOnDutyPeriodOrNothing(todaySources, manager.tenantId, now) : undefined
 	]);
 	return {
 		isoDate,
 		nowMinutes: now.getHours() * 60 + now.getMinutes(),
+		currentInstant: now,
+		prescriptions: hasPrescriptions ? { href: todaySources.prescriptions.href, summary: prescriptionsSummary } : undefined,
+		onDuty: hasSite
+			? { href: toolKeys.permitted.includes('site') ? todaySources.onDuty.href : undefined, period: onDutyPeriod }
+			: undefined,
 		openingPeriods: weeklyOpeningSchedule && listOpeningPeriodsOfDay(weeklyOpeningSchedule, now),
 		team: teamSummary && { href: todaySources.team.href, summary: teamSummary },
 		appointments: hasBooking
@@ -128,6 +153,31 @@ async function readAppointmentsOrNothing(
 ): Promise<TodayAppointmentsSummary | undefined> {
 	try {
 		return await todaySources.appointments.getTodayAppointments(manager, isoDate);
+	} catch {
+		return undefined;
+	}
+}
+
+async function readPrescriptionsOrNothing(
+	todaySources: TodaySources,
+	manager: TodayManager,
+	now: Date
+): Promise<TodayPrescriptionsSummary | undefined> {
+	try {
+		return await todaySources.prescriptions.getTodayPrescriptions(manager, now);
+	} catch {
+		return undefined;
+	}
+}
+
+// Une garde illisible ne doit pas priver l'équipe du reste de l'accueil.
+async function readOnDutyPeriodOrNothing(
+	todaySources: TodaySources,
+	tenantId: string,
+	now: Date
+): Promise<TodayOnDutyPeriod | undefined> {
+	try {
+		return await todaySources.onDuty.getNextOnDutyPeriod(tenantId, now);
 	} catch {
 		return undefined;
 	}

@@ -1,4 +1,5 @@
 using CrystalPharm.Prescriptions.Domain;
+using CrystalPharm.Prescriptions.Domain.Entities;
 using CrystalPharm.Prescriptions.Domain.ValueObjects;
 
 namespace CrystalPharm.Api.IntegrationTests;
@@ -38,4 +39,56 @@ public sealed class PrescriptionDomainRulesTests
         Assert.Throws<InvalidPrescriptionException>(() =>
             new PatientIdentity("Camille", "Durand", new DateOnly(2030, 1, 1), "06 12 34 56 78", new DateOnly(2026, 10, 25)));
     }
+
+    [Theory]
+    [InlineData("camille@example.org")]
+    [InlineData(" Camille@Example.ORG ")]
+    public void An_email_is_kept_trimmed_and_in_lower_case(string typed)
+    {
+        Assert.Equal("camille@example.org", new PatientEmail(typed).Value);
+    }
+
+    [Theory]
+    [InlineData("camille")]
+    [InlineData("camille@example")]
+    [InlineData("camille @example.org")]
+    public void A_malformed_email_is_refused(string typed)
+    {
+        Assert.Throws<InvalidPrescriptionException>(() => new PatientEmail(typed));
+    }
+
+    [Fact]
+    public void A_note_longer_than_allowed_is_refused()
+    {
+        Assert.Throws<InvalidPrescriptionException>(() =>
+            new SubmissionRequest(null, false, false, new string('a', SubmissionRequest.MaximumNoteLength + 1)));
+    }
+
+    [Theory]
+    [InlineData(91, PrescriptionStatus.Received, 0, true)]
+    [InlineData(10, PrescriptionStatus.Collected, 31, true)]
+    [InlineData(10, PrescriptionStatus.Collected, 5, false)]
+    [InlineData(60, PrescriptionStatus.Ready, 50, false)]
+    public void A_submission_is_kept_a_month_after_collection_and_three_months_at_most(
+        int daysSinceSubmission,
+        PrescriptionStatus status,
+        int daysSinceStatusChange,
+        bool expectedPastRetention)
+    {
+        var now = new DateTimeOffset(2026, 10, 31, 12, 0, 0, TimeSpan.Zero);
+        var submission = SubmissionReceivedOn(now.AddDays(-daysSinceSubmission));
+        submission.MoveTo(status, null, now.AddDays(-daysSinceStatusChange));
+
+        Assert.Equal(expectedPastRetention, submission.IsPastRetention(now));
+    }
+
+    private static PrescriptionSubmission SubmissionReceivedOn(DateTimeOffset submittedAt) =>
+        PrescriptionSubmission.Submit(
+            "key",
+            new PatientIdentity("Camille", "Durand", new DateOnly(1985, 5, 17), "06 12 34 56 78", DateOnly.FromDateTime(submittedAt.UtcDateTime)),
+            null,
+            new SubmissionRequest(null, false, false, null),
+            null,
+            [new DocumentDraft(DocumentKind.Prescription, DocumentFormat.Pdf, 10)],
+            submittedAt);
 }

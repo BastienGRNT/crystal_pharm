@@ -15,6 +15,22 @@ export function createEmptyOnDutyPeriodDraft(now: Date): OnDutyPeriodDraft {
 	return { day: toParisCalendarDate(now), startTime: '19:00', endTime: '08:00' };
 }
 
+/** Les gardes tournent d'une semaine sur l'autre : la suivante reprend les horaires de la dernière, sept jours plus tard. */
+export function createNextOnDutyPeriodDraft(drafts: readonly OnDutyPeriodDraft[], now: Date): OnDutyPeriodDraft {
+	const lastDraft = drafts.at(-1);
+	if (!lastDraft || !isValidDraft(lastDraft)) return createEmptyOnDutyPeriodDraft(now);
+	return { ...lastDraft, day: addDays(lastDraft.day, 7) };
+}
+
+/** « Fin dimanche 9 novembre à 08:00 » : la fin d'une garde de nuit tombe un autre jour, on l'écrit en toutes lettres. */
+export function describeOnDutyPeriodEnd(draft: OnDutyPeriodDraft): string {
+	if (!isValidDraft(draft)) return '';
+	if (draft.endTime > draft.startTime) return `Fin le même jour à ${draft.endTime}`;
+	const endDay = new Date(`${addOneDay(draft.day)}T00:00:00Z`);
+	const endDayLabel = endDay.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+	return `Fin ${endDayLabel} à ${draft.endTime}`;
+}
+
 export function toOnDutyPeriodDraft(period: OnDutyPeriod): OnDutyPeriodDraft {
 	const startsAt = new Date(period.startsAt);
 	const endsAt = new Date(period.endsAt);
@@ -76,7 +92,11 @@ function toParisTime(instant: Date): string {
 }
 
 function addOneDay(day: string): string {
-	return new Date(new Date(`${day}T00:00:00Z`).getTime() + millisecondsPerDay).toISOString().slice(0, 10);
+	return addDays(day, 1);
+}
+
+function addDays(day: string, dayCount: number): string {
+	return new Date(new Date(`${day}T00:00:00Z`).getTime() + dayCount * millisecondsPerDay).toISOString().slice(0, 10);
 }
 
 // Paris change d'heure : le décalage se lit à l'instant visé, pas à un instant approché.

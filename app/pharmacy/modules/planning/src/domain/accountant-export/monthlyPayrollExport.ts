@@ -32,6 +32,14 @@ export function findPreviousPayrollMonth(today: Date): PayrollMonth {
 	return { year: firstOfPreviousMonth.getUTCFullYear(), month: firstOfPreviousMonth.getUTCMonth() + 1 };
 }
 
+/** Le mois en cours et les précédents, du plus récent au plus ancien. */
+export function listRecentPayrollMonths(today: Date, count: number): PayrollMonth[] {
+	return Array.from({ length: count }, (_, monthsBack) => {
+		const firstOfMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - monthsBack, 1));
+		return { year: firstOfMonth.getUTCFullYear(), month: firstOfMonth.getUTCMonth() + 1 };
+	});
+}
+
 /**
  * Les lundis des semaines rattachées au mois : celles qui se terminent dedans.
  * Les heures supplémentaires se comptent à la semaine : une semaine à cheval n'est jamais coupée en deux.

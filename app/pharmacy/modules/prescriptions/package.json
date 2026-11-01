@@ -14,11 +14,13 @@
 		}
 	},
 	"scripts": {
-		"check": "svelte-check --tsconfig ./tsconfig.json"
+		"check": "svelte-check --tsconfig ./tsconfig.json",
+		"test": "vitest run"
 	},
 	"dependencies": {
 		"@crystal-pharm/api-client": "workspace:*",
 		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/email": "workspace:*",
 		"@crystal-pharm/pharmacy-db": "workspace:*",
 		"@crystal-pharm/ui": "workspace:*",
 		"openapi-fetch": "^0.14.0"
@@ -31,6 +33,7 @@
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
+		"vitest": "^5.0.5",
 		"@sveltejs/kit": "^2.63.0"
 	}
 }

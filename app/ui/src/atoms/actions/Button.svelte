@@ -2,11 +2,12 @@
 	import type { Snippet } from 'svelte';
 	import Icon from '../icons/Icon.svelte';
 	import type { IconName } from '../icons/icons';
-	import { buttonClasses, type ButtonVariant } from './button';
+	import { buttonClasses, type ButtonSize, type ButtonVariant } from './button';
 
 	type ButtonProps = {
 		children: Snippet;
 		variant?: ButtonVariant;
+		size?: ButtonSize;
 		icon?: IconName;
 		href?: string;
 		/** Avec `href` : ouvre la page à côté, sans quitter celle en cours (un formulaire à moitié rempli). */
@@ -24,6 +25,7 @@
 	let {
 		children,
 		variant = 'primary',
+		size = 'regular',
 		icon,
 		href,
 		opensInNewTab = false,
@@ -36,17 +38,17 @@
 		onclick
 	}: ButtonProps = $props();
 
-	const classes = $derived(buttonClasses(variant, isFullWidth));
+	const classes = $derived(buttonClasses(variant, isFullWidth, size));
 </script>
 
 {#if href}
 	<a {href} target={opensInNewTab ? '_blank' : undefined} rel={opensInNewTab ? 'noopener' : undefined} class={classes}>
-		{#if icon}<Icon name={icon} size={16} />{/if}
+		{#if icon}<Icon name={icon} size={size === 'compact' ? 16 : 18} />{/if}
 		{@render children()}
 	</a>
 {:else}
 	<button {type} {disabled} {formaction} {name} {value} {onclick} class={classes}>
-		{#if icon}<Icon name={icon} size={16} />{/if}
+		{#if icon}<Icon name={icon} size={size === 'compact' ? 16 : 18} />{/if}
 		{@render children()}
 	</button>
 {/if}

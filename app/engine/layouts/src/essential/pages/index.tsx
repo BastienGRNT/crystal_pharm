@@ -1,5 +1,7 @@
 import { definePage } from '@crystal-pharm/renderer';
 import type { EssentialSettings } from '../essentialManifest';
+import { MobileActionBar } from '../organisms/MobileActionBar';
+import { OpeningStatusStrip } from '../organisms/OpeningStatusStrip';
 import { DenseGridTemplate } from '../templates/DenseGridTemplate';
 
 export default definePage<EssentialSettings>({
@@ -8,7 +10,11 @@ export default definePage<EssentialSettings>({
     props.pageKit.Page({
       legalNotice: props.pageKit.LegalNotice({ class: 'essential-legal-notice' }),
       children: (
-        <DenseGridTemplate masthead={<props.pageKit.FixedSection name="hero" />}>
+        <DenseGridTemplate
+          masthead={<props.pageKit.FixedSection name="hero" />}
+          status={<OpeningStatusStrip status={props.openingStatus()} pharmacy={props.pharmacy} />}
+          actionBar={<MobileActionBar pharmacy={props.pharmacy} modules={props.modules} />}
+        >
           <props.pageKit.FixedSection name="onDuty" />
           <props.pageKit.FixedSection name="openingHours" />
           <props.pageKit.PlacedModules />

@@ -1,18 +1,26 @@
 import type { PharmacyInfo } from '@crystal-pharm/schema';
 import { Show } from 'solid-js';
-import type { EnabledModulesProps } from '@crystal-pharm/renderer';
+import type { Accessor } from 'solid-js';
+import type { EnabledModulesProps, OpeningStatus } from '@crystal-pharm/renderer';
+import { OpeningStatusLine } from '../molecules/OpeningStatusLine';
 import { SideNavigationLink } from '../molecules/SideNavigationLink';
 
 export type AtelierPagePath = '/' | '/equipe' | '/ordonnance';
 
 /** Colonne fixe à gauche sur grand écran, simple bandeau en haut sur mobile. */
-export function SideHeader(props: { pharmacy: Readonly<PharmacyInfo>; modules: EnabledModulesProps; currentPath: AtelierPagePath }) {
+export function SideHeader(props: {
+  pharmacy: Readonly<PharmacyInfo>;
+  modules: EnabledModulesProps;
+  openingStatus: Accessor<OpeningStatus>;
+  currentPath: AtelierPagePath;
+}) {
   return (
     <header class="at-side">
       <a class="at-side__brand" href="/">
         <Show when={props.pharmacy.logoUrl}>{(logoUrl) => <img class="at-side__logo" src={logoUrl()} alt="" />}</Show>
         <span class="at-side__name">{props.pharmacy.name}</span>
       </a>
+      <OpeningStatusLine status={props.openingStatus()} />
       <nav class="at-side__navigation" aria-label="Navigation principale">
         <SideNavigationLink href="/" label="Accueil" isCurrent={props.currentPath === '/'} />
         <Show when={props.modules.team}>
@@ -27,7 +35,7 @@ export function SideHeader(props: { pharmacy: Readonly<PharmacyInfo>; modules: E
         <span>
           {props.pharmacy.address.postalCode} {props.pharmacy.address.city}
         </span>
-        <a href={`tel:${props.pharmacy.phone.replace(/\s/g, '')}`}>{props.pharmacy.phone}</a>
+        <a class="at-side__phone" href={`tel:${props.pharmacy.phone.replace(/\s/g, '')}`}>{props.pharmacy.phone}</a>
       </address>
     </header>
   );

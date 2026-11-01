@@ -3,14 +3,14 @@ import * as v from 'valibot';
 import type { LayoutManifest } from '../manifest/LayoutManifest';
 
 export const atelierSettingsSchema = v.object({
-  /** Une palette fermée : sur le fond sombre du layout, une couleur libre serait vite illisible. */
+  /** Une palette fermée : chaque teinte garde un contraste suffisant sur le papier du layout, ce qu'une couleur libre ne garantit pas. */
   accentTone: themeChoiceSetting({
     title: 'Couleur d’accent',
     cssVariable: '--at-color-accent',
     options: {
-      terracotta: { label: 'Terre cuite', cssValue: '#d9774b' },
-      sage: { label: 'Sauge', cssValue: '#8fb39a' },
-      saffron: { label: 'Safran', cssValue: '#e8b64c' },
+      terracotta: { label: 'Terre cuite', cssValue: '#b4532a' },
+      sage: { label: 'Sauge', cssValue: '#3f6f52' },
+      saffron: { label: 'Safran', cssValue: '#9a6a00' },
     },
     defaultOption: 'terracotta',
   }),
@@ -29,6 +29,6 @@ export type AtelierSettings = v.InferOutput<typeof atelierSettingsSchema>;
 
 export const atelierManifest: LayoutManifest = {
   label: 'Atelier',
-  description: 'Une mise en page éditoriale, en grille asymétrique, avec une couleur d’accent et une police de titres au choix.',
+  description: 'Éditorial, comme un beau magazine : grande typographie, sections numérotées, une couleur d’accent et une police de titres au choix.',
   settingsSchema: atelierSettingsSchema,
 };

@@ -14,9 +14,9 @@
 	}
 </script>
 
-<ul class="grid divide-y divide-line-soft">
+<ul class="-my-1 grid divide-y divide-dashed divide-line-strong/40">
 	{#each members as member (member.accountId)}
-		<li class="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+		<li class="flex flex-wrap items-center justify-between gap-3 py-3.5 first:pt-1 last:pb-1">
 			<div class="grid min-w-0 gap-1">
 				<PersonLabel name={member.isSignedInAccount ? `${member.name} (vous)` : member.name} detail={member.detail} />
 				<p class="flex flex-wrap items-center gap-2 text-small text-ink-muted">
@@ -24,7 +24,7 @@
 					{summarizeResponsibilities(member)}
 				</p>
 			</div>
-			<Button href={member.editHref} variant="ghost" icon="pencil-simple">Modifier</Button>
+			<Button href={member.editHref} variant="secondary" size="compact" icon="pencil-simple">Modifier</Button>
 		</li>
 	{/each}
 </ul>

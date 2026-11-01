@@ -1,5 +1,6 @@
 import { createSignal } from 'solid-js';
 import { createStore } from 'solid-js/store';
+import { MaximumPrescriptionPages } from '@crystal-pharm/schema';
 import type { SubmitPrescription } from './createSubmitPrescription';
 import type { PrescriptionForm, PrescriptionFormErrors, validatePrescriptionForm } from './validatePrescriptionForm';
 
@@ -10,9 +11,13 @@ const emptyPrescriptionForm: PrescriptionForm = {
   lastName: '',
   birthDate: '',
   phone: '',
+  email: '',
   plannedVisitAt: '',
   hasAlreadyVisited: false,
+  isRenewal: false,
+  noteFromPatient: '',
   prescriptionFile: undefined,
+  additionalPrescriptionPages: [],
   socialSecurityNumber: '',
   vitalCardPhoto: undefined,
   mutualCardFront: undefined,
@@ -39,6 +44,23 @@ export function createPrescriptionFormState(prescription: {
     setErrorsByField({ ...errorsByField(), mutualCardFront: undefined, mutualCardBack: undefined });
   }
 
+  /** Les pages de l'ordonnance, dans l'ordre : la première est obligatoire, les autres suivent. */
+  function setPrescriptionPages(pages: ReadonlyArray<File>): void {
+    setForm({ prescriptionFile: pages[0], additionalPrescriptionPages: pages.slice(1, MaximumPrescriptionPages) });
+    setErrorsByField({ ...errorsByField(), prescriptionFile: undefined, additionalPrescriptionPages: undefined });
+  }
+
+  function prescriptionPages(): File[] {
+    return form.prescriptionFile ? [form.prescriptionFile, ...form.additionalPrescriptionPages] : [];
+  }
+
+  /** Remplit ce que le patient a déjà saisi lors d'un envoi précédent, sans écraser ce qu'il vient de taper. */
+  function prefill(knownFields: Partial<Pick<PrescriptionForm, 'firstName' | 'lastName' | 'birthDate' | 'phone' | 'email'>>): void {
+    for (const [fieldName, value] of Object.entries(knownFields) as [keyof typeof knownFields, string | undefined][]) {
+      if (value && form[fieldName] === '') setForm({ [fieldName]: value });
+    }
+  }
+
   /** Affiche les erreurs de ces champs seulement et dit s'ils sont tous valides : pour passer à l'étape suivante. */
   function validateFields(fieldNames: ReadonlyArray<keyof PrescriptionForm>): boolean {
     const allErrors = prescription.validatePrescription({ ...form });
@@ -55,7 +77,18 @@ export function createPrescriptionFormState(prescription: {
     return errors;
   }
 
-  return { form, updateField, setMutualCardFiles, errorsByField, status, validateFields, send };
+  return {
+    form,
+    updateField,
+    setMutualCardFiles,
+    setPrescriptionPages,
+    prescriptionPages,
+    prefill,
+    errorsByField,
+    status,
+    validateFields,
+    send,
+  };
 }
 
 export type PrescriptionFormState = ReturnType<typeof createPrescriptionFormState>;

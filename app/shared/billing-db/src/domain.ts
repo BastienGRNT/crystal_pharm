@@ -28,6 +28,7 @@ export {
 } from './pricing/groupContractTerms';
 export {
 	computeAmountDueToday,
+	describeFreeMonths,
 	monthlyEquivalentOfYearlyPrice,
 	priceForPeriod,
 	spreadLinesOverPeriod,

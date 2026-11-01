@@ -30,9 +30,9 @@
 				<IconButton icon="trash" label="Retirer cette marque" onclick={() => removeBrand(brand)} />
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
-				<Field label="Nom" errorMessage={isBrandDraftIncomplete(brand) ? 'Donnez un nom à cette marque.' : undefined}>
+				<Field label="Nom" hint="Ex. : La Roche-Posay" errorMessage={isBrandDraftIncomplete(brand) ? 'Donnez un nom à cette marque.' : undefined}>
 					{#snippet control(controlAttributes)}
-						<Input {...controlAttributes} maxlength={120} placeholder="La Roche-Posay" bind:value={brand.name} />
+						<Input {...controlAttributes} maxlength={120} bind:value={brand.name} />
 					{/snippet}
 				</Field>
 				<Field

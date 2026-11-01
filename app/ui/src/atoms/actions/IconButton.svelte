@@ -22,7 +22,7 @@
 	aria-label={label}
 	title={label}
 	{onclick}
-	class="inline-grid size-control-sm cursor-pointer place-items-center rounded-sm {surfaceClasses[surface]}"
+	class="inline-grid size-control-sm cursor-pointer place-items-center rounded-control {surfaceClasses[surface]}"
 >
 	<Icon name={icon} />
 </button>

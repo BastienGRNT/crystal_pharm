@@ -10,4 +10,5 @@ public sealed record NewAppointmentDto(
     string Reason,
     Guid? ReasonId = null,
     string? Note = null,
-    bool ConfirmImmediately = false);
+    bool ConfirmImmediately = false,
+    string? PatientEmail = null);

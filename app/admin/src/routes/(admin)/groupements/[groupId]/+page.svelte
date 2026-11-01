@@ -3,8 +3,9 @@
 	import { findTool, formatEuros } from '@crystal-pharm/billing-db/domain';
 	import {
 		Alert,
+		Avatar,
 		Button,
-		Card,
+		CapacityGrid,
 		ConfirmButton,
 		DataTable,
 		EmptyState,
@@ -12,10 +13,11 @@
 		Input,
 		InvoiceTable,
 		PageHeader,
-		ProgressBar,
-		StatCard,
+		PageTabs,
 		Tag,
-		TagList
+		TagList,
+		TextLink,
+		type FilterTab
 	} from '@crystal-pharm/ui';
 	import GroupContractSummary from '$lib/components/organisms/GroupContractSummary.svelte';
 	import { contractStatusLabels, paymentMethodLabels } from '$lib/contractLabels';
@@ -34,6 +36,46 @@
 			? form.invitedEmail
 			: page.url.searchParams.get('invite')
 	);
+
+	type GroupDetailTab = 'overview' | 'pharmacies' | 'managers' | 'invoices';
+	const tabSearchParameter = 'onglet';
+	const tabSearchValues: Record<GroupDetailTab, string | undefined> = {
+		overview: undefined,
+		pharmacies: 'pharmacies',
+		managers: 'responsables',
+		invoices: 'factures'
+	};
+
+	const groupPathname = $derived(`/groupements/${data.group.groupId}`);
+	const currentTab: GroupDetailTab = $derived(
+		(Object.keys(tabSearchValues) as GroupDetailTab[]).find(
+			(tab) => tabSearchValues[tab] !== undefined && tabSearchValues[tab] === page.url.searchParams.get(tabSearchParameter)
+		) ?? 'overview'
+	);
+
+	function tabHref(tab: GroupDetailTab): string {
+		const searchValue = tabSearchValues[tab];
+		return searchValue ? `${groupPathname}?${tabSearchParameter}=${searchValue}` : groupPathname;
+	}
+
+	const dueInvoiceCount = $derived(data.invoices.filter((invoice) => invoice.isDue).length);
+	const tabs: FilterTab[] = $derived([
+		{ label: 'Vue d’ensemble', href: tabHref('overview'), isCurrent: currentTab === 'overview', needsAttention: contract?.status !== 'active' },
+		{ label: 'Pharmacies', href: tabHref('pharmacies'), isCurrent: currentTab === 'pharmacies', count: data.memberPharmacies.length },
+		{
+			label: 'Responsables',
+			href: tabHref('managers'),
+			isCurrent: currentTab === 'managers',
+			count: data.groupMembers.length,
+			needsAttention: data.groupMembers.length === 0
+		},
+		{ label: 'Factures', href: tabHref('invoices'), isCurrent: currentTab === 'invoices', count: data.invoices.length, needsAttention: dueInvoiceCount > 0 }
+	]);
+
+	const placesSummary = $derived(
+		`${data.group.memberPharmacyCount} pharmacies membres, ${data.group.pendingInvitationCount} invitées, ${data.group.pharmacyQuota} places`
+	);
+	const sectionTitleClasses = 'font-display text-[21px] leading-7 text-ink';
 </script>
 
 <svelte:head>
@@ -46,13 +88,18 @@
 	context="Groupement créé le {formatDay(data.group.createdAt)}{data.group.contactEmail ? ` · ${data.group.contactEmail}` : ''}"
 >
 	{#snippet actions()}
-		<Button href="/groupements/{data.group.groupId}/modifier" variant="secondary" icon="pencil-simple">Modifier</Button>
+		<Button href="{groupPathname}/modifier" variant="secondary" icon="pencil-simple">Modifier</Button>
 	{/snippet}
+	{#snippet navigation()}<PageTabs label="Parties de la fiche" {tabs} />{/snippet}
 </PageHeader>
 
 {#if page.url.searchParams.has('cree')}
 	<Alert tone="success" title="Groupement créé">
-		{invitedEmail ? `L’invitation est partie à ${invitedEmail}.` : 'Invitez son premier responsable plus bas.'}
+		{#if invitedEmail}
+			L’invitation est partie à {invitedEmail}.
+		{:else}
+			Invitez maintenant son premier responsable : <TextLink href={tabHref('managers')}>Responsables</TextLink>.
+		{/if}
 	</Alert>
 {:else if page.url.searchParams.has('modifie')}
 	<Alert tone="success">Le groupement et son contrat sont enregistrés.</Alert>
@@ -60,43 +107,74 @@
 	<Alert tone="success">L’invitation est partie à {invitedEmail}.</Alert>
 {/if}
 
-<div class="grid gap-3.5 sm:grid-cols-3">
-	<StatCard label="Places utilisées" icon="storefront" value="{usedPlaces} / {data.group.pharmacyQuota}">
-		{#snippet detail()}
-			<div class="grid gap-1.5">
-				<ProgressBar label="Places utilisées" value={usedPlaces} maximum={data.group.pharmacyQuota} />
-				{data.group.memberPharmacyCount} membres · {data.group.pendingInvitationCount} invitations en attente
-			</div>
-		{/snippet}
-	</StatCard>
-	<StatCard label="Ce que paie le groupement" icon="receipt" value="{formatEuros(charge.monthlyTotalCents)} HT / mois">
-		{#snippet detail()}
-			{#if contract?.billingMode === 'flat_rate'}
-				Forfait {formatEuros(charge.flatRateCents)}{charge.overagePharmacyCount > 0
-					? ` + ${charge.overagePharmacyCount} pharmacie(s) au-delà du quota × ${formatEuros(charge.overageUnitPriceCents)}`
-					: ''}.
-			{:else}
-				D’après les modules actifs de ses pharmacies.
-			{/if}
-		{/snippet}
-	</StatCard>
-	<StatCard label="Responsables" icon="users-three" value={String(data.groupMembers.length)}>
-		{#snippet detail()}{data.pendingGroupMemberInvitations.length} invitation(s) en attente{/snippet}
-	</StatCard>
-</div>
-
-<Card>
-	<div class="grid gap-4">
-		<div class="flex flex-wrap items-center justify-between gap-3">
+{#if currentTab === 'overview'}
+	<!-- Le contrat comme un ticket : ce que paie le groupement à gauche, la prochaine échéance et le geste qui change son état sur le talon. -->
+	<section aria-label="Contrat" class="grid overflow-hidden rounded-xl bg-rail text-on-rail shadow-float lg:grid-cols-[minmax(0,1fr)_minmax(300px,auto)]">
+		<div class="grid content-start gap-5 p-7 max-sm:p-5">
 			<div class="flex flex-wrap items-center gap-2">
-				<h2 class="title-2 text-ink">Contrat</h2>
+				<p class="text-eyebrow text-accent-on-rail">Ce que paie le groupement</p>
 				{#if contract}
 					<Tag tone={contractStatusLabels[contract.status].tone}>{contractStatusLabels[contract.status].label}</Tag>
-					<span class="text-small text-ink-muted">{paymentMethodLabels[contract.paymentMethod]}</span>
+				{/if}
+			</div>
+			<div class="grid gap-1">
+				<p class="font-display text-[52px] leading-[56px] tabular-nums max-sm:text-[40px] max-sm:leading-[44px]">
+					{formatEuros(charge.monthlyTotalCents)} <span class="font-sans text-body text-rail-ink">HT / mois</span>
+				</p>
+				<p class="text-small text-rail-ink">
+					{#if !contract}
+						Pas encore de contrat.
+					{:else if contract.billingMode === 'flat_rate'}
+						Forfait {formatEuros(charge.flatRateCents)}{charge.overagePharmacyCount > 0
+							? ` + ${charge.overagePharmacyCount} pharmacie${charge.overagePharmacyCount > 1 ? 's' : ''} au-delà du quota × ${formatEuros(charge.overageUnitPriceCents)}`
+							: ''} · {paymentMethodLabels[contract.paymentMethod]}
+					{:else}
+						D’après les modules actifs de ses pharmacies · {paymentMethodLabels[contract.paymentMethod]}
+					{/if}
+				</p>
+			</div>
+			<div class="grid gap-2 border-t-2 border-dashed border-rail-raised pt-4">
+				<p class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+					<span class="font-display text-[28px] leading-8 tabular-nums">{usedPlaces}<span class="text-rail-ink">&nbsp;/ {data.group.pharmacyQuota}</span></span>
+					<span class="text-small text-rail-ink">
+						places · {data.group.memberPharmacyCount} membre{data.group.memberPharmacyCount > 1 ? 's' : ''}, {data.group.pendingInvitationCount} invitation{data.group.pendingInvitationCount > 1 ? 's' : ''} en attente
+					</span>
+				</p>
+				<CapacityGrid
+					filledCount={data.group.memberPharmacyCount}
+					pendingCount={data.group.pendingInvitationCount}
+					capacity={data.group.pharmacyQuota}
+					summary={placesSummary}
+					surface="rail"
+				/>
+			</div>
+		</div>
+		<div class="relative grid content-center gap-4 border-dashed border-rail-raised p-7 max-lg:border-t-2 max-sm:p-5 lg:border-l-2">
+			<span aria-hidden="true" class="absolute -top-2 -left-2 size-4 rounded-full bg-app max-lg:hidden"></span>
+			<span aria-hidden="true" class="absolute -bottom-2 -left-2 size-4 rounded-full bg-app max-lg:hidden"></span>
+			<div class="grid gap-1">
+				<p class="text-eyebrow text-rail-ink">Prochaine échéance</p>
+				{#if upcomingCharge}
+					<p class="font-display text-[28px] leading-8">{formatDay(upcomingCharge.dueOn)}</p>
+					<p class="text-body tabular-nums">
+						{formatEuros(upcomingCharge.totalCents)} TTC
+						<span class="text-small text-rail-ink">{upcomingCharge.billingPeriod === 'yearly' ? 'pour un an' : 'pour un mois'}</span>
+					</p>
+					<p class="text-small text-rail-ink">
+						{contract?.paymentMethod === 'card' ? 'Prélevée sur la carte du groupement.' : 'Facture envoyée, à régler par virement.'}
+					</p>
+				{:else if contract?.status === 'awaiting_payment'}
+					<p class="text-body">Au premier paiement par carte du groupement.</p>
+				{:else if contract && !charge.monthlyTotalCents}
+					<p class="text-body">Aucune : le groupement ne paie rien.</p>
+				{:else if contract}
+					<p class="text-body">Aucune tant que le contrat est suspendu.</p>
+				{:else}
+					<p class="text-body">Aucune.</p>
 				{/if}
 			</div>
 			{#if contract}
-				<form method="POST" action="?/changeContractStatus" class="flex flex-wrap gap-2">
+				<form method="POST" action="?/changeContractStatus">
 					{#if contract.status === 'active'}
 						<ConfirmButton
 							label="Suspendre"
@@ -123,10 +201,16 @@
 						/>
 					{/if}
 				</form>
+			{:else}
+				<Button href="{groupPathname}/modifier" icon="plus">Créer son contrat</Button>
 			{/if}
 		</div>
-		<div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-			{#if contract}
+	</section>
+
+	{#if contract}
+		<section aria-labelledby="contract-terms-title" class="grid gap-3">
+			<h2 id="contract-terms-title" class={sectionTitleClasses}>Le contrat, en clair</h2>
+			<div class="rounded-xl border border-line bg-surface p-6 shadow-card max-sm:p-4">
 				<GroupContractSummary
 					catalog={data.billing.catalog}
 					coverages={contract.coverages}
@@ -140,42 +224,12 @@
 					}}
 					groupName={data.group.name}
 				/>
-			{:else}
-				<p class="text-body text-ink-muted">Pas encore de contrat : modifiez le groupement pour en créer un.</p>
-			{/if}
-			<div class="grid gap-1 rounded-md bg-surface-subtle p-3">
-				<p class="text-label text-ink-muted">Prochaine échéance</p>
-				{#if upcomingCharge}
-					<p class="body-strong text-ink">{formatDay(upcomingCharge.dueOn)}</p>
-					<p class="text-body tabular-nums text-ink">
-						{formatEuros(upcomingCharge.totalCents)} TTC
-						<span class="text-small text-ink-muted">{upcomingCharge.billingPeriod === 'yearly' ? 'pour un an' : 'pour un mois'}</span>
-					</p>
-					<p class="text-small text-ink-muted">
-						{contract?.paymentMethod === 'card' ? 'Prélevée sur la carte du groupement.' : 'Facture envoyée, à régler par virement.'}
-					</p>
-				{:else if contract?.status === 'awaiting_payment'}
-					<p class="text-body text-ink">Au premier paiement par carte du groupement.</p>
-				{:else if contract && !data.billing.charge.monthlyTotalCents}
-					<p class="text-body text-ink">Aucune : le groupement ne paie rien.</p>
-				{:else if contract}
-					<p class="text-body text-ink">Aucune tant que le contrat est suspendu.</p>
-				{:else}
-					<p class="text-body text-ink">Aucune.</p>
-				{/if}
 			</div>
-		</div>
-	</div>
-</Card>
-
-<section aria-labelledby="pharmacies-title" class="grid gap-2">
-	<h2 id="pharmacies-title" class="title-2 text-ink">Pharmacies membres</h2>
+		</section>
+	{/if}
+{:else if currentTab === 'pharmacies'}
 	{#if data.memberPharmacies.length === 0}
-		<EmptyState
-			icon="storefront"
-			title="Aucune pharmacie membre"
-			description="Les responsables du groupement invitent leurs pharmacies depuis leur espace."
-		/>
+		<EmptyState icon="storefront" title="Aucune pharmacie membre" description="Les responsables du groupement invitent leurs pharmacies depuis leur espace." />
 	{:else}
 		<DataTable caption="Pharmacies membres">
 			{#snippet head()}
@@ -195,65 +249,85 @@
 		</DataTable>
 	{/if}
 	{#if data.pendingPharmacyInvitations.length > 0}
-		<p class="text-small text-ink-muted">
-			En attente de réponse : {data.pendingPharmacyInvitations.map((invitation) => invitation.pharmacyName ?? invitation.email).join(', ')}.
-		</p>
-	{/if}
-</section>
-
-<Card>
-	<div class="grid gap-4">
-		<div class="grid gap-1">
-			<h2 class="title-2 text-ink">Responsables du groupement</h2>
-			<p class="text-small text-ink-muted">Ils se connectent à l’espace groupement pour inviter leurs pharmacies.</p>
-		</div>
-		{#if data.groupMembers.length > 0}
-			<ul class="grid gap-1">
-				{#each data.groupMembers as groupMember (groupMember.accountId)}
-					<li class="flex flex-wrap items-center justify-between gap-2 rounded-md px-2 py-1.5">
-						<span><span class="body-strong">{groupMember.name}</span> <span class="text-small text-ink-muted">· {groupMember.email}</span></span>
-						<span class="text-small text-ink-subtle">depuis le {formatDay(groupMember.joinedAt)}</span>
+		<section aria-labelledby="pending-pharmacies-title" class="grid gap-3">
+			<h2 id="pending-pharmacies-title" class={sectionTitleClasses}>En attente de réponse</h2>
+			<ul class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+				{#each data.pendingPharmacyInvitations as invitation (invitation.invitationId)}
+					<li class="flex min-w-0 items-center gap-3 rounded-lg border-2 border-dashed border-line-strong/50 px-4 py-3">
+						<span aria-hidden="true" class="size-avatar flex-none rounded-full border-2 border-dashed border-line-strong"></span>
+						<span class="min-w-0 truncate text-body text-ink">{invitation.pharmacyName ?? invitation.email}</span>
 					</li>
 				{/each}
 			</ul>
-		{/if}
-		{#each data.pendingGroupMemberInvitations as invitation (invitation.invitationId)}
-			<form method="POST" action="?/revokeGroupMemberInvitation" class="flex flex-wrap items-center justify-between gap-2 rounded-md bg-surface-subtle px-3 py-2">
-				<input type="hidden" name="invitationId" value={invitation.invitationId} />
-				<span class="text-body">
-					<Tag tone="warning">Invité</Tag>
-					{invitation.email}
-					<span class="text-small text-ink-muted">· expire le {formatDay(invitation.expiresAt)}</span>
-				</span>
-				<Button type="submit" variant="ghost" icon="x">Annuler l’invitation</Button>
-			</form>
-		{/each}
-		<form method="POST" action="?/inviteGroupMember" class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-			<Field label="Inviter un responsable" errorMessage={invitationFailure?.failureMessage}>
-				{#snippet control(controlAttributes)}
-					<Input
-						{...controlAttributes}
-						type="email"
-						name="email"
-						required
-						placeholder="prenom.nom@groupement.fr"
-						value={invitationFailure?.submittedEmail ?? ''}
-					/>
-				{/snippet}
-			</Field>
-			<Button type="submit" icon="paper-plane-tilt">Envoyer l’invitation</Button>
-		</form>
-	</div>
-</Card>
+		</section>
+	{/if}
+{:else if currentTab === 'managers'}
+	<div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+		<section aria-labelledby="managers-title" class="grid gap-3">
+			<div class="grid gap-0.5">
+				<h2 id="managers-title" class={sectionTitleClasses}>Les responsables</h2>
+				<p class="text-small text-ink-muted">Ils se connectent à l’espace groupement pour inviter leurs pharmacies.</p>
+			</div>
+			{#if data.groupMembers.length === 0 && data.pendingGroupMemberInvitations.length === 0}
+				<EmptyState icon="users-three" title="Personne pour l’instant" description="Invitez le premier responsable : il recevra un lien par email." />
+			{:else}
+				<ul class="grid divide-y divide-dashed divide-line-strong/40 rounded-xl border border-line bg-surface px-5 shadow-card">
+					{#each data.groupMembers as groupMember (groupMember.accountId)}
+						<li class="flex flex-wrap items-center justify-between gap-3 py-3.5">
+							<span class="flex min-w-0 items-center gap-3">
+								<Avatar name={groupMember.name} />
+								<span class="min-w-0">
+									<span class="block body-strong text-ink">{groupMember.name}</span>
+									<span class="block text-small text-ink-muted">{groupMember.email}</span>
+								</span>
+							</span>
+							<span class="text-small text-ink-subtle">depuis le {formatDay(groupMember.joinedAt)}</span>
+						</li>
+					{/each}
+					{#each data.pendingGroupMemberInvitations as invitation (invitation.invitationId)}
+						<li class="flex flex-wrap items-center justify-between gap-3 py-3.5">
+							<span class="flex min-w-0 items-center gap-3">
+								<span aria-hidden="true" class="size-avatar flex-none rounded-full border-2 border-dashed border-line-strong"></span>
+								<span class="min-w-0">
+									<span class="flex items-center gap-2 body-strong text-ink">{invitation.email} <Tag tone="warning">Invité</Tag></span>
+									<span class="block text-small text-ink-muted">L’invitation expire le {formatDay(invitation.expiresAt)}</span>
+								</span>
+							</span>
+							<form method="POST" action="?{tabSearchParameter}={tabSearchValues.managers}&/revokeGroupMemberInvitation">
+								<input type="hidden" name="invitationId" value={invitation.invitationId} />
+								<Button type="submit" variant="ghost" size="compact" icon="x">Annuler</Button>
+							</form>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</section>
 
-<section aria-labelledby="invoices-title" class="grid gap-2">
-	<h2 id="invoices-title" class="title-2 text-ink">Factures</h2>
+		<aside aria-labelledby="invite-manager-title" class="grid gap-3 rounded-xl border border-line bg-accent-soft p-5 lg:sticky lg:top-6">
+			<div class="grid gap-0.5">
+				<h2 id="invite-manager-title" class={sectionTitleClasses}>Inviter un responsable</h2>
+				<p class="text-small text-ink-muted">Il reçoit un lien par email et crée son compte.</p>
+			</div>
+			<form method="POST" action="?{tabSearchParameter}={tabSearchValues.managers}&/inviteGroupMember" class="grid gap-3">
+				<Field label="Son email" errorMessage={invitationFailure?.failureMessage}>
+					{#snippet control(controlAttributes)}
+						<Input
+							{...controlAttributes}
+							type="email"
+							name="email"
+							required
+							placeholder="prenom.nom@groupement.fr"
+							value={invitationFailure?.submittedEmail ?? ''}
+						/>
+					{/snippet}
+				</Field>
+				<Button type="submit" icon="paper-plane-tilt">Envoyer l’invitation</Button>
+			</form>
+		</aside>
+	</div>
+{:else}
 	{#if data.invoices.length === 0}
-		<EmptyState
-			icon="file-text"
-			title="Aucune facture pour l’instant"
-			description="La première part au premier paiement du groupement, puis une chaque mois."
-		/>
+		<EmptyState icon="file-text" title="Aucune facture pour l’instant" description="La première part au premier paiement du groupement, puis une chaque mois." />
 	{:else}
 		<InvoiceTable caption="Factures du groupement" invoices={data.invoices}>
 			{#snippet rowActions(invoice)}
@@ -274,4 +348,4 @@
 			{/snippet}
 		</InvoiceTable>
 	{/if}
-</section>
+{/if}

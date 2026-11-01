@@ -13,6 +13,6 @@
 	};
 </script>
 
-<span class="inline-flex items-center gap-1 rounded-xs px-[5px] text-[11px] leading-4 font-medium whitespace-nowrap {toneClasses[tone]}">
+<span class="inline-flex items-center gap-1 rounded-xs px-1.5 text-[12px] leading-[18px] font-bold whitespace-nowrap {toneClasses[tone]}">
 	{@render children()}
 </span>

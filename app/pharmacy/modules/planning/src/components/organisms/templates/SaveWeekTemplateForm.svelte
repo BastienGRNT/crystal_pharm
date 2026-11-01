@@ -15,9 +15,9 @@
 
 <form method="POST" action={formAction} class="grid gap-3.5">
 	<p class="text-small text-ink-muted">Garde les créneaux de la semaine affichée pour les rejouer sur n’importe quelle autre semaine.</p>
-	<Field label="Nom de la semaine type">
+	<Field label="Nom de la semaine type" hint="Ex. : Semaine normale">
 		{#snippet control(attributes)}
-			<Input {...attributes} name="name" placeholder="Semaine normale" maxlength={60} />
+			<Input {...attributes} name="name" maxlength={60} />
 		{/snippet}
 	</Field>
 	<ChoiceGroup name="rotation" legend="Quand l’utiliser" options={rotationOptions} value="none" layout="cards" />

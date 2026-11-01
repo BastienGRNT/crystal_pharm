@@ -24,6 +24,7 @@
 	signedInUser={data.signedInMember}
 	spaceLabel={data.pharmacyName}
 	hrefsNeedingAttention={data.hrefsNeedingAttention}
+	countsByHref={data.countsByHref}
 	{notifications}
 	onSignOut={() => signOutAndOpen('/login')}
 >

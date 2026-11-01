@@ -25,20 +25,20 @@
 	}: WeekNavProps = $props();
 
 	const arrowClasses =
-		'grid h-full w-[34px] place-items-center text-ink-muted hover:bg-surface-subtle hover:text-ink';
+		'grid w-[34px] flex-none place-items-center self-stretch text-ink-muted hover:bg-surface-subtle hover:text-ink';
 </script>
 
-<div class="flex items-center gap-2">
+<div class="flex max-w-full min-w-0 items-center gap-2">
 	{#if todayHref}<Button href={todayHref} variant="secondary">Aujourd’hui</Button>{/if}
 	<nav
 		aria-label={navigationLabel}
-		class="inline-flex h-control items-center rounded-sm border border-line-strong bg-surface"
+		class="inline-flex min-h-control min-w-0 items-stretch rounded-control border border-line-strong/55 bg-field"
 	>
 		<a href={previousWeekHref} aria-label={previousLabel} class="{arrowClasses} rounded-l-sm">
 			<Icon name="caret-left" size={16} />
 		</a>
 		<span
-			class="border-x border-line px-3 text-[13.5px] leading-[34px] font-semibold whitespace-nowrap tabular-nums"
+			class="flex min-w-0 items-center border-x border-line px-3 py-1.5 text-[13.5px] leading-5 font-semibold text-balance tabular-nums"
 		>
 			{weekLabel}
 		</span>

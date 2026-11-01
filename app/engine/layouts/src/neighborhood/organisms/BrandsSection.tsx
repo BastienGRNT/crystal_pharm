@@ -5,7 +5,7 @@ import { SectionHeading } from '../atoms/SectionHeading';
 export function BrandsSection(props: BrandsModuleProps) {
   return (
     <section class="nb-section nb-brands" id="marques">
-      <SectionHeading eyebrow="Nos partenaires" title="Nos marques" />
+      <SectionHeading eyebrow="En rayon" title="Les marques que vous trouverez ici" />
       <ul class="nb-brands__list">
         <For each={props.brands}>
           {(brand) => (

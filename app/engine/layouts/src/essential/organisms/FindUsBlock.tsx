@@ -4,7 +4,7 @@ import { SectionHeading } from '../atoms/SectionHeading';
 
 export function FindUsBlock(props: FindUsSectionProps) {
   return (
-    <section class="essential-block essential-block--find-us">
+    <section id="nous-trouver" class="essential-block essential-block--find-us">
       <SectionHeading>Nous trouver</SectionHeading>
       <p>{props.addressLabel}</p>
       <p>

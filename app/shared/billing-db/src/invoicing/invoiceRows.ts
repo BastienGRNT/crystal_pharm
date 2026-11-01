@@ -58,7 +58,7 @@ export function toInvoiceRow(invoice: InvoiceToDescribe, pdfHref: string): Invoi
 }
 
 function describeInvoiceStatus(invoice: InvoiceToDescribe): { label: string; tone: InvoiceStatusTone } {
-	if (invoice.kind === 'credit_note') return { label: 'Remboursé', tone: 'neutral' };
+	if (invoice.kind === 'credit_note') return { label: 'Remboursement', tone: 'neutral' };
 	if (invoice.status === 'credited') return { label: 'Remboursée', tone: 'neutral' };
 	if (invoice.status === 'due') return { label: 'À régler', tone: 'warning' };
 	return { label: 'Payée', tone: 'success' };

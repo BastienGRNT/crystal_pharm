@@ -37,10 +37,19 @@
                   "Phone": {
                     "type": "string"
                   },
+                  "Email": {
+                    "type": "string"
+                  },
                   "PlannedVisitAt": {
                     "type": "string"
                   },
                   "HasAlreadyVisited": {
+                    "type": "string"
+                  },
+                  "IsRenewal": {
+                    "type": "string"
+                  },
+                  "NoteFromPatient": {
                     "type": "string"
                   },
                   "SocialSecurityNumber": {
@@ -48,6 +57,12 @@
                   },
                   "PrescriptionFile": {
                     "$ref": "#/components/schemas/IFormFile"
+                  },
+                  "AdditionalPrescriptionPages": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IFormFile"
+                    }
                   },
                   "VitalCardPhoto": {
                     "$ref": "#/components/schemas/IFormFile"
@@ -244,6 +259,47 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "ReceivedPrescriptions"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/received-prescriptions/{submissionId}/documents/{documentId}": {
@@ -326,6 +382,206 @@
                 }
               },
               "application/pdf": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/received-prescriptions/{submissionId}/status": {
+      "put": {
+        "tags": [
+          "ReceivedPrescriptions"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionStatusChangeDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionStatusChangeDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionStatusChangeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivedPrescriptionDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivedPrescriptionDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivedPrescriptionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/received-prescriptions/{submissionId}/team-note": {
+      "put": {
+        "tags": [
+          "ReceivedPrescriptions"
+        ],
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionTeamNoteDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionTeamNoteDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionTeamNoteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivedPrescriptionDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivedPrescriptionDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivedPrescriptionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
                 }
@@ -1143,6 +1399,11 @@
             "type": "string",
             "default": null,
             "nullable": true
+          },
+          "patientEmail": {
+            "type": "string",
+            "default": null,
+            "nullable": true
           }
         }
       },
@@ -1377,6 +1638,37 @@
           "confirmImmediately": {
             "type": "boolean",
             "default": false
+          },
+          "patientEmail": {
+            "type": "string",
+            "default": null,
+            "nullable": true
+          }
+        }
+      },
+      "PrescriptionStatus": {
+        "enum": [
+          "received",
+          "inPreparation",
+          "waitingForProducts",
+          "ready",
+          "collected"
+        ]
+      },
+      "PrescriptionStatusChangeDto": {
+        "required": [
+          "status",
+          "expectedProductsOn"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/PrescriptionStatus"
+          },
+          "expectedProductsOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           }
         }
       },
@@ -1393,6 +1685,18 @@
           },
           "alreadyReceived": {
             "type": "boolean"
+          }
+        }
+      },
+      "PrescriptionTeamNoteDto": {
+        "required": [
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -1455,9 +1759,16 @@
           "lastName",
           "birthDate",
           "phone",
+          "email",
           "plannedVisitAt",
           "hasAlreadyVisited",
+          "isRenewal",
+          "noteFromPatient",
           "socialSecurityNumber",
+          "status",
+          "statusChangedAt",
+          "expectedProductsOn",
+          "teamNote",
           "documents"
         ],
         "type": "object",
@@ -1483,14 +1794,42 @@
           "phone": {
             "type": "string"
           },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
           "plannedVisitAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "nullable": true
           },
           "hasAlreadyVisited": {
             "type": "boolean"
           },
+          "isRenewal": {
+            "type": "boolean"
+          },
+          "noteFromPatient": {
+            "type": "string",
+            "nullable": true
+          },
           "socialSecurityNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/PrescriptionStatus"
+          },
+          "statusChangedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expectedProductsOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "teamNote": {
             "type": "string",
             "nullable": true
           },
@@ -1511,6 +1850,12 @@
           "phone",
           "plannedVisitAt",
           "hasAlreadyVisited",
+          "isRenewal",
+          "noteFromPatient",
+          "canBeNotifiedByEmail",
+          "status",
+          "statusChangedAt",
+          "expectedProductsOn",
           "documentCount"
         ],
         "type": "object",
@@ -1534,10 +1879,33 @@
           },
           "plannedVisitAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "nullable": true
           },
           "hasAlreadyVisited": {
             "type": "boolean"
+          },
+          "isRenewal": {
+            "type": "boolean"
+          },
+          "noteFromPatient": {
+            "type": "string",
+            "nullable": true
+          },
+          "canBeNotifiedByEmail": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PrescriptionStatus"
+          },
+          "statusChangedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expectedProductsOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
           },
           "documentCount": {
             "type": "integer",
@@ -1684,6 +2052,11 @@
             "type": "string"
           },
           "note": {
+            "type": "string",
+            "default": null,
+            "nullable": true
+          },
+          "email": {
             "type": "string",
             "default": null,
             "nullable": true

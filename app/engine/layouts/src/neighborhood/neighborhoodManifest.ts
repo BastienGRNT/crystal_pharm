@@ -21,6 +21,6 @@ export type NeighborhoodSettings = v.InferOutput<typeof neighborhoodSettingsSche
 
 export const neighborhoodManifest: LayoutManifest = {
   label: 'Quartier',
-  description: 'Une pharmacie de quartier chaleureuse, avec un grand en-tête et le bandeau de garde.',
+  description: 'Chaleureux et très lisible : l’état d’ouverture en tête, les démarches en grand, une barre d’actions sur téléphone.',
   settingsSchema: neighborhoodSettingsSchema,
 };

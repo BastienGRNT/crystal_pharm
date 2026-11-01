@@ -137,7 +137,7 @@ function describeMonthlyGroupChargeLines(overview: GroupBillingOverview): Invoic
 			...(charge.overagePharmacyCount > 0
 				? [
 						{
-							label: `${charge.overagePharmacyCount} pharmacie(s) au-delà du forfait × ${formatEuros(charge.overageUnitPriceCents)}`,
+							label: `${charge.overagePharmacyCount} pharmacie${charge.overagePharmacyCount > 1 ? 's' : ''} au-delà du forfait × ${formatEuros(charge.overageUnitPriceCents)}`,
 							amountCents: charge.overageCents
 						}
 					]
@@ -148,7 +148,7 @@ function describeMonthlyGroupChargeLines(overview: GroupBillingOverview): Invoic
 		const pharmaciesUsingTool = overview.coveredPharmacies.filter((coveredPharmacy) => coveredPharmacy.groupCostCentsByToolKey[toolKey]);
 		const amountCents = pharmaciesUsingTool.reduce((total, coveredPharmacy) => total + (coveredPharmacy.groupCostCentsByToolKey[toolKey] ?? 0), 0);
 		return amountCents > 0
-			? [{ label: `Module ${findTool(toolKey).label} · ${pharmaciesUsingTool.length} pharmacie(s)`, amountCents }]
+			? [{ label: `Module ${findTool(toolKey).label} · ${pharmaciesUsingTool.length} pharmacie${pharmaciesUsingTool.length > 1 ? 's' : ''}`, amountCents }]
 			: [];
 	});
 }

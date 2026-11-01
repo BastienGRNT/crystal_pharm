@@ -1,10 +1,9 @@
-import { ModuleNameSchema, toThemeCssVariables, type PharmacyInfo, type ThemeCssVariables } from '@crystal-pharm/schema';
+import { ModuleNameSchema, toThemeCssVariables, type ThemeCssVariables } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutPage } from '../contract/definePage';
 import type { Part } from '../contract/Part';
 import type { LayoutFixedSectionComponents, LayoutModuleComponents, PharmacySiteLayout } from '../contract/PharmacySiteLayout';
-import type { EnabledModulesProps } from '../module-props/toEnabledModulesProps';
-import type { PageKit } from '../page-kit/createPageKit';
+import type { LayoutPageProps } from '../contract/LayoutPageProps';
 import { fixedSectionNames } from '../section-props/FixedSectionPropsByName';
 
 /** Un layout tel que le moteur le manipule, quel que soit le type de ses réglages. */
@@ -16,7 +15,7 @@ export type RegisteredLayout = {
   findPage: (requestedPath: string) =>
     | {
         title: string;
-        render: (input: { pharmacy: PharmacyInfo; settings: ReadLayoutSettings; modules: EnabledModulesProps; pageKit: PageKit }) => Part<'page'>;
+        render: (input: Omit<LayoutPageProps<unknown>, 'settings'> & { settings: ReadLayoutSettings }) => Part<'page'>;
       }
     | undefined;
 };
@@ -84,7 +83,7 @@ function toRegisteredLayout(layoutId: string, layout: PharmacySiteLayout<unknown
       if (!page) return undefined;
       return {
         title: page.title,
-        render: (input) => page.component({ pharmacy: input.pharmacy, settings: input.settings.settings, modules: input.modules, pageKit: input.pageKit }),
+        render: (input) => page.component({ ...input, settings: input.settings.settings }),
       };
     },
   };
