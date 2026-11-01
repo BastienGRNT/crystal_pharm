@@ -44,7 +44,7 @@
 
 <div class="grid gap-5">
 	<div class="grid gap-1">
-		<h2 class="title-2 text-ink">Comment le groupement règle ?</h2>
+		<h2 class="font-display text-[24px] leading-8 text-ink">Comment le groupement règle ?</h2>
 		<p class="text-small text-ink-muted">Le moyen de paiement et le rythme des échéances.</p>
 	</div>
 

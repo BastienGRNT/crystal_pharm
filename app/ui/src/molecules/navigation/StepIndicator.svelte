@@ -13,39 +13,36 @@
 </script>
 
 {#snippet stepContent(step: string, stepIndex: number, isDone: boolean, isCurrent: boolean)}
-	<span
-		class="grid size-6 flex-none place-items-center rounded-full text-label {isDone || isCurrent
-			? 'bg-accent text-on-accent'
-			: 'border border-line-strong text-ink-muted'}"
-	>
-		{#if isDone}
-			<Icon name="check" size={14} />
-			<span class="sr-only">Terminé :</span>
-		{:else}
-			{stepIndex + 1}
-		{/if}
+	<span aria-hidden="true" class="h-1.5 rounded-full {isDone || isCurrent ? 'bg-accent' : 'bg-line-strong/40'}"></span>
+	<span class="flex min-w-0 items-start gap-1.5">
+		<span class="flex-none pt-px text-[12px] leading-4 font-bold tabular-nums {isDone || isCurrent ? 'text-accent-text' : 'text-ink-subtle'}">
+			{#if isDone}
+				<Icon name="check" size={14} />
+				<span class="sr-only">Terminé :</span>
+			{:else}
+				{stepIndex + 1}
+			{/if}
+		</span>
+		<span class="min-w-0 text-[13px] leading-[18px] {isCurrent ? 'font-bold text-ink' : 'text-ink-muted'}">{step}</span>
 	</span>
-	<span class={isCurrent ? 'font-semibold text-ink' : 'text-ink-muted'}>{step}</span>
 {/snippet}
 
-<ol aria-label={label} class="flex flex-wrap items-center gap-x-3 gap-y-2">
+<!-- Une jauge par étape : on lit d'un trait ce qui est fait, où l'on est, et ce qui reste. -->
+<ol aria-label={label} class="grid auto-cols-fr grid-flow-col gap-2">
 	{#each steps as step, stepIndex (step)}
 		{@const isDone = stepIndex < currentStepIndex}
 		{@const isCurrent = stepIndex === currentStepIndex}
-		<li aria-current={isCurrent ? 'step' : undefined} class="flex items-center gap-2 text-[13px] leading-[18px]">
-			{#if stepIndex > 0}
-				<span aria-hidden="true" class="h-px w-6 {isDone || isCurrent ? 'bg-accent' : 'bg-line-strong'}"></span>
-			{/if}
+		<li aria-current={isCurrent ? 'step' : undefined} class="min-w-0">
 			{#if onStepSelect && !isCurrent}
 				<button
 					type="button"
-					class="-m-1 flex cursor-pointer items-center gap-2 rounded-md p-1 hover:bg-accent-soft [&>span:last-child]:underline [&>span:last-child]:decoration-line-strong [&>span:last-child]:underline-offset-4"
+					class="grid w-full cursor-pointer gap-2 rounded-xs text-left hover:[&>span:last-child>span:last-child]:text-ink hover:[&>span:last-child>span:last-child]:underline"
 					onclick={() => onStepSelect(stepIndex)}
 				>
 					{@render stepContent(step, stepIndex, isDone, isCurrent)}
 				</button>
 			{:else}
-				{@render stepContent(step, stepIndex, isDone, isCurrent)}
+				<span class="grid gap-2">{@render stepContent(step, stepIndex, isDone, isCurrent)}</span>
 			{/if}
 		</li>
 	{/each}

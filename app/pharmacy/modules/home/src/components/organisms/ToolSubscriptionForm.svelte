@@ -108,12 +108,16 @@
 	{/each}
 
 	<section id="modules" aria-labelledby="modules-titre" class="grid scroll-mt-20 gap-3">
-		<h2 id="modules-titre" class="title-2 text-ink">{subscription && !subscription.endsAt ? 'Changer de formule' : 'Choisissez votre formule'}</h2>
-		<div class="flex flex-wrap items-center justify-between gap-3">
+		<div class="flex flex-wrap items-end justify-between gap-3">
+			<div class="grid gap-0.5">
+				<h2 id="modules-titre" class="font-display text-[22px] leading-7 text-ink">
+					{subscription && !subscription.endsAt ? 'Changer de formule' : 'Choisissez votre formule'}
+				</h2>
+				<p class="text-small text-ink-muted">
+					{isYearly && freeMonths > 0 ? `À l’année, vous payez ${12 - freeMonths} mois pour 12.` : 'Sans engagement : vous changez quand vous voulez.'}
+				</p>
+			</div>
 			<ChoiceGroup name="choice-billingPeriod" legend="Rythme de paiement" options={billingPeriodOptions} bind:value={billingPeriod} />
-			{#if isYearly && freeMonths > 0}
-				<p class="text-small text-ink-muted">Vous payez {12 - freeMonths} mois pour 12.</p>
-			{/if}
 		</div>
 		<div class="grid items-stretch gap-4 pt-3 {plans.length >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}">
 			{#each plans as plan (plan.planKey)}

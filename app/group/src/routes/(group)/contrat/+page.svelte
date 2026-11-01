@@ -7,7 +7,8 @@
 		formatEuros,
 		priceForPeriod
 	} from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, EmptyState, Icon, InvoiceTable, PageHeader, StatCard, TextLink, type TagTone } from '@crystal-pharm/ui';
+	import { Alert, Button, EmptyState, Icon, InvoiceTable, PageHeader, StatCard, TextLink, type TagTone } from '@crystal-pharm/ui';
+	import GroupSectionTabs from '$lib/components/molecules/GroupSectionTabs.svelte';
 	import ContractToolTable from '$lib/components/organisms/ContractToolTable.svelte';
 	import { formatDay, formatDaysUntil } from '$lib/dateFormats';
 	import { groupPathnames } from '$lib/groupPathnames';
@@ -45,7 +46,9 @@
 	<title>Contrat · {data.groupName}</title>
 </svelte:head>
 
-<PageHeader icon="receipt" title="Contrat" context="Ce que vous offrez à vos pharmacies, et ce que cela vous coûte." />
+<PageHeader icon="buildings" title="Mon groupement" context="Ce que vous offrez à vos pharmacies, et ce que cela vous coûte.">
+	{#snippet navigation()}<GroupSectionTabs isContractAwaitingPayment={data.isContractAwaitingPayment} />{/snippet}
+</PageHeader>
 
 {#if paymentOutcome === 'reussi'}
 	<Alert tone="success" title="Contrat activé">Vos pharmacies membres profitent dès maintenant de votre prise en charge.</Alert>
@@ -58,25 +61,32 @@
 	<EmptyState icon="receipt" title="Pas encore de contrat" description="Crystal Pharm prépare votre contrat. Vous le retrouverez ici." />
 {:else}
 	{#if contract.status === 'awaiting_payment'}
-		<Card>
-			<form method="POST" action="?/payByCard" class="flex flex-wrap items-center justify-between gap-4">
-				<div class="grid min-w-0 gap-1">
-					<h2 class="title-2 text-ink">Activez votre contrat</h2>
-					<p class="text-body text-ink-muted">
-						{#if data.firstPayment.totalCents > 0}
-							Vous réglez aujourd’hui {isYearly ? 'votre première année' : 'votre premier mois'} :
-							{formatEuros(data.firstPayment.subtotalCents)} HT + {formatEuros(data.firstPayment.vatCents)} de TVA.
-							Ensuite, votre carte est prélevée {isYearly ? 'chaque année' : 'chaque mois'}, à la même date.
-						{:else}
-							Rien à payer aujourd’hui : aucune de vos pharmacies n’utilise encore un module que vous prenez en charge.
-						{/if}
-					</p>
-				</div>
+		<!-- Le ticket à valider : ce qu'on paie aujourd'hui en gros, le bouton juste à côté. -->
+		<form method="POST" action="?/payByCard" class="grid overflow-hidden rounded-xl bg-rail text-on-rail shadow-float md:grid-cols-[minmax(0,1fr)_auto]">
+			<div class="grid gap-2 p-6">
+				<p class="text-eyebrow text-warning-on-rail">À activer</p>
+				<h2 class="font-display text-[26px] leading-8">Activez votre contrat</h2>
+				<p class="max-w-xl text-body text-rail-ink">
+					{#if data.firstPayment.totalCents > 0}
+						Vous réglez aujourd’hui {isYearly ? 'votre première année' : 'votre premier mois'} :
+						{formatEuros(data.firstPayment.subtotalCents)} HT + {formatEuros(data.firstPayment.vatCents)} de TVA.
+						Ensuite, votre carte est prélevée {isYearly ? 'chaque année' : 'chaque mois'}, à la même date.
+					{:else}
+						Rien à payer aujourd’hui : aucune de vos pharmacies n’utilise encore un module que vous prenez en charge.
+					{/if}
+				</p>
+			</div>
+			<div class="relative grid content-center justify-items-start gap-3 border-dashed border-rail-raised p-6 max-md:border-t-2 md:border-l-2">
+				<span aria-hidden="true" class="absolute -top-2 -left-2 size-4 rounded-full bg-app max-md:hidden"></span>
+				<span aria-hidden="true" class="absolute -bottom-2 -left-2 size-4 rounded-full bg-app max-md:hidden"></span>
+				{#if data.firstPayment.totalCents > 0}
+					<p class="font-display text-[36px] leading-10 tabular-nums">{formatEuros(data.firstPayment.totalCents)} <span class="text-small font-sans text-rail-ink">TTC</span></p>
+				{/if}
 				<Button type="submit" icon="credit-card">
-					{data.firstPayment.totalCents > 0 ? `Payer ${formatEuros(data.firstPayment.totalCents)} TTC` : 'Activer le contrat'}
+					{data.firstPayment.totalCents > 0 ? 'Payer par carte' : 'Activer le contrat'}
 				</Button>
-			</form>
-		</Card>
+			</div>
+		</form>
 	{:else if contract.status === 'suspended'}
 		<Alert tone="danger" title="Contrat suspendu">Vos pharmacies ne profitent plus de votre prise en charge. Contactez Crystal Pharm.</Alert>
 	{/if}
@@ -120,26 +130,24 @@
 		</StatCard>
 	</div>
 
-	<Card>
-		<div class="grid gap-5 md:grid-cols-2">
-			<section class="grid content-start gap-2">
-				<h2 class="flex items-center gap-2 title-2 text-ink"><Icon name="storefront" size={20} class="text-accent-text" />Pour vos pharmacies</h2>
-				<ul class="grid gap-1.5 text-body text-ink">
+	<div class="grid gap-4 md:grid-cols-2">
+			<section class="grid content-start gap-3 rounded-xl border border-line bg-surface p-5 shadow-card">
+				<h2 class="flex items-center gap-2 font-display text-[21px] leading-7 text-ink"><Icon name="storefront" size={20} class="text-accent-text" />Pour vos pharmacies</h2>
+				<ul class="grid gap-2 text-body text-ink">
 					{#each words.forPharmacies as sentence (sentence)}<li>{sentence}</li>{/each}
 				</ul>
 			</section>
-			<section class="grid content-start gap-2">
-				<h2 class="flex items-center gap-2 title-2 text-ink"><Icon name="receipt" size={20} class="text-accent-text" />Pour vous</h2>
-				<ul class="grid gap-1.5 text-body text-ink">
+			<section class="grid content-start gap-3 rounded-xl border border-line bg-surface p-5 shadow-card">
+				<h2 class="flex items-center gap-2 font-display text-[21px] leading-7 text-ink"><Icon name="receipt" size={20} class="text-accent-text" />Pour vous</h2>
+				<ul class="grid gap-2 text-body text-ink">
 					{#each words.forGroup as sentence (sentence)}<li>{sentence}</li>{/each}
 				</ul>
-				<p class="text-small text-ink-subtle">Prix hors taxes, TVA en plus sur la facture.</p>
+				<p class="border-t border-dashed border-line-strong/50 pt-3 text-small text-ink-subtle">Prix hors taxes, TVA en plus sur la facture.</p>
 			</section>
-		</div>
-	</Card>
+	</div>
 
 	<section aria-labelledby="par-pharmacie-titre" class="grid gap-2">
-		<h2 id="par-pharmacie-titre" class="title-2 text-ink">Le détail, pour une pharmacie membre</h2>
+		<h2 id="par-pharmacie-titre" class="font-display text-[21px] leading-7 text-ink">Le détail, pour une pharmacie membre</h2>
 		<ContractToolTable catalog={data.catalog} coverages={contract.coverages} billingMode={contract.billingMode} />
 		<p class="text-small text-ink-muted">Pour changer votre contrat ou votre nombre de pharmacies, contactez Crystal Pharm.</p>
 	</section>
@@ -147,7 +155,7 @@
 	{#if data.latestInvoices.length > 0}
 		<section aria-labelledby="factures-titre" class="grid gap-2">
 			<div class="flex flex-wrap items-center justify-between gap-2">
-				<h2 id="factures-titre" class="title-2 text-ink">Dernières factures</h2>
+				<h2 id="factures-titre" class="font-display text-[21px] leading-7 text-ink">Dernières factures</h2>
 				<TextLink href={groupPathnames.invoices}>Toutes vos factures</TextLink>
 			</div>
 			<InvoiceTable caption="Vos dernières factures" invoices={data.latestInvoices} />

@@ -11,13 +11,13 @@
 
 	const placementClasses = {
 		inline: '',
-		corner: 'absolute -top-1.5 left-[calc(50%+6px)] ring-2 ring-surface'
+		corner: 'absolute top-1.5 left-[calc(50%+6px)] ring-2 ring-rail'
 	};
 </script>
 
 {#if count && count > 0}
 	<span
-		class="inline-grid h-5 min-w-5 place-items-center rounded-full bg-notify px-1.5 text-[11.5px] leading-none font-semibold text-white tabular-nums {placementClasses[
+		class="inline-grid h-5 min-w-5 place-items-center rounded-full bg-notify px-1.5 text-[12px] leading-none font-bold text-white tabular-nums {placementClasses[
 			placement
 		]}"
 	>

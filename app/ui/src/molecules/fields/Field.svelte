@@ -24,8 +24,8 @@
 </script>
 
 <!-- L'aide reste sous l'erreur : c'est souvent elle qui dit comment corriger. -->
-<div class="flex min-w-0 flex-col gap-1.5">
-	<label for={controlId} class="text-[14px] leading-5 font-medium text-ink">{label}</label>
+<div class="flex min-w-0 flex-col gap-2">
+	<label for={controlId} class="text-label text-ink">{label}</label>
 	{@render control(controlAttributes)}
 	{#if errorMessage}
 		<p id={errorId} class="text-small font-medium text-danger">{errorMessage}</p>

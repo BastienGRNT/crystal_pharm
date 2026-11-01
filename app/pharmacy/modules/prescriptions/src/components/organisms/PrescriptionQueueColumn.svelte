@@ -14,19 +14,19 @@
 	const headingId = $props.id();
 </script>
 
-<section aria-labelledby={headingId} class="grid content-start gap-2.5 rounded-lg bg-surface-muted/70 p-2.5">
-	<h2
-		id={headingId}
-		class="flex items-center justify-between gap-2 px-1 pt-0.5 text-[14px] leading-5 font-semibold text-ink {isSearching ? '' : 'max-xl:sr-only'}"
-	>
-		{column.title}
-		<span class="inline-grid h-6 min-w-6 place-items-center rounded-full bg-surface px-2 text-[12.5px] font-semibold text-ink-muted tabular-nums">
+<!-- Un bac par étape : le chiffre se lit de loin, la règle épaisse marque où commence la pile. -->
+<section aria-labelledby={headingId} class="grid content-start gap-3">
+	<header class="flex items-end justify-between gap-3 border-b-2 border-ink pb-2 {isSearching ? '' : 'max-xl:hidden'}">
+		<h2 id={headingId} class="text-[16px] leading-5 font-bold text-ink">{column.title}</h2>
+		<span class="font-display text-[36px] leading-9 text-ink tabular-nums" aria-label="{visibleCards.length} ordonnances">
 			{visibleCards.length}
 		</span>
-	</h2>
+	</header>
 	{#each visibleCards as card (card.id)}
 		<PrescriptionQueueCard {card} />
 	{:else}
-		<p class="px-1 pb-1 text-small text-ink-subtle">{isSearching ? 'Personne de ce nom ici.' : column.emptyLabel}</p>
+		<p class="rounded-lg border border-dashed border-line-strong/60 px-4 py-6 text-center text-small text-ink-subtle">
+			{isSearching ? 'Personne de ce nom ici.' : column.emptyLabel}
+		</p>
 	{/each}
 </section>

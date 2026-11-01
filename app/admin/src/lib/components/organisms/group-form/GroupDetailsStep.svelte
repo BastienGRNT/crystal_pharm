@@ -13,7 +13,7 @@
 
 <div class="grid gap-4">
 	<div class="grid gap-1">
-		<h2 class="title-2 text-ink">Le groupement</h2>
+		<h2 class="font-display text-[24px] leading-8 text-ink">Le groupement</h2>
 		<p class="text-small text-ink-muted">Son nom, qui contacter, et combien de pharmacies il prévoit.</p>
 	</div>
 	<Field label="Nom du groupement" hint="Ex. : Pharma+" errorMessage={fieldErrors.name}>

@@ -24,13 +24,13 @@
 	let isOverflowOpen = $state(false);
 
 	const tabClasses =
-		"relative grid h-full w-full content-center justify-items-center gap-1 px-0.5 text-[11.5px] leading-[14px] font-medium text-ink-subtle no-underline aria-[current=page]:font-semibold aria-[current=page]:text-accent-text aria-[current=page]:before:absolute aria-[current=page]:before:inset-x-[22%] aria-[current=page]:before:top-0 aria-[current=page]:before:h-[3px] aria-[current=page]:before:rounded-b-[3px] aria-[current=page]:before:bg-accent aria-[current=page]:before:content-['']";
+		"relative grid h-full w-full content-center justify-items-center gap-1 text-[12px] leading-[14px] font-semibold text-rail-ink no-underline aria-[current=page]:text-on-rail aria-[current=page]:before:absolute aria-[current=page]:before:inset-x-[24%] aria-[current=page]:before:top-0 aria-[current=page]:before:h-[3px] aria-[current=page]:before:rounded-b-[3px] aria-[current=page]:before:bg-accent-on-rail aria-[current=page]:before:content-['']";
 </script>
 
 <!-- Sur un téléphone, le menu passe sous le pouce : une colonne fixe mangerait le quart de l'écran. -->
 <nav
 	aria-label="Navigation principale"
-	class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+	class="fixed inset-x-0 bottom-0 z-30 bg-rail pb-[env(safe-area-inset-bottom)] lg:hidden"
 >
 	<ul class="flex h-tabbar">
 		{#each visibleLinks as navigationLink (navigationLink.href)}
@@ -43,7 +43,7 @@
 					{#if navigationLink.icon}
 						<Icon name={navigationLink.icon} size={22} />
 					{/if}
-					<span class="max-w-full truncate">{navigationLink.label}</span>
+					<span class="max-w-full truncate">{navigationLink.shortLabel ?? navigationLink.label}</span>
 					<NavigationCount
 						count={countsByHref[navigationLink.href]}
 						needsAttention={hrefsNeedingAttention.includes(navigationLink.href)}

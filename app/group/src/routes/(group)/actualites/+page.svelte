@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Alert, Button, Card, EmptyState, PageHeader, SidePanel } from '@crystal-pharm/ui';
+	import { Alert, Button, EmptyState, PageHeader, SidePanel } from '@crystal-pharm/ui';
 	import GroupArticleForm from '$lib/components/organisms/GroupArticleForm.svelte';
 	import GroupArticleList from '$lib/components/organisms/GroupArticleList.svelte';
 	import GroupNewsImpositionForm from '$lib/components/organisms/GroupNewsImpositionForm.svelte';
@@ -28,7 +28,7 @@
 	<title>Actualités · Crystal Pharm</title>
 </svelte:head>
 
-<div class="grid w-full max-w-3xl gap-3.5">
+<div class="grid gap-6">
 	<PageHeader
 		icon="sparkle"
 		title="Actualités"
@@ -43,26 +43,32 @@
 
 	<!-- Après un envoi, chaque formulaire repart de ce qui vient d'être enregistré ou refusé. -->
 	{#key form}
-		{#if data.articles.length > 0}
-			<Card>
-				<div class="grid gap-4">
-					<h2 class="title-2 text-ink">Publiées</h2>
+		<div class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+			<section aria-labelledby="published-articles-title" class="grid gap-3">
+				<h2 id="published-articles-title" class="flex items-baseline gap-2 font-display text-[21px] leading-7 text-ink">
+					Publiées
+					{#if data.articles.length > 0}<span class="font-sans text-small text-ink-subtle tabular-nums">{data.articles.length}</span>{/if}
+				</h2>
+				{#if data.articles.length > 0}
 					<GroupArticleList articles={data.articles} {refusedUpdate} />
-				</div>
-			</Card>
-		{:else}
-			<EmptyState
-				icon="sparkle"
-				title="Aucune actualité pour l’instant"
-				description="Publiez-en une : elle apparaîtra sur le site des pharmacies qui affichent vos actualités."
-			>
-				{#snippet actions()}
-					<Button href={newArticleHref} icon="plus">Écrire la première</Button>
-				{/snippet}
-			</EmptyState>
-		{/if}
+				{:else}
+					<EmptyState
+						icon="sparkle"
+						title="Aucune actualité pour l’instant"
+						description="Publiez-en une : elle apparaîtra sur le site des pharmacies qui affichent vos actualités."
+					>
+						{#snippet actions()}
+							<Button href={newArticleHref} icon="plus">Écrire la première</Button>
+						{/snippet}
+					</EmptyState>
+				{/if}
+			</section>
 
-		<GroupNewsImpositionForm imposesGroupNews={data.imposesGroupNews} />
+			<aside aria-labelledby="news-diffusion-title" class="grid gap-3 lg:sticky lg:top-6">
+				<h2 id="news-diffusion-title" class="font-display text-[21px] leading-7 text-ink">Diffusion</h2>
+				<GroupNewsImpositionForm imposesGroupNews={data.imposesGroupNews} />
+			</aside>
+		</div>
 
 		{#if isNewArticlePanelOpen}
 			<SidePanel title="Nouvelle actualité" closeHref="/actualites">

@@ -68,6 +68,13 @@
 <div class="flex flex-col gap-4">
 	<PageHeader title={data.title} context={data.context} icon="calendar-dots">
 		{#snippet actions()}
+			{#if pendingRequestCount > 0}
+				<Button href={data.pendingPanel.openHref} variant="secondary" icon="bell">
+					À traiter <StatusBadge tone="warning">{pendingRequestCount}</StatusBadge>
+				</Button>
+			{/if}
+			<Button href={data.settingsHref} variant="secondary" icon="wrench">Règles et contrats</Button>
+			<Button href={data.toolsPanel.openHref} variant="secondary" icon="sparkle">Remplir la semaine…</Button>
 			<WeekStatusBar
 				isDraft={data.weekStatus.isDraft}
 				publishFormAction={data.publishWeekFormAction}
@@ -76,7 +83,7 @@
 		{/snippet}
 	</PageHeader>
 
-	<div class="flex flex-wrap items-center gap-4">
+	<div class="flex flex-wrap items-center justify-between gap-4">
 		<SegmentedControl label="Vue du planning" options={data.viewOptions} />
 		<WeekNav
 			weekLabel={data.periodNavigation.label}
@@ -87,15 +94,6 @@
 			nextLabel={data.periodNavigation.nextLabel}
 			todayHref={data.periodNavigation.todayHref}
 		/>
-		<div class="ml-auto flex items-center gap-2">
-			{#if pendingRequestCount > 0}
-				<Button href={data.pendingPanel.openHref} variant="secondary" icon="bell">
-					À traiter <StatusBadge tone="warning">{pendingRequestCount}</StatusBadge>
-				</Button>
-			{/if}
-			<Button href={data.toolsPanel.openHref} variant="secondary" icon="sparkle">Remplir la semaine…</Button>
-			<Button href={data.settingsHref} variant="ghost" icon="wrench">Réglages</Button>
-		</div>
 	</div>
 
 	{#if form && 'generationReport' in form}

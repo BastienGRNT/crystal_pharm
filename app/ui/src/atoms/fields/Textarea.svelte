@@ -7,5 +7,5 @@
 <textarea
 	bind:value
 	{...textareaAttributes}
-	class="min-h-24 w-full rounded-sm border border-line-strong bg-surface px-2.5 py-2 text-[14px] leading-5 text-ink transition-[border-color,box-shadow] duration-[120ms] placeholder:text-ink-subtle focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_var(--accent-soft-value)] focus-visible:outline-none aria-invalid:border-danger {className}"
+	class="min-h-24 w-full rounded-control border border-line-strong/55 bg-field px-3 py-2 text-[15.5px] leading-6 text-ink transition-[border-color,box-shadow] duration-[120ms] placeholder:text-ink-subtle focus-visible:border-accent focus-visible:shadow-[0_0_0_4px_var(--accent-soft-value)] focus-visible:outline-none aria-invalid:border-danger {className}"
 ></textarea>

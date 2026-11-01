@@ -11,7 +11,8 @@
 		Field,
 		Input,
 		PageHeader,
-		PageSectionNav,
+		FormSection,
+		PageTabs,
 		Select,
 		StickyActionBar,
 		Switch,
@@ -19,7 +20,7 @@
 		Textarea,
 		TimePicker,
 		UnsavedChangesGuard,
-		type PageSection
+		type FilterTab
 	} from '@crystal-pharm/ui';
 	import {
 		bufferChoicesInMinutes,
@@ -53,7 +54,9 @@
 	let hasTriedToSave = $state(false);
 	let openReasonIds: string[] = $state([]);
 
-	const sectionIds = { reasons: 'motifs', hours: 'horaires', closures: 'fermetures', rules: 'regles' } as const;
+	type SettingsTab = 'reasons' | 'hours' | 'closures' | 'rules';
+	const tabHrefs: Record<SettingsTab, string> = { reasons: '#motifs', hours: '#horaires', closures: '#fermetures', rules: '#regles' };
+	let currentTab = $state<SettingsTab>('reasons');
 
 	const hasUnsavedChanges = $derived(JSON.stringify(configuration) !== savedFingerprint);
 	const reasonsWithoutLabel = $derived(findReasonsWithoutLabel(configuration.reasons));
@@ -65,12 +68,17 @@
 	const unusedSuggestions = $derived(
 		suggestedReasons.filter((suggestion) => !configuration.reasons.some((reason) => reason.label === suggestion.label))
 	);
-	const sections: PageSection[] = $derived([
-		{ id: sectionIds.reasons, label: 'Motifs', count: configuration.reasons.length, hasError: showsReasonErrors },
-		{ id: sectionIds.hours, label: 'Qui reçoit et quand' },
-		{ id: sectionIds.closures, label: 'Fermetures', count: configuration.closures.length },
-		{ id: sectionIds.rules, label: 'Règles' }
+	const tabs: FilterTab[] = $derived([
+		{ href: tabHrefs.reasons, label: 'Motifs', isCurrent: currentTab === 'reasons', count: configuration.reasons.length, needsAttention: showsReasonErrors },
+		{ href: tabHrefs.hours, label: 'Qui reçoit et quand', isCurrent: currentTab === 'hours', count: receivingEmployeeCount },
+		{ href: tabHrefs.closures, label: 'Fermetures', isCurrent: currentTab === 'closures', count: configuration.closures.length },
+		{ href: tabHrefs.rules, label: 'Règles de réservation', isCurrent: currentTab === 'rules' }
 	]);
+
+	function selectTab(href: string): void {
+		const selectedTab = (Object.keys(tabHrefs) as SettingsTab[]).find((tab) => tabHrefs[tab] === href);
+		if (selectedTab) currentTab = selectedTab;
+	}
 
 	function addReason(label: string, durationMinutes: number): void {
 		const reason = createAppointmentReason(label, durationMinutes);
@@ -119,6 +127,7 @@
 	async function showFirstReasonWithoutLabel(): Promise<void> {
 		const [firstReasonWithoutLabel] = reasonsWithoutLabel;
 		if (!firstReasonWithoutLabel) return;
+		currentTab = 'reasons';
 		openReasonIds = [...openReasonIds, ...reasonsWithoutLabel.map((reason) => reason.id)];
 		await tick();
 		const reasonRow = document.getElementById(`motif-${firstReasonWithoutLabel.id}`);
@@ -137,9 +146,12 @@
 
 <UnsavedChangesGuard {hasUnsavedChanges} />
 
-<PageHeader title="Réglages des rendez-vous" context="Ce que vos patients peuvent réserver sur votre site, et quand" icon="calendar-check">
+<PageHeader title="Réglages des rendez-vous" context="Ce que vos patients peuvent réserver sur votre site" icon="calendar-check">
 	{#snippet actions()}
-		<Button href="/booking" variant="ghost" icon="arrow-right">Retour aux rendez-vous</Button>
+		<Button href="/booking" variant="secondary" icon="calendar-check">Voir les rendez-vous</Button>
+	{/snippet}
+	{#snippet navigation()}
+		<PageTabs label="Parties des réglages" {tabs} onTabSelect={selectTab} />
 	{/snippet}
 </PageHeader>
 
@@ -169,44 +181,43 @@
 >
 	<input type="hidden" name="configuration" value={JSON.stringify(configuration)} />
 
-	<Card spacing="spacious">
-		<div class="grid gap-5 md:grid-cols-2">
-			<div class="grid content-start gap-2">
-				<Switch
-					label={configuration.settings.isBookingOpen ? 'Réservation en ligne ouverte' : 'Réservation en ligne fermée'}
-					bind:checked={configuration.settings.isBookingOpen}
-				/>
-				<p class="text-body text-ink-muted">
-					{#if configuration.settings.isBookingOpen}
-						{activeReasonCount === 0
-							? 'Ajoutez au moins un motif proposé sur le site : sans lui, personne ne peut réserver.'
-							: `Vos patients réservent sur votre site : ${activeReasonCount} ${activeReasonCount === 1 ? 'motif proposé' : 'motifs proposés'}, ${receivingEmployeeCount} ${receivingEmployeeCount === 1 ? 'personne reçoit' : 'personnes reçoivent'}.`}
-					{:else}
-						Votre site n’affiche plus le bouton de réservation. Les rendez-vous déjà pris restent valables.
-					{/if}
-				</p>
-			</div>
-			<div class="grid content-start gap-2 md:border-l md:border-line-soft md:pl-5">
-				<Switch
-					label={configuration.settings.confirmsAutomatically ? 'Confirmation automatique' : 'Vous confirmez chaque demande'}
-					accessibleLabel="Confirmer automatiquement les rendez-vous"
-					bind:checked={configuration.settings.confirmsAutomatically}
-				/>
-				<p class="text-body text-ink-muted">
-					{configuration.settings.confirmsAutomatically
-						? 'Le patient reçoit sa confirmation par email aussitôt sa réservation faite.'
-						: 'Chaque demande attend votre accord ; le patient est prévenu par email dès que vous confirmez.'}
-				</p>
-			</div>
+	<!-- Les deux réglages qui changent tout, toujours sous les yeux, quel que soit l'onglet ouvert. -->
+	<div class="grid overflow-hidden rounded-xl border border-line bg-surface shadow-card md:grid-cols-2">
+		<div class="grid content-start gap-1.5 border-l-4 px-5 py-4 {configuration.settings.isBookingOpen ? 'border-l-success' : 'border-l-line-strong'}">
+			<Switch
+				label={configuration.settings.isBookingOpen ? 'Réservation en ligne ouverte' : 'Réservation en ligne fermée'}
+				bind:checked={configuration.settings.isBookingOpen}
+			/>
+			<p class="text-small text-ink-muted">
+				{#if configuration.settings.isBookingOpen}
+					{activeReasonCount === 0
+						? 'Ajoutez au moins un motif proposé sur le site : sans lui, personne ne peut réserver.'
+						: `${activeReasonCount} ${activeReasonCount === 1 ? 'motif proposé' : 'motifs proposés'}, ${receivingEmployeeCount} ${receivingEmployeeCount === 1 ? 'personne reçoit' : 'personnes reçoivent'}.`}
+				{:else}
+					Votre site n’affiche plus le bouton de réservation. Les rendez-vous déjà pris restent valables.
+				{/if}
+			</p>
 		</div>
-	</Card>
+		<div class="grid content-start gap-1.5 border-line px-5 py-4 max-md:border-t md:border-l">
+			<Switch
+				label={configuration.settings.confirmsAutomatically ? 'Confirmation automatique' : 'Vous confirmez chaque demande'}
+				accessibleLabel="Confirmer automatiquement les rendez-vous"
+				bind:checked={configuration.settings.confirmsAutomatically}
+			/>
+			<p class="text-small text-ink-muted">
+				{configuration.settings.confirmsAutomatically
+					? 'Le patient reçoit sa confirmation par email aussitôt sa réservation faite.'
+					: 'Chaque demande attend votre accord ; le patient est prévenu par email dès que vous confirmez.'}
+			</p>
+		</div>
+	</div>
 
-	<PageSectionNav label="Parties des réglages" {sections} />
 
-	<section id={sectionIds.reasons} class="grid scroll-mt-[calc(var(--spacing-topbar)+64px)] gap-3" aria-labelledby="{sectionIds.reasons}-title">
+	{#if currentTab === 'reasons'}
+	<section class="grid gap-3" aria-labelledby="motifs-titre">
 		<div class="flex flex-wrap items-end justify-between gap-3">
 			<div class="grid gap-0.5">
-				<h2 id="{sectionIds.reasons}-title" class="title-2 text-ink">Motifs de rendez-vous</h2>
+				<h2 id="motifs-titre" class="font-display text-[22px] leading-7 text-ink">Motifs de rendez-vous</h2>
 				<p class="text-small text-ink-muted">Chaque motif a sa durée : c’est elle qui décide des créneaux proposés.</p>
 			</div>
 			<Button type="button" icon="plus" onclick={() => addReason('', 15)}>Ajouter un motif</Button>
@@ -282,10 +293,10 @@
 			</CollapsibleRow>
 		{/each}
 	</section>
-
-	<section id={sectionIds.hours} class="grid scroll-mt-[calc(var(--spacing-topbar)+64px)] gap-3" aria-labelledby="{sectionIds.hours}-title">
+	{:else if currentTab === 'hours'}
+	<section class="grid gap-3" aria-labelledby="horaires-titre">
 		<div class="grid gap-0.5">
-			<h2 id="{sectionIds.hours}-title" class="title-2 text-ink">Qui reçoit et quand</h2>
+			<h2 id="horaires-titre" class="font-display text-[22px] leading-7 text-ink">Qui reçoit et quand</h2>
 			<p class="text-small text-ink-muted">Les plages pendant lesquelles chaque personne reçoit sur rendez-vous.</p>
 		</div>
 		{#if data.employees.length === 0}
@@ -335,11 +346,11 @@
 			</CollapsibleRow>
 		{/each}
 	</section>
-
-	<section id={sectionIds.closures} class="grid scroll-mt-[calc(var(--spacing-topbar)+64px)] gap-3" aria-labelledby="{sectionIds.closures}-title">
+	{:else if currentTab === 'closures'}
+	<section class="grid gap-3" aria-labelledby="fermetures-titre">
 		<div class="flex flex-wrap items-end justify-between gap-3">
 			<div class="grid gap-0.5">
-				<h2 id="{sectionIds.closures}-title" class="title-2 text-ink">Fermetures</h2>
+				<h2 id="fermetures-titre" class="font-display text-[22px] leading-7 text-ink">Fermetures</h2>
 				<p class="text-small text-ink-muted">Congés, jours fériés, formation : aucun créneau n’est proposé ces jours-là.</p>
 			</div>
 			<Button type="button" variant="secondary" icon="plus" onclick={addClosure}>Ajouter une fermeture</Button>
@@ -373,57 +384,63 @@
 			<p class="text-small text-ink-muted">Aucune fermeture prévue.</p>
 		{/if}
 	</section>
-
-	<section id={sectionIds.rules} class="grid scroll-mt-[calc(var(--spacing-topbar)+64px)] gap-3" aria-labelledby="{sectionIds.rules}-title">
-		<h2 id="{sectionIds.rules}-title" class="title-2 text-ink">Règles de réservation</h2>
-		<Card spacing="spacious">
-			<div class="grid gap-5">
-				<div class="grid gap-4 sm:grid-cols-2">
-					<Field label="Un créneau toutes les">
-						{#snippet control(attributes)}
-							<Select {...attributes} bind:value={configuration.settings.slotStepMinutes}>
-								{#each includeCurrentChoice(slotStepChoicesInMinutes, configuration.settings.slotStepMinutes) as minutes (minutes)}
-									<option value={minutes}>{formatDuration(minutes)}</option>
-								{/each}
-							</Select>
-						{/snippet}
-					</Field>
-					<Field label="Pause entre deux rendez-vous" hint="Le temps de ranger et de préparer le suivant.">
-						{#snippet control(attributes)}
-							<Select {...attributes} bind:value={configuration.settings.bufferMinutes}>
-								{#each includeCurrentChoice(bufferChoicesInMinutes, configuration.settings.bufferMinutes) as minutes (minutes)}
-									<option value={minutes}>{minutes === 0 ? 'Aucune pause' : formatDuration(minutes)}</option>
-								{/each}
-							</Select>
-						{/snippet}
-					</Field>
-					<Field label="Réservable au plus tard" hint="Avant l’heure du rendez-vous : vous avez le temps de vous organiser.">
-						{#snippet control(attributes)}
-							<Select {...attributes} bind:value={configuration.settings.minimumNoticeMinutes}>
-								{#each includeCurrentChoice(minimumNoticeChoicesInMinutes, configuration.settings.minimumNoticeMinutes) as minutes (minutes)}
-									<option value={minutes}>{minutes === 0 ? 'Jusqu’à la dernière minute' : `${formatDuration(minutes)} avant`}</option>
-								{/each}
-							</Select>
-						{/snippet}
-					</Field>
-					<Field label="Réservable jusqu’à">
-						{#snippet control(attributes)}
-							<Select {...attributes} bind:value={configuration.settings.maximumAdvanceDays}>
-								{#each includeCurrentChoice(maximumAdvanceChoicesInDays, configuration.settings.maximumAdvanceDays) as days (days)}
-									<option value={days}>{days} jours à l’avance</option>
-								{/each}
-							</Select>
-						{/snippet}
-					</Field>
-				</div>
-				<Field label="Message après la réservation (facultatif)" hint="Affiché au patient une fois son rendez-vous réservé.">
+	{:else}
+	<div class="grid gap-8">
+		<FormSection title="Les créneaux" description="Comment votre journée se découpe pour les patients.">
+			<div class="grid gap-4 sm:grid-cols-2">
+				<Field label="Un créneau toutes les">
 					{#snippet control(attributes)}
-						<Textarea {...attributes} bind:value={configuration.settings.confirmationMessage} rows={3} maxlength={400} />
+						<Select {...attributes} bind:value={configuration.settings.slotStepMinutes}>
+							{#each includeCurrentChoice(slotStepChoicesInMinutes, configuration.settings.slotStepMinutes) as minutes (minutes)}
+								<option value={minutes}>{formatDuration(minutes)}</option>
+							{/each}
+						</Select>
+					{/snippet}
+				</Field>
+				<Field label="Pause entre deux rendez-vous" hint="Le temps de ranger et de préparer le suivant.">
+					{#snippet control(attributes)}
+						<Select {...attributes} bind:value={configuration.settings.bufferMinutes}>
+							{#each includeCurrentChoice(bufferChoicesInMinutes, configuration.settings.bufferMinutes) as minutes (minutes)}
+								<option value={minutes}>{minutes === 0 ? 'Aucune pause' : formatDuration(minutes)}</option>
+							{/each}
+						</Select>
 					{/snippet}
 				</Field>
 			</div>
-		</Card>
-	</section>
+		</FormSection>
+
+		<FormSection title="Le délai" description="Jusqu’à quand et à combien de jours on peut réserver.">
+			<div class="grid gap-4 sm:grid-cols-2">
+				<Field label="Réservable au plus tard" hint="Avant l’heure du rendez-vous : vous avez le temps de vous organiser.">
+					{#snippet control(attributes)}
+						<Select {...attributes} bind:value={configuration.settings.minimumNoticeMinutes}>
+							{#each includeCurrentChoice(minimumNoticeChoicesInMinutes, configuration.settings.minimumNoticeMinutes) as minutes (minutes)}
+								<option value={minutes}>{minutes === 0 ? 'Jusqu’à la dernière minute' : `${formatDuration(minutes)} avant`}</option>
+							{/each}
+						</Select>
+					{/snippet}
+				</Field>
+				<Field label="Réservable jusqu’à">
+					{#snippet control(attributes)}
+						<Select {...attributes} bind:value={configuration.settings.maximumAdvanceDays}>
+							{#each includeCurrentChoice(maximumAdvanceChoicesInDays, configuration.settings.maximumAdvanceDays) as days (days)}
+								<option value={days}>{days} jours à l’avance</option>
+							{/each}
+						</Select>
+					{/snippet}
+				</Field>
+			</div>
+		</FormSection>
+
+		<FormSection title="Après la réservation" description="Ce que le patient lit une fois son rendez-vous pris.">
+			<Field label="Message (facultatif)">
+				{#snippet control(attributes)}
+					<Textarea {...attributes} bind:value={configuration.settings.confirmationMessage} rows={3} maxlength={400} />
+				{/snippet}
+			</Field>
+		</FormSection>
+	</div>
+	{/if}
 
 	<!-- Rien à enregistrer : la barre s'efface et laisse la page à la lecture. -->
 	{#if hasUnsavedChanges || showsReasonErrors || form?.isSaved}

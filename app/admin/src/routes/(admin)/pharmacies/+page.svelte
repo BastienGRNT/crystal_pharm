@@ -68,15 +68,14 @@
 			<th>Pharmacie</th>
 			<th>Situation</th>
 			<th>Modules actifs</th>
-			<th class="text-right">Pharmacie<span class="block text-[11px] font-normal text-ink-subtle">HT / mois</span></th>
-			<th class="text-right">Groupement<span class="block text-[11px] font-normal text-ink-subtle">HT / mois</span></th>
+			<th class="text-right">Elle paie<span class="block normal-case tracking-normal font-normal">HT / mois</span></th>
+			<th class="text-right">Son groupement<span class="block normal-case tracking-normal font-normal">HT / mois</span></th>
 		{/snippet}
 		{#each visiblePharmacies as pharmacy (pharmacy.tenantId)}
 			<tr>
 				<td class="min-w-56">
-					<span class="body-strong">{pharmacy.name}</span><br />
-					<span class="text-small text-ink-muted">{pharmacy.postalCode} {pharmacy.city}</span><br />
-					<span class="text-small text-ink-subtle">inscrite le {formatDay(pharmacy.createdAt)}</span>
+					<span class="block body-strong">{pharmacy.name}</span>
+					<span class="block text-small text-ink-muted">{pharmacy.postalCode} {pharmacy.city} · inscrite le {formatDay(pharmacy.createdAt)}</span>
 				</td>
 				<td>
 					<span class="flex flex-wrap items-center gap-1.5">
@@ -85,8 +84,8 @@
 					</span>
 				</td>
 				<td><TagList labels={pharmacy.activeToolKeys.map((toolKey) => findTool(toolKey).label)} emptyLabel="Aucun" /></td>
-				<td class="text-right tabular-nums">{formatEuros(pharmacy.pharmacyMonthlyPaymentCents)}</td>
-				<td class="text-right tabular-nums">{formatEuros(pharmacy.groupMonthlyPaymentCents)}</td>
+				<td class="text-right tabular-nums {pharmacy.pharmacyMonthlyPaymentCents === 0 ? 'text-ink-subtle' : 'font-bold'}">{formatEuros(pharmacy.pharmacyMonthlyPaymentCents)}</td>
+				<td class="text-right tabular-nums {pharmacy.groupMonthlyPaymentCents === 0 ? 'text-ink-subtle' : 'font-bold'}">{formatEuros(pharmacy.groupMonthlyPaymentCents)}</td>
 			</tr>
 		{/each}
 	</DataTable>

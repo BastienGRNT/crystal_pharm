@@ -9,7 +9,7 @@
 		type PharmacyGroupProfileInput
 	} from '@crystal-pharm/group-db/domain';
 	import { wholeFormErrorKey, type FieldErrors } from '@crystal-pharm/pharmacy-db/domain';
-	import { Alert, Button, Card, Field, ImagePicker, Input, Textarea, UnsavedChangesGuard } from '@crystal-pharm/ui';
+	import { Alert, Button, Field, FormSection, ImagePicker, Input, StickyActionBar, Textarea, UnsavedChangesGuard } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 
 	type GroupProfileFormProps = {
@@ -32,11 +32,9 @@
 	const imageHint = `JPEG, PNG, WebP ou SVG, ${maximumPharmacyGroupImageMegabytes} Mo au plus.`;
 </script>
 
-<form method="POST" enctype="multipart/form-data" class="grid gap-3.5" onchange={noticeChosenImage}>
-	<Card>
-		<div class="grid gap-4">
-			<h2 class="title-2 text-ink">Identité</h2>
-
+<form method="POST" enctype="multipart/form-data" class="grid gap-8" onchange={noticeChosenImage}>
+	<FormSection title="Identité" description="Votre nom et votre logo, tels que vos pharmacies membres les affichent.">
+		<div class="grid gap-5">
 			<Field label="Nom du groupement" errorMessage={fieldErrors.name}>
 				{#snippet control(controlAttributes)}
 					<Input {...controlAttributes} name="name" autocomplete="organization" required bind:value={profile.name} />
@@ -58,15 +56,10 @@
 				{/snippet}
 			</Field>
 		</div>
-	</Card>
+	</FormSection>
 
-	<Card>
-		<div class="grid gap-4">
-			<div class="grid gap-1">
-				<h2 class="title-2 text-ink">Carte de fidélité</h2>
-				<p class="text-small text-ink-muted">Facultatif : remplissez seulement ce que votre groupement propose.</p>
-			</div>
-
+	<FormSection title="Carte de fidélité" description="Facultatif : remplissez seulement ce que votre groupement propose.">
+		<div class="grid gap-5">
 			<Field label="Image de la carte" hint={imageHint} errorMessage={fieldErrors.loyaltyCardImage}>
 				{#snippet control(controlAttributes)}
 					<ImagePicker
@@ -112,18 +105,20 @@
 				{/snippet}
 			</Field>
 		</div>
-	</Card>
+	</FormSection>
 
 	{#if fieldErrors[wholeFormErrorKey]}
 		<Alert tone="danger">{fieldErrors[wholeFormErrorKey]}</Alert>
 	{/if}
 
-	<div class="flex flex-wrap items-center gap-3">
-		<Button type="submit" icon="check">Enregistrer</Button>
-		{#if hasUnsavedChanges}
-			<p class="text-small text-ink-muted" role="status">Modifications non enregistrées</p>
-		{/if}
-	</div>
+	<StickyActionBar>
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<p class="text-small {hasUnsavedChanges ? 'font-bold text-warning' : 'text-ink-muted'}" role="status">
+				{hasUnsavedChanges ? 'Modifications non enregistrées' : 'Tout est enregistré'}
+			</p>
+			<Button type="submit" icon="check">Enregistrer</Button>
+		</div>
+	</StickyActionBar>
 </form>
 
 <UnsavedChangesGuard {hasUnsavedChanges} />

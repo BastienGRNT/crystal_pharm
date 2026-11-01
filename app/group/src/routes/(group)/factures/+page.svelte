@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatEuros } from '@crystal-pharm/billing-db/domain';
 	import { EmptyState, InvoiceTable, PageHeader, StatCard } from '@crystal-pharm/ui';
+	import GroupSectionTabs from '$lib/components/molecules/GroupSectionTabs.svelte';
 	import { formatDay, formatDaysUntil } from '$lib/dateFormats';
 	import type { PageProps } from './$types';
 
@@ -13,7 +14,9 @@
 	<title>Factures · {data.groupName}</title>
 </svelte:head>
 
-<PageHeader icon="file-text" title="Factures" context="Vos factures Crystal Pharm, à télécharger en PDF, et votre prochaine échéance." />
+<PageHeader icon="buildings" title="Mon groupement" context="Vos factures Crystal Pharm, à télécharger en PDF.">
+	{#snippet navigation()}<GroupSectionTabs isContractAwaitingPayment={data.isContractAwaitingPayment} />{/snippet}
+</PageHeader>
 
 <div class="grid gap-3.5 sm:grid-cols-2">
 	<StatCard

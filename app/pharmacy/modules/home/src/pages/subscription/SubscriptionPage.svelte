@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { findIncludingToolKeys, findTool, formatEuros, isToolKey } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, ConfirmButton, Icon, InvoiceTable, PageHeader, type IconName } from '@crystal-pharm/ui';
+	import { Alert, Button, ConfirmButton, Icon, InvoiceTable, PageHeader, PageTabs, type FilterTab, type IconName } from '@crystal-pharm/ui';
 	import ToolSubscriptionForm from '../../components/organisms/ToolSubscriptionForm.svelte';
 	import { sumMonthlyGroupSavings } from '../../domain/toolCards';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
@@ -37,26 +37,41 @@
 		list.push({ icon: 'lock-simple', label: 'Données de santé chez un hébergeur certifié HDS' });
 		return list;
 	});
+
+	// Deux onglets pour une page qui mélangeait choisir et retrouver : les factures ne poussent plus les formules hors de l'écran.
+	type SubscriptionTab = 'offers' | 'invoices';
+	const tabHrefs: Record<SubscriptionTab, string> = { offers: '#formules', invoices: '#factures' };
+	let currentTab = $state<SubscriptionTab>('offers');
+	const tabs: FilterTab[] = $derived([
+		{ label: data.subscription ? 'Changer de formule' : 'Choisir une formule', href: tabHrefs.offers, isCurrent: currentTab === 'offers' },
+		{ label: 'Factures', href: tabHrefs.invoices, isCurrent: currentTab === 'invoices', count: data.invoices.length }
+	]);
+	function selectTab(href: string): void {
+		currentTab = href === tabHrefs.invoices ? 'invoices' : 'offers';
+	}
 </script>
 
 <svelte:head>
 	<title>Abonnement · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader
-	icon="credit-card"
-	title="Abonnement"
-	context="Vos patients vous envoient leurs ordonnances et réservent en ligne : moins d’attente au comptoir, plus de temps pour conseiller."
-/>
-
-<ul class="flex flex-wrap gap-x-5 gap-y-1.5">
-	{#each commitments as commitment (commitment.label)}
-		<li class="flex items-center gap-1.5 text-small text-ink-muted">
-			<Icon name={commitment.icon} size={16} class="text-success" />
-			{commitment.label}
-		</li>
-	{/each}
-</ul>
+<PageHeader icon="credit-card" title="Abonnement" context="Vos modules, leur prix et vos factures">
+	{#snippet actions()}
+		<ul class="flex flex-wrap gap-x-4 gap-y-1">
+			{#each commitments as commitment (commitment.label)}
+				<li class="flex items-center gap-1.5 text-small font-bold text-ink-muted">
+					<Icon name={commitment.icon} size={16} class="text-success" />
+					{commitment.label}
+				</li>
+			{/each}
+		</ul>
+	{/snippet}
+	{#snippet navigation()}
+		{#if data.invoices.length > 0}
+			<PageTabs label="Parties de l’abonnement" {tabs} onTabSelect={selectTab} />
+		{/if}
+	{/snippet}
+</PageHeader>
 
 {#if searchParams.get('paiement') === 'reussi'}
 	<Alert tone="success" title="Paiement accepté">Vos modules sont actifs : ils sont dans le menu.</Alert>
@@ -99,93 +114,102 @@
 {/if}
 
 {#if data.subscription}
-	<Card>
-		<div class="flex flex-wrap items-center justify-between gap-4">
-			<div class="grid gap-1">
-				<h2 class="title-2 text-ink">Votre abonnement</h2>
-				<p class="text-body text-ink-muted">
-					Depuis le {formatDay(data.subscription.startedAt)}, payé {data.subscription.billingPeriod === 'yearly' ? 'à l’année' : 'chaque mois'}.
-					{#if data.subscription.endsAt}
-						Résilié : il s’arrête le {formatLastDayBefore(data.subscription.endsAt)} au soir.
-					{:else}
-						{#if data.upcomingCharge}
-							Prochain prélèvement le <span class="body-strong text-ink">{formatDay(data.upcomingCharge.dueOn)}</span> :
-							<span class="body-strong tabular-nums text-ink">{formatEuros(data.upcomingCharge.totalCents)} TTC</span>
-							pour {data.upcomingCharge.billingPeriod === 'yearly' ? 'un an' : 'un mois'}
-							({formatEuros(data.upcomingCharge.subtotalCents)} HT + {formatEuros(data.upcomingCharge.vatCents)} de TVA), sur votre carte.
-						{:else}
-							Prochaine échéance le {formatDay(data.subscription.currentPeriodEndsAt)} : rien à payer.
-						{/if}
-						{#if data.subscription.isMoneyBackGuaranteed}
-							Satisfait ou remboursé jusqu’au {formatDay(data.subscription.moneyBackGuaranteeEndsAt)}.
-						{/if}
-					{/if}
+	<!-- La carte d'abonné : ce qu'on paie et quand, d'un coup d'œil, avant de penser à changer. -->
+	<section aria-labelledby="abonnement-titre" class="grid overflow-hidden rounded-xl border border-line bg-surface shadow-card lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+		<div class="grid content-start gap-3 bg-rail px-6 py-5 text-on-rail max-sm:px-4">
+			<h2 id="abonnement-titre" class="text-eyebrow text-rail-ink">
+				Votre abonnement · {data.subscription.billingPeriod === 'yearly' ? 'à l’année' : 'chaque mois'}
+			</h2>
+			{#if data.subscription.endsAt}
+				<p class="font-display text-[28px] leading-9">S’arrête le {formatLastDayBefore(data.subscription.endsAt)}</p>
+				<p class="text-small text-rail-ink">Résilié. Vous pouvez encore changer d’avis.</p>
+			{:else if data.upcomingCharge}
+				<p class="flex flex-wrap items-baseline gap-x-2">
+					<span class="font-display text-[40px] leading-[44px] tabular-nums">{formatEuros(data.upcomingCharge.totalCents)}</span>
+					<span class="text-small text-rail-ink">TTC le {formatDay(data.upcomingCharge.dueOn)}</span>
 				</p>
-				{#if subscribedOffers.length > 0}
-					<ul class="mt-2 grid gap-1.5" aria-label="Ce que comprend votre abonnement">
-						{#each subscribedOffers as offer (offer.offerKey)}
-							<li class="flex flex-wrap items-baseline gap-x-2 text-body">
-								<Icon name="check-circle" size={16} class="translate-y-0.5 text-success" />
-								<span class="body-strong text-ink">{offer.label}</span>
-								{#if offer.endsAt}
-									<span class="text-small text-ink-muted">retirée, active jusqu’au {formatLastDayBefore(offer.endsAt)}</span>
-								{:else if offer.priceAgreement}
-									<span class="text-small text-ink-muted">
-										prix négocié {formatEuros(offer.billedMonthlyPriceCents)} HT / mois au lieu de {formatEuros(offer.versionPriceCents)}{offer.priceAgreement.endsAt
-											? `, jusqu’au ${formatLastDayBefore(offer.priceAgreement.endsAt)}`
-											: ''}
-									</span>
-								{:else if offer.upcomingVersionPriceCents !== undefined}
-									<span class="text-small text-success">passe à {formatEuros(offer.upcomingVersionPriceCents)} HT / mois au renouvellement</span>
-								{/if}
-							</li>
-						{/each}
-					</ul>
+				<p class="text-small text-rail-ink">
+					{formatEuros(data.upcomingCharge.subtotalCents)} HT + {formatEuros(data.upcomingCharge.vatCents)} de TVA, pour
+					{data.upcomingCharge.billingPeriod === 'yearly' ? 'un an' : 'un mois'}, sur votre carte.
+				</p>
+			{:else}
+				<p class="font-display text-[28px] leading-9">Rien à payer</p>
+				<p class="text-small text-rail-ink">Prochaine échéance le {formatDay(data.subscription.currentPeriodEndsAt)}.</p>
+			{/if}
+			<p class="border-t border-dashed border-rail-raised pt-3 text-small text-rail-ink">
+				Depuis le {formatDay(data.subscription.startedAt)}{#if data.subscription.isMoneyBackGuaranteed && !data.subscription.endsAt}
+					· satisfait ou remboursé jusqu’au {formatDay(data.subscription.moneyBackGuaranteeEndsAt)}{/if}
+			</p>
+		</div>
+		<div class="grid content-between gap-4 px-6 py-5 max-sm:px-4">
+			{#if subscribedOffers.length > 0}
+				<ul class="grid gap-2.5" aria-label="Ce que comprend votre abonnement">
+					{#each subscribedOffers as offer (offer.offerKey)}
+						<li class="grid gap-0.5">
+							<span class="flex items-center gap-2 text-[16px] leading-6 font-bold text-ink">
+								<Icon name="check-circle" size={18} class="flex-none text-success" />{offer.label}
+							</span>
+							{#if offer.endsAt}
+								<span class="pl-[26px] text-small text-ink-muted">retirée, active jusqu’au {formatLastDayBefore(offer.endsAt)}</span>
+							{:else if offer.priceAgreement}
+								<span class="pl-[26px] text-small text-ink-muted">
+									prix négocié {formatEuros(offer.billedMonthlyPriceCents)} HT / mois au lieu de {formatEuros(offer.versionPriceCents)}{offer.priceAgreement.endsAt
+										? `, jusqu’au ${formatLastDayBefore(offer.priceAgreement.endsAt)}`
+										: ''}
+								</span>
+							{:else if offer.upcomingVersionPriceCents !== undefined}
+								<span class="pl-[26px] text-small text-success">passe à {formatEuros(offer.upcomingVersionPriceCents)} HT / mois au renouvellement</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+			<div class="flex justify-end border-t border-dashed border-line-strong/50 pt-3">
+				{#if data.subscription.endsAt}
+					<form method="POST" action="?/resume"><Button type="submit" icon="arrow-counter-clockwise">Reprendre mon abonnement</Button></form>
+				{:else}
+					<form method="POST" action="?/cancel">
+						{#if data.subscription.isMoneyBackGuaranteed}
+							<ConfirmButton
+								label="Résilier et être remboursé"
+								variant="ghost"
+								size="compact"
+								title="Résilier et être remboursé ?"
+								description="Vos modules payants s’arrêtent tout de suite et {formatEuros(data.refundableAmountCents)} vous sont remboursés (un avoir annule chaque facture). Les modules offerts par votre groupement restent actifs."
+								confirmLabel="Résilier et être remboursé"
+								isDestructive
+							/>
+						{:else}
+							<ConfirmButton
+								label="Résilier"
+								variant="ghost"
+								size="compact"
+								title="Résilier votre abonnement ?"
+								description="Vos modules restent actifs jusqu’au {formatLastDayBefore(data.subscription.currentPeriodEndsAt)}, puis s’arrêtent. Vous pourrez changer d’avis d’ici là."
+								confirmLabel="Résilier"
+								isDestructive
+							/>
+						{/if}
+					</form>
 				{/if}
 			</div>
-			{#if data.subscription.endsAt}
-				<form method="POST" action="?/resume"><Button type="submit" icon="arrow-counter-clockwise">Reprendre mon abonnement</Button></form>
-			{:else}
-				<form method="POST" action="?/cancel">
-					{#if data.subscription.isMoneyBackGuaranteed}
-						<ConfirmButton
-							label="Résilier et être remboursé"
-							variant="ghost"
-							title="Résilier et être remboursé ?"
-							description="Vos modules payants s’arrêtent tout de suite et {formatEuros(data.refundableAmountCents)} vous sont remboursés (un avoir annule chaque facture). Les modules offerts par votre groupement restent actifs."
-							confirmLabel="Résilier et être remboursé"
-							isDestructive
-						/>
-					{:else}
-						<ConfirmButton
-							label="Résilier"
-							variant="ghost"
-							title="Résilier votre abonnement ?"
-							description="Vos modules restent actifs jusqu’au {formatLastDayBefore(data.subscription.currentPeriodEndsAt)}, puis s’arrêtent. Vous pourrez changer d’avis d’ici là."
-							confirmLabel="Résilier"
-							isDestructive
-						/>
-					{/if}
-				</form>
-			{/if}
 		</div>
-	</Card>
+	</section>
 {/if}
 
-<ToolSubscriptionForm
-	catalog={data.catalog}
-	coverages={data.coverages}
-	paidToolKeys={data.paidToolKeys}
-	subscription={data.subscription}
-	groupName={data.groupName}
-	highlightedToolKey={requestedToolKey}
-	mustAcceptTerms={data.mustAcceptTerms}
-	failureMessage={form?.failureMessage}
-/>
-
-{#if data.invoices.length > 0}
-	<section aria-labelledby="factures-titre" class="grid gap-2">
-		<h2 id="factures-titre" class="title-2 text-ink">Factures</h2>
+{#if currentTab === 'offers' || data.invoices.length === 0}
+	<ToolSubscriptionForm
+		catalog={data.catalog}
+		coverages={data.coverages}
+		paidToolKeys={data.paidToolKeys}
+		subscription={data.subscription}
+		groupName={data.groupName}
+		highlightedToolKey={requestedToolKey}
+		mustAcceptTerms={data.mustAcceptTerms}
+		failureMessage={form?.failureMessage}
+	/>
+{:else}
+	<section aria-label="Factures" class="grid gap-2">
 		<InvoiceTable caption="Vos factures" invoices={data.invoices} />
 		<p class="text-small text-ink-muted">Une facture à chaque paiement, à télécharger en PDF pour votre comptabilité.</p>
 	</section>

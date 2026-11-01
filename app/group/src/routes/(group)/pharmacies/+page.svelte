@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { findTool, formatEuros, isToolKey, sellableToolKeys } from '@crystal-pharm/billing-db/domain';
-	import { Alert, Button, Card, ConfirmButton, DataTable, EmptyState, FilterTabs, Icon, Input, PageHeader, ProgressBar, TagList } from '@crystal-pharm/ui';
+	import { Alert, Button, ConfirmButton, DataTable, EmptyState, FilterTabs, Icon, Input, PageHeader, TagList } from '@crystal-pharm/ui';
+	import PharmacyPlaces from '$lib/components/molecules/PharmacyPlaces.svelte';
 	import PharmacyInvitationPanel from '$lib/components/organisms/PharmacyInvitationPanel.svelte';
 	import { formatDay, formatDaysUntil } from '$lib/dateFormats';
 	import { groupPathnames, pharmaciesWithoutToolPathname } from '$lib/groupPathnames';
@@ -46,6 +47,8 @@
 		return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-']/g, ' ').toLowerCase();
 	}
 
+	const sectionTitleClasses = 'font-display text-[21px] leading-7 text-ink';
+
 	const plural = (count: number, singular: string, pluralForm: string): string => `${count} ${count === 1 ? singular : pluralForm}`;
 </script>
 
@@ -74,33 +77,32 @@
 	</Alert>
 {/if}
 
-<Card>
-	<div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:items-center">
-		<p class="text-body">
-			<span class="body-strong">{usedPlaces} / {data.group.pharmacyQuota}</span>
-			<span class="text-ink-muted">places utilisées</span>
+<section aria-label="Places de votre contrat" class="grid gap-4 rounded-xl border border-line bg-surface p-5 shadow-card md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-8">
+	<p class="flex items-baseline gap-2">
+		<span class="font-display text-[44px] leading-[48px] tabular-nums text-ink">{usedPlaces}</span>
+		<span class="text-body text-ink-muted">/ {data.group.pharmacyQuota} places</span>
+	</p>
+	<div class="grid gap-2 border-dashed border-line-strong/50 max-md:border-t max-md:pt-4 md:border-l md:pl-8">
+		<PharmacyPlaces memberCount={data.group.memberPharmacyCount} invitedCount={data.group.pendingInvitationCount} quota={data.group.pharmacyQuota} />
+		<p class="flex flex-wrap gap-x-4 gap-y-1 text-small text-ink-muted">
+			<span class="flex items-center gap-1.5"><span aria-hidden="true" class="size-2.5 rounded-xs bg-accent"></span>{plural(data.group.memberPharmacyCount, 'membre', 'membres')}</span>
+			<span class="flex items-center gap-1.5"><span aria-hidden="true" class="size-2.5 rounded-xs border border-dashed border-accent"></span>{plural(data.group.pendingInvitationCount, 'invitation', 'invitations')} en attente</span>
+			<span class="flex items-center gap-1.5"><span aria-hidden="true" class="size-2.5 rounded-xs bg-surface-muted"></span>{plural(Math.max(data.group.pharmacyQuota - usedPlaces, 0), 'place libre', 'places libres')}</span>
 		</p>
-		<div class="grid gap-1">
-			<ProgressBar label="Places utilisées" value={usedPlaces} maximum={data.group.pharmacyQuota} />
+		{#if data.overageUnitPriceCents !== undefined}
 			<p class="text-small text-ink-muted">
-				{plural(data.group.memberPharmacyCount, 'membre', 'membres')} · {plural(data.group.pendingInvitationCount, 'invitation', 'invitations')} en attente ·
-				{plural(Math.max(data.group.pharmacyQuota - usedPlaces, 0), 'place libre', 'places libres')}
+				{#if overageMemberCount > 0}
+					{overageMemberCount} pharmacie{overageMemberCount > 1 ? 's' : ''} au-delà de votre forfait : + {formatEuros(overageMemberCount * data.overageUnitPriceCents)} HT par mois.
+				{:else}
+					Au-delà de {data.group.pharmacyQuota}, chaque pharmacie ajoute {formatEuros(data.overageUnitPriceCents)} HT par mois à votre forfait.
+				{/if}
 			</p>
-			{#if data.overageUnitPriceCents !== undefined}
-				<p class="text-small text-ink-muted">
-					{#if overageMemberCount > 0}
-						{overageMemberCount} pharmacie{overageMemberCount > 1 ? 's' : ''} au-delà de votre forfait : + {formatEuros(overageMemberCount * data.overageUnitPriceCents)} HT par mois.
-					{:else}
-						Au-delà de {data.group.pharmacyQuota}, chaque pharmacie ajoute {formatEuros(data.overageUnitPriceCents)} HT par mois à votre forfait.
-					{/if}
-				</p>
-			{/if}
-		</div>
+		{/if}
 	</div>
-</Card>
+</section>
 
-<section aria-labelledby="membres-titre" class="grid gap-2">
-	<h2 id="membres-titre" class="title-2 text-ink">Membres</h2>
+<section aria-labelledby="membres-titre" class="grid gap-3">
+	<h2 id="membres-titre" class={sectionTitleClasses}>Membres</h2>
 	{#if data.memberPharmacies.length === 0}
 		<EmptyState
 			icon="storefront"
@@ -166,27 +168,28 @@
 </section>
 
 {#if data.pendingInvitations.length > 0}
-	<section aria-labelledby="invitations-titre" class="grid gap-2">
-		<h2 id="invitations-titre" class="title-2 text-ink">En attente de réponse</h2>
-		<Card>
-			<ul class="grid">
-				{#each data.pendingInvitations as invitation (invitation.invitationId)}
-					<li class="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft py-3 first:border-t-0 first:pt-0 last:pb-0">
+	<section aria-labelledby="invitations-titre" class="grid gap-3">
+		<h2 id="invitations-titre" class={sectionTitleClasses}>En attente de réponse</h2>
+		<ul class="grid divide-y divide-dashed divide-line-strong/40 rounded-xl border border-dashed border-line-strong bg-surface">
+			{#each data.pendingInvitations as invitation (invitation.invitationId)}
+				<li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+					<div class="flex min-w-0 items-center gap-3">
+						<span aria-hidden="true" class="size-avatar flex-none rounded-full border-2 border-dashed border-line-strong"></span>
 						<div class="min-w-0">
 							<p class="body-strong">{invitation.pharmacyName ?? invitation.email}</p>
 							<p class="text-small text-ink-muted">
 								{invitation.pharmacyName ? `${invitation.email} · ` : ''}envoyée le {formatDay(invitation.lastSentAt)} · expire {formatDaysUntil(invitation.expiresAt)}
 							</p>
 						</div>
-						<form method="POST" class="flex flex-wrap gap-1">
-							<input type="hidden" name="invitationId" value={invitation.invitationId} />
-							<Button type="submit" variant="secondary" icon="paper-plane-tilt" formaction="?/renewInvitation">Renvoyer</Button>
-							<Button type="submit" variant="ghost" icon="x" formaction="?/revokeInvitation">Annuler</Button>
-						</form>
-					</li>
-				{/each}
-			</ul>
-		</Card>
+					</div>
+					<form method="POST" class="flex flex-wrap gap-1">
+						<input type="hidden" name="invitationId" value={invitation.invitationId} />
+						<Button type="submit" variant="secondary" size="compact" icon="paper-plane-tilt" formaction="?/renewInvitation">Renvoyer</Button>
+						<Button type="submit" variant="ghost" size="compact" icon="x" formaction="?/revokeInvitation">Annuler</Button>
+					</form>
+				</li>
+			{/each}
+		</ul>
 	</section>
 {/if}
 

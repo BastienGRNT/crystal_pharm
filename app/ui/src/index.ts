@@ -1,6 +1,6 @@
 export { default as Avatar } from './atoms/Avatar.svelte';
 export { default as Button } from './atoms/actions/Button.svelte';
-export type { ButtonVariant } from './atoms/actions/button';
+export type { ButtonSize, ButtonVariant } from './atoms/actions/button';
 export { default as Checkbox } from './atoms/fields/Checkbox.svelte';
 export { default as CheckList } from './molecules/CheckList.svelte';
 export { default as CollapsibleRow } from './molecules/CollapsibleRow.svelte';
@@ -52,6 +52,7 @@ export { default as DescriptionList } from './molecules/DescriptionList.svelte';
 export type { DescriptionItem } from './molecules/descriptionList';
 export { default as EmptyState } from './molecules/EmptyState.svelte';
 export { default as FilterTabs } from './molecules/navigation/FilterTabs.svelte';
+export { default as PageTabs } from './molecules/navigation/PageTabs.svelte';
 export type { FilterTab } from './molecules/navigation/filterTabs';
 export { default as Field } from './molecules/fields/Field.svelte';
 export type { FieldControlAttributes } from './molecules/fields/field';
@@ -62,11 +63,13 @@ export { default as PlanCard } from './molecules/PlanCard.svelte';
 export { default as ProgressBar } from './atoms/ProgressBar.svelte';
 export { default as SegmentedControl } from './molecules/navigation/SegmentedControl.svelte';
 export type { SegmentedControlOption } from './molecules/navigation/segmentedControl';
+export { default as FormSection } from './molecules/FormSection.svelte';
 export { default as PageSectionNav } from './molecules/navigation/PageSectionNav.svelte';
 export type { PageSection } from './molecules/navigation/pageSectionNav';
 export { default as SelectMenu } from './molecules/fields/pickers/SelectMenu.svelte';
 export type { SelectMenuOption } from './molecules/fields/pickers/selectMenu';
 export { default as StatCard } from './molecules/StatCard.svelte';
+export { default as CapacityGrid } from './molecules/CapacityGrid.svelte';
 export { default as StickyActionBar } from './molecules/StickyActionBar.svelte';
 export { default as StatusBadge } from './atoms/StatusBadge.svelte';
 export type { StatusBadgeTone } from './atoms/statusBadge';
@@ -89,6 +92,7 @@ export type {
 } from './organisms/developer/developerToolbar';
 export { default as AuthenticationScreen } from './organisms/authentication/AuthenticationScreen.svelte';
 export type {
+	AuthenticationHighlight,
 	AuthenticationSpace,
 	AuthenticationSubmission,
 	LoginCredentials,

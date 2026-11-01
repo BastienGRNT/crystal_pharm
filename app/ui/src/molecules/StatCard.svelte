@@ -17,8 +17,8 @@
 </script>
 
 {#snippet content()}
-	<span class="flex items-center gap-1.5 text-label text-ink-muted">
-		{#if icon}<Icon name={icon} size={15} class="text-accent-text" />{/if}
+	<span class="flex items-center gap-1.5 text-eyebrow text-ink-muted">
+		{#if icon}<Icon name={icon} size={16} class="text-accent-text" />{/if}
 		{label}
 		{#if href}<Icon name="arrow-right" size={14} class="ml-auto text-ink-subtle transition-transform duration-[120ms] group-hover:translate-x-0.5" />{/if}
 	</span>
@@ -31,12 +31,12 @@
 {#if href}
 	<a
 		{href}
-		class="group grid content-start gap-1.5 rounded-lg border border-line bg-surface p-4 no-underline shadow-card transition-colors duration-[120ms] hover:border-accent"
+		class="group grid content-start gap-2 rounded-xl border border-line bg-surface p-5 no-underline shadow-card transition-colors duration-[120ms] hover:border-accent"
 	>
 		{@render content()}
 	</a>
 {:else}
-	<div class="grid content-start gap-1.5 rounded-lg border border-line bg-surface p-4 shadow-card">
+	<div class="grid content-start gap-2 rounded-xl border border-line bg-surface p-5 shadow-card">
 		{@render content()}
 	</div>
 {/if}

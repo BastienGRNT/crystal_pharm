@@ -4,6 +4,7 @@ export const groupPathnames = {
 	invitePharmacies: '/pharmacies?panneau=inviter',
 	contract: '/contrat',
 	invoices: '/factures',
+	team: '/equipe',
 	profile: '/groupement'
 } as const;
 

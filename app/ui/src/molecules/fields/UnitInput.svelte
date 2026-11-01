@@ -10,7 +10,7 @@
 </script>
 
 <div
-	class="flex h-control w-full items-center rounded-sm border border-line-strong bg-surface transition-[border-color,box-shadow] duration-[120ms] focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft-value)] has-[[aria-invalid=true]]:border-danger {className}"
+	class="flex h-control w-full items-center rounded-control border border-line-strong/55 bg-field transition-[border-color,box-shadow] duration-[120ms] focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft-value)] has-[[aria-invalid=true]]:border-danger {className}"
 >
 	<!-- Sans largeur de départ, la saisie garde ses ~150 px par défaut et pousse l’unité hors d’une colonne étroite. -->
 	<input

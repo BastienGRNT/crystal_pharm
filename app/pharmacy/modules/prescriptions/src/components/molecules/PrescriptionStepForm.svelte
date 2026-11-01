@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Button, type ButtonVariant } from '@crystal-pharm/ui';
+	import { Button, type ButtonSize, type ButtonVariant } from '@crystal-pharm/ui';
 	import type { PrescriptionStep } from '../../pages/receivedPrescriptionsPageData';
 
 	type PrescriptionStepFormProps = {
@@ -8,9 +8,10 @@
 		step: PrescriptionStep;
 		isFullWidth?: boolean;
 		variant?: ButtonVariant;
+		size?: ButtonSize;
 	};
 
-	let { submissionId, step, isFullWidth = false, variant = 'primary' }: PrescriptionStepFormProps = $props();
+	let { submissionId, step, isFullWidth = false, variant = 'primary', size = 'regular' }: PrescriptionStepFormProps = $props();
 
 	let isSending = $state(false);
 </script>
@@ -36,6 +37,7 @@
 		icon={step.notifiesByEmail ? 'envelope-simple' : step.status === 'collected' ? 'check-circle' : 'check'}
 		disabled={isSending}
 		{variant}
+		{size}
 		{isFullWidth}
 	>
 		{step.label}

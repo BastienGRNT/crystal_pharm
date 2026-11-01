@@ -49,7 +49,7 @@
 		if (isTeamNoteChanged && !isSending) teamNoteForm?.requestSubmit();
 	}
 
-	const sectionTitleClasses = 'text-label font-semibold tracking-[0.04em] text-ink-subtle uppercase';
+	const sectionTitleClasses = 'font-display text-[19px] leading-6 text-ink';
 </script>
 
 <div class="grid gap-6">
@@ -59,7 +59,8 @@
 		<Alert tone="danger">{actionResult.errorMessage}</Alert>
 	{/if}
 
-	<section class="grid gap-4" aria-label="Où en est l’ordonnance">
+	<!-- L’étape suivante d’abord : c’est pour elle qu’on ouvre la fiche. -->
+	<section class="grid gap-4 rounded-xl border border-line bg-surface p-5 shadow-card max-sm:p-4" aria-label="Où en est l’ordonnance">
 		<StepIndicator label="Avancement" steps={prescription.steps} currentStepIndex={prescription.currentStepIndex} />
 
 		{#if prescription.waitingForProducts}
@@ -88,9 +89,9 @@
 			<details
 				id="produits-manquants"
 				open={isMissingProductsFormOpen}
-				class="group rounded-md border border-line bg-surface-subtle"
+				class="group rounded-lg border border-dashed border-line-strong/60"
 			>
-				<summary class="flex cursor-pointer items-center gap-2 px-3.5 py-3 text-small font-semibold text-ink">
+				<summary class="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-small font-bold text-ink [&::-webkit-details-marker]:hidden">
 					<Icon name="package" size={16} />
 					{prescription.status === 'waitingForProducts' ? 'Changer le jour d’arrivée' : 'Il manque un produit ?'}
 					<span class="ml-auto text-ink-subtle transition-transform group-open:rotate-180"><Icon name="caret-down" size={14} /></span>
@@ -99,7 +100,7 @@
 					method="POST"
 					action="?/changeStatus"
 					use:enhance={submitWithoutDoubleClick}
-					class="grid gap-2.5 border-t border-line p-3.5"
+					class="grid gap-2.5 border-t border-dashed border-line-strong/60 p-3.5"
 				>
 					<input type="hidden" name="submissionId" value={prescription.id} />
 					<input type="hidden" name="status" value="waitingForProducts" />
@@ -124,7 +125,7 @@
 					href={document.href}
 					target="_blank"
 					rel="noopener"
-					class="group grid overflow-hidden rounded-md border border-line bg-surface no-underline hover:border-line-strong {document.isPreviewable &&
+					class="group grid overflow-hidden rounded-lg border border-line bg-surface no-underline shadow-card hover:border-line-strong {document.isPreviewable &&
 					prescription.documents.indexOf(document) === 0
 						? 'sm:col-span-2'
 						: ''}"
@@ -141,7 +142,7 @@
 							<Icon name="file-text" size={32} />
 						</span>
 					{/if}
-					<span class="flex items-center justify-between gap-2 border-t border-line px-3 py-2 text-small font-medium text-ink">
+					<span class="flex items-center justify-between gap-2 border-t border-dashed border-line-strong/50 px-3.5 py-2.5 text-small font-bold text-ink">
 						{document.label}
 						<span class="flex items-center gap-1 text-ink-subtle group-hover:text-ink">
 							Ouvrir <Icon name="arrow-square-out" size={14} />
@@ -154,17 +155,22 @@
 
 	<section class="grid gap-3" aria-labelledby="contact-title">
 		<h3 id="contact-title" class={sectionTitleClasses}>Joindre le patient</h3>
-		<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-			<Button href={prescription.phoneHref} variant="secondary">Appeler le {prescription.phone}</Button>
-			{#if prescription.email}
-				<a href="mailto:{prescription.email}" class="text-small font-medium text-ink-muted hover:text-ink">{prescription.email}</a>
-			{:else}
-				<span class="text-small text-ink-subtle">Pas d’email : prévenez-le par téléphone.</span>
-			{/if}
+		<div class="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-xl bg-rail px-5 py-4 text-on-rail">
+			<div class="grid min-w-0 flex-1 gap-0.5">
+				<a href={prescription.phoneHref} class="font-display text-[26px] leading-8 text-on-rail no-underline tabular-nums hover:underline">
+					{prescription.phone}
+				</a>
+				{#if prescription.email}
+					<a href="mailto:{prescription.email}" class="truncate text-small text-rail-ink hover:text-on-rail">{prescription.email}</a>
+				{:else}
+					<span class="text-small text-rail-ink">Pas d’email : prévenez-le par téléphone.</span>
+				{/if}
+			</div>
+			<Button href={prescription.phoneHref} variant="primary">Appeler</Button>
 		</div>
 		{#if prescription.noteFromPatient}
-			<blockquote class="rounded-md bg-surface-muted px-3.5 py-3 text-body text-ink">
-				<span class="mb-1 block text-label font-medium text-ink-subtle">Son message</span>
+			<blockquote class="border-l-4 border-accent py-1 pl-4 text-body text-ink">
+				<span class="mb-1 block text-eyebrow text-ink-subtle">Son message</span>
 				« {prescription.noteFromPatient} »
 			</blockquote>
 		{/if}
@@ -192,7 +198,7 @@
 		{/if}
 	</form>
 
-	<section class="grid gap-4 sm:grid-cols-2" aria-label="Le patient et sa demande">
+	<section class="grid gap-5 rounded-xl border border-line bg-surface p-5 shadow-card sm:grid-cols-2 max-sm:p-4" aria-label="Le patient et sa demande">
 		<div class="grid content-start gap-3">
 			<h3 class={sectionTitleClasses}>Patient</h3>
 			<DescriptionList items={prescription.identity} />
@@ -203,7 +209,7 @@
 		</div>
 	</section>
 
-	<footer class="grid gap-3 border-t border-line pt-4">
+	<footer class="grid gap-3 border-t border-dashed border-line-strong/50 pt-4">
 		<form method="POST" action="?/changeStatus" use:enhance={submitWithoutDoubleClick} class="flex flex-wrap items-center gap-1.5">
 			<input type="hidden" name="submissionId" value={prescription.id} />
 			<span class="mr-1 text-small text-ink-subtle">Corriger le statut :</span>

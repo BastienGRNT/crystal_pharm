@@ -18,33 +18,33 @@
 
 <ul aria-label={label} class="divide-y divide-line-soft">
 	{#each items as item (item.id)}
-		<li class="flex gap-3 px-4 py-3.5">
-			<span aria-hidden="true" class="mt-[7px] size-2 flex-none rounded-full {markerClasses[item.tone]}"></span>
-			<div class="grid min-w-0 flex-1 gap-2.5">
-				<div class="min-w-0">
-					<p class="text-[14px] leading-5 font-semibold text-ink">{item.title}</p>
-					{#if item.detail}<p class="text-small text-ink-subtle">{item.detail}</p>{/if}
-				</div>
-				{#if item.actions.length > 0}
-					<form method="POST" class="flex flex-wrap gap-2">
-						{#each item.actions as action (action.label)}
-							{#if 'href' in action}
-								<Button href={action.href} variant={action.isPrimary ? 'primary' : 'secondary'}>{action.label}</Button>
-							{:else}
-								<Button
-									type="submit"
-									formaction={action.formAction}
-									name={action.name}
-									value={action.value}
-									variant={action.isPrimary ? 'primary' : 'secondary'}
-								>
-									{action.label}
-								</Button>
-							{/if}
-						{/each}
-					</form>
-				{/if}
+		<li class="relative flex flex-wrap items-center gap-x-4 gap-y-2.5 py-3 pr-4 pl-5">
+			<!-- Le liseré de gauche dit l'urgence d'un coup d'œil, avant même de lire. -->
+			<span aria-hidden="true" class="absolute inset-y-2 left-0 w-1 rounded-r-full {markerClasses[item.tone]}"></span>
+			<div class="min-w-48 flex-1">
+				<p class="text-[15px] leading-5 font-bold text-ink">{item.title}</p>
+				{#if item.detail}<p class="mt-0.5 text-small text-ink-muted">{item.detail}</p>{/if}
 			</div>
+			{#if item.actions.length > 0}
+				<form method="POST" class="ml-auto flex flex-none flex-wrap gap-1.5">
+					{#each item.actions as action (action.label)}
+						{#if 'href' in action}
+							<Button href={action.href} size="compact" variant={action.isPrimary ? 'primary' : 'secondary'}>{action.label}</Button>
+						{:else}
+							<Button
+								type="submit"
+								size="compact"
+								formaction={action.formAction}
+								name={action.name}
+								value={action.value}
+								variant={action.isPrimary ? 'primary' : 'secondary'}
+							>
+								{action.label}
+							</Button>
+						{/if}
+					{/each}
+				</form>
+			{/if}
 		</li>
 	{/each}
 </ul>

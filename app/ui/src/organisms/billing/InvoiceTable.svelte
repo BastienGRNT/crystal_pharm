@@ -29,15 +29,15 @@
 {/snippet}
 
 <!-- Sur un téléphone, le montant et le PDF passeraient hors de l'écran : chaque facture devient une ligne à lire de haut en bas. -->
-<ul aria-label={caption} class="grid rounded-lg border border-line bg-surface shadow-card sm:hidden">
+<ul aria-label={caption} class="grid divide-y divide-dashed divide-line-strong/40 rounded-xl border border-line bg-surface shadow-card sm:hidden">
 	{#each invoices as invoice (invoice.invoiceId)}
-		<li class="grid gap-1 border-t border-line-soft px-4 py-3 first:border-t-0">
+		<li class="grid gap-1 px-4 py-3.5">
 			<div class="flex items-baseline justify-between gap-3">
 				<span class="flex flex-wrap items-center gap-1.5">
 					<span class="body-strong whitespace-nowrap tabular-nums">{invoice.number}</span>
 					{#if invoice.isCreditNote}<Tag tone="accent">Avoir</Tag>{/if}
 				</span>
-				<span class="body-strong whitespace-nowrap tabular-nums">{invoice.totalLabel} <span class="text-small font-normal text-ink-subtle">TTC</span></span>
+				<span class="font-display text-[20px] leading-6 whitespace-nowrap tabular-nums">{invoice.totalLabel} <span class="font-sans text-small text-ink-subtle">TTC</span></span>
 			</div>
 			{#if showsCustomer}<span class="text-body">{invoice.customerName}</span>{/if}
 			<span class="text-small text-ink-muted">{invoice.periodLabel ?? `Émise le ${invoice.issuedOnLabel}`} · {invoice.subtotalLabel} HT</span>
@@ -58,7 +58,6 @@
 			<th>Numéro</th>
 			{#if showsCustomer}<th>Client</th>{/if}
 			<th>Émise le</th>
-			<th>Période</th>
 			<th class="text-right">Montant TTC</th>
 			<th>Statut</th>
 			<th><span class="sr-only">Actions</span></th>
@@ -71,11 +70,13 @@
 						{#if invoice.isCreditNote}<Tag tone="accent">Avoir</Tag>{/if}
 					</span>
 				</td>
-				{#if showsCustomer}<td>{invoice.customerName}</td>{/if}
-				<td class="whitespace-nowrap text-ink-muted">{invoice.issuedOnLabel}</td>
-				<td class="text-small text-ink-muted">{invoice.periodLabel ?? '—'}</td>
+				{#if showsCustomer}<td class="whitespace-nowrap">{invoice.customerName}</td>{/if}
+				<td class="whitespace-nowrap">
+					{invoice.issuedOnLabel}
+					{#if invoice.periodLabel}<br /><span class="text-small text-ink-muted">{invoice.periodLabel}</span>{/if}
+				</td>
 				<td class="text-right whitespace-nowrap tabular-nums">
-					<span class="body-strong">{invoice.totalLabel}</span><br />
+					<span class="font-display text-[18px] leading-6">{invoice.totalLabel}</span><br />
 					<span class="text-small text-ink-subtle">{invoice.subtotalLabel} HT</span>
 				</td>
 				<td><Tag tone={invoice.statusTone}>{invoice.statusLabel}</Tag></td>

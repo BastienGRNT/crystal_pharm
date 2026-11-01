@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { formatEuros } from '@crystal-pharm/billing-db/domain';
-	import { Button, DataTable, EmptyState, PageHeader, ProgressBar, Tag } from '@crystal-pharm/ui';
+	import { Button, CapacityGrid, EmptyState, Icon, PageHeader, Tag } from '@crystal-pharm/ui';
 	import { billingModeLabels, contractStatusLabels, paymentMethodLabels } from '$lib/contractLabels';
 	import type { PageProps } from './$types';
 
@@ -26,45 +26,53 @@
 		{#snippet actions()}<Button href="/groupements/nouveau" icon="plus">Nouveau groupement</Button>{/snippet}
 	</EmptyState>
 {:else}
-	<DataTable caption="Les groupements">
-		{#snippet head()}
-			<th>Groupement</th>
-			<th>Pharmacies</th>
-			<th>Contrat</th>
-			<th class="text-right">Coût mensuel HT</th>
-		{/snippet}
+	<ul class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 		{#each data.groups as group (group.groupId)}
-			<tr>
-				<td>
-					<a href="/groupements/{group.groupId}" class="body-strong text-ink underline-offset-2 hover:underline">{group.name}</a>
-					{#if group.pendingInvitationCount > 0}
-						<p class="text-small text-ink-muted">{group.pendingInvitationCount} invitation{group.pendingInvitationCount > 1 ? 's' : ''} en attente</p>
-					{/if}
-				</td>
-				<td class="w-[200px]">
-					<p class="mb-1 text-small text-ink-muted tabular-nums">
-						{group.memberPharmacyCount + group.pendingInvitationCount} / {group.pharmacyQuota} places
-					</p>
-					<ProgressBar
-						label="Places utilisées"
-						value={group.memberPharmacyCount + group.pendingInvitationCount}
-						maximum={group.pharmacyQuota}
-					/>
-				</td>
-				<td>
-					{#if group.contract}
-						<span class="flex flex-wrap items-center gap-1.5 text-small text-ink-muted">
-							{billingModeLabels[group.contract.billingMode]}{group.contract.billingPeriod === 'yearly' ? ' à l’année' : ''} · {paymentMethodLabels[
-								group.contract.paymentMethod
-							].toLowerCase()}
-							<Tag tone={contractStatusLabels[group.contract.status].tone}>{contractStatusLabels[group.contract.status].label}</Tag>
+			{@const usedPlaces = group.memberPharmacyCount + group.pendingInvitationCount}
+			<li>
+				<a
+					href="/groupements/{group.groupId}"
+					class="grid h-full grid-rows-[1fr_auto] overflow-hidden rounded-xl border border-line bg-surface text-ink no-underline shadow-card transition-shadow hover:shadow-float"
+				>
+					<span class="grid content-start gap-3 p-5">
+						<span class="flex items-start justify-between gap-3">
+							<span class="min-w-0 font-display text-[21px] leading-7">{group.name}</span>
+							{#if group.contract}
+								<Tag tone={contractStatusLabels[group.contract.status].tone}>{contractStatusLabels[group.contract.status].label}</Tag>
+							{:else}
+								<Tag tone="warning">Sans contrat</Tag>
+							{/if}
 						</span>
-					{:else}
-						<Tag tone="warning">Sans contrat</Tag>
-					{/if}
-				</td>
-				<td class="text-right tabular-nums">{formatEuros(group.groupMonthlyCostCents)}</td>
-			</tr>
+						{#if group.contract}
+							<span class="text-small text-ink-muted">
+								{billingModeLabels[group.contract.billingMode]}{group.contract.billingPeriod === 'yearly' ? ' à l’année' : ''} · {paymentMethodLabels[
+									group.contract.paymentMethod
+								].toLowerCase()}
+							</span>
+						{/if}
+						<CapacityGrid
+							filledCount={group.memberPharmacyCount}
+							pendingCount={group.pendingInvitationCount}
+							capacity={group.pharmacyQuota}
+							summary="{group.memberPharmacyCount} pharmacies membres, {group.pendingInvitationCount} invitées, {group.pharmacyQuota} places"
+						/>
+						<span class="text-small text-ink-muted tabular-nums">
+							{usedPlaces} / {group.pharmacyQuota} places{group.pendingInvitationCount > 0
+								? ` · ${group.pendingInvitationCount} invitation${group.pendingInvitationCount > 1 ? 's' : ''} en attente`
+								: ''}
+						</span>
+					</span>
+					<span class="relative flex items-center justify-between gap-3 border-t-2 border-dashed border-line-strong/40 bg-surface-subtle px-5 py-3.5">
+						<span aria-hidden="true" class="absolute -top-2 -left-2 size-4 rounded-full border border-line bg-app"></span>
+						<span aria-hidden="true" class="absolute -top-2 -right-2 size-4 rounded-full border border-line bg-app"></span>
+						<span>
+							<span class="font-display text-[24px] leading-8 tabular-nums">{formatEuros(group.groupMonthlyCostCents)}</span>
+							<span class="text-small text-ink-muted">HT / mois</span>
+						</span>
+						<Icon name="arrow-right" size={18} class="text-ink-subtle" />
+					</span>
+				</a>
+			</li>
 		{/each}
-	</DataTable>
+	</ul>
 {/if}

@@ -13,7 +13,7 @@
 	// Ses teintes viennent du fichier du logo, pas des tokens : le symbole ne
 	// change jamais avec le module.
 	const fillClassesBySurface = {
-		rail: { base: 'fill-[#3f9c78]', facet: 'fill-[#9bdcc0]', highlight: 'fill-[#f2efe8]' },
+		rail: { base: 'fill-[#14a565]', facet: 'fill-[#5fe0a6]', highlight: 'fill-[#f8f4ec]' },
 		page: { base: 'fill-logo-base', facet: 'fill-logo-facet', highlight: 'fill-logo-highlight' }
 	};
 	const fillClasses = $derived(fillClassesBySurface[surface]);
