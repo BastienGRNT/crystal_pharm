@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button, EmptyState, FormSection, PageHeader, PageTabs, type FilterTab } from '@crystal-pharm/ui';
 	import { buildTabFormAction, planningSettingsTabParameter, planningSettingsTabs } from '../domain/settings/planningSettingsTabs';
-	import PeakWindowsSection from '../components/organisms/settings/PeakWindowsSection.svelte';
+	import PeakWeekEditor from '../components/organisms/settings/PeakWeekEditor.svelte';
 	import WeekTemplatesList from '../components/organisms/settings/WeekTemplatesList.svelte';
 	import EmployeeTermsList from '../components/organisms/settings/EmployeeTermsList.svelte';
 	import PlanningRulesForm from '../components/organisms/settings/PlanningRulesForm.svelte';
@@ -88,14 +88,9 @@
 	{:else if data.selectedTab === 'affluence'}
 		<FormSection
 			title="Heures d’affluence"
-			description="Le planning proposé y place du monde en plus, de préférence des étudiants ou les taux horaires les plus bas."
+			description="Choisissez un jour, glissez sur les heures chargées et ajoutez du monde avec +. Le planning proposé y place de préférence des étudiants ou les taux horaires les plus bas."
 		>
-			<PeakWindowsSection
-				addFormAction={buildTabFormAction('affluence', 'addPeakWindow')}
-				removeFormAction={buildTabFormAction('affluence', 'removePeakWindow')}
-				peakWindows={data.peakWindows}
-				errorMessage={peaksFailure}
-			/>
+			<PeakWeekEditor formAction={buildTabFormAction('affluence', 'savePeakWindows')} peakWeek={data.peakWeek} errorMessage={peaksFailure} />
 		</FormSection>
 
 		<FormSection title="Semaines types" description="Une semaine gardée depuis le planning, à rejouer en un clic.">

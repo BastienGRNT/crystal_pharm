@@ -1,4 +1,5 @@
 import type { SelectMenuOption } from '@crystal-pharm/ui';
+import type { PeakDay } from '../domain/peaks/peakSlots';
 import type { WeekTemplateSummary } from '../domain/templates/weekTemplates';
 import type { AvailabilityValidation } from '../domain/rules/employeeTerms';
 import type { PlanningSettingsTab } from '../domain/settings/planningSettingsTabs';
@@ -39,14 +40,22 @@ export type EmployeeTermsFormRow = {
 	availabilityValidation: AvailabilityValidation;
 };
 
-export type PeakWindowView = { id: string; label: string };
+/** La semaine d'affluence : chaque jour dans ses heures d'ouverture, au-dessus de l'effectif permanent. */
+export type PeakWeekView = {
+	hasOpeningHours: boolean;
+	baseRequiredCount: number;
+	/** Le nombre de personnes de l'équipe : au-delà, le planning ne peut pas suivre. */
+	teamSize: number;
+	days: PeakDay[];
+	openingHoursHref: string;
+};
 
 export type WeekTemplateView = WeekTemplateSummary;
 
 export type PlanningSettingsPageData = {
 	planningHref: string;
 	selectedTab: PlanningSettingsTab;
-	peakWindows: PeakWindowView[];
+	peakWeek: PeakWeekView;
 	templates: WeekTemplateView[];
 	rules: PlanningRulesFormValues;
 	overtimeRules: OvertimeRulesFormValues;

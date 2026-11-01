@@ -54,6 +54,8 @@ async function insertTwoPharmaciesWithTheirPlanning(transaction: postgres.Transa
 			values (gen_random_uuid(), ${tenantId}, ${employeeId}, '2026-11-02', '2026-11-06', 'Congé', 'pending')`;
 		await transaction`insert into planning.planned_activities (id, tenant_id, employee_id, kind, date, start_time, end_time)
 			values (gen_random_uuid(), ${tenantId}, ${employeeId}, 'on-call', '2026-10-25', '09:00', '19:00')`;
+		await transaction`insert into planning.peak_windows (id, tenant_id, weekday, start_time, end_time, required_count)
+			values (gen_random_uuid(), ${tenantId}, 0, '17:00', '19:30', 3)`;
 	}
 }
 
@@ -132,6 +134,23 @@ describe('isolation du planning (Row-Level Security du schéma planning)', () =>
 
 			expect(updatedShifts.count).toBe(0);
 			expect(deletedAbsences.count).toBe(0);
+		});
+	});
+
+	it('ne remplace que les heures d’affluence de la pharmacie active', async () => {
+		await inRolledBackTransaction(async (transaction) => {
+			await setActiveTenant(transaction, firstPharmacy.tenantId);
+
+			const deletedPeakWindows = await transaction`delete from planning.peak_windows`;
+			await setActiveTenant(transaction, secondPharmacy.tenantId);
+			const peakWindowsOfSecondPharmacy = await transaction`select tenant_id from planning.peak_windows`;
+
+			expect(deletedPeakWindows.count).toBe(1);
+			expect(peakWindowsOfSecondPharmacy.map(({ tenant_id }) => tenant_id)).toEqual([secondPharmacy.tenantId]);
+			await expect(
+				transaction`insert into planning.peak_windows (id, tenant_id, weekday, start_time, end_time, required_count)
+					values (gen_random_uuid(), ${firstPharmacy.tenantId}, 1, '10:00', '12:00', 4)`
+			).rejects.toThrow(/row-level security/);
 		});
 	});
 
