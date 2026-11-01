@@ -1,9 +1,10 @@
 import type { CachedPage } from '../cache/leastRecentlyUsedPageCache';
 import { startListeningToSiteChanges, isSiteChangeListenerConnected } from '../cache/siteChangeListener.server';
-import { findCachedPage, readEvictionCount } from '../cache/sitePageCache.server';
+import { findCachedPageEntry, readEvictionCount } from '../cache/sitePageCache.server';
 import { readSiteAccessOfSubdomain } from '../site-access/readSiteAccessOfSubdomain.server';
 import { findSubdomainOfHost, toCurrentAddress } from '../site-address/siteAddress';
 import { sitePageCacheHeaderName } from '../site-responses/sitePageHeaders';
+import { countPageView } from '../site-traffic/pageViewCounter.server';
 import { respondMovedPermanently, respondSiteNotFound, respondSiteUnavailable } from '../site-responses/siteResponses';
 import { readSitesHostname } from './readSitesHostname';
 import type { SiteRequest } from './siteRequest';
@@ -31,8 +32,11 @@ export async function prepareSiteRequest(request: Request): Promise<PreparedSite
 
   startListeningToSiteChanges();
   const pageCacheKey = isCacheableSitePageRequest(request, url) && isSiteChangeListenerConnected() ? `${subdomain}${url.pathname}` : undefined;
-  const cachedPage = pageCacheKey && findCachedPage(pageCacheKey);
-  if (cachedPage) return { kind: 'respond', response: replayCachedPage(cachedPage) };
+  const cachedPageEntry = pageCacheKey && findCachedPageEntry(pageCacheKey);
+  if (cachedPageEntry) {
+    countPageView(cachedPageEntry.tenantId, request, url);
+    return { kind: 'respond', response: replayCachedPage(cachedPageEntry.page) };
+  }
 
   const evictionCountBeforeReading = readEvictionCount();
   const siteAccess = await readSiteAccessOfSubdomain(subdomain);

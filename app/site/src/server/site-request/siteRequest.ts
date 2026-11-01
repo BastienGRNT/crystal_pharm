@@ -22,6 +22,7 @@ const siteRequestKey = 'siteRequest';
 // interne de son contexte (`request.context.solidFetchEvent`), on ne s'y fie pas.
 const localsByRequest = new WeakMap<Request, Locals>();
 const pageCacheContextKey = 'pageCacheContext';
+const sitePageFoundKey = 'sitePageFound';
 
 /** Appelée par le middleware : `entry-server.tsx` retrouve ensuite les `locals` de la requête. */
 export function rememberLocalsOfRequest(request: Request, locals: Locals): void {
@@ -46,4 +47,13 @@ export function setPageCacheContext(locals: Locals, pageCacheContext: PageCacheC
 
 export function findPageCacheContext(locals: Locals | undefined): PageCacheContext | undefined {
   return locals?.[pageCacheContextKey] as PageCacheContext | undefined;
+}
+
+/** Posé par le rendu quand le moteur a trouvé la page : seule une page trouvée se garde et se compte. */
+export function markSitePageAsFound(locals: Locals): void {
+  locals[sitePageFoundKey] = true;
+}
+
+export function isSitePageFound(locals: Locals | undefined): boolean {
+  return locals?.[sitePageFoundKey] === true;
 }

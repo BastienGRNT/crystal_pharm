@@ -741,6 +741,9 @@ importers:
       '@crystal-pharm/schema':
         specifier: workspace:*
         version: link:../engine/schema
+      '@crystal-pharm/site-traffic-db':
+        specifier: workspace:*
+        version: link:../shared/site-traffic-db
       '@solidjs/meta':
         specifier: 0.29.4
         version: 0.29.4(solid-js@1.9.17)
