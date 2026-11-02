@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Icon from '../../atoms/icons/Icon.svelte';
 	import LogoMark from '../../atoms/LogoMark.svelte';
 	import AccountMenu from './AccountMenu.svelte';
@@ -30,6 +31,35 @@
 		onSignOut
 	}: NavigationBandProps = $props();
 
+	let navigationElement: HTMLElement | undefined = $state();
+	let tabListElement: HTMLUListElement | undefined = $state();
+	let trailingGroupElement: HTMLDivElement | undefined = $state();
+	/** Indéfini tant qu'on n'a pas mesuré : les liens du compte gardent leur place sans s'afficher. */
+	let doAccountLinksFit = $state<boolean>();
+	let trailingGroupWidthWithAccountLinks = 0;
+
+	// La bande ne s'élargit plus au-delà de la largeur de page : selon le nombre d'onglets, les liens
+	// du compte tiennent ou non à côté. Quand ils ne tiennent pas, le menu du compte les propose déjà.
+	$effect(() => {
+		if (!navigationElement) return;
+		void navigationLinks;
+		void countsByHref;
+		const updateAccountLinksFit = (): boolean => (doAccountLinksFit = measureWhetherAccountLinksFit());
+		untrack(updateAccountLinksFit);
+		const observer = new ResizeObserver(updateAccountLinksFit);
+		observer.observe(navigationElement);
+		return () => observer.disconnect();
+	});
+
+	function measureWhetherAccountLinksFit(): boolean {
+		if (!navigationElement || !tabListElement || !trailingGroupElement) return true;
+		if (doAccountLinksFit !== false) trailingGroupWidthWithAccountLinks = trailingGroupElement.offsetWidth;
+		const widthFreedByHiddenAccountLinks = trailingGroupWidthWithAccountLinks - trailingGroupElement.offsetWidth;
+		return tabListElement.scrollWidth <= navigationElement.clientWidth - widthFreedByHiddenAccountLinks;
+	}
+
+	const accountLinksVisibilityClasses = $derived(doAccountLinksFit === undefined ? 'invisible' : doAccountLinksFit ? '' : 'hidden');
+
 	// L'onglet ouvert prend la couleur de la page : il en sort comme l'onglet d'un classeur.
 	const tabClasses =
 		'relative flex h-12 items-center gap-2 rounded-t-lg px-4 text-[15px] leading-5 font-semibold text-rail-ink no-underline transition-colors hover:bg-rail-raised hover:text-on-rail aria-[current=page]:bg-app aria-[current=page]:text-ink aria-[current=page]:hover:bg-app';
@@ -49,8 +79,8 @@
 			</span>
 		</a>
 
-		<nav aria-label="Navigation principale" class="min-w-0 flex-1 max-lg:hidden">
-			<ul class="flex items-end gap-1">
+		<nav bind:this={navigationElement} aria-label="Navigation principale" class="min-w-0 flex-1 max-lg:hidden">
+			<ul bind:this={tabListElement} class="flex items-end gap-1">
 				{#each navigationLinks as navigationLink (navigationLink.href)}
 					{@const isCurrent = navigationLink.href === currentNavigationHref}
 					<li>
@@ -73,9 +103,9 @@
 			</ul>
 		</nav>
 
-		<div class="ml-auto flex flex-none items-center gap-1 self-center">
+		<div bind:this={trailingGroupElement} class="ml-auto flex flex-none items-center gap-1 self-center">
 			{#if accountLinks.length > 0}
-				<ul class="mr-2 flex items-center gap-0.5 max-2xl:hidden">
+				<ul class="mr-2 flex items-center gap-0.5 max-2xl:hidden {accountLinksVisibilityClasses}">
 					{#each accountLinks as accountLink (accountLink.href)}
 						<li>
 							<a
