@@ -32,9 +32,9 @@
   --nb-color-on-duty: #2b3f8c;
   --nb-font-heading: 'Fraunces', Georgia, serif;
   --nb-font-body: 'Atkinson Hyperlegible Next', 'Segoe UI', system-ui, sans-serif;
-  --nb-radius-large: 22px;
   --nb-radius: 14px;
-  --nb-radius-small: 10px;
+  --nb-radius-large: calc(var(--nb-radius) * 1.55);
+  --nb-radius-small: calc(var(--nb-radius) * 0.7);
   --nb-shadow: 0 1px 0 rgba(60, 50, 20, 0.06), 0 8px 24px rgba(60, 50, 20, 0.06);
   --nb-content-width: 1160px;
   --nb-gutter: 24px;

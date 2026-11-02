@@ -132,7 +132,7 @@ pour qu'il n'oublie rien. Tout s'importe depuis `@crystal-pharm/renderer`.
 | `pageKit.LegalNotice({ class })` | Rend le bloc des mentions légales | Son contenu est le même partout, seul le style change |
 | `<pageKit.Module name="team" />` | Rend le composant du layout pour ce module, ou rien s'il est désactivé | Un module désactivé ne laisse aucune section vide |
 | `<pageKit.FixedSection name="hero" />` | Rend une section fixe (`hero`, `findUs`, `onDuty`, `openingHours`) | Une section fixe est toujours affichée |
-| `<pageKit.PlacedModules accepts={[…]} />` | Rend les modules activés dans l'ordre de `moduleOrder`, limités à `accepts` | L'ordre appartient à la pharmacie, les zones au layout |
+| `<pageKit.PlacedModules accepts={[…]} />` | Rend les modules activés dans l'ordre de `moduleOrder`, limités à `accepts` (un layout passe `<id>Manifest.orderableModules`, la même liste que le Manager voit : jamais deux copies) | L'ordre appartient à la pharmacie, les zones au layout |
 | `submitPrescription(form)` | Valide puis envoie l'ordonnance | Le seul moyen d'atteindre l'API |
 | `validatePrescription(form)` | Valide sans envoyer | Pour le formulaire par étapes |
 

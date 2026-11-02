@@ -425,3 +425,17 @@ Elles contiennent `.legal-notice__title` et `.legal-notice__text`.
 - [ ] Le formulaire d'ordonnance affiche les erreurs, puis « envoyée » ; l'envoi apparaît dans le journal du banc d'essai.
 - [ ] Rien ne déborde horizontalement à 390 px de large.
 - [ ] Chaque couleur et chaque police du thème, essayée dans l'aperçu, garde le texte lisible.
+
+## Thème personnalisable et ordre des modules
+
+- **Couleurs libres** : `themeColorSetting({ title, cssVariable, defaultColor, legacyColors? })` pour chaque couleur
+  du layout (fond, cartes, texte, accent…). `legacyColors` mappe d'anciens noms de couleur enregistrés
+  (`sage` → `#3f6f52`) quand un réglage à liste devient libre : les sites existants restent valides.
+- **Angles** : un `themeChoiceSetting` branché sur une variable CSS de rayon. Dérive les autres rayons du
+  layout de celle-là (`calc(var(--nb-radius) * 1.55)`).
+- **`themePresets`** : des palettes prêtes (`{ key, label, settings }`) ; chaque valeur doit passer le
+  `settingsSchema` (testé). Le Manager les applique d'un clic, tout reste modifiable ensuite.
+- **`themeContrastPairs`** : les paires texte / fond à surveiller (clé de réglage ou `#hex` fixe) ; le
+  Manager avertit sous 4,5 de contraste, sans bloquer.
+- **`orderableModules`** : les modules que la zone `PlacedModules` du layout accepte. La page passe cette même
+  liste à `accepts` ; le Manager ne propose de déplacer que les modules activés de cette liste.

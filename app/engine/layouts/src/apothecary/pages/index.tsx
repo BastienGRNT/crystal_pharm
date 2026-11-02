@@ -1,4 +1,5 @@
 import { definePage } from '@crystal-pharm/renderer';
+import { apothecaryManifest } from '../apothecaryManifest';
 import type { ApothecarySettings } from '../apothecaryManifest';
 import { QuickActions } from '../organisms/QuickActions';
 import { StatusPanel } from '../organisms/StatusPanel';
@@ -27,7 +28,7 @@ export default definePage<ApothecarySettings>({
             <props.pageKit.Module name="dutyHotline" />
           </div>
           {/* L'ordonnance a sa page, le 3237 est à côté des horaires : sur l'accueil, le reste dans l'ordre choisi par la pharmacie. */}
-          <props.pageKit.PlacedModules accepts={['appointment', 'services', 'team', 'news', 'onlineOrder', 'loyaltyCard', 'brands']} />
+          <props.pageKit.PlacedModules accepts={apothecaryManifest.orderableModules} />
           <props.pageKit.FixedSection name="findUs" />
         </ApothecaryPageTemplate>
       ),

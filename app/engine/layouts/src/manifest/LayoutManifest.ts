@@ -1,3 +1,4 @@
+import type { ModuleName } from '@crystal-pharm/schema';
 import type * as v from 'valibot';
 
 /** L'emplacement d'une image sur le site : le même vocabulaire que l'édition (`hero`, `service`, `brand`, `article`). */
@@ -18,6 +19,17 @@ export type LayoutImageCatalog = {
   proposals: LayoutImage[];
 };
 
+/** Un jeu de réglages de thème prêt à l'emploi : le Manager le choisit, puis peut encore modifier chaque réglage. */
+export type LayoutThemePreset = {
+  key: string;
+  label: string;
+  /** La valeur de chaque réglage de thème : une couleur `#rrggbb`, ou la clé de l'option d'un choix. */
+  settings: Record<string, string>;
+};
+
+/** Une paire texte et fond dont le contraste doit rester lisible ; chaque côté est la clé d'un réglage de couleur, ou une couleur fixe du layout. */
+export type LayoutContrastPair = { label: string; foreground: string; background: string };
+
 /** Ce que l'édition d'un site doit savoir d'un layout, sans charger Solid ni ses composants. */
 export type LayoutManifest = {
   /** Le nom montré au Manager. */
@@ -29,5 +41,11 @@ export type LayoutManifest = {
    */
   settingsSchema: v.ObjectSchema<v.ObjectEntries, undefined>;
   /** Les images que ce layout propose par emplacement, avec celle qu'il montre par défaut. */
+  /** Les modules que le Manager peut placer dans l'ordre : ceux que la page d'accueil du layout rend avec `PlacedModules`. Par défaut, tous. */
+  orderableModules?: ModuleName[];
+  /** Des jeux de thème prêts à l'emploi, au-dessus des réglages individuels. */
+  themePresets?: LayoutThemePreset[];
+  /** Les paires de couleurs dont le Manager est averti quand le contraste est trop faible. */
+  themeContrastPairs?: LayoutContrastPair[];
   images?: Partial<Record<LayoutImageSlot, LayoutImageCatalog>>;
 };
