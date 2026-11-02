@@ -8,7 +8,7 @@
 	import EmployeeInitials from '../../atoms/EmployeeInitials.svelte';
 	import { readEmployeeColorClasses, readShiftBlockClasses } from '../../atoms/employeeColor';
 	import { dayStatusClasses, hoursStatusClasses } from '../week/weekCalendar';
-	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
+	import type { ShiftChange, ShiftMenuTarget } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
 	import {
 		dayStatusLabels,
@@ -36,9 +36,18 @@
 		status?: DayStatus;
 		/** Les heures de chaque employé jugées en direct : en rouge quand il lui en manque ou qu'il en a trop. */
 		hoursStatusByEmployee?: Map<string, EmployeeHoursStatus>;
+		/** Le clic droit sur un créneau modifiable : ce qu'on peut en faire. */
+		onShiftMenu?: (event: MouseEvent, menuTarget: ShiftMenuTarget) => void;
 	};
 
-	let { hours, rows, colorIndexByEmployee, opening, coverage, now, dragging, status, hoursStatusByEmployee }: PlanningTimelineProps = $props();
+	let { hours, rows, colorIndexByEmployee, opening, coverage, now, dragging, status, hoursStatusByEmployee, onShiftMenu }: PlanningTimelineProps =
+		$props();
+
+	function openShiftMenu(event: MouseEvent, bar: PlanningTimelineBar, personName: string): void {
+		if (!onShiftMenu || !bar.editHref) return;
+		event.preventDefault();
+		onShiftMenu(event, { shiftId: bar.id, label: `Créneau de ${personName}, ${bar.label}` });
+	}
 
 	type Gesture = { barId: string | undefined; employeeId: string; span: MinuteSpan };
 	let gesture = $state<Gesture>();
@@ -248,6 +257,7 @@
 									style:left="{position.startPercent}%"
 									style:width="{position.widthPercent}%"
 									onpointerdown={dragging ? (event) => startBarGesture(event, bar, row.employeeId, 'move') : undefined}
+									oncontextmenu={(event) => openShiftMenu(event, bar, row.personName)}
 								>
 									{#if dragging}
 										<span aria-hidden="true" class="{resizeHandleClasses} left-0" onpointerdown={(event) => startBarGesture(event, bar, row.employeeId, 'start')}></span>

@@ -17,7 +17,7 @@
 	import { assignEmployeeColorIndexes, formatEmployeeInitials } from '../../../domain/employees/employeeAppearance';
 	import EmployeeInitials from '../../atoms/EmployeeInitials.svelte';
 	import { readEmployeeColorClasses, readShiftBlockClasses } from '../../atoms/employeeColor';
-	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
+	import type { ShiftChange, ShiftMenuTarget } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
 	import { sumOvertimeMinutes } from '../../../domain/overtime/overtimePay';
 	import {
@@ -37,9 +37,17 @@
 		/** Pendant un geste : le créneau tel qu'il serait, pour juger le résultat avant de lâcher. */
 		onPreview: (preview: ShiftPreview | undefined) => void;
 		onShiftChange: (change: ShiftChange) => void;
+		/** Le clic droit sur un créneau : ce qu'on peut en faire. */
+		onShiftMenu?: (event: MouseEvent, menuTarget: ShiftMenuTarget) => void;
 	};
 
-	let { live, assessment, todayDate, editHrefPrefix, dayHrefPrefix, onPreview, onShiftChange }: WeekCalendarProps = $props();
+	let { live, assessment, todayDate, editHrefPrefix, dayHrefPrefix, onPreview, onShiftChange, onShiftMenu }: WeekCalendarProps = $props();
+
+	function openShiftMenu(event: MouseEvent, shift: Shift, employeeName: string): void {
+		if (!onShiftMenu || shift.id === 'preview') return;
+		event.preventDefault();
+		onShiftMenu(event, { shiftId: shift.id, label: `Créneau de ${employeeName}, ${shift.startTime} – ${shift.endTime}` });
+	}
 
 	// L'axe ne dépend que de l'enregistré : il ne bouge pas sous le doigt.
 	const range = $derived(computeWeekTimelineRange(live.shifts, live.openingPeriodsByDate));
@@ -319,6 +327,7 @@
 								style:left="calc({(laneIndex / weekLaneCount) * 100}% + 1px)"
 								style:width="calc({100 / weekLaneCount}% - 2px)"
 								onpointerdown={(event) => startShiftGesture(event, shift, 'move')}
+								oncontextmenu={(event) => openShiftMenu(event, shift, employee?.fullName ?? '')}
 							>
 								<span aria-hidden="true" class="absolute inset-x-0 top-0 z-20 h-2 cursor-ns-resize" onpointerdown={(event) => startShiftGesture(event, shift, 'start')}></span>
 								<a
