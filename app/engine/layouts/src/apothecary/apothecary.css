@@ -1,0 +1,1791 @@
+@import '@fontsource/cinzel/latin-600.css';
+@import '@fontsource/cinzel/latin-700.css';
+@import '@fontsource/eb-garamond/latin-400.css';
+@import '@fontsource/eb-garamond/latin-400-italic.css';
+@import '@fontsource/eb-garamond/latin-600.css';
+
+/*
+ * Layout « apothecary » (Apothicaire) : l'officine d'autrefois. Bandes de boiserie et de papier crème, capitales romaines
+ * (Cinzel) sur les étiquettes, texte en Garamond à 19 px. L'or ne sert qu'aux filets et au texte sur la boiserie.
+ */
+
+.layout-apothecary {
+  --ap-color-wood: #13372a;
+  /* Tirées de la couleur des boiseries, pour suivre celle que le thème choisit. */
+  --ap-color-wood-deep: color-mix(in srgb, var(--ap-color-wood) 72%, black);
+  --ap-color-wood-panel: color-mix(in srgb, var(--ap-color-wood) 90%, white);
+  --ap-color-paper: #f5eedd;
+  --ap-color-paper-light: #fbf7ec;
+  --ap-color-ink: #23201a;
+  --ap-color-muted: #5b5546;
+  --ap-color-gold: #c9a55a;
+  --ap-color-gold-rule: #b08d47;
+  --ap-color-gold-text: #7a5f2a;
+  --ap-color-gold-light: #dcc188;
+  --ap-color-on-wood: #f5eedd;
+  --ap-color-on-wood-muted: #e3d8bd;
+  --ap-color-leader: #c4ab72;
+  --ap-color-open: #1f6b3d;
+  --ap-color-closing: #8a4b00;
+  --ap-color-on-duty: #2b3f8c;
+  --ap-color-error: #a3261e;
+  --ap-font-label: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --ap-font-text: 'EB Garamond', Garamond, Georgia, serif;
+  --ap-content-width: 1120px;
+  --ap-gutter: 40px;
+  --ap-inline-padding: max(var(--ap-gutter), calc((100% - var(--ap-content-width)) / 2));
+  --ap-action-bar-height: 0px;
+
+  --ap-form-text: var(--ap-color-ink);
+  --ap-form-muted: var(--ap-color-muted);
+  --ap-form-line: var(--ap-color-leader);
+  --ap-form-field: #fffdf6;
+  --ap-form-accent: var(--ap-color-wood);
+  --ap-form-on-accent: var(--ap-color-paper);
+  --ap-form-error: var(--ap-color-error);
+  --ap-form-radius: 0;
+  --ap-form-title-font: var(--ap-font-label);
+
+  min-height: 100vh;
+  padding-bottom: var(--ap-action-bar-height);
+  background: var(--ap-color-paper);
+  color: var(--ap-color-ink);
+  font-family: var(--ap-font-text);
+  font-size: 19px;
+  line-height: 1.55;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.layout-apothecary *,
+.layout-apothecary *::before,
+.layout-apothecary *::after {
+  box-sizing: border-box;
+}
+
+.layout-apothecary h1,
+.layout-apothecary h2,
+.layout-apothecary h3,
+.layout-apothecary p,
+.layout-apothecary ul,
+.layout-apothecary ol,
+.layout-apothecary dl,
+.layout-apothecary dd {
+  margin: 0;
+}
+
+.layout-apothecary ul,
+.layout-apothecary ol {
+  padding: 0;
+}
+
+.layout-apothecary a {
+  color: inherit;
+}
+
+.layout-apothecary a:focus-visible,
+.layout-apothecary button:focus-visible {
+  outline: 2px solid var(--ap-color-gold);
+  outline-offset: 3px;
+}
+
+.layout-apothecary img {
+  display: block;
+  max-width: 100%;
+}
+
+.layout-apothecary .ap-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.layout-apothecary .ap-skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 10px 16px;
+  background: var(--ap-color-wood);
+  color: var(--ap-color-on-wood);
+  font-family: var(--ap-font-label);
+  transform: translateY(-200%);
+}
+
+.layout-apothecary .ap-skip-link:focus {
+  transform: none;
+}
+
+/* Boutons, fleurons, étiquettes */
+
+.layout-apothecary .ap-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 24px;
+  border: 1px solid var(--ap-color-gold);
+  font-family: var(--ap-font-label);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.layout-apothecary .ap-button--primary {
+  border-color: var(--ap-color-wood);
+  background: var(--ap-color-wood);
+  color: var(--ap-color-on-wood);
+}
+
+.layout-apothecary .ap-arrow-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-family: var(--ap-font-label);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  color: var(--ap-color-gold-text);
+}
+
+.layout-apothecary .ap-ornament {
+  display: block;
+  width: 160px;
+  height: 12px;
+  fill: var(--ap-color-gold-rule);
+}
+
+.layout-apothecary .ap-ornament__rule {
+  fill: none;
+  stroke: var(--ap-color-gold-rule);
+}
+
+.layout-apothecary .ap-cartouche {
+  --ap-notch: 24px;
+  padding: 2px;
+  background: var(--ap-color-gold);
+  clip-path: polygon(var(--ap-notch) 0, calc(100% - var(--ap-notch)) 0, 100% var(--ap-notch), 100% calc(100% - var(--ap-notch)), calc(100% - var(--ap-notch)) 100%, var(--ap-notch) 100%, 0 calc(100% - var(--ap-notch)), 0 var(--ap-notch));
+}
+
+.layout-apothecary .ap-cartouche__paper,
+.layout-apothecary .ap-cartouche__rule,
+.layout-apothecary .ap-cartouche__content {
+  clip-path: inherit;
+}
+
+.layout-apothecary .ap-cartouche__paper {
+  padding: 9px;
+  background: var(--ap-color-paper);
+}
+
+.layout-apothecary .ap-cartouche__rule {
+  padding: 1px;
+  background: var(--ap-color-gold-rule);
+}
+
+.layout-apothecary .ap-cartouche__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 44px 40px;
+  background: var(--ap-color-paper);
+  color: var(--ap-color-ink);
+  text-align: center;
+}
+
+.layout-apothecary .ap-cartouche--small {
+  --ap-notch: 9px;
+  width: 100%;
+  padding: 1px;
+}
+
+.layout-apothecary .ap-cartouche--small .ap-cartouche__paper {
+  padding: 0;
+}
+
+.layout-apothecary .ap-cartouche--small .ap-cartouche__rule {
+  padding: 0;
+  background: none;
+}
+
+.layout-apothecary .ap-cartouche--small .ap-cartouche__content {
+  padding: 12px 10px;
+}
+
+/* Sans ornements : coins droits, plus de fleurons. */
+
+.layout-apothecary .ap-page--plain .ap-cartouche {
+  clip-path: none;
+}
+
+.layout-apothecary .ap-page--plain .ap-ornament {
+  display: none;
+}
+
+/* Bandeau d'état et en-tête */
+
+.layout-apothecary .ap-status-band {
+  border-bottom: 1px solid var(--ap-color-leader);
+  font-size: 16px;
+}
+
+.layout-apothecary .ap-status-band__inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 24px;
+  padding: 8px var(--ap-inline-padding);
+}
+
+.layout-apothecary .ap-status-band__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.layout-apothecary .ap-status-band__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.layout-apothecary .ap-status-band--open .ap-status-band__status {
+  color: var(--ap-color-open);
+}
+
+.layout-apothecary .ap-status-band--closingSoon .ap-status-band__status {
+  color: var(--ap-color-closing);
+}
+
+.layout-apothecary .ap-status-band--closed .ap-status-band__status {
+  color: var(--ap-color-muted);
+}
+
+.layout-apothecary .ap-status-band--onDuty .ap-status-band__status {
+  color: var(--ap-color-on-duty);
+}
+
+.layout-apothecary .ap-status-band__label {
+  font-weight: 600;
+}
+
+.layout-apothecary .ap-status-band__detail,
+.layout-apothecary .ap-status-band__contact {
+  color: var(--ap-color-muted);
+}
+
+.layout-apothecary .ap-status-band__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+
+.layout-apothecary .ap-header {
+  background: var(--ap-color-wood-deep);
+  color: var(--ap-color-on-wood);
+}
+
+.layout-apothecary .ap-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 32px;
+  padding: 16px var(--ap-inline-padding);
+}
+
+.layout-apothecary .ap-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.layout-apothecary .ap-mark {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  fill: var(--ap-color-gold-light);
+}
+
+.layout-apothecary .ap-header__logo {
+  width: auto;
+  height: 40px;
+}
+
+.layout-apothecary .ap-header__name {
+  font-family: var(--ap-font-label);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.layout-apothecary .ap-header__links ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 26px;
+  list-style: none;
+  font-size: 18px;
+}
+
+.layout-apothecary .ap-header__links a {
+  text-decoration: none;
+}
+
+.layout-apothecary .ap-header__links a:hover {
+  color: var(--ap-color-gold-light);
+}
+
+.layout-apothecary .ap-header .ap-button--primary {
+  border-color: var(--ap-color-paper);
+  background: var(--ap-color-paper);
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-header .ap-button--secondary {
+  color: var(--ap-color-gold-light);
+}
+
+.layout-apothecary .ap-on-duty {
+  padding: 12px var(--ap-inline-padding);
+  background: var(--ap-color-paper-light);
+  border-bottom: 1px solid var(--ap-color-leader);
+  font-size: 18px;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Le contenu : des bandes de papier ou de boiserie, le texte dans la colonne. */
+
+.layout-apothecary .ap-main:focus {
+  outline: none;
+}
+
+.layout-apothecary .ap-main > * {
+  padding-inline: var(--ap-inline-padding);
+}
+
+.layout-apothecary .ap-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding-block: 80px;
+}
+
+.layout-apothecary .ap-section + .ap-section,
+.layout-apothecary .ap-visit + .ap-section {
+  border-top: 1px solid var(--ap-color-leader);
+}
+
+.layout-apothecary .ap-heading-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.layout-apothecary .ap-heading {
+  font-family: var(--ap-font-label);
+  font-size: clamp(30px, 4vw, 40px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-panel {
+  width: 100%;
+  padding: 36px 40px;
+  background: var(--ap-color-paper-light);
+  border: 1px solid var(--ap-color-gold-rule);
+  outline: 1px solid var(--ap-color-gold-rule);
+  outline-offset: -8px;
+}
+
+/* Accroche et plaque d'ouverture, sur la boiserie */
+
+.layout-apothecary .ap-opening {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding-block: 80px 88px;
+  background-color: var(--ap-color-wood);
+  background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.14) 0 2px, transparent 2px 200px);
+  color: var(--ap-color-on-wood);
+}
+
+.layout-apothecary .ap-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+}
+
+.layout-apothecary .ap-hero__label {
+  width: 100%;
+  max-width: 780px;
+}
+
+.layout-apothecary .ap-hero__eyebrow {
+  font-family: var(--ap-font-label);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ap-color-gold-text);
+}
+
+.layout-apothecary .ap-hero__title {
+  font-family: var(--ap-font-label);
+  font-size: clamp(34px, 6vw, 62px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  color: var(--ap-color-wood);
+  overflow-wrap: anywhere;
+}
+
+.layout-apothecary .ap-hero__headline {
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-style: italic;
+  line-height: 1.35;
+  color: #4a443a;
+}
+
+.layout-apothecary .ap-hero__address {
+  color: var(--ap-color-muted);
+}
+
+.layout-apothecary .ap-hero__image {
+  width: 100%;
+  max-width: 780px;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+  border: 2px solid var(--ap-color-gold);
+  outline: 1px solid var(--ap-color-gold);
+  outline-offset: -10px;
+}
+
+.layout-apothecary .ap-today {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 24px;
+  padding: 12px 24px;
+  border: 1px solid var(--ap-color-gold);
+}
+
+.layout-apothecary .ap-today__eyebrow {
+  font-family: var(--ap-font-label);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ap-color-gold-light);
+}
+
+.layout-apothecary .ap-today__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.layout-apothecary .ap-today__label {
+  font-family: var(--ap-font-label);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.layout-apothecary .ap-today__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+
+.layout-apothecary .ap-today__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--ap-color-gold-light);
+  text-decoration: none;
+}
+
+/* Vos démarches */
+
+.layout-apothecary .ap-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 24px;
+  width: 100%;
+  list-style: none;
+}
+
+.layout-apothecary .ap-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  padding: 40px 32px;
+  background: var(--ap-color-paper-light);
+  border: 1px solid var(--ap-color-gold-rule);
+  outline: 1px solid var(--ap-color-gold-rule);
+  outline-offset: -8px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.layout-apothecary .ap-action__icon {
+  width: 34px;
+  height: 34px;
+  stroke: var(--ap-color-wood);
+  stroke-width: 1.4;
+}
+
+.layout-apothecary .ap-action__title {
+  font-family: var(--ap-font-label);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-action__description {
+  flex-grow: 1;
+  color: var(--ap-color-muted);
+}
+
+.layout-apothecary .ap-action__call {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--ap-font-label);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ap-color-gold-text);
+}
+
+/* Horaires à points de conduite, et la garde */
+
+.layout-apothecary .ap-visit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding-block: 80px;
+  border-top: 1px solid var(--ap-color-leader);
+}
+
+.layout-apothecary .ap-hours {
+  flex: 2 1 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+  padding: 40px 44px;
+  background: var(--ap-color-paper-light);
+  border: 1px solid var(--ap-color-gold-rule);
+  outline: 1px solid var(--ap-color-gold-rule);
+  outline-offset: -8px;
+}
+
+.layout-apothecary .ap-hours .ap-heading-group {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.layout-apothecary .ap-week {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+}
+
+.layout-apothecary .ap-week__day {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 20px;
+}
+
+.layout-apothecary .ap-week__day--today {
+  font-weight: 600;
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-week__today {
+  margin-left: 10px;
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ap-color-gold-text);
+}
+
+.layout-apothecary .ap-week__leader {
+  flex: 1 1 40px;
+  margin: 0 12px;
+  border-bottom: 2px dotted var(--ap-color-leader);
+  transform: translateY(-5px);
+}
+
+.layout-apothecary .ap-week__periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+}
+
+.layout-apothecary .ap-week__period + .ap-week__period::before {
+  content: '· ';
+}
+
+.layout-apothecary .ap-duty {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 32px;
+  background: var(--ap-color-wood);
+  color: var(--ap-color-on-wood);
+  outline: 1px solid var(--ap-color-gold);
+  outline-offset: -8px;
+  text-align: center;
+}
+
+.layout-apothecary .ap-duty__title {
+  font-family: var(--ap-font-label);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ap-color-gold-light);
+}
+
+.layout-apothecary .ap-duty__number {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-decoration: none;
+}
+
+.layout-apothecary .ap-duty__digits {
+  font-family: var(--ap-font-label);
+  font-size: 72px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--ap-color-gold-light);
+}
+
+.layout-apothecary .ap-duty__call {
+  font-style: italic;
+}
+
+/* Les services, rangés dans des tiroirs */
+
+.layout-apothecary .ap-section--services {
+  background: var(--ap-color-wood-deep);
+  color: var(--ap-color-on-wood);
+}
+
+.layout-apothecary .ap-section--services .ap-heading {
+  color: var(--ap-color-on-wood);
+}
+
+.layout-apothecary .ap-section--services .ap-ornament,
+.layout-apothecary .ap-find-us .ap-ornament {
+  fill: var(--ap-color-gold);
+}
+
+.layout-apothecary .ap-section--services .ap-ornament__rule,
+.layout-apothecary .ap-find-us .ap-ornament__rule {
+  stroke: var(--ap-color-gold);
+}
+
+.layout-apothecary .ap-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 14px;
+  width: 100%;
+  list-style: none;
+}
+
+.layout-apothecary .ap-drawer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 30px 22px 28px;
+  background: var(--ap-color-wood);
+  box-shadow: inset 0 0 0 7px var(--ap-color-wood-deep), inset 0 0 0 8px color-mix(in srgb, var(--ap-color-gold) 40%, transparent);
+  text-align: center;
+}
+
+.layout-apothecary .ap-drawer__title {
+  font-family: var(--ap-font-label);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-drawer__knob {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ap-color-gold);
+  box-shadow: inset -2px -3px 0 #8a6d33, 0 2px 0 rgb(0 0 0 / 0.35);
+}
+
+.layout-apothecary .ap-drawer__icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.layout-apothecary .ap-drawer__description {
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--ap-color-on-wood-muted);
+}
+
+/* L'équipe en médaillons */
+
+.layout-apothecary .ap-team {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 32px;
+  width: 100%;
+  list-style: none;
+}
+
+.layout-apothecary .ap-team__member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.layout-apothecary .ap-portrait {
+  width: 78%;
+  aspect-ratio: 4 / 5;
+  margin-bottom: 14px;
+  object-fit: cover;
+  border: 2px solid var(--ap-color-gold-rule);
+  border-radius: 50%;
+  outline: 1px solid var(--ap-color-gold-rule);
+  outline-offset: -9px;
+}
+
+.layout-apothecary .ap-portrait--initials {
+  display: grid;
+  place-items: center;
+  background: var(--ap-color-paper-light);
+  font-family: var(--ap-font-label);
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-team__name {
+  font-family: var(--ap-font-label);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.layout-apothecary .ap-team__role {
+  font-style: italic;
+  color: var(--ap-color-muted);
+}
+
+/* La Gazette */
+
+.layout-apothecary .ap-news {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 32px 40px;
+  width: 100%;
+  padding-top: 24px;
+  border-top: 3px double var(--ap-color-gold-rule);
+}
+
+.layout-apothecary .ap-news__card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.layout-apothecary .ap-news__image {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  filter: sepia(0.3);
+}
+
+.layout-apothecary .ap-news__date {
+  font-family: var(--ap-font-label);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ap-color-gold-text);
+}
+
+.layout-apothecary .ap-news__text {
+  display: grid;
+  gap: 8px;
+}
+
+.layout-apothecary .ap-news__title {
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-news__summary {
+  color: #4a443a;
+}
+
+/* Fidélité, marques, commande */
+
+.layout-apothecary .ap-loyalty,
+.layout-apothecary .ap-order {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.layout-apothecary .ap-loyalty__card,
+.layout-apothecary .ap-loyalty__image {
+  flex-shrink: 0;
+  width: 200px;
+  aspect-ratio: 1.586;
+  object-fit: cover;
+  background: var(--ap-color-wood);
+  border: 2px solid var(--ap-color-gold);
+  border-radius: 10px;
+}
+
+.layout-apothecary .ap-loyalty__text {
+  flex: 1 1 320px;
+  display: grid;
+  gap: 8px;
+}
+
+.layout-apothecary .ap-loyalty__title,
+.layout-apothecary .ap-order__title {
+  font-family: var(--ap-font-label);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-order {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.layout-apothecary .ap-order__text {
+  margin-top: 6px;
+  color: var(--ap-color-muted);
+}
+
+.layout-apothecary .ap-section--brands {
+  padding-block: 56px;
+  gap: 20px;
+}
+
+.layout-apothecary .ap-brands__title {
+  font-family: var(--ap-font-label);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ap-color-gold-text);
+}
+
+.layout-apothecary .ap-brands {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 32px;
+  list-style: none;
+  font-size: 26px;
+  font-style: italic;
+}
+
+.layout-apothecary .ap-brands__name {
+  text-decoration: none;
+}
+
+/* Nous trouver, sur la boiserie */
+
+.layout-apothecary .ap-find-us {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 32px 48px;
+  background-color: var(--ap-color-wood);
+  background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.14) 0 2px, transparent 2px 200px);
+  color: var(--ap-color-on-wood);
+}
+
+.layout-apothecary .ap-find-us .ap-heading-group {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.layout-apothecary .ap-find-us .ap-heading {
+  color: var(--ap-color-on-wood);
+}
+
+.layout-apothecary .ap-find-us__details {
+  flex: 1 1 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+}
+
+.layout-apothecary .ap-find-us__address {
+  font-size: 26px;
+  line-height: 1.3;
+}
+
+.layout-apothecary .ap-find-us__facts {
+  align-self: stretch;
+  border-top: 1px solid color-mix(in srgb, var(--ap-color-gold) 40%, transparent);
+}
+
+.layout-apothecary .ap-find-us__facts div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ap-color-gold) 40%, transparent);
+}
+
+.layout-apothecary .ap-find-us__facts dt {
+  flex: 0 0 150px;
+  font-family: var(--ap-font-label);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ap-color-gold-light);
+}
+
+.layout-apothecary .ap-find-us__facts dd {
+  flex: 1 1 200px;
+}
+
+.layout-apothecary .ap-find-us .ap-button--primary {
+  border-color: var(--ap-color-paper);
+  background: var(--ap-color-paper);
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-find-us__map {
+  flex: 1.3 1 460px;
+  min-height: 440px;
+  border: 2px solid var(--ap-color-gold);
+  filter: sepia(0.35);
+}
+
+.layout-apothecary .ap-find-us__map--empty {
+  display: grid;
+  place-items: center;
+  background-color: #ece3cc;
+  background-image:
+    repeating-linear-gradient(0deg, #ddd0b0 0 1px, transparent 1px 52px),
+    repeating-linear-gradient(90deg, #ddd0b0 0 1px, transparent 1px 52px);
+  filter: none;
+}
+
+.layout-apothecary .ap-find-us__pin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ap-color-wood);
+  box-shadow: 0 0 0 7px #ece3cc, 0 0 0 8px var(--ap-color-wood);
+}
+
+/* Page ordonnance */
+
+.layout-apothecary .ap-prescription-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  align-items: start;
+  gap: 40px;
+  padding-block: 64px 80px;
+}
+
+.layout-apothecary .ap-prescription {
+  display: grid;
+  gap: 28px;
+}
+
+.layout-apothecary .ap-prescription__header {
+  display: grid;
+  gap: 12px;
+}
+
+.layout-apothecary .ap-prescription__title {
+  font-family: var(--ap-font-label);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  color: var(--ap-color-wood);
+}
+
+.layout-apothecary .ap-prescription__introduction {
+  max-width: 640px;
+  font-size: 21px;
+  font-style: italic;
+  color: #4a443a;
+}
+
+.layout-apothecary .ap-prescription-page__aside {
+  display: grid;
+  gap: 16px;
+  padding: 28px;
+  background: var(--ap-color-wood);
+  color: var(--ap-color-on-wood);
+  outline: 1px solid var(--ap-color-gold);
+  outline-offset: -8px;
+}
+
+.layout-apothecary .ap-prescription-page__aside-title {
+  font-family: var(--ap-font-label);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--ap-color-gold-light);
+}
+
+.layout-apothecary .ap-how {
+  display: grid;
+  gap: 12px;
+  padding-left: 22px;
+}
+
+/* Pied de page et mentions légales */
+
+.layout-apothecary .ap-footer {
+  background: var(--ap-color-wood-deep);
+  color: var(--ap-color-on-wood-muted);
+}
+
+.layout-apothecary .ap-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 24px 40px;
+  padding: 44px var(--ap-inline-padding) 28px;
+}
+
+.layout-apothecary .ap-footer__identity {
+  display: grid;
+  gap: 2px;
+}
+
+.layout-apothecary .ap-footer__name {
+  font-family: var(--ap-font-label);
+  letter-spacing: 0.06em;
+  color: var(--ap-color-on-wood);
+}
+
+.layout-apothecary .ap-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 4px 24px;
+  font-size: 17px;
+}
+
+.layout-apothecary .ap-footer a {
+  text-decoration: none;
+}
+
+.layout-apothecary .ap-legal-notice {
+  padding: 20px var(--ap-inline-padding) 40px;
+  background: var(--ap-color-wood-deep);
+  border-top: 1px solid color-mix(in srgb, var(--ap-color-gold) 40%, transparent);
+  font-size: 15px;
+  color: var(--ap-color-on-wood-muted);
+}
+
+.layout-apothecary .ap-legal-notice .legal-notice__title {
+  margin: 0 0 6px;
+  font-family: var(--ap-font-label);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ap-color-on-wood);
+}
+
+/* Barre d'actions du téléphone */
+
+.layout-apothecary .ap-action-bar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .layout-apothecary {
+    --ap-gutter: 16px;
+    --ap-action-bar-height: 84px;
+    font-size: 18px;
+  }
+
+  .layout-apothecary .ap-header__links,
+  .layout-apothecary .ap-header__action,
+  .layout-apothecary .ap-status-band__contact {
+    display: none;
+  }
+
+  .layout-apothecary .ap-opening {
+    padding-block: 28px 32px;
+    gap: 20px;
+  }
+
+  .layout-apothecary .ap-cartouche:not(.ap-cartouche--small) {
+    --ap-notch: 16px;
+  }
+
+  .layout-apothecary .ap-cartouche:not(.ap-cartouche--small) .ap-cartouche__paper {
+    padding: 6px;
+  }
+
+  .layout-apothecary .ap-cartouche:not(.ap-cartouche--small) .ap-cartouche__content {
+    padding: 26px 18px;
+  }
+
+  .layout-apothecary .ap-section,
+  .layout-apothecary .ap-visit {
+    padding-block: 48px;
+  }
+
+  .layout-apothecary .ap-hours,
+  .layout-apothecary .ap-panel {
+    padding: 28px 22px;
+  }
+
+  .layout-apothecary .ap-week__day {
+    font-size: 18px;
+  }
+
+  .layout-apothecary .ap-prescription-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .layout-apothecary .ap-action-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 8px;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    background: var(--ap-color-wood-deep);
+    color: var(--ap-color-on-wood);
+  }
+
+  .layout-apothecary .ap-action-bar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 56px;
+    border: 1px solid color-mix(in srgb, var(--ap-color-gold) 55%, transparent);
+    font-family: var(--ap-font-label);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+
+  .layout-apothecary .ap-action-bar__item .ap-icon {
+    stroke: var(--ap-color-gold-light);
+  }
+
+  .layout-apothecary .ap-action-bar__item--main {
+    border-color: var(--ap-color-paper);
+    background: var(--ap-color-paper);
+    color: var(--ap-color-wood);
+  }
+
+  .layout-apothecary .ap-action-bar__item--main .ap-icon {
+    stroke: currentColor;
+  }
+}
+
+/* Formulaires : l'ordonnance et le rendez-vous. Les couleurs viennent des variables --ap-form-*, posées plus haut. */
+
+.layout-apothecary .ap-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.layout-apothecary .ap-text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-field {
+  display: grid;
+  gap: 6px;
+}
+
+.layout-apothecary .ap-field__label {
+  font-weight: 600;
+}
+
+.layout-apothecary .ap-field__hint {
+  font-size: 0.875em;
+  color: var(--ap-form-muted);
+}
+
+.layout-apothecary .ap-field__error,
+.layout-apothecary .ap-form__status {
+  font-size: 0.875em;
+  font-weight: 600;
+  color: var(--ap-form-error);
+}
+
+.layout-apothecary .ap-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+  background: var(--ap-form-field);
+  color: var(--ap-form-text);
+  font: inherit;
+}
+
+.layout-apothecary textarea.ap-input {
+  min-height: 0;
+  resize: vertical;
+}
+
+.layout-apothecary .ap-input:focus-visible,
+.layout-apothecary .ap-choice button:focus-visible,
+.layout-apothecary .ap-checkbox input:focus-visible {
+  outline: 2px solid var(--ap-form-accent);
+  outline-offset: 2px;
+}
+
+.layout-apothecary .ap-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.layout-apothecary .ap-choice button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+  background: var(--ap-form-field);
+  color: var(--ap-form-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-choice button[aria-pressed='true'] {
+  border-color: var(--ap-form-accent);
+  background: var(--ap-form-accent);
+  color: var(--ap-form-on-accent);
+  font-weight: 600;
+}
+
+.layout-apothecary .ap-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-checkbox input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--ap-form-accent);
+}
+
+.layout-apothecary .ap-pages {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-apothecary .ap-pages__page {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+  background: var(--ap-form-field);
+}
+
+.layout-apothecary .ap-pages__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout-apothecary .ap-pages__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.layout-apothecary .ap-pages__button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px dashed var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-pages__button--main {
+  border: 1px solid var(--ap-form-accent);
+  background: var(--ap-form-accent);
+  color: var(--ap-form-on-accent);
+}
+
+.layout-apothecary .ap-pages__button:focus-within {
+  outline: 2px solid var(--ap-form-accent);
+  outline-offset: 2px;
+}
+
+.layout-apothecary .ap-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 24px;
+  color: var(--ap-form-text);
+}
+
+.layout-apothecary .ap-form__group {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.layout-apothecary .ap-form__group--wide,
+.layout-apothecary .ap-form__submit,
+.layout-apothecary .ap-form__status {
+  grid-column: 1 / -1;
+}
+
+.layout-apothecary .ap-form__group-title {
+  margin-bottom: 4px;
+  padding: 0;
+  font-family: var(--ap-form-title-font);
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.layout-apothecary .ap-form__checks {
+  gap: 12px;
+}
+
+.layout-apothecary .ap-form__note {
+  margin: 0;
+  font-size: 0.875em;
+  color: var(--ap-form-muted);
+}
+
+.layout-apothecary .ap-form__submit,
+.layout-apothecary .ap-wizard__button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 54px;
+  padding: 0 28px;
+  border: 1px solid var(--ap-form-accent);
+  border-radius: var(--ap-form-radius);
+  background: var(--ap-form-accent);
+  color: var(--ap-form-on-accent);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-form__submit:disabled,
+.layout-apothecary .ap-wizard__button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.layout-apothecary .ap-wizard__button--quiet {
+  background: transparent;
+  color: var(--ap-form-text);
+}
+
+.layout-apothecary .ap-form__sent {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid var(--ap-form-accent);
+  border-radius: var(--ap-form-radius);
+  color: var(--ap-form-text);
+}
+
+.layout-apothecary .ap-form__sent p {
+  margin: 0;
+}
+
+.layout-apothecary .ap-form__sent-title {
+  font-family: var(--ap-form-title-font);
+  font-size: 1.3em;
+  font-weight: 700;
+}
+
+.layout-apothecary .ap-wizard {
+  display: grid;
+  gap: 20px;
+  color: var(--ap-form-text);
+}
+
+.layout-apothecary .ap-wizard section {
+  display: grid;
+  gap: 16px;
+}
+
+.layout-apothecary .ap-wizard p {
+  margin: 0;
+}
+
+.layout-apothecary .ap-wizard__title {
+  margin: 0;
+  font-family: var(--ap-form-title-font);
+  font-size: 1.3em;
+  font-weight: 700;
+}
+
+.layout-apothecary .ap-wizard__introduction,
+.layout-apothecary .ap-wizard__summary,
+.layout-apothecary .ap-wizard__privacy {
+  color: var(--ap-form-muted);
+}
+
+.layout-apothecary .ap-wizard__privacy {
+  font-size: 0.875em;
+}
+
+.layout-apothecary .ap-wizard__notice,
+.layout-apothecary .ap-wizard__preparation {
+  padding: 12px 16px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+}
+
+.layout-apothecary .ap-wizard__back {
+  justify-self: start;
+}
+
+.layout-apothecary .ap-wizard__form {
+  display: grid;
+  gap: 16px;
+}
+
+.layout-apothecary .ap-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9em;
+  color: var(--ap-form-muted);
+}
+
+.layout-apothecary .ap-steps__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.layout-apothecary .ap-steps__label--link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.layout-apothecary .ap-steps__number {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: 50%;
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.layout-apothecary .ap-steps__item--current {
+  color: var(--ap-form-text);
+  font-weight: 700;
+}
+
+.layout-apothecary .ap-steps__item--current .ap-steps__number {
+  border-color: var(--ap-form-accent);
+  background: var(--ap-form-accent);
+  color: var(--ap-form-on-accent);
+}
+
+.layout-apothecary .ap-reasons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-apothecary .ap-reason {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+  background: var(--ap-form-field);
+  color: var(--ap-form-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-reason--chosen,
+.layout-apothecary .ap-reason:hover {
+  border-color: var(--ap-form-accent);
+}
+
+.layout-apothecary .ap-reason__label {
+  font-weight: 700;
+}
+
+.layout-apothecary .ap-reason__duration,
+.layout-apothecary .ap-reason__description {
+  color: var(--ap-form-muted);
+}
+
+.layout-apothecary .ap-reason__description {
+  grid-column: 1 / -1;
+  font-size: 0.9em;
+}
+
+.layout-apothecary .ap-calendar {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.layout-apothecary .ap-calendar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.layout-apothecary .ap-calendar__month {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.layout-apothecary .ap-calendar__arrow {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+  background: var(--ap-form-field);
+  color: var(--ap-form-text);
+  font: inherit;
+  font-size: 1.3em;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-calendar__arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.layout-apothecary .ap-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  transition: opacity 0.2s;
+}
+
+.layout-apothecary .ap-calendar__grid--loading {
+  opacity: 0.5;
+}
+
+.layout-apothecary .ap-calendar__weekday {
+  padding: 4px 0;
+  font-size: 0.8em;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ap-form-muted);
+}
+
+.layout-apothecary .ap-calendar__day {
+  aspect-ratio: 1;
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--ap-form-radius);
+  background: transparent;
+  color: var(--ap-form-muted);
+  font: inherit;
+  opacity: 0.55;
+}
+
+.layout-apothecary .ap-calendar__day--free {
+  border-color: var(--ap-form-line);
+  background: var(--ap-form-field);
+  color: var(--ap-form-text);
+  font-weight: 700;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-calendar__day--chosen {
+  border-color: var(--ap-form-accent);
+  background: var(--ap-form-accent);
+  color: var(--ap-form-on-accent);
+}
+
+.layout-apothecary .ap-slots {
+  display: grid;
+  gap: 8px;
+}
+
+.layout-apothecary .ap-slots__title {
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--ap-form-muted);
+}
+
+.layout-apothecary .ap-slots__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-apothecary .ap-slot {
+  min-width: 76px;
+  min-height: 44px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+  background: var(--ap-form-field);
+  color: var(--ap-form-text);
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-slot:hover {
+  border-color: var(--ap-form-accent);
+}
+
+.layout-apothecary .ap-recap {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--ap-form-line);
+  border-radius: var(--ap-form-radius);
+}
+
+.layout-apothecary .ap-recap div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.layout-apothecary .ap-recap dt {
+  min-width: 70px;
+  font-weight: 700;
+}
+
+.layout-apothecary .ap-recap dd {
+  margin: 0;
+}
+
+.layout-apothecary .ap-done {
+  padding: 24px;
+  border: 1px solid var(--ap-form-accent);
+  border-radius: var(--ap-form-radius);
+}
+
+.layout-apothecary .ap-done__when {
+  font-weight: 700;
+}

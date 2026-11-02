@@ -1,0 +1,1772 @@
+@import '@fontsource/archivo/latin-400.css';
+@import '@fontsource/archivo/latin-600.css';
+@import '@fontsource/archivo/latin-700.css';
+@import '@fontsource/archivo-narrow/latin-700.css';
+@import '@fontsource/doto/latin-900.css';
+
+/*
+ * Layout « signboard » (Enseigne) : la pharmacie de nuit. Fond sombre, la croix verte en points lumineux, l'état
+ * d'ouverture et les horaires en chiffres à points (Doto) ; tout le reste en Archivo, pour rester lisible.
+ */
+
+.layout-signboard {
+  --sb-color-ground: #0a0f0c;
+  --sb-color-night: #050806;
+  --sb-color-surface: #111915;
+  --sb-color-line: #26332c;
+  --sb-color-line-soft: #1d2822;
+  --sb-color-control-line: #3a4a41;
+  --sb-color-led-off: #18221c;
+  --sb-color-led-dim: #2b3830;
+  --sb-color-text: #e9f1eb;
+  --sb-color-soft-text: #c3d0c7;
+  --sb-color-muted: #a3b2a8;
+  --sb-color-unlit: #9fb1a5;
+  --sb-color-signal: #34f28a;
+  --sb-color-on-signal: #03140a;
+  --sb-color-error: #ff9a85;
+  /* Tirées de la couleur de l'enseigne, pour suivre celle que le thème choisit. */
+  --sb-color-signal-glow: color-mix(in srgb, var(--sb-color-signal) 55%, transparent);
+  --sb-color-signal-wash: color-mix(in srgb, var(--sb-color-signal) 8%, transparent);
+  --sb-font-text: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --sb-font-display: 'Archivo Narrow', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  --sb-font-led: 'Doto', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --sb-radius: 6px;
+  --sb-content-width: 1200px;
+  --sb-gutter: 40px;
+  --sb-action-bar-height: 0px;
+
+  --sb-form-text: var(--sb-color-text);
+  --sb-form-muted: var(--sb-color-muted);
+  --sb-form-line: var(--sb-color-control-line);
+  --sb-form-field: var(--sb-color-night);
+  --sb-form-accent: var(--sb-color-signal);
+  --sb-form-on-accent: var(--sb-color-on-signal);
+  --sb-form-error: var(--sb-color-error);
+  --sb-form-radius: 4px;
+  --sb-form-title-font: var(--sb-font-text);
+
+  min-height: 100vh;
+  padding-bottom: var(--sb-action-bar-height);
+  background: var(--sb-color-ground);
+  color: var(--sb-color-text);
+  font-family: var(--sb-font-text);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.layout-signboard *,
+.layout-signboard *::before,
+.layout-signboard *::after {
+  box-sizing: border-box;
+}
+
+.layout-signboard h1,
+.layout-signboard h2,
+.layout-signboard h3,
+.layout-signboard p,
+.layout-signboard ul,
+.layout-signboard ol,
+.layout-signboard dl,
+.layout-signboard dd,
+.layout-signboard figure {
+  margin: 0;
+}
+
+.layout-signboard ul,
+.layout-signboard ol {
+  padding: 0;
+}
+
+.layout-signboard a {
+  color: inherit;
+}
+
+.layout-signboard a:focus-visible,
+.layout-signboard button:focus-visible {
+  outline: 2px solid var(--sb-color-text);
+  outline-offset: 3px;
+}
+
+.layout-signboard img {
+  display: block;
+  max-width: 100%;
+}
+
+.layout-signboard ::selection {
+  background: var(--sb-color-signal);
+  color: var(--sb-color-on-signal);
+}
+
+.layout-signboard .sb-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.layout-signboard .sb-skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 10px 16px;
+  background: var(--sb-color-signal);
+  color: var(--sb-color-on-signal);
+  font-weight: 700;
+  transform: translateY(-200%);
+}
+
+.layout-signboard .sb-skip-link:focus {
+  transform: none;
+}
+
+/* Boutons et liens fléchés */
+
+.layout-signboard .sb-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.layout-signboard .sb-button--signal {
+  background: var(--sb-color-signal);
+  color: var(--sb-color-on-signal);
+}
+
+.layout-signboard .sb-button--outline {
+  border-color: var(--sb-color-control-line);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.layout-signboard .sb-button--outline:hover {
+  border-color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-arrow-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--sb-color-signal);
+}
+
+/* En-tête */
+
+.layout-signboard .sb-header {
+  border-bottom: 1px solid var(--sb-color-line);
+}
+
+.layout-signboard .sb-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  max-width: var(--sb-content-width);
+  margin: 0 auto;
+  padding: 16px var(--sb-gutter);
+}
+
+.layout-signboard .sb-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.layout-signboard .sb-header__mark {
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.layout-signboard .sb-header__logo {
+  width: auto;
+  height: 40px;
+}
+
+.layout-signboard .sb-header__name {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.layout-signboard .sb-header__links ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  list-style: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.layout-signboard .sb-header__links a {
+  text-decoration: none;
+}
+
+.layout-signboard .sb-header__links a:hover {
+  color: var(--sb-color-signal);
+}
+
+/* Le bandeau lumineux et la croix */
+
+.layout-signboard .sb-ticker {
+  overflow: hidden;
+  background: var(--sb-color-night);
+  border-bottom: 1px solid var(--sb-color-line);
+}
+
+.layout-signboard .sb-ticker__track {
+  display: flex;
+  width: max-content;
+  animation: sb-ticker 46s linear infinite;
+}
+
+.layout-signboard .sb-ticker__run {
+  display: flex;
+  gap: 28px;
+  padding: 9px 28px 9px 0;
+  white-space: nowrap;
+  font-family: var(--sb-font-led);
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sb-color-signal);
+  text-shadow: 0 0 16px var(--sb-color-signal-glow);
+}
+
+.layout-signboard .sb-led-cross {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  background-image: radial-gradient(circle closest-side, var(--sb-color-led-off) 70%, transparent 76%);
+  background-size: calc(100% / 15) calc(100% / 15);
+}
+
+.layout-signboard .sb-led-cross__bar {
+  position: absolute;
+  background-image: radial-gradient(circle closest-side, var(--sb-color-signal) 70%, transparent 76%);
+  filter: drop-shadow(0 0 6px var(--sb-color-signal-glow));
+}
+
+.layout-signboard .sb-led-cross__bar--vertical {
+  top: 0;
+  bottom: 0;
+  left: calc(100% / 3);
+  width: calc(100% / 3);
+  background-size: 20% calc(100% / 15);
+}
+
+.layout-signboard .sb-led-cross__bar--horizontal {
+  top: calc(100% / 3);
+  left: 0;
+  right: 0;
+  height: calc(100% / 3);
+  background-size: calc(100% / 15) 20%;
+}
+
+.layout-signboard .sb-hero__cross,
+.layout-signboard .sb-status__label {
+  animation: sb-breathe 3.6s ease-in-out infinite;
+}
+
+/* Fermé : l'enseigne s'éteint et le bandeau ne brille plus. */
+
+.layout-signboard .sb-page--closed .sb-led-cross__bar {
+  background-image: radial-gradient(circle closest-side, var(--sb-color-led-dim) 70%, transparent 76%);
+  filter: none;
+}
+
+.layout-signboard .sb-page--closed .sb-ticker__run {
+  color: var(--sb-color-muted);
+  text-shadow: none;
+}
+
+.layout-signboard .sb-page--closed .sb-hero__cross,
+.layout-signboard .sb-page--closed .sb-status__label,
+.layout-signboard .sb-page--still .sb-hero__cross,
+.layout-signboard .sb-page--still .sb-status__label,
+.layout-signboard .sb-page--still .sb-ticker__track {
+  animation: none;
+}
+
+.layout-signboard .sb-page--still .sb-ticker__run[aria-hidden='true'] {
+  display: none;
+}
+
+.layout-signboard .sb-page--still .sb-ticker__track {
+  width: auto;
+  padding-left: var(--sb-gutter);
+}
+
+@keyframes sb-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes sb-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout-signboard .sb-ticker__track,
+  .layout-signboard .sb-hero__cross,
+  .layout-signboard .sb-status__label {
+    animation: none;
+  }
+}
+
+.layout-signboard .sb-on-duty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 12px var(--sb-gutter);
+  background: var(--sb-color-signal-wash);
+  border-bottom: 1px solid var(--sb-color-line);
+  font-weight: 700;
+  text-align: center;
+}
+
+.layout-signboard .sb-on-duty__cross {
+  width: 24px;
+  flex-shrink: 0;
+}
+
+/* Le contenu : chaque bloc dans la même colonne, séparé par un filet. */
+
+.layout-signboard .sb-main {
+  padding: 0 var(--sb-gutter);
+}
+
+.layout-signboard .sb-main:focus {
+  outline: none;
+}
+
+.layout-signboard .sb-main > * {
+  max-width: calc(var(--sb-content-width) - 2 * 40px);
+  margin: 0 auto;
+}
+
+.layout-signboard .sb-main > * + * {
+  border-top: 1px solid var(--sb-color-line);
+}
+
+.layout-signboard .sb-section {
+  display: grid;
+  gap: 36px;
+  padding: 72px 0;
+}
+
+.layout-signboard .sb-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 32px;
+}
+
+.layout-signboard .sb-section__lead {
+  max-width: 440px;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-heading {
+  font-family: var(--sb-font-display);
+  font-size: clamp(36px, 5vw, 54px);
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.layout-signboard .sb-panel {
+  padding: 28px;
+  background: var(--sb-color-surface);
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-radius);
+}
+
+/* Accroche */
+
+.layout-signboard .sb-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 420px);
+  align-items: center;
+  gap: 56px;
+  padding: 72px 0 56px;
+}
+
+.layout-signboard .sb-hero__text {
+  display: grid;
+  gap: 24px;
+}
+
+.layout-signboard .sb-hero__eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-hero__title {
+  font-family: var(--sb-font-display);
+  font-size: clamp(46px, 7.4vw, 92px);
+  font-weight: 700;
+  line-height: 0.92;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.layout-signboard .sb-hero__headline {
+  font-size: 22px;
+  line-height: 1.4;
+  color: var(--sb-color-soft-text);
+}
+
+.layout-signboard .sb-hero__visual {
+  position: relative;
+  padding: 26px;
+  background: var(--sb-color-night);
+  border: 1px solid var(--sb-color-line);
+  border-radius: 8px;
+}
+
+.layout-signboard .sb-hero__image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+  filter: saturate(0.6) brightness(0.85);
+}
+
+.layout-signboard .sb-hero__cross--corner {
+  position: absolute;
+  right: 44px;
+  bottom: 44px;
+  width: 64px;
+  background-color: var(--sb-color-night);
+  border-radius: 4px;
+  box-shadow: 0 0 0 8px var(--sb-color-night);
+}
+
+/* En ce moment */
+
+.layout-signboard .sb-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px 32px;
+  margin-bottom: 8px;
+  padding: 24px 28px;
+  background: var(--sb-color-night);
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-radius);
+}
+
+.layout-signboard .sb-main > .sb-status {
+  border-top: 1px solid var(--sb-color-line);
+}
+
+.layout-signboard .sb-status__text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 24px;
+}
+
+.layout-signboard .sb-status__label {
+  font-family: var(--sb-font-led);
+  font-size: clamp(40px, 6vw, 60px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sb-color-signal);
+  text-shadow: 0 0 18px var(--sb-color-signal-glow);
+}
+
+.layout-signboard .sb-status--closed .sb-status__label {
+  color: var(--sb-color-muted);
+  text-shadow: none;
+}
+
+.layout-signboard .sb-status__detail {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.layout-signboard .sb-status__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Vos démarches */
+
+.layout-signboard .sb-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+  list-style: none;
+}
+
+.layout-signboard .sb-quick-action {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  min-height: 240px;
+  padding: 28px;
+  background: var(--sb-color-surface);
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-radius);
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.layout-signboard .sb-quick-action:hover {
+  border-color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-quick-action__icon {
+  width: 32px;
+  height: 32px;
+  stroke: var(--sb-color-signal);
+  stroke-width: 1.6;
+}
+
+.layout-signboard .sb-quick-action__title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.layout-signboard .sb-quick-action__description {
+  flex-grow: 1;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-quick-action__call {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sb-color-signal);
+}
+
+/* Horaires et garde */
+
+.layout-signboard .sb-visit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 72px 0;
+}
+
+.layout-signboard .sb-hours {
+  flex: 2 1 520px;
+  display: grid;
+  gap: 36px;
+  min-width: 0;
+}
+
+.layout-signboard .sb-board {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--sb-color-night);
+  border: 1px solid var(--sb-color-line);
+  border-radius: 8px;
+}
+
+.layout-signboard .sb-board thead th {
+  padding: 14px 28px 10px;
+  border-bottom: 1px solid var(--sb-color-line-soft);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-board thead th:last-child,
+.layout-signboard .sb-board__hours {
+  text-align: right;
+}
+
+.layout-signboard .sb-board__row + .sb-board__row {
+  border-top: 1px solid var(--sb-color-line-soft);
+}
+
+.layout-signboard .sb-board__day {
+  padding: 12px 0 12px 28px;
+  font-size: 18px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--sb-color-soft-text);
+}
+
+.layout-signboard .sb-board__marker {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 12px;
+  border-radius: 50%;
+  background: var(--sb-color-line);
+  vertical-align: middle;
+}
+
+.layout-signboard .sb-board__today {
+  margin-left: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-board__hours {
+  padding: 12px 28px 12px 16px;
+  font-family: var(--sb-font-led);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--sb-color-unlit);
+}
+
+.layout-signboard .sb-board__row--today {
+  background: var(--sb-color-signal-wash);
+}
+
+.layout-signboard .sb-board__row--today .sb-board__day {
+  font-weight: 700;
+  color: var(--sb-color-text);
+}
+
+.layout-signboard .sb-board__row--today .sb-board__marker {
+  background: var(--sb-color-signal);
+  box-shadow: 0 0 10px var(--sb-color-signal);
+}
+
+.layout-signboard .sb-board__row--today .sb-board__hours {
+  color: var(--sb-color-signal);
+  text-shadow: 0 0 14px var(--sb-color-signal-glow);
+}
+
+.layout-signboard .sb-duty {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  background: var(--sb-color-surface);
+  border: 1px solid var(--sb-color-line);
+  border-radius: 8px;
+}
+
+.layout-signboard .sb-duty__eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-duty__message {
+  color: var(--sb-color-soft-text);
+}
+
+.layout-signboard .sb-duty__number {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-top: auto;
+  text-decoration: none;
+}
+
+.layout-signboard .sb-duty__digits {
+  font-family: var(--sb-font-led);
+  font-size: 76px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--sb-color-signal);
+  text-shadow: 0 0 18px var(--sb-color-signal-glow);
+}
+
+.layout-signboard .sb-duty__call {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Services */
+
+.layout-signboard .sb-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 0 40px;
+  list-style: none;
+}
+
+.layout-signboard .sb-services__item {
+  display: flex;
+  gap: 16px;
+  padding: 24px 0;
+  border-top: 1px solid var(--sb-color-line);
+}
+
+.layout-signboard .sb-services__mark {
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  stroke: var(--sb-color-signal);
+  stroke-width: 2.4;
+  stroke-linecap: square;
+}
+
+.layout-signboard .sb-services__icon {
+  width: 28px;
+  height: 28px;
+  margin-top: 2px;
+  object-fit: contain;
+}
+
+.layout-signboard .sb-services__title {
+  margin-bottom: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.layout-signboard .sb-services__description {
+  color: var(--sb-color-muted);
+}
+
+/* Équipe */
+
+.layout-signboard .sb-team {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 20px;
+  list-style: none;
+}
+
+.layout-signboard .sb-team__member {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.layout-signboard .sb-portrait {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  margin-bottom: 10px;
+  object-fit: cover;
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-radius);
+  filter: grayscale(1) contrast(1.05);
+}
+
+.layout-signboard .sb-portrait--initials {
+  display: grid;
+  place-items: center;
+  background: var(--sb-color-night);
+  font-family: var(--sb-font-led);
+  font-size: 68px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--sb-color-signal);
+  text-shadow: 0 0 18px var(--sb-color-signal-glow);
+  filter: none;
+}
+
+.layout-signboard .sb-team__name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.layout-signboard .sb-team__role {
+  font-size: 15px;
+  color: var(--sb-color-muted);
+}
+
+/* Actualités */
+
+.layout-signboard .sb-news {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+}
+
+.layout-signboard .sb-news__card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+  background: var(--sb-color-surface);
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-radius);
+}
+
+.layout-signboard .sb-news__image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 4px;
+  object-fit: cover;
+  border-radius: 4px;
+  filter: saturate(0.6);
+}
+
+.layout-signboard .sb-news__date {
+  font-family: var(--sb-font-led);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-news__title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.layout-signboard .sb-news__summary {
+  color: var(--sb-color-muted);
+}
+
+/* Fidélité, marques, commande */
+
+.layout-signboard .sb-loyalty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+}
+
+.layout-signboard .sb-loyalty__card,
+.layout-signboard .sb-loyalty__image {
+  flex-shrink: 0;
+  width: 200px;
+  aspect-ratio: 1.586;
+  object-fit: cover;
+  background: var(--sb-color-night);
+  border: 1px solid var(--sb-color-signal);
+  border-radius: 12px;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--sb-color-signal) 20%, transparent);
+}
+
+.layout-signboard .sb-loyalty__text {
+  flex: 1 1 280px;
+  display: grid;
+  gap: 10px;
+  color: var(--sb-color-soft-text);
+}
+
+.layout-signboard .sb-loyalty__title,
+.layout-signboard .sb-order__title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--sb-color-text);
+}
+
+.layout-signboard .sb-brands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+}
+
+.layout-signboard .sb-brands__name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--sb-color-control-line);
+  border-radius: 4px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.layout-signboard .sb-order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px 40px;
+}
+
+.layout-signboard .sb-order__text {
+  margin-top: 8px;
+  color: var(--sb-color-muted);
+}
+
+/* Nous trouver */
+
+.layout-signboard .sb-find-us__layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.layout-signboard .sb-find-us__details {
+  flex: 1 1 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.layout-signboard .sb-find-us__address {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.layout-signboard .sb-find-us__facts {
+  align-self: stretch;
+}
+
+.layout-signboard .sb-find-us__facts div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 20px;
+  padding: 14px 0;
+  border-top: 1px solid var(--sb-color-line);
+}
+
+.layout-signboard .sb-find-us__facts div:last-child {
+  border-bottom: 1px solid var(--sb-color-line);
+}
+
+.layout-signboard .sb-find-us__facts dt {
+  flex: 0 0 140px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-find-us__facts dd {
+  flex: 1 1 200px;
+}
+
+.layout-signboard .sb-find-us__map {
+  flex: 1.4 1 420px;
+  min-height: 420px;
+  border: 1px solid var(--sb-color-line);
+  border-radius: 8px;
+  filter: invert(0.92) hue-rotate(180deg) saturate(0.4);
+}
+
+.layout-signboard .sb-find-us__map--empty {
+  display: grid;
+  place-items: center;
+  background-color: var(--sb-color-night);
+  background-image:
+    repeating-linear-gradient(0deg, var(--sb-color-surface) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, var(--sb-color-surface) 0 1px, transparent 1px 48px);
+  filter: none;
+}
+
+.layout-signboard .sb-find-us__pin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--sb-color-signal);
+  box-shadow: 0 0 0 10px var(--sb-color-night), 0 0 0 11px var(--sb-color-signal), 0 0 28px var(--sb-color-signal);
+}
+
+/* Page ordonnance */
+
+.layout-signboard .sb-prescription-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  align-items: start;
+  gap: 40px;
+  padding: 56px 0 72px;
+}
+
+.layout-signboard .sb-prescription {
+  display: grid;
+  gap: 28px;
+}
+
+.layout-signboard .sb-prescription__header {
+  display: grid;
+  gap: 12px;
+}
+
+.layout-signboard .sb-prescription__title {
+  font-family: var(--sb-font-display);
+  font-size: clamp(40px, 6vw, 68px);
+  font-weight: 700;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.layout-signboard .sb-prescription__introduction {
+  max-width: 640px;
+  font-size: 19px;
+  color: var(--sb-color-soft-text);
+}
+
+.layout-signboard .sb-prescription-page__aside {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  background: var(--sb-color-night);
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-radius);
+  color: var(--sb-color-soft-text);
+}
+
+.layout-signboard .sb-prescription-page__aside-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-how {
+  display: grid;
+  gap: 12px;
+  padding-left: 20px;
+}
+
+.layout-signboard .sb-how strong {
+  color: var(--sb-color-text);
+}
+
+.layout-signboard .sb-unavailable p {
+  color: var(--sb-color-soft-text);
+}
+
+/* Pied de page et mentions légales */
+
+.layout-signboard .sb-footer {
+  border-top: 1px solid var(--sb-color-line);
+}
+
+.layout-signboard .sb-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 24px 40px;
+  max-width: var(--sb-content-width);
+  margin: 0 auto;
+  padding: 48px var(--sb-gutter) 32px;
+}
+
+.layout-signboard .sb-footer__identity {
+  display: grid;
+  gap: 4px;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-footer__identity strong {
+  color: var(--sb-color-text);
+}
+
+.layout-signboard .sb-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px 24px;
+  font-size: 15px;
+}
+
+.layout-signboard .sb-footer a {
+  text-decoration: none;
+}
+
+.layout-signboard .sb-footer a:hover {
+  color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-legal-notice {
+  max-width: var(--sb-content-width);
+  margin: 0 auto;
+  padding: 24px var(--sb-gutter) 40px;
+  font-size: 13px;
+  color: var(--sb-color-muted);
+}
+
+.layout-signboard .sb-legal-notice .legal-notice__title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sb-color-text);
+}
+
+/* Barre d'actions du téléphone */
+
+.layout-signboard .sb-action-bar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .layout-signboard {
+    --sb-gutter: 20px;
+    --sb-action-bar-height: 84px;
+  }
+
+  .layout-signboard .sb-header__links {
+    display: none;
+  }
+
+  .layout-signboard .sb-header__phone {
+    display: none;
+  }
+
+  .layout-signboard .sb-hero {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 40px 0;
+  }
+
+  .layout-signboard .sb-hero__visual {
+    max-width: 280px;
+  }
+
+  .layout-signboard .sb-section,
+  .layout-signboard .sb-visit {
+    padding: 48px 0;
+  }
+
+  .layout-signboard .sb-board__day {
+    padding-left: 16px;
+  }
+
+  .layout-signboard .sb-board__hours {
+    padding-right: 16px;
+    font-size: 20px;
+  }
+
+  .layout-signboard .sb-board thead th {
+    padding-inline: 16px;
+  }
+
+  .layout-signboard .sb-prescription-page {
+    grid-template-columns: 1fr;
+    padding-top: 32px;
+  }
+
+  .layout-signboard .sb-panel {
+    padding: 20px;
+  }
+
+  .layout-signboard .sb-action-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 8px;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    background: var(--sb-color-night);
+    border-top: 1px solid var(--sb-color-line);
+  }
+
+  .layout-signboard .sb-action-bar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .layout-signboard .sb-action-bar__item--main {
+    background: var(--sb-color-signal);
+    color: var(--sb-color-on-signal);
+  }
+}
+
+/* Formulaires : l'ordonnance et le rendez-vous. Les couleurs viennent des variables --sb-form-*, posées plus haut. */
+
+.layout-signboard .sb-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.layout-signboard .sb-text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-field {
+  display: grid;
+  gap: 6px;
+}
+
+.layout-signboard .sb-field__label {
+  font-weight: 600;
+}
+
+.layout-signboard .sb-field__hint {
+  font-size: 0.875em;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-field__error,
+.layout-signboard .sb-form__status {
+  font-size: 0.875em;
+  font-weight: 600;
+  color: var(--sb-form-error);
+}
+
+.layout-signboard .sb-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-field);
+  color: var(--sb-form-text);
+  font: inherit;
+}
+
+.layout-signboard textarea.sb-input {
+  min-height: 0;
+  resize: vertical;
+}
+
+.layout-signboard .sb-input:focus-visible,
+.layout-signboard .sb-choice button:focus-visible,
+.layout-signboard .sb-checkbox input:focus-visible {
+  outline: 2px solid var(--sb-form-accent);
+  outline-offset: 2px;
+}
+
+.layout-signboard .sb-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.layout-signboard .sb-choice button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-field);
+  color: var(--sb-form-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-choice button[aria-pressed='true'] {
+  border-color: var(--sb-form-accent);
+  background: var(--sb-form-accent);
+  color: var(--sb-form-on-accent);
+  font-weight: 600;
+}
+
+.layout-signboard .sb-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-checkbox input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--sb-form-accent);
+}
+
+.layout-signboard .sb-pages {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-signboard .sb-pages__page {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-field);
+}
+
+.layout-signboard .sb-pages__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout-signboard .sb-pages__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.layout-signboard .sb-pages__button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px dashed var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-pages__button--main {
+  border: 1px solid var(--sb-form-accent);
+  background: var(--sb-form-accent);
+  color: var(--sb-form-on-accent);
+}
+
+.layout-signboard .sb-pages__button:focus-within {
+  outline: 2px solid var(--sb-form-accent);
+  outline-offset: 2px;
+}
+
+.layout-signboard .sb-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 24px;
+  color: var(--sb-form-text);
+}
+
+.layout-signboard .sb-form__group {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.layout-signboard .sb-form__group--wide,
+.layout-signboard .sb-form__submit,
+.layout-signboard .sb-form__status {
+  grid-column: 1 / -1;
+}
+
+.layout-signboard .sb-form__group-title {
+  margin-bottom: 4px;
+  padding: 0;
+  font-family: var(--sb-form-title-font);
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.layout-signboard .sb-form__checks {
+  gap: 12px;
+}
+
+.layout-signboard .sb-form__note {
+  margin: 0;
+  font-size: 0.875em;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-form__submit,
+.layout-signboard .sb-wizard__button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 54px;
+  padding: 0 28px;
+  border: 1px solid var(--sb-form-accent);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-accent);
+  color: var(--sb-form-on-accent);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-form__submit:disabled,
+.layout-signboard .sb-wizard__button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.layout-signboard .sb-wizard__button--quiet {
+  background: transparent;
+  color: var(--sb-form-text);
+}
+
+.layout-signboard .sb-form__sent {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid var(--sb-form-accent);
+  border-radius: var(--sb-form-radius);
+  color: var(--sb-form-text);
+}
+
+.layout-signboard .sb-form__sent p {
+  margin: 0;
+}
+
+.layout-signboard .sb-form__sent-title {
+  font-family: var(--sb-form-title-font);
+  font-size: 1.3em;
+  font-weight: 700;
+}
+
+.layout-signboard .sb-wizard {
+  display: grid;
+  gap: 20px;
+  color: var(--sb-form-text);
+}
+
+.layout-signboard .sb-wizard section {
+  display: grid;
+  gap: 16px;
+}
+
+.layout-signboard .sb-wizard p {
+  margin: 0;
+}
+
+.layout-signboard .sb-wizard__title {
+  margin: 0;
+  font-family: var(--sb-form-title-font);
+  font-size: 1.3em;
+  font-weight: 700;
+}
+
+.layout-signboard .sb-wizard__introduction,
+.layout-signboard .sb-wizard__summary,
+.layout-signboard .sb-wizard__privacy {
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-wizard__privacy {
+  font-size: 0.875em;
+}
+
+.layout-signboard .sb-wizard__notice,
+.layout-signboard .sb-wizard__preparation {
+  padding: 12px 16px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+}
+
+.layout-signboard .sb-wizard__back {
+  justify-self: start;
+}
+
+.layout-signboard .sb-wizard__form {
+  display: grid;
+  gap: 16px;
+}
+
+.layout-signboard .sb-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9em;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-steps__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.layout-signboard .sb-steps__label--link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.layout-signboard .sb-steps__number {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: 50%;
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.layout-signboard .sb-steps__item--current {
+  color: var(--sb-form-text);
+  font-weight: 700;
+}
+
+.layout-signboard .sb-steps__item--current .sb-steps__number {
+  border-color: var(--sb-form-accent);
+  background: var(--sb-form-accent);
+  color: var(--sb-form-on-accent);
+}
+
+.layout-signboard .sb-reasons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-signboard .sb-reason {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-field);
+  color: var(--sb-form-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-reason--chosen,
+.layout-signboard .sb-reason:hover {
+  border-color: var(--sb-form-accent);
+}
+
+.layout-signboard .sb-reason__label {
+  font-weight: 700;
+}
+
+.layout-signboard .sb-reason__duration,
+.layout-signboard .sb-reason__description {
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-reason__description {
+  grid-column: 1 / -1;
+  font-size: 0.9em;
+}
+
+.layout-signboard .sb-calendar {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.layout-signboard .sb-calendar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.layout-signboard .sb-calendar__month {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.layout-signboard .sb-calendar__arrow {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-field);
+  color: var(--sb-form-text);
+  font: inherit;
+  font-size: 1.3em;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-calendar__arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.layout-signboard .sb-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  transition: opacity 0.2s;
+}
+
+.layout-signboard .sb-calendar__grid--loading {
+  opacity: 0.5;
+}
+
+.layout-signboard .sb-calendar__weekday {
+  padding: 4px 0;
+  font-size: 0.8em;
+  font-weight: 700;
+  text-align: center;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-calendar__day {
+  aspect-ratio: 1;
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--sb-form-radius);
+  background: transparent;
+  color: var(--sb-form-muted);
+  font: inherit;
+  opacity: 0.55;
+}
+
+.layout-signboard .sb-calendar__day--free {
+  border-color: var(--sb-form-line);
+  background: var(--sb-form-field);
+  color: var(--sb-form-text);
+  font-weight: 700;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-calendar__day--chosen {
+  border-color: var(--sb-form-accent);
+  background: var(--sb-form-accent);
+  color: var(--sb-form-on-accent);
+}
+
+.layout-signboard .sb-slots {
+  display: grid;
+  gap: 8px;
+}
+
+.layout-signboard .sb-slots__title {
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-slots__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-signboard .sb-slot {
+  min-width: 76px;
+  min-height: 44px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-field);
+  color: var(--sb-form-text);
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-slot:hover {
+  border-color: var(--sb-form-accent);
+}
+
+.layout-signboard .sb-recap {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+}
+
+.layout-signboard .sb-recap div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.layout-signboard .sb-recap dt {
+  min-width: 70px;
+  font-weight: 700;
+}
+
+.layout-signboard .sb-recap dd {
+  margin: 0;
+}
+
+.layout-signboard .sb-done {
+  padding: 24px;
+  border: 1px solid var(--sb-form-accent);
+  border-radius: var(--sb-form-radius);
+}
+
+.layout-signboard .sb-done__when {
+  font-weight: 700;
+}
