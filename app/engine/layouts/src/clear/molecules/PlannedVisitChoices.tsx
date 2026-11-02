@@ -1,7 +1,7 @@
 import { createSignal, For, onMount, Show } from 'solid-js';
 import { listPlannedVisitChoices, type PlannedVisitChoice } from '@crystal-pharm/renderer';
 
-/** Quand passer : « dès que c'est prêt » par défaut, les autres moments dépendent de l'heure, donc n'apparaissent qu'une fois la page ouverte. */
+/** Quand passer, en liste de boutons radio : « dès que c'est prêt » d'abord ; les autres moments dépendent de l'heure, donc n'apparaissent qu'une fois la page ouverte. */
 export function PlannedVisitChoices(props: { value: string; error: string | undefined; onChange: (value: string) => void }) {
   const [choices, setChoices] = createSignal<PlannedVisitChoice[]>([]);
   const [isChoosingAnotherMoment, setIsChoosingAnotherMoment] = createSignal(false);
@@ -15,32 +15,34 @@ export function PlannedVisitChoices(props: { value: string; error: string | unde
   }
 
   return (
-    <div class="cl-field">
-      <span class="cl-field__label">Quand passez-vous ?</span>
-      <div class="cl-choice" role="group" aria-label="Quand passez-vous ?">
-        <button type="button" aria-pressed={isChosen('')} onClick={() => choose('')}>
-          Dès que c'est prêt
-        </button>
-        <For each={choices()}>
-          {(choice) => (
-            <button type="button" aria-pressed={isChosen(choice.plannedVisitAt)} onClick={() => choose(choice.plannedVisitAt)}>
-              {choice.label}
-            </button>
-          )}
-        </For>
-        <button
-          type="button"
-          aria-pressed={isChoosingAnotherMoment()}
-          onClick={() => {
+    <fieldset class="cl-radios">
+      <legend class="cl-field__label">Quand passez-vous ?</legend>
+      <label class="cl-radio">
+        <input type="radio" name="cl-planned-visit" checked={isChosen('')} onChange={() => choose('')} />
+        <span>Dès que c'est prêt</span>
+      </label>
+      <For each={choices()}>
+        {(choice) => (
+          <label class="cl-radio">
+            <input type="radio" name="cl-planned-visit" checked={isChosen(choice.plannedVisitAt)} onChange={() => choose(choice.plannedVisitAt)} />
+            <span>{choice.label}</span>
+          </label>
+        )}
+      </For>
+      <label class="cl-radio">
+        <input
+          type="radio"
+          name="cl-planned-visit"
+          checked={isChoosingAnotherMoment()}
+          onChange={() => {
             setIsChoosingAnotherMoment(true);
             props.onChange('');
           }}
-        >
-          Un autre jour
-        </button>
-      </div>
+        />
+        <span>Un autre jour</span>
+      </label>
       <Show when={isChoosingAnotherMoment()}>
-        <input class="cl-input" type="datetime-local" aria-label="Jour et heure de passage" value={props.value} onInput={(event) => props.onChange(event.currentTarget.value)} />
+        <input class="cl-input cl-radios__moment" type="datetime-local" aria-label="Jour et heure de passage" value={props.value} onInput={(event) => props.onChange(event.currentTarget.value)} />
       </Show>
       <Show when={props.error}>
         {(error) => (
@@ -49,6 +51,6 @@ export function PlannedVisitChoices(props: { value: string; error: string | unde
           </span>
         )}
       </Show>
-    </div>
+    </fieldset>
   );
 }

@@ -1,7 +1,7 @@
 import { createSignal, For, onMount, Show } from 'solid-js';
 import { listPlannedVisitChoices, type PlannedVisitChoice } from '@crystal-pharm/renderer';
 
-/** Quand passer : « dès que c'est prêt » par défaut, les autres moments dépendent de l'heure, donc n'apparaissent qu'une fois la page ouverte. */
+/** Quand passer, comme un sélecteur à diodes : une seule diode allumée. Les moments dépendent de l'heure, donc n'apparaissent qu'une fois la page ouverte. */
 export function PlannedVisitChoices(props: { value: string; error: string | undefined; onChange: (value: string) => void }) {
   const [choices, setChoices] = createSignal<PlannedVisitChoice[]>([]);
   const [isChoosingAnotherMoment, setIsChoosingAnotherMoment] = createSignal(false);
@@ -17,28 +17,38 @@ export function PlannedVisitChoices(props: { value: string; error: string | unde
   return (
     <div class="sb-field">
       <span class="sb-field__label">Quand passez-vous ?</span>
-      <div class="sb-choice" role="group" aria-label="Quand passez-vous ?">
-        <button type="button" aria-pressed={isChosen('')} onClick={() => choose('')}>
-          Dès que c'est prêt
-        </button>
+      <ul class="sb-selector" role="group" aria-label="Quand passez-vous ?">
+        <li>
+          <button type="button" class="sb-selector__option" aria-pressed={isChosen('')} onClick={() => choose('')}>
+            <span class="sb-selector__led" aria-hidden="true" />
+            Dès que c'est prêt
+          </button>
+        </li>
         <For each={choices()}>
           {(choice) => (
-            <button type="button" aria-pressed={isChosen(choice.plannedVisitAt)} onClick={() => choose(choice.plannedVisitAt)}>
-              {choice.label}
-            </button>
+            <li>
+              <button type="button" class="sb-selector__option" aria-pressed={isChosen(choice.plannedVisitAt)} onClick={() => choose(choice.plannedVisitAt)}>
+                <span class="sb-selector__led" aria-hidden="true" />
+                {choice.label}
+              </button>
+            </li>
           )}
         </For>
-        <button
-          type="button"
-          aria-pressed={isChoosingAnotherMoment()}
-          onClick={() => {
-            setIsChoosingAnotherMoment(true);
-            props.onChange('');
-          }}
-        >
-          Un autre jour
-        </button>
-      </div>
+        <li>
+          <button
+            type="button"
+            class="sb-selector__option"
+            aria-pressed={isChoosingAnotherMoment()}
+            onClick={() => {
+              setIsChoosingAnotherMoment(true);
+              props.onChange('');
+            }}
+          >
+            <span class="sb-selector__led" aria-hidden="true" />
+            Un autre jour
+          </button>
+        </li>
+      </ul>
       <Show when={isChoosingAnotherMoment()}>
         <input class="sb-input" type="datetime-local" aria-label="Jour et heure de passage" value={props.value} onInput={(event) => props.onChange(event.currentTarget.value)} />
       </Show>

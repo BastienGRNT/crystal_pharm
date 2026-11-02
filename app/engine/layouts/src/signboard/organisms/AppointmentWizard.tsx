@@ -7,25 +7,21 @@ import {
   rememberPatient,
   type AppointmentModuleProps,
   type AppointmentWizardState,
-  type AppointmentWizardStep,
   type TimeOfDay,
 } from '@crystal-pharm/renderer';
 import { FormField } from '../molecules/FormField';
 
 type BuiltInAppointmentProps = Extract<AppointmentModuleProps, { mode: 'builtIn' }>;
 
-const stepLabels: { step: AppointmentWizardStep; label: string }[] = [
-  { step: 'reason', label: 'Motif' },
-  { step: 'day', label: 'Jour' },
-  { step: 'time', label: 'Heure' },
-  { step: 'contact', label: 'Vos coordonnées' },
-];
 const timeOfDayLabels: Record<TimeOfDay, string> = { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir' };
-const weekdayInitials = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const noteMaximumLength = 500;
 
 function formatDay(day: string): string {
   return new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
+}
+
+function formatShortDay(day: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
 }
 
 function formatMonth(month: string): string {
@@ -47,15 +43,18 @@ function formatDuration(durationMinutes: number): string {
   return minutes === 0 ? `${hours} h` : `${hours} h ${String(minutes).padStart(2, '0')}`;
 }
 
-/** Motif, jour, heure, coordonnées : l'état vient du moteur, ce composant ne fait que l'afficher. */
+function formatFreeSlotCount(freeSlotCount: number): string {
+  return freeSlotCount === 1 ? '1 créneau' : `${freeSlotCount} créneaux`;
+}
+
+/** Un afficheur LED en haut qui se remplit au fil des choix, et dessous l'écran de l'étape en cours. */
 export function AppointmentWizard(props: BuiltInAppointmentProps) {
   const state = createAppointmentWizardState({ actions: props, today: props.today });
-  const reachedStepIndex = () => stepLabels.findIndex((entry) => entry.step === state.step());
 
   return (
-    <div class="sb-wizard">
-      <Show when={props.introduction}>{(introduction) => <p class="sb-wizard__introduction">{introduction()}</p>}</Show>
-      <Show when={state.optionsStatus() !== 'loading'} fallback={<p class="sb-wizard__notice" aria-live="polite">Chargement des motifs…</p>}>
+    <div class="sb-console">
+      <Show when={props.introduction}>{(introduction) => <p class="sb-console__introduction">{introduction()}</p>}</Show>
+      <Show when={state.optionsStatus() !== 'loading'} fallback={<p class="sb-console__notice" aria-live="polite">Chargement des motifs…</p>}>
         <Show
           when={state.optionsStatus() === 'ready' ? state.options() : undefined}
           fallback={<RetryNotice text="Les rendez-vous en ligne sont momentanément indisponibles." onRetry={() => void state.reloadOptions()} />}
@@ -63,42 +62,21 @@ export function AppointmentWizard(props: BuiltInAppointmentProps) {
           {(options) => (
             <Show
               when={options().isBookingOpen && options().reasons.length > 0}
-              fallback={<p class="sb-wizard__notice">La prise de rendez-vous en ligne est fermée pour le moment. Contactez-nous directement.</p>}
+              fallback={<p class="sb-console__notice">La prise de rendez-vous en ligne est fermée pour le moment. Contactez-nous directement.</p>}
             >
               <Show when={state.step() !== 'done'} fallback={<Done state={state} pharmacyName={props.pharmacyName} />}>
-                <ol class="sb-steps" aria-label="Étapes du rendez-vous">
-                  <For each={stepLabels}>
-                    {(entry, index) => (
-                      <li class="sb-steps__item" classList={{ 'sb-steps__item--current': entry.step === state.step(), 'sb-steps__item--done': index() < reachedStepIndex() }}>
-                        <Show
-                          when={index() < reachedStepIndex()}
-                          fallback={
-                            <span class="sb-steps__label">
-                              <span class="sb-steps__number">{index() + 1}</span>
-                              {entry.label}
-                            </span>
-                          }
-                        >
-                          <button type="button" class="sb-steps__label sb-steps__label--link" onClick={() => state.goBackTo(entry.step)}>
-                            <span class="sb-steps__number">✓</span>
-                            {entry.label}
-                          </button>
-                        </Show>
-                      </li>
-                    )}
-                  </For>
-                </ol>
+                <Readout state={state} />
                 <Show when={state.step() === 'reason'}>
-                  <ReasonStep state={state} />
+                  <ReasonScreen state={state} />
                 </Show>
                 <Show when={state.step() === 'day'}>
-                  <DayStep state={state} />
+                  <DayScreen state={state} />
                 </Show>
                 <Show when={state.step() === 'time'}>
-                  <TimeStep state={state} />
+                  <TimeScreen state={state} />
                 </Show>
                 <Show when={state.step() === 'contact'}>
-                  <ContactStep state={state} />
+                  <ContactScreen state={state} />
                 </Show>
               </Show>
             </Show>
@@ -111,7 +89,7 @@ export function AppointmentWizard(props: BuiltInAppointmentProps) {
 
 function RetryNotice(props: { text: string; onRetry: () => void }) {
   return (
-    <p class="sb-wizard__notice" role="alert">
+    <p class="sb-console__notice" role="alert">
       {props.text}{' '}
       <button type="button" class="sb-text-button" onClick={props.onRetry}>
         Réessayer
@@ -120,175 +98,197 @@ function RetryNotice(props: { text: string; onRetry: () => void }) {
   );
 }
 
-function StepHeading(props: { children: JSX.Element }) {
-  return <h3 class="sb-wizard__title">{props.children}</h3>;
-}
-
-function BackButton(props: { state: AppointmentWizardState; to: AppointmentWizardStep }) {
+function PreparationNote(props: { state: AppointmentWizardState }) {
   return (
-    <button type="button" class="sb-text-button sb-wizard__back" onClick={() => props.state.goBackTo(props.to)}>
-      ← Retour
-    </button>
+    <Show when={props.state.chosenReason()?.preparationNote}>
+      {(note) => (
+        <p class="sb-console__preparation">
+          <strong>À prévoir :</strong> {note()}
+        </p>
+      )}
+    </Show>
   );
 }
 
-function ReasonStep(props: { state: AppointmentWizardState }) {
+function ReadoutCell(props: { label: string; value: string | undefined; isCurrent: boolean; onChange: (() => void) | undefined }) {
   return (
-    <section>
-      <StepHeading>Pour quelle raison venez-vous ?</StepHeading>
-      <ul class="sb-reasons">
+    <div class="sb-console__cell" classList={{ 'sb-console__cell--current': props.isCurrent, 'sb-console__cell--lit': props.value !== undefined }}>
+      <span class="sb-console__cell-label">{props.label}</span>
+      <span class="sb-console__cell-value">{props.value ?? '— — —'}</span>
+      <Show when={props.value !== undefined ? props.onChange : undefined}>
+        {(onChange) => (
+          <button type="button" class="sb-console__cell-change" onClick={() => onChange()()}>
+            Modifier
+          </button>
+        )}
+      </Show>
+    </div>
+  );
+}
+
+function Readout(props: { state: AppointmentWizardState }) {
+  const { state } = props;
+  const hasSeveralReasons = () => (state.options()?.reasons.length ?? 0) > 1;
+
+  return (
+    <div class="sb-console__readout" role="group" aria-label="Votre rendez-vous">
+      <ReadoutCell
+        label="Motif"
+        value={state.chosenReason()?.label}
+        isCurrent={state.step() === 'reason'}
+        onChange={hasSeveralReasons() && state.step() !== 'reason' ? () => state.goBackTo('reason') : undefined}
+      />
+      <ReadoutCell
+        label="Jour"
+        value={state.chosenDay() ? formatDay(state.chosenDay() ?? '') : undefined}
+        isCurrent={state.step() === 'day'}
+        onChange={state.step() === 'time' || state.step() === 'contact' ? () => state.goBackTo('day') : undefined}
+      />
+      <ReadoutCell
+        label="Heure"
+        value={state.chosenSlot() ? formatTime(state.chosenSlot()?.startsAt ?? '') : undefined}
+        isCurrent={state.step() === 'time'}
+        onChange={state.step() === 'contact' ? () => state.goBackTo('time') : undefined}
+      />
+    </div>
+  );
+}
+
+function ScreenTitle(props: { prompt: string; children: JSX.Element }) {
+  return (
+    <h3 class="sb-console__title">
+      <span class="sb-console__prompt" aria-hidden="true">
+        {props.prompt}
+      </span>
+      {props.children}
+    </h3>
+  );
+}
+
+function ReasonScreen(props: { state: AppointmentWizardState }) {
+  return (
+    <section class="sb-console__screen">
+      <ScreenTitle prompt="01">Choisissez un motif</ScreenTitle>
+      <ol class="sb-console__keys">
         <For each={props.state.options()?.reasons}>
-          {(reason) => (
+          {(reason, index) => (
             <li>
-              <button
-                type="button"
-                class="sb-reason"
-                classList={{ 'sb-reason--chosen': props.state.chosenReason()?.id === reason.id }}
-                onClick={() => void props.state.chooseReason(reason.id)}
-              >
-                <span class="sb-reason__label">{reason.label}</span>
-                <span class="sb-reason__duration">{formatDuration(reason.durationMinutes)}</span>
-                <Show when={reason.description}>{(description) => <span class="sb-reason__description">{description()}</span>}</Show>
+              <button type="button" class="sb-console__key" onClick={() => void props.state.chooseReason(reason.id)}>
+                <span class="sb-console__key-index" aria-hidden="true">
+                  {String(index() + 1).padStart(2, '0')}
+                </span>
+                <span class="sb-console__key-label">{reason.label}</span>
+                <span class="sb-console__key-duration">{formatDuration(reason.durationMinutes)}</span>
+                <Show when={reason.description}>{(description) => <span class="sb-console__key-description">{description()}</span>}</Show>
               </button>
             </li>
           )}
         </For>
-      </ul>
+      </ol>
     </section>
   );
 }
 
-function DayStep(props: { state: AppointmentWizardState }) {
+function DayScreen(props: { state: AppointmentWizardState }) {
   const { state } = props;
+  const freeDays = () => state.calendarCells().filter((cell) => cell?.isSelectable);
+
   return (
-    <section>
-      <StepHeading>Quel jour vous convient ?</StepHeading>
-      <Show when={state.chosenReason()}>
-        {(reason) => (
-          <p class="sb-wizard__summary">
-            {reason().label} · {formatDuration(reason().durationMinutes)}{' '}
-            <Show when={(state.options()?.reasons.length ?? 0) > 1}>
-              <button type="button" class="sb-text-button" onClick={() => state.goBackTo('reason')}>
-                Changer
-              </button>
-            </Show>
-          </p>
-        )}
-      </Show>
-      <Show when={state.chosenReason()?.preparationNote}>
-        {(note) => (
-          <p class="sb-wizard__preparation">
-            <strong>À prévoir :</strong> {note()}
-          </p>
-        )}
-      </Show>
-      <div class="sb-calendar">
-        <div class="sb-calendar__header">
-          <button type="button" class="sb-calendar__arrow" aria-label="Mois précédent" disabled={!state.canShowPreviousMonth()} onClick={() => void state.showPreviousMonth()}>
-            ‹
-          </button>
-          <span class="sb-calendar__month" aria-live="polite">
-            {formatMonth(state.visibleMonth())}
-          </span>
-          <button type="button" class="sb-calendar__arrow" aria-label="Mois suivant" disabled={!state.canShowNextMonth()} onClick={() => void state.showNextMonth()}>
-            ›
-          </button>
-        </div>
-        <div class="sb-calendar__grid" classList={{ 'sb-calendar__grid--loading': state.availableDaysStatus() === 'loading' }}>
-          <For each={weekdayInitials}>
-            {(initial) => (
-              <span class="sb-calendar__weekday" aria-hidden="true">
-                {initial}
-              </span>
-            )}
-          </For>
-          <For each={state.calendarCells()}>
-            {(cell) =>
-              cell ? (
-                <button
-                  type="button"
-                  class="sb-calendar__day"
-                  classList={{ 'sb-calendar__day--free': cell.isSelectable, 'sb-calendar__day--chosen': cell.isChosen }}
-                  disabled={!cell.isSelectable}
-                  aria-pressed={cell.isChosen}
-                  aria-label={cell.isSelectable ? `${formatDay(cell.day)}, ${cell.freeSlotCount} créneaux` : `${formatDay(cell.day)}, complet`}
-                  onClick={() => void state.chooseDay(cell.day)}
-                >
-                  {cell.dayOfMonth}
-                </button>
-              ) : (
-                <span />
-              )
-            }
-          </For>
-        </div>
+    <section class="sb-console__screen">
+      <ScreenTitle prompt="02">Choisissez un jour</ScreenTitle>
+      <PreparationNote state={state} />
+      <div class="sb-console__month">
+        <button type="button" class="sb-console__arrow" aria-label="Mois précédent" disabled={!state.canShowPreviousMonth()} onClick={() => void state.showPreviousMonth()}>
+          ◀
+        </button>
+        <span class="sb-console__month-name" aria-live="polite">
+          {formatMonth(state.visibleMonth())}
+        </span>
+        <button type="button" class="sb-console__arrow" aria-label="Mois suivant" disabled={!state.canShowNextMonth()} onClick={() => void state.showNextMonth()}>
+          ▶
+        </button>
       </div>
       <Show when={state.availableDaysStatus() === 'failed'}>
         <RetryNotice text="Impossible de charger les disponibilités." onRetry={() => void state.reloadVisibleMonth()} />
       </Show>
-      <Show when={state.nextAvailableDay()}>
-        {(day) => (
-          <button type="button" class="sb-wizard__button sb-wizard__button--quiet" onClick={() => void state.chooseNextAvailableDay()}>
-            Premier créneau : {formatDay(day())}
-          </button>
-        )}
+      <Show when={state.availableDaysStatus() === 'loading'}>
+        <p class="sb-console__notice" aria-live="polite">Recherche des jours libres…</p>
       </Show>
-      <Show when={state.availableDaysStatus() === 'listed' && !state.nextAvailableDay()}>
-        <p class="sb-wizard__notice">Aucun créneau ce mois-ci. Essayez le mois suivant.</p>
-      </Show>
-      <Show when={(state.options()?.reasons.length ?? 0) > 1}>
-        <BackButton state={state} to="reason" />
+      <Show when={state.availableDaysStatus() === 'listed'}>
+        <Show when={freeDays().length > 0} fallback={<p class="sb-console__notice">Aucun créneau ce mois-ci. Essayez le mois suivant.</p>}>
+          <ul class="sb-console__days">
+            <For each={freeDays()}>
+              {(cell) =>
+                cell ? (
+                  <li>
+                    <button
+                      type="button"
+                      class="sb-console__day"
+                      classList={{ 'sb-console__day--chosen': cell.isChosen }}
+                      aria-pressed={cell.isChosen}
+                      aria-label={`${formatDay(cell.day)}, ${formatFreeSlotCount(cell.freeSlotCount)}`}
+                      onClick={() => void state.chooseDay(cell.day)}
+                    >
+                      <span class="sb-console__day-name">{formatShortDay(cell.day)}</span>
+                      <span class="sb-console__day-number">{cell.dayOfMonth}</span>
+                      <span class="sb-console__day-count">{formatFreeSlotCount(cell.freeSlotCount)}</span>
+                    </button>
+                  </li>
+                ) : null
+              }
+            </For>
+          </ul>
+        </Show>
       </Show>
     </section>
   );
 }
 
-function TimeStep(props: { state: AppointmentWizardState }) {
+function TimeScreen(props: { state: AppointmentWizardState }) {
   const { state } = props;
   return (
-    <section>
-      <StepHeading>À quelle heure ?</StepHeading>
-      <p class="sb-wizard__summary">
-        {formatDay(state.chosenDay() ?? '')}{' '}
-        <button type="button" class="sb-text-button" onClick={() => state.goBackTo('day')}>
-          Changer
-        </button>
-      </p>
+    <section class="sb-console__screen">
+      <ScreenTitle prompt="03">Choisissez une heure</ScreenTitle>
       <Show when={state.sendStatus() === 'slotTaken'}>
-        <p class="sb-wizard__notice" role="alert">
+        <p class="sb-console__notice" role="alert">
           Ce créneau vient d'être pris. Choisissez-en un autre.
         </p>
       </Show>
-      <Show when={state.availableSlotsStatus() !== 'loading'} fallback={<p class="sb-wizard__notice" aria-live="polite">Recherche des créneaux…</p>}>
-        <Show when={state.availableSlotsStatus() === 'listed'} fallback={<p class="sb-wizard__notice" role="alert">Créneaux indisponibles. Réessayez ou appelez-nous.</p>}>
-          <Show when={state.slotsByTimeOfDay().length > 0} fallback={<p class="sb-wizard__notice">Plus aucun créneau ce jour-là.</p>}>
-            <For each={state.slotsByTimeOfDay()}>
-              {(group) => (
-                <div class="sb-slots">
-                  <h4 class="sb-slots__title">{timeOfDayLabels[group.timeOfDay]}</h4>
-                  <ul class="sb-slots__list">
-                    <For each={group.slots}>
-                      {(slot) => (
-                        <li>
-                          <button type="button" class="sb-slot" onClick={() => state.chooseSlot(slot.slotId)}>
-                            {slot.timeLabel}
-                          </button>
-                        </li>
-                      )}
-                    </For>
-                  </ul>
-                </div>
-              )}
-            </For>
+      <Show when={state.availableSlotsStatus() !== 'loading'} fallback={<p class="sb-console__notice" aria-live="polite">Recherche des créneaux…</p>}>
+        <Show when={state.availableSlotsStatus() === 'listed'} fallback={<p class="sb-console__notice" role="alert">Créneaux indisponibles. Réessayez ou appelez-nous.</p>}>
+          <Show when={state.slotsByTimeOfDay().length > 0} fallback={<p class="sb-console__notice">Plus aucun créneau ce jour-là.</p>}>
+            <table class="sb-console__board">
+              <tbody>
+                <For each={state.slotsByTimeOfDay()}>
+                  {(group) => (
+                    <tr>
+                      <th scope="row">{timeOfDayLabels[group.timeOfDay]}</th>
+                      <td>
+                        <ul class="sb-console__times">
+                          <For each={group.slots}>
+                            {(slot) => (
+                              <li>
+                                <button type="button" class="sb-console__time" onClick={() => state.chooseSlot(slot.slotId)}>
+                                  {slot.timeLabel}
+                                </button>
+                              </li>
+                            )}
+                          </For>
+                        </ul>
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </tbody>
+            </table>
           </Show>
         </Show>
       </Show>
-      <BackButton state={state} to="day" />
     </section>
   );
 }
 
-function ContactStep(props: { state: AppointmentWizardState }) {
+function ContactScreen(props: { state: AppointmentWizardState }) {
   const { state } = props;
   const errors = state.errorsByField;
   const [isRemembered, setIsRemembered] = createSignal(false);
@@ -311,27 +311,11 @@ function ContactStep(props: { state: AppointmentWizardState }) {
   }
 
   return (
-    <section>
-      <StepHeading>Vos coordonnées</StepHeading>
-      <dl class="sb-recap">
-        <div>
-          <dt>Motif</dt>
-          <dd>
-            {state.chosenReason()?.label} · {formatDuration(state.chosenReason()?.durationMinutes ?? 0)}
-          </dd>
-        </div>
-        <div>
-          <dt>Quand</dt>
-          <dd>
-            {formatDay(state.chosenDay() ?? '')}, {state.chosenSlot() ? formatTime(state.chosenSlot()?.startsAt ?? '') : ''}{' '}
-            <button type="button" class="sb-text-button" onClick={() => state.goBackTo('time')}>
-              Changer
-            </button>
-          </dd>
-        </div>
-      </dl>
+    <section class="sb-console__screen">
+      <ScreenTitle prompt="04">Vos coordonnées</ScreenTitle>
+      <PreparationNote state={state} />
       <form
-        class="sb-wizard__form"
+        class="sb-console__form"
         novalidate
         onSubmit={(event) => {
           event.preventDefault();
@@ -350,36 +334,30 @@ function ContactStep(props: { state: AppointmentWizardState }) {
         <FormField label="Email (facultatif)" hint="C'est par lui que part la confirmation." error={errors().email}>
           <input class="sb-input" type="email" autocomplete="email" value={state.contact.email} onInput={(event) => state.updateContact('email', event.currentTarget.value)} />
         </FormField>
-        <FormField label="Un message pour l'équipe (facultatif)" error={errors().note}>
-          <textarea class="sb-input" rows="2" maxlength={noteMaximumLength} value={state.contact.note} onInput={(event) => state.updateContact('note', event.currentTarget.value)} />
-        </FormField>
-        <label class="sb-checkbox">
+        <div class="sb-console__wide">
+          <FormField label="Un message pour l'équipe (facultatif)" error={errors().note}>
+            <textarea class="sb-input" rows="2" maxlength={noteMaximumLength} value={state.contact.note} onInput={(event) => state.updateContact('note', event.currentTarget.value)} />
+          </FormField>
+        </div>
+        <label class="sb-checkbox sb-console__wide">
           <input type="checkbox" checked={isRemembered()} onChange={(event) => setIsRemembered(event.currentTarget.checked)} />
           <span>Retenir mes coordonnées sur cet appareil</span>
         </label>
-        <Show when={state.chosenReason()?.preparationNote}>
-          {(note) => (
-            <p class="sb-wizard__preparation">
-              <strong>À prévoir :</strong> {note()}
-            </p>
-          )}
-        </Show>
         <Show when={state.sendStatus() === 'reasonUnavailable'}>
-          <p class="sb-wizard__notice" role="alert">
+          <p class="sb-console__notice sb-console__wide" role="alert">
             Ce motif n'est plus proposé. Choisissez-en un autre.
           </p>
         </Show>
         <Show when={state.sendStatus() === 'failed'}>
-          <p class="sb-wizard__notice" role="alert">
+          <p class="sb-console__notice sb-console__wide" role="alert">
             L'envoi a échoué. Réessayez ou appelez-nous.
           </p>
         </Show>
-        <button type="submit" class="sb-wizard__button" disabled={state.sendStatus() === 'sending'}>
-          {state.sendStatus() === 'sending' ? 'Réservation…' : 'Réserver ce créneau'}
+        <button type="submit" class="sb-console__send sb-console__wide" disabled={state.sendStatus() === 'sending'}>
+          {state.sendStatus() === 'sending' ? 'Envoi…' : 'Valider le rendez-vous'}
         </button>
-        <p class="sb-wizard__privacy">Ces informations ne servent qu'à gérer ce rendez-vous.</p>
+        <p class="sb-console__privacy sb-console__wide">Ces informations ne servent qu'à gérer ce rendez-vous.</p>
       </form>
-      <BackButton state={state} to="time" />
     </section>
   );
 }
@@ -388,22 +366,18 @@ function Done(props: { state: AppointmentWizardState; pharmacyName: string }) {
   return (
     <Show when={props.state.confirmation()}>
       {(confirmation) => (
-        <section class="sb-done" aria-live="polite">
-          <h3 class="sb-wizard__title">{confirmation().isConfirmed ? 'Rendez-vous confirmé' : 'Demande envoyée'}</h3>
-          <p class="sb-done__when">
-            {confirmation().reasonLabel} · {formatInstantDay(confirmation().startsAt)}, {formatTime(confirmation().startsAt)}
+        <section class="sb-console__done" aria-live="polite">
+          <p class="sb-console__done-kicker">{confirmation().isConfirmed ? 'Rendez-vous confirmé' : 'Demande envoyée'}</p>
+          <p class="sb-console__done-time">{formatTime(confirmation().startsAt)}</p>
+          <p class="sb-console__done-when">{formatInstantDay(confirmation().startsAt)}</p>
+          <p>
+            {confirmation().reasonLabel}.{' '}
+            {confirmation().isConfirmed ? 'Nous vous attendons.' : "L'équipe confirme votre rendez-vous au plus vite, par téléphone ou par email."}
           </p>
-          <p>{confirmation().isConfirmed ? 'Nous vous attendons.' : "L'équipe confirme votre rendez-vous au plus vite, par téléphone ou par email."}</p>
-          <Show when={confirmation().confirmationMessage}>{(message) => <p class="sb-wizard__preparation">{message()}</p>}</Show>
-          <Show when={props.state.chosenReason()?.preparationNote}>
-            {(note) => (
-              <p class="sb-wizard__preparation">
-                <strong>À prévoir :</strong> {note()}
-              </p>
-            )}
-          </Show>
+          <Show when={confirmation().confirmationMessage}>{(message) => <p class="sb-console__preparation">{message()}</p>}</Show>
+          <PreparationNote state={props.state} />
           <a
-            class="sb-wizard__button sb-wizard__button--quiet"
+            class="sb-console__done-link"
             download="rendez-vous.ics"
             href={`data:text/calendar;charset=utf-8,${encodeURIComponent(buildAppointmentCalendarFile({ confirmation: confirmation(), pharmacyName: props.pharmacyName }))}`}
           >

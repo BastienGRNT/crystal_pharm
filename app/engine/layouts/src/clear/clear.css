@@ -1111,8 +1111,7 @@
   color: var(--cl-form-muted);
 }
 
-.layout-clear .cl-field__error,
-.layout-clear .cl-form__status {
+.layout-clear .cl-field__error {
   font-size: 0.875em;
   font-weight: 600;
   color: var(--cl-form-error);
@@ -1135,34 +1134,9 @@
 }
 
 .layout-clear .cl-input:focus-visible,
-.layout-clear .cl-choice button:focus-visible,
 .layout-clear .cl-checkbox input:focus-visible {
   outline: 2px solid var(--cl-form-accent);
   outline-offset: 2px;
-}
-
-.layout-clear .cl-choice {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.layout-clear .cl-choice button {
-  min-height: 44px;
-  padding: 8px 16px;
-  border: 1px solid var(--cl-form-line);
-  border-radius: var(--cl-form-radius);
-  background: var(--cl-form-field);
-  color: var(--cl-form-text);
-  font: inherit;
-  cursor: pointer;
-}
-
-.layout-clear .cl-choice button[aria-pressed='true'] {
-  border-color: var(--cl-form-accent);
-  background: var(--cl-form-accent);
-  color: var(--cl-form-on-accent);
-  font-weight: 600;
 }
 
 .layout-clear .cl-checkbox {
@@ -1180,309 +1154,355 @@
   accent-color: var(--cl-form-accent);
 }
 
-.layout-clear .cl-pages {
+/* Dates de passage : une liste de boutons radio. */
+
+.layout-clear .cl-radios {
   display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.layout-clear .cl-pages__page {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--cl-form-line);
-  border-radius: var(--cl-form-radius);
-  background: var(--cl-form-field);
-}
-
-.layout-clear .cl-pages__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.layout-clear .cl-pages__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.layout-clear .cl-pages__button {
-  display: inline-flex;
-  align-items: center;
-  min-height: 48px;
-  padding: 0 18px;
-  border: 1px dashed var(--cl-form-line);
-  border-radius: var(--cl-form-radius);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.layout-clear .cl-pages__button--main {
-  border: 1px solid var(--cl-form-accent);
-  background: var(--cl-form-accent);
-  color: var(--cl-form-on-accent);
-}
-
-.layout-clear .cl-pages__button:focus-within {
-  outline: 2px solid var(--cl-form-accent);
-  outline-offset: 2px;
-}
-
-.layout-clear .cl-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 24px;
-  color: var(--cl-form-text);
-}
-
-.layout-clear .cl-form__group {
-  display: grid;
-  align-content: start;
-  gap: 16px;
+  gap: 2px;
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.layout-clear .cl-form__group--wide,
-.layout-clear .cl-form__submit,
-.layout-clear .cl-form__status {
-  grid-column: 1 / -1;
-}
-
-.layout-clear .cl-form__group-title {
-  margin-bottom: 4px;
+.layout-clear .cl-radios legend {
+  margin-bottom: 6px;
   padding: 0;
-  font-family: var(--cl-form-title-font);
-  font-size: 1.15em;
-  font-weight: 700;
 }
 
-.layout-clear .cl-form__checks {
-  gap: 12px;
-}
-
-.layout-clear .cl-form__note {
-  margin: 0;
-  font-size: 0.875em;
-  color: var(--cl-form-muted);
-}
-
-.layout-clear .cl-form__submit,
-.layout-clear .cl-wizard__button {
-  display: inline-flex;
-  justify-content: center;
+.layout-clear .cl-radio {
+  display: flex;
   align-items: center;
-  min-height: 54px;
-  padding: 0 28px;
-  border: 1px solid var(--cl-form-accent);
-  border-radius: var(--cl-form-radius);
-  background: var(--cl-form-accent);
-  color: var(--cl-form-on-accent);
-  font: inherit;
-  font-weight: 700;
-  text-decoration: none;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-left: 3px solid transparent;
   cursor: pointer;
 }
 
-.layout-clear .cl-form__submit:disabled,
-.layout-clear .cl-wizard__button:disabled {
-  opacity: 0.6;
-  cursor: progress;
+.layout-clear .cl-radio:hover {
+  background: var(--cl-color-panel);
 }
 
-.layout-clear .cl-wizard__button--quiet {
-  background: transparent;
-  color: var(--cl-form-text);
+.layout-clear .cl-radio:has(input:checked) {
+  border-left-color: var(--cl-form-accent);
+  background: var(--cl-color-accent-soft);
+  font-weight: 600;
 }
 
-.layout-clear .cl-form__sent {
-  display: grid;
-  gap: 8px;
-  padding: 24px;
-  border: 1px solid var(--cl-form-accent);
-  border-radius: var(--cl-form-radius);
-  color: var(--cl-form-text);
-}
-
-.layout-clear .cl-form__sent p {
+.layout-clear .cl-radio input {
+  width: 18px;
+  height: 18px;
   margin: 0;
+  accent-color: var(--cl-form-accent);
 }
 
-.layout-clear .cl-form__sent-title {
-  font-family: var(--cl-form-title-font);
-  font-size: 1.3em;
-  font-weight: 700;
+.layout-clear .cl-radio input:focus-visible {
+  outline: 2px solid var(--cl-form-accent);
+  outline-offset: 2px;
 }
 
-.layout-clear .cl-wizard {
+.layout-clear .cl-radios__moment {
+  margin-top: 6px;
+  max-width: 320px;
+}
+
+/* Pages de l'ordonnance : un tableau, une ligne par page. */
+
+.layout-clear .cl-leaves {
   display: grid;
-  gap: 20px;
-  color: var(--cl-form-text);
-}
-
-.layout-clear .cl-wizard section {
-  display: grid;
-  gap: 16px;
-}
-
-.layout-clear .cl-wizard p {
   margin: 0;
-}
-
-.layout-clear .cl-wizard__title {
-  margin: 0;
-  font-family: var(--cl-form-title-font);
-  font-size: 1.3em;
-  font-weight: 700;
-}
-
-.layout-clear .cl-wizard__introduction,
-.layout-clear .cl-wizard__summary,
-.layout-clear .cl-wizard__privacy {
-  color: var(--cl-form-muted);
-}
-
-.layout-clear .cl-wizard__privacy {
-  font-size: 0.875em;
-}
-
-.layout-clear .cl-wizard__notice,
-.layout-clear .cl-wizard__preparation {
-  padding: 12px 16px;
+  padding: 0;
+  list-style: none;
   border: 1px solid var(--cl-form-line);
   border-radius: var(--cl-form-radius);
 }
 
-.layout-clear .cl-wizard__back {
-  justify-self: start;
-}
-
-.layout-clear .cl-wizard__form {
+.layout-clear .cl-leaves__row {
   display: grid;
-  gap: 16px;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 48px;
+  padding-right: 14px;
+  border-bottom: 1px solid var(--cl-form-line);
 }
 
-.layout-clear .cl-steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.9em;
+.layout-clear .cl-leaves__row:last-child {
+  border-bottom: 0;
+}
+
+.layout-clear .cl-leaves__row--empty {
+  display: block;
+  padding: 12px 14px;
   color: var(--cl-form-muted);
 }
 
-.layout-clear .cl-steps__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
+.layout-clear .cl-leaves__number {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid var(--cl-form-line);
+  background: var(--cl-color-panel);
+  font-weight: 700;
 }
 
-.layout-clear .cl-steps__label--link {
+.layout-clear .cl-leaves__name {
+  overflow: hidden;
+  padding-left: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout-clear .cl-leaves__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+}
+
+.layout-clear .cl-leaves__add {
+  padding: 8px 0;
+  color: var(--cl-form-accent);
+  font-weight: 600;
   cursor: pointer;
+}
+
+.layout-clear .cl-leaves__add:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.layout-clear .cl-steps__number {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
+.layout-clear .cl-leaves__add:focus-within {
+  outline: 2px solid var(--cl-form-accent);
+  outline-offset: 2px;
+}
+
+/* Carte Vitale et mutuelle : deux lignes qui se déplient. */
+
+.layout-clear .cl-savers {
+  display: grid;
+  gap: 10px;
+}
+
+.layout-clear .cl-savers__intro {
+  margin: 0;
+  color: var(--cl-form-muted);
+  font-size: 0.9375em;
+}
+
+.layout-clear .cl-savers__item {
+  border-top: 1px solid var(--cl-form-line);
+}
+
+.layout-clear .cl-savers__item:last-child {
+  border-bottom: 1px solid var(--cl-form-line);
+}
+
+.layout-clear .cl-savers__item summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 48px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.layout-clear .cl-savers__item summary::-webkit-details-marker {
+  display: none;
+}
+
+.layout-clear .cl-savers__item summary::after {
+  content: '+';
+  font-size: 1.4em;
+  font-weight: 400;
+}
+
+.layout-clear .cl-savers__item[open] summary::after {
+  content: '–';
+}
+
+.layout-clear .cl-savers__item summary:focus-visible,
+.layout-clear .cl-savers__switch button:focus-visible {
+  outline: 2px solid var(--cl-form-accent);
+  outline-offset: 2px;
+}
+
+.layout-clear .cl-savers__body {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 16px;
+}
+
+.layout-clear .cl-savers__switch {
+  display: inline-flex;
+  justify-self: start;
   border: 1px solid var(--cl-form-line);
-  border-radius: 50%;
-  font-size: 0.85em;
-  font-weight: 700;
+  border-radius: var(--cl-form-radius);
 }
 
-.layout-clear .cl-steps__item--current {
+.layout-clear .cl-savers__switch button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
   color: var(--cl-form-text);
-  font-weight: 700;
+  font: inherit;
+  cursor: pointer;
 }
 
-.layout-clear .cl-steps__item--current .cl-steps__number {
-  border-color: var(--cl-form-accent);
+.layout-clear .cl-savers__switch button[aria-pressed='true'] {
   background: var(--cl-form-accent);
   color: var(--cl-form-on-accent);
+  font-weight: 600;
 }
 
-.layout-clear .cl-reasons {
+/* Rendez-vous : quatre lignes sur une page, celle en cours est ouverte, les faites se replient. */
+
+.layout-clear .cl-agenda {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-  gap: 10px;
+  gap: 16px;
+  color: var(--cl-form-text);
+}
+
+.layout-clear .cl-agenda p,
+.layout-clear .cl-agenda h3,
+.layout-clear .cl-agenda h4 {
+  margin: 0;
+}
+
+.layout-clear .cl-agenda__introduction,
+.layout-clear .cl-agenda__privacy {
+  color: var(--cl-form-muted);
+}
+
+.layout-clear .cl-agenda__privacy {
+  font-size: 0.875em;
+}
+
+.layout-clear .cl-agenda__notice,
+.layout-clear .cl-agenda__preparation {
+  padding: 12px 16px;
+  border-left: 3px solid var(--cl-form-accent);
+  background: var(--cl-color-panel);
+}
+
+.layout-clear .cl-agenda__rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid var(--cl-form-text);
+}
+
+.layout-clear .cl-agenda__row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--cl-form-line);
+}
+
+.layout-clear .cl-agenda__label {
+  padding-top: 4px;
+  font-size: 0.8125em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cl-form-muted);
+}
+
+.layout-clear .cl-agenda__row--open .cl-agenda__label {
+  color: var(--cl-form-accent);
+}
+
+.layout-clear .cl-agenda__row:not(.cl-agenda__row--open):not(.cl-agenda__row--done) {
+  opacity: 0.45;
+}
+
+.layout-clear .cl-agenda__body {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+
+.layout-clear .cl-agenda__summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.layout-clear .cl-agenda__reasons {
+  display: grid;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.layout-clear .cl-reason {
+.layout-clear .cl-agenda__reason {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 16px;
   width: 100%;
-  height: 100%;
-  padding: 16px;
-  border: 1px solid var(--cl-form-line);
-  border-radius: var(--cl-form-radius);
-  background: var(--cl-form-field);
+  padding: 14px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--cl-form-line);
+  background: transparent;
   color: var(--cl-form-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.layout-clear .cl-reason--chosen,
-.layout-clear .cl-reason:hover {
-  border-color: var(--cl-form-accent);
+.layout-clear .cl-agenda__reason:hover {
+  background: var(--cl-color-accent-soft);
 }
 
-.layout-clear .cl-reason__label {
+.layout-clear .cl-agenda__reason:focus-visible,
+.layout-clear .cl-agenda__arrow:focus-visible,
+.layout-clear .cl-agenda__day:focus-visible,
+.layout-clear .cl-agenda__slot:focus-visible {
+  outline: 2px solid var(--cl-form-accent);
+  outline-offset: 2px;
+}
+
+.layout-clear .cl-agenda__reason-label {
   font-weight: 700;
 }
 
-.layout-clear .cl-reason__duration,
-.layout-clear .cl-reason__description {
+.layout-clear .cl-agenda__reason-duration,
+.layout-clear .cl-agenda__reason-description {
   color: var(--cl-form-muted);
 }
 
-.layout-clear .cl-reason__description {
+.layout-clear .cl-agenda__reason-description {
   grid-column: 1 / -1;
   font-size: 0.9em;
 }
 
-.layout-clear .cl-calendar {
+.layout-clear .cl-agenda__calendar {
   display: grid;
-  gap: 12px;
-  max-width: 420px;
+  gap: 10px;
+  max-width: 380px;
 }
 
-.layout-clear .cl-calendar__header {
+.layout-clear .cl-agenda__calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.layout-clear .cl-calendar__month {
+.layout-clear .cl-agenda__month {
   font-weight: 700;
   text-transform: capitalize;
 }
 
-.layout-clear .cl-calendar__arrow {
-  width: 44px;
-  height: 44px;
+.layout-clear .cl-agenda__arrow {
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--cl-form-line);
   border-radius: var(--cl-form-radius);
   background: var(--cl-form-field);
@@ -1492,23 +1512,23 @@
   cursor: pointer;
 }
 
-.layout-clear .cl-calendar__arrow:disabled {
+.layout-clear .cl-agenda__arrow:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-.layout-clear .cl-calendar__grid {
+.layout-clear .cl-agenda__grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
+  gap: 2px;
   transition: opacity 0.2s;
 }
 
-.layout-clear .cl-calendar__grid--loading {
+.layout-clear .cl-agenda__grid--loading {
   opacity: 0.5;
 }
 
-.layout-clear .cl-calendar__weekday {
+.layout-clear .cl-agenda__weekday {
   padding: 4px 0;
   font-size: 0.8em;
   font-weight: 700;
@@ -1516,101 +1536,147 @@
   color: var(--cl-form-muted);
 }
 
-.layout-clear .cl-calendar__day {
+.layout-clear .cl-agenda__day {
   aspect-ratio: 1;
   min-height: 40px;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--cl-form-radius);
   background: transparent;
   color: var(--cl-form-muted);
   font: inherit;
-  opacity: 0.55;
+  opacity: 0.45;
 }
 
-.layout-clear .cl-calendar__day--free {
-  border-color: var(--cl-form-line);
-  background: var(--cl-form-field);
+.layout-clear .cl-agenda__day--free {
+  background: var(--cl-color-accent-soft);
   color: var(--cl-form-text);
   font-weight: 700;
   opacity: 1;
   cursor: pointer;
 }
 
-.layout-clear .cl-calendar__day--chosen {
-  border-color: var(--cl-form-accent);
+.layout-clear .cl-agenda__day--free:hover {
+  box-shadow: inset 0 0 0 2px var(--cl-form-accent);
+}
+
+.layout-clear .cl-agenda__day--chosen {
   background: var(--cl-form-accent);
   color: var(--cl-form-on-accent);
 }
 
-.layout-clear .cl-slots {
-  display: grid;
-  gap: 8px;
+.layout-clear .cl-agenda__first-slot {
+  justify-self: start;
 }
 
-.layout-clear .cl-slots__title {
-  margin: 0;
+.layout-clear .cl-agenda__slots-line {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cl-form-line);
+}
+
+.layout-clear .cl-agenda__slots-line:last-child {
+  border-bottom: 0;
+}
+
+.layout-clear .cl-agenda__slots-title {
   font-size: 0.9em;
   color: var(--cl-form-muted);
 }
 
-.layout-clear .cl-slots__list {
+.layout-clear .cl-agenda__slots {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.layout-clear .cl-slot {
-  min-width: 76px;
-  min-height: 44px;
+.layout-clear .cl-agenda__slot {
+  min-width: 72px;
+  min-height: 40px;
   border: 1px solid var(--cl-form-line);
   border-radius: var(--cl-form-radius);
   background: var(--cl-form-field);
   color: var(--cl-form-text);
   font: inherit;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 
-.layout-clear .cl-slot:hover {
+.layout-clear .cl-agenda__slot:hover {
   border-color: var(--cl-form-accent);
+  background: var(--cl-color-accent-soft);
 }
 
-.layout-clear .cl-recap {
+.layout-clear .cl-agenda__form {
   display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 16px;
-  border: 1px solid var(--cl-form-line);
-  border-radius: var(--cl-form-radius);
+  gap: 16px;
 }
 
-.layout-clear .cl-recap div {
+.layout-clear .cl-agenda__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+}
+
+.layout-clear .cl-agenda__submit-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  align-items: center;
+  gap: 12px 24px;
 }
 
-.layout-clear .cl-recap dt {
-  min-width: 70px;
-  font-weight: 700;
-}
-
-.layout-clear .cl-recap dd {
-  margin: 0;
-}
-
-.layout-clear .cl-done {
-  padding: 24px;
+.layout-clear .cl-agenda__submit {
+  min-height: 48px;
+  padding: 0 32px;
   border: 1px solid var(--cl-form-accent);
   border-radius: var(--cl-form-radius);
+  background: var(--cl-form-accent);
+  color: var(--cl-form-on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.layout-clear .cl-done__when {
+.layout-clear .cl-agenda__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.layout-clear .cl-agenda__done {
+  display: grid;
+  gap: 10px;
+  padding: 24px 0;
+  border-top: 2px solid var(--cl-form-accent);
+}
+
+.layout-clear .cl-agenda__done-title {
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.layout-clear .cl-agenda__done-when {
   font-weight: 700;
+  text-transform: capitalize;
+}
+
+@media (max-width: 720px) {
+  .layout-clear .cl-agenda__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .layout-clear .cl-agenda__label {
+    padding-top: 0;
+  }
+
+  .layout-clear .cl-agenda__slots-line {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Ordonnance : une fiche en lignes, libellé à gauche, champ à droite. */

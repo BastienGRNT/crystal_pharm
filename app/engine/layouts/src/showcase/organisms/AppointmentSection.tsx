@@ -13,9 +13,7 @@ export function AppointmentSection(props: AppointmentModuleProps) {
           Choisir un créneau
         </a>
       ) : (
-        <div class="sc-panel">
-          <AppointmentWizard {...props} />
-        </div>
+        <AppointmentWizard {...props} />
       )}
     </section>
   );

@@ -1,7 +1,9 @@
 import { MaximumPrescriptionPages } from '@crystal-pharm/schema';
 import { For, Show } from 'solid-js';
 
-/** Les pages de l'ordonnance, une ligne chacune, et de quoi en ajouter : sur téléphone, la photo ouvre l'appareil. */
+const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
+/** Des feuillets numérotés en chiffres romains, alignés comme les pages d'un registre, et un dernier feuillet vierge pour en ajouter : sur téléphone, la photo ouvre l'appareil. */
 export function PrescriptionPagesList(props: { pages: File[]; error: string | undefined; onChange: (pages: File[]) => void }) {
   const canAddPage = () => props.pages.length < MaximumPrescriptionPages;
 
@@ -11,36 +13,34 @@ export function PrescriptionPagesList(props: { pages: File[]; error: string | un
 
   return (
     <div class="ap-field">
-      <span class="ap-field__label">Votre ordonnance</span>
-      <span class="ap-field__hint">Photo ou PDF, jusqu'à {MaximumPrescriptionPages} pages.</span>
-      <Show when={props.pages.length > 0}>
-        <ol class="ap-pages">
-          <For each={props.pages}>
-            {(page, index) => (
-              <li class="ap-pages__page">
-                <span class="ap-pages__name">
-                  Page {index() + 1} : {page.name}
-                </span>
-                <button type="button" class="ap-text-button" onClick={() => props.onChange(props.pages.filter((_, pageIndex) => pageIndex !== index()))}>
-                  Retirer
-                </button>
-              </li>
-            )}
-          </For>
-        </ol>
-      </Show>
-      <Show when={canAddPage()}>
-        <div class="ap-pages__actions">
-          <label class="ap-pages__button ap-pages__button--main">
-            <input class="ap-visually-hidden" type="file" accept="image/*" capture="environment" onInput={(event) => addPages(Array.from(event.currentTarget.files ?? []))} />
-            {props.pages.length === 0 ? 'Photographier' : 'Ajouter une page'}
-          </label>
-          <label class="ap-pages__button">
-            <input class="ap-visually-hidden" type="file" accept="image/*,application/pdf" multiple onInput={(event) => addPages(Array.from(event.currentTarget.files ?? []))} />
-            Choisir un fichier
-          </label>
-        </div>
-      </Show>
+      <span class="ap-field__label">Les feuillets de l'ordonnance</span>
+      <span class="ap-field__hint">Photo ou PDF, jusqu'à {MaximumPrescriptionPages} feuillets.</span>
+      <ol class="ap-folios">
+        <For each={props.pages}>
+          {(page, index) => (
+            <li class="ap-folios__folio">
+              <span class="ap-folios__numeral">{romanNumerals[index()] ?? index() + 1}</span>
+              <span class="ap-folios__name">{page.name}</span>
+              <button type="button" class="ap-text-button" onClick={() => props.onChange(props.pages.filter((_, pageIndex) => pageIndex !== index()))}>
+                Retirer
+              </button>
+            </li>
+          )}
+        </For>
+        <Show when={canAddPage()}>
+          <li class="ap-folios__folio ap-folios__folio--blank">
+            <span class="ap-folios__numeral">{romanNumerals[props.pages.length] ?? props.pages.length + 1}</span>
+            <label class="ap-folios__add">
+              <input class="ap-visually-hidden" type="file" accept="image/*" capture="environment" onInput={(event) => addPages(Array.from(event.currentTarget.files ?? []))} />
+              Photographier
+            </label>
+            <label class="ap-folios__add">
+              <input class="ap-visually-hidden" type="file" accept="image/*,application/pdf" multiple onInput={(event) => addPages(Array.from(event.currentTarget.files ?? []))} />
+              Joindre un fichier
+            </label>
+          </li>
+        </Show>
+      </ol>
       <Show when={props.error}>
         {(error) => (
           <span class="ap-field__error" role="alert">
