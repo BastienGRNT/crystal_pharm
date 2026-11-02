@@ -31,6 +31,12 @@ prochaines étapes).
 - Un composant par module, sinon ça ne compile pas.
 - Atomic design dans chaque layout ; tout son CSS est limité à `.layout-<id>`.
 - Aucun import d'un layout à un autre.
+- Chaque layout est une entité indépendante et unique : sa structure, ses
+  formulaires et ses assistants (rendez-vous, ordonnance…) sont dessinés pour
+  lui, pas seulement recolorés. DRY ne s'applique pas entre layouts : on ne
+  factorise jamais, on ne copie jamais le composant d'un autre layout pour
+  changer le CSS. Seuls les types du moteur (`schema`, `renderer`) les lient,
+  pour qu'ils respectent les modules à implémenter.
 - La maquette d'un layout est dans `docs/maquettes/<layoutId>/`. Elle se
   découpe en atoms → organisms selon `docs/creer-un-layout.md`, et ses
   couleurs et polices deviennent les variables du layout.
