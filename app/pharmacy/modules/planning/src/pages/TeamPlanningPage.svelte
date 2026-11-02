@@ -1,5 +1,18 @@
 <script lang="ts">
-	import { Alert, Button, PageHeader, SegmentedControl, SidePanel, StatusBadge, WeekNav } from '@crystal-pharm/ui';
+	import { goto } from '$app/navigation';
+	import {
+		Alert,
+		Button,
+		ContextMenu,
+		PageHeader,
+		readContextMenuPosition,
+		SegmentedControl,
+		SidePanel,
+		StatusBadge,
+		WeekNav,
+		type ContextMenuItem,
+		type ContextMenuPosition
+	} from '@crystal-pharm/ui';
 	import PlanningLegend from '../components/molecules/PlanningLegend.svelte';
 	import type { PlanningLegendItem } from '../components/molecules/planningLegend';
 	import PendingAvailabilityRequestsPanel from '../components/organisms/availability/PendingAvailabilityRequestsPanel.svelte';
@@ -15,7 +28,12 @@
 	import PlanningTimeline from '../components/organisms/day/PlanningTimeline.svelte';
 	import WeekCalendar from '../components/organisms/week/WeekCalendar.svelte';
 	import { assessWeek, type ShiftPreview } from '../domain/live/liveWeek';
-	import { submitShiftChange, type ShiftChange } from '../components/shift-dragging/submitShiftChange';
+	import {
+		submitShiftChange,
+		submitShiftRemoval,
+		type ShiftChange,
+		type ShiftMenuTarget
+	} from '../components/shift-dragging/submitShiftChange';
 	import { buildDayCoverage } from '../components/organisms/day/planningTimeline';
 	import { assignEmployeeColorIndexes } from '../domain/employees/employeeAppearance';
 	import type { AddShiftFailure, PlanningPageData, WeekGenerationFeedback } from './teamPlanningPageData';
@@ -43,6 +61,24 @@
 		previewChange = undefined;
 	}
 
+	let removalFailureMessage = $state<string>();
+	let openShiftMenu = $state<{ target: ShiftMenuTarget; position: ContextMenuPosition }>();
+
+	function showShiftMenu(event: MouseEvent, target: ShiftMenuTarget): void {
+		openShiftMenu = { target, position: readContextMenuPosition(event) };
+	}
+
+	function listShiftMenuItems(target: ShiftMenuTarget): ContextMenuItem[] {
+		return [
+			{ key: 'edit', label: 'Modifier', icon: 'pencil-simple', onSelect: () => goto(`${data.editShiftHrefPrefix}${target.shiftId}`) },
+			{ key: 'delete', label: 'Supprimer', icon: 'trash', tone: 'danger', onSelect: () => removeShift(target.shiftId) }
+		];
+	}
+
+	async function removeShift(shiftId: string): Promise<void> {
+		removalFailureMessage = await submitShiftRemoval(data.deleteShiftFormAction, shiftId);
+	}
+
 	const dayIndex = $derived(data.view === 'day' ? data.live.weekDates.indexOf(data.date) : -1);
 	const dayStatus = $derived(assessment.days[dayIndex]?.status);
 	const dayCoverage = $derived(
@@ -68,6 +104,13 @@
 <div class="flex flex-col gap-4">
 	<PageHeader title={data.title} context={data.context} icon="calendar-dots">
 		{#snippet actions()}
+			{#if pendingRequestCount > 0}
+				<Button href={data.pendingPanel.openHref} variant="secondary" icon="bell">
+					À traiter <StatusBadge tone="warning">{pendingRequestCount}</StatusBadge>
+				</Button>
+			{/if}
+			<Button href={data.settingsHref} variant="secondary" icon="wrench">Règles et contrats</Button>
+			<Button href={data.toolsPanel.openHref} variant="secondary" icon="sparkle">Remplir la semaine…</Button>
 			<WeekStatusBar
 				isDraft={data.weekStatus.isDraft}
 				publishFormAction={data.publishWeekFormAction}
@@ -76,7 +119,7 @@
 		{/snippet}
 	</PageHeader>
 
-	<div class="flex flex-wrap items-center gap-4">
+	<div class="flex flex-wrap items-center justify-between gap-4">
 		<SegmentedControl label="Vue du planning" options={data.viewOptions} />
 		<WeekNav
 			weekLabel={data.periodNavigation.label}
@@ -87,15 +130,6 @@
 			nextLabel={data.periodNavigation.nextLabel}
 			todayHref={data.periodNavigation.todayHref}
 		/>
-		<div class="ml-auto flex items-center gap-2">
-			{#if pendingRequestCount > 0}
-				<Button href={data.pendingPanel.openHref} variant="secondary" icon="bell">
-					À traiter <StatusBadge tone="warning">{pendingRequestCount}</StatusBadge>
-				</Button>
-			{/if}
-			<Button href={data.toolsPanel.openHref} variant="secondary" icon="sparkle">Remplir la semaine…</Button>
-			<Button href={data.settingsHref} variant="ghost" icon="wrench">Réglages</Button>
-		</div>
 	</div>
 
 	{#if form && 'generationReport' in form}
@@ -110,6 +144,10 @@
 		<Alert tone="danger" title="Créneau non modifié">{dragFailureMessage}</Alert>
 	{/if}
 
+	{#if removalFailureMessage}
+		<Alert tone="danger" title="Créneau non supprimé">{removalFailureMessage}</Alert>
+	{/if}
+
 	{#if data.view === 'week'}
 		<WeekCalendar
 			live={data.live}
@@ -119,6 +157,7 @@
 			dayHrefPrefix={data.dayHrefPrefix}
 			onPreview={(preview) => (previewChange = preview)}
 			onShiftChange={saveDraggedShift}
+			onShiftMenu={showShiftMenu}
 		/>
 	{:else}
 		<PlanningIssuesPanel issues={displayedIssues} adaptFormAction={data.generateWeekFormAction} />
@@ -132,8 +171,18 @@
 			{hoursStatusByEmployee}
 			now={data.now}
 			dragging={{ range: data.timelineMinutes, date: data.date, onShiftChange: saveDraggedShift, onPreview: (preview) => (previewChange = preview) }}
+			onShiftMenu={showShiftMenu}
 		/>
 		<PlanningLegend items={dayLegendItems} />
+	{/if}
+
+	{#if openShiftMenu}
+		<ContextMenu
+			label={openShiftMenu.target.label}
+			position={openShiftMenu.position}
+			items={listShiftMenuItems(openShiftMenu.target)}
+			onClose={() => (openShiftMenu = undefined)}
+		/>
 	{/if}
 
 	{#if data.toolsPanel.isOpen}

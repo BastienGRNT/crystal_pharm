@@ -11,7 +11,10 @@ public sealed record NewPrescriptionSubmissionDto(
     string LastName,
     DateOnly BirthDate,
     string Phone,
-    DateTime PlannedVisitAt,
+    string? Email,
+    DateTime? PlannedVisitAt,
     bool HasAlreadyVisited,
+    bool IsRenewal,
+    string? NoteFromPatient,
     string? SocialSecurityNumber,
-    IReadOnlyCollection<IncomingDocument> Documents);
+    IReadOnlyList<IncomingDocument> Documents);

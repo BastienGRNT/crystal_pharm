@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Alert, PageHeader } from '@crystal-pharm/ui';
+	import GroupSectionTabs from '$lib/components/molecules/GroupSectionTabs.svelte';
 	import GroupProfileForm from '$lib/components/organisms/GroupProfileForm.svelte';
 	import type { PageProps } from './$types';
 
@@ -12,12 +13,10 @@
 	<title>Mon groupement · Crystal Pharm</title>
 </svelte:head>
 
-<div class="grid w-full max-w-3xl gap-3.5">
-	<PageHeader
-		icon="buildings"
-		title="Mon groupement"
-		context="Le nom, le logo et la carte de fidélité de votre groupement, pour le site de vos pharmacies."
-	/>
+<div class="grid gap-6">
+	<PageHeader icon="buildings" title="Mon groupement" context="Ce que vos pharmacies affichent de vous sur leur site.">
+		{#snippet navigation()}<GroupSectionTabs isContractAwaitingPayment={data.isContractAwaitingPayment} />{/snippet}
+	</PageHeader>
 
 	{#if form && 'isSaved' in form}
 		<Alert tone="success">La fiche de votre groupement est enregistrée.</Alert>

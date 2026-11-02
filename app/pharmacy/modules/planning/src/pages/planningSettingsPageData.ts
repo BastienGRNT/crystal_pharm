@@ -1,5 +1,8 @@
+import type { SelectMenuOption } from '@crystal-pharm/ui';
+import type { PeakDay } from '../domain/peaks/peakSlots';
 import type { WeekTemplateSummary } from '../domain/templates/weekTemplates';
 import type { AvailabilityValidation } from '../domain/rules/employeeTerms';
+import type { PlanningSettingsTab } from '../domain/settings/planningSettingsTabs';
 
 /** Les règles de la pharmacie, telles qu'un champ de formulaire les montre. */
 export type PlanningRulesFormValues = {
@@ -8,6 +11,22 @@ export type PlanningRulesFormValues = {
 	minimumShiftHours: string;
 	maximumShiftsPerDay: string;
 	minimumRestHours: string;
+};
+
+export type OvertimeRulesFormValues = {
+	weeklyThresholdHours: string;
+	firstBandHours: string;
+	firstBandRatePercent: string;
+	beyondRatePercent: string;
+};
+
+export type AccountantExportFormValues = {
+	accountantEmail: string;
+	/** Le mois proposé : le précédent, au format « 2026-10 ». */
+	defaultMonth: string;
+	/** Le mois en cours et l'année écoulée, en toutes lettres. */
+	monthOptions: SelectMenuOption[];
+	downloadAction: string;
 };
 
 export type EmployeeTermsFormRow = {
@@ -21,18 +40,31 @@ export type EmployeeTermsFormRow = {
 	availabilityValidation: AvailabilityValidation;
 };
 
-export type PeakWindowView = { id: string; label: string };
+/** La semaine d'affluence : chaque jour dans ses heures d'ouverture, au-dessus de l'effectif permanent. */
+export type PeakWeekView = {
+	hasOpeningHours: boolean;
+	baseRequiredCount: number;
+	/** Le nombre de personnes de l'équipe : au-delà, le planning ne peut pas suivre. */
+	teamSize: number;
+	days: PeakDay[];
+	openingHoursHref: string;
+};
 
 export type WeekTemplateView = WeekTemplateSummary;
 
 export type PlanningSettingsPageData = {
 	planningHref: string;
-	peakWindows: PeakWindowView[];
+	selectedTab: PlanningSettingsTab;
+	peakWeek: PeakWeekView;
 	templates: WeekTemplateView[];
 	rules: PlanningRulesFormValues;
+	overtimeRules: OvertimeRulesFormValues;
+	accountantExport: AccountantExportFormValues;
 	employees: EmployeeTermsFormRow[];
 };
 
+type PlanningSettingsSection = 'rules' | 'overtime' | 'accountant' | 'terms' | 'peaks';
+
 export type PlanningSettingsActionResult =
-	| { savedSection: 'rules' | 'terms' | 'peaks'; employeeId?: string }
-	| { failedSection: 'rules' | 'terms' | 'peaks'; employeeId?: string; message: string };
+	| { savedSection: PlanningSettingsSection; employeeId?: string; message?: string }
+	| { failedSection: PlanningSettingsSection; employeeId?: string; message: string };

@@ -8,10 +8,17 @@ export type PrescriptionForm = {
   /** `2026-03-14`, la valeur d'un `<input type="date">`. */
   birthDate: string;
   phone: string;
-  /** `2026-03-14T17:30`, la valeur d'un `<input type="datetime-local">`. */
+  /** Facultatif : vide si le patient ne veut pas être prévenu par email. */
+  email: string;
+  /** `2026-03-14T17:30` ; vide : « dès que c'est prêt ». */
   plannedVisitAt: string;
   hasAlreadyVisited: boolean;
+  isRenewal: boolean;
+  noteFromPatient: string;
+  /** La première page de l'ordonnance. */
   prescriptionFile: File | undefined;
+  /** Les pages suivantes, dans l'ordre. */
+  additionalPrescriptionPages: File[];
   /** Au choix avec la photo de la carte Vitale ; vide si non renseigné. */
   socialSecurityNumber: string;
   vitalCardPhoto: File | undefined;

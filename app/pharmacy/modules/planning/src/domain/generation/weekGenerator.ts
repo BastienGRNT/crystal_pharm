@@ -1,5 +1,6 @@
 import { findActivityDuringRange, sumTrainingMinutes } from '../activities/plannedActivities';
 import { findBlockingRule, doesRuleApplyOnDate } from '../availability/availabilityRules';
+import { computeOvertimePremiumMinutes } from '../overtime/overtimePay';
 import { formatTimeOfDay } from '../coverage/coverage';
 import { findAbsenceOfDay, toMinutesSinceMidnight } from '../planning';
 import {
@@ -306,14 +307,15 @@ function respectsHardLimits(
 	return true;
 }
 
-function computeMarginalCostEuros(employee: GenerationEmployee, weekMinutes: number, addedMinutes: number): number {
+function computeMarginalCostEuros(state: GenerationState, employee: GenerationEmployee, weekMinutes: number, addedMinutes: number): number {
+	const { overtimeRules } = state.input;
 	const contractMinutes = employee.weeklyContractMinutes ?? 0;
 	const freeMinutes = Math.max(0, Math.min(addedMinutes, contractMinutes - weekMinutes));
 	const paidMinutes = addedMinutes - freeMinutes;
-	const overtimeMinutes = Math.max(0, Math.min(paidMinutes, weekMinutes + addedMinutes - generationLimits.overtimeThresholdMinutes));
+	const addedPremiumMinutes =
+		computeOvertimePremiumMinutes(weekMinutes + addedMinutes, overtimeRules) - computeOvertimePremiumMinutes(weekMinutes, overtimeRules);
 	const hourlyRateEuros = (employee.hourlyRateCents ?? generationLimits.defaultHourlyRateCents) / 100;
-	const paidHours = (paidMinutes - overtimeMinutes + overtimeMinutes * generationLimits.overtimeMultiplier) / 60;
-	return hourlyRateEuros * paidHours;
+	return (hourlyRateEuros * (paidMinutes + addedPremiumMinutes)) / 60;
 }
 
 const newShiftPenalty = 3;
@@ -332,7 +334,7 @@ function scoreCandidate(
 ): Candidate {
 	const weekMinutes = sumWorkedMinutes(state, employee.id);
 	const addedMinutes = end - start;
-	const cost = computeMarginalCostEuros(employee, weekMinutes, addedMinutes);
+	const cost = computeMarginalCostEuros(state, employee, weekMinutes, addedMinutes);
 	const contractMinutes = employee.weeklyContractMinutes ?? 0;
 	const remainingContractMinutes = Math.max(0, contractMinutes - weekMinutes);
 	const isPeak = isPeakMinute(state, dayIndex, start);

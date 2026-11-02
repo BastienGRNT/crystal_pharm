@@ -1,13 +1,13 @@
 import { For, Show } from 'solid-js';
-import type { OpeningHoursModuleProps } from '@crystal-pharm/renderer';
+import type { OpeningHoursSectionProps } from '@crystal-pharm/renderer';
 
-export function OpeningDayRow(props: { day: OpeningHoursModuleProps['days'][number] }) {
+export function OpeningDayRow(props: { day: OpeningHoursSectionProps['days'][number] }) {
   return (
-    <li class="nb-day" classList={{ 'nb-day--today': props.day.isToday }}>
+    <li class="nb-day" classList={{ 'nb-day--today': props.day.isToday }} aria-current={props.day.isToday ? 'date' : undefined}>
       <span class="nb-day__label">
         {props.day.label}
         <Show when={props.day.isToday}>
-          <span class="nb-day__today">Aujourd'hui</span>
+          <span class="nb-day__today">aujourd’hui</span>
         </Show>
       </span>
       <span class="nb-day__periods">

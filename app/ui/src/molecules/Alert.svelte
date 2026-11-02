@@ -22,14 +22,14 @@
 
 	const toneStyles: Record<AlertTone, AlertToneStyle> = {
 		danger: {
-			containerClasses: 'border-transparent bg-danger-soft',
+			containerClasses: 'border-danger/30 bg-danger-soft',
 			iconClasses: 'text-danger',
 			iconName: 'warning-circle',
 			role: 'alert'
 		},
-		warning: { containerClasses: 'border-transparent bg-warning-soft', iconClasses: 'text-warning', iconName: 'warning' },
+		warning: { containerClasses: 'border-warning/30 bg-warning-soft', iconClasses: 'text-warning', iconName: 'warning' },
 		success: {
-			containerClasses: 'border-transparent bg-success-soft',
+			containerClasses: 'border-success/30 bg-success-soft',
 			iconClasses: 'text-success',
 			iconName: 'check',
 			role: 'status'
@@ -40,11 +40,11 @@
 	const toneStyle = $derived(toneStyles[tone]);
 </script>
 
-<div role={toneStyle.role} class="flex items-start gap-2.5 rounded-md border px-3 py-2.5 text-body text-ink {toneStyle.containerClasses}">
-	<Icon name={toneStyle.iconName} class="mt-px {toneStyle.iconClasses}" />
+<div role={toneStyle.role} class="flex items-start gap-3 rounded-lg border px-4 py-3 text-body text-ink {toneStyle.containerClasses}">
+	<Icon name={toneStyle.iconName} size={20} class="mt-0.5 flex-none {toneStyle.iconClasses}" />
 	<div>
 		{#if title}
-			<strong class="block font-semibold">{title}</strong>
+			<strong class="block font-bold">{title}</strong>
 		{/if}
 		{@render children()}
 	</div>

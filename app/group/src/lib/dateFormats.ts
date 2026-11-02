@@ -17,3 +17,10 @@ export function formatDaysUntil(date: Date, now = new Date()): string {
 export function formatCalendarDay(calendarDay: string): string {
 	return formatDay(new Date(`${calendarDay}T12:00:00`));
 }
+
+const shortMonthFormat = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+
+/** `2026-10-24` → { dayOfMonth: 24, shortMonth: « oct. » }, pour un talon de date. */
+export function splitCalendarDay(calendarDay: string): { dayOfMonth: number; shortMonth: string } {
+	return { dayOfMonth: Number(calendarDay.slice(8, 10)), shortMonth: shortMonthFormat.format(new Date(`${calendarDay}T12:00:00`)) };
+}

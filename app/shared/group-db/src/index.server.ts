@@ -69,6 +69,7 @@ export {
 export {
 	endCoverageNow,
 	readCoveringGroupOfTenant,
+	findCoveringGroupOfTenant,
 	findCurrentGroupOfTenant,
 	leaveGroupInTransaction,
 	listCoveredTenantIdsOfGroup,

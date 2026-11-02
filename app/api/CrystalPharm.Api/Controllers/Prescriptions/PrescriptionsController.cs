@@ -19,10 +19,12 @@ namespace CrystalPharm.Api.Controllers.Prescriptions;
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class PrescriptionsController(IPrescriptionSubmissionService submissionService) : ControllerBase
 {
-    private const long MaximumRequestSizeInBytes = 5 * SubmittedDocument.MaximumSizeInBytes + 1024 * 1024;
+    // Les pages de l'ordonnance, la carte Vitale et les deux faces de la mutuelle, plus les champs.
+    private const long MaximumRequestSizeInBytes =
+        (PrescriptionSubmission.MaximumPrescriptionPages + 3) * SubmittedDocument.MaximumSizeInBytes + 1024 * 1024;
 
     /// <summary>
-    /// Reçoit une ordonnance et, si le patient les a jointes, sa carte Vitale et sa mutuelle. L'en-tête
+    /// Reçoit une ordonnance (une ou plusieurs pages) et, si le patient les a jointes, sa carte Vitale et sa mutuelle. L'en-tête
     /// <c>Idempotency-Key</c> rend l'appel rejouable : le rejouer renvoie le même envoi (200) sans en créer un second.
     /// </summary>
     [HttpPost]
@@ -48,20 +50,25 @@ public sealed class PrescriptionsController(IPrescriptionSubmissionService submi
         form.LastName ?? string.Empty,
         ParseBirthDateOrRefuse(form.BirthDate),
         form.Phone ?? string.Empty,
-        ParsePlannedVisitOrRefuse(form.PlannedVisitAt),
-        ParseBooleanOrRefuse(form.HasAlreadyVisited),
+        form.Email,
+        ParseOptionalPlannedVisitOrRefuse(form.PlannedVisitAt),
+        ParseBooleanOrRefuse(form.HasAlreadyVisited, "Le choix « déjà venu » n’est pas valide."),
+        ParseBooleanOrRefuse(form.IsRenewal, "Le choix « renouvellement » n’est pas valide."),
+        form.NoteFromPatient,
         form.SocialSecurityNumber,
         IncomingDocumentsOf(form));
 
-    private static IReadOnlyCollection<IncomingDocument> IncomingDocumentsOf(PrescriptionSubmissionForm form)
+    private static IReadOnlyList<IncomingDocument> IncomingDocumentsOf(PrescriptionSubmissionForm form)
     {
-        var files = new (DocumentKind Kind, IFormFile? File)[]
+        var prescriptionPages = new[] { form.PrescriptionFile }
+            .Concat(form.AdditionalPrescriptionPages ?? [])
+            .Select(page => (Kind: DocumentKind.Prescription, File: page));
+        var files = prescriptionPages.Concat(new (DocumentKind Kind, IFormFile? File)[]
         {
-            (DocumentKind.Prescription, form.PrescriptionFile),
             (DocumentKind.VitalCard, form.VitalCardPhoto),
             (DocumentKind.MutualCardFront, form.MutualCardFront),
             (DocumentKind.MutualCardBack, form.MutualCardBack),
-        };
+        });
         return files
             .Where(candidate => candidate.File is not null)
             .Select(candidate => new IncomingDocument(candidate.Kind, candidate.File!.Length, candidate.File.OpenReadStream))
@@ -74,15 +81,27 @@ public sealed class PrescriptionsController(IPrescriptionSubmissionService submi
             ? birthDate
             : throw new InvalidPrescriptionException("La date de naissance n’est pas valide.");
 
-    private static DateTime ParsePlannedVisitOrRefuse(string? text) =>
-        DateTime.TryParseExact(text, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var plannedVisitAt)
+    private static DateTime? ParseOptionalPlannedVisitOrRefuse(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return null;
+        }
+
+        return DateTime.TryParseExact(text, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var plannedVisitAt)
             ? plannedVisitAt
             : throw new InvalidPrescriptionException("L’heure de passage prévue n’est pas valide.");
+    }
 
-    private static bool ParseBooleanOrRefuse(string? text) =>
-        string.IsNullOrEmpty(text) || (bool.TryParse(text, out var value)
-            ? value
-            : throw new InvalidPrescriptionException("Le choix « déjà venu » n’est pas valide."));
+    private static bool ParseBooleanOrRefuse(string? text, string refusal)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return false;
+        }
+
+        return bool.TryParse(text, out var value) ? value : throw new InvalidPrescriptionException(refusal);
+    }
 }
 
 /// <summary>Les champs du formulaire de l'ordonnance du site (cf. <c>PrescriptionUploadRequestSchema</c>), tous en texte ou fichier.</summary>
@@ -96,14 +115,27 @@ public sealed class PrescriptionSubmissionForm
 
     public string? Phone { get; init; }
 
-    /// <summary>Date et heure locales de la pharmacie, au format <c>2026-10-25T14:30</c>.</summary>
+    /// <summary>Facultative : pour prévenir le patient quand c'est prêt.</summary>
+    public string? Email { get; init; }
+
+    /// <summary>Date et heure locales de la pharmacie, au format <c>2026-10-25T14:30</c> ; absente : « dès que c'est prêt ».</summary>
     public string? PlannedVisitAt { get; init; }
 
     /// <summary><c>true</c> ou <c>false</c> ; absent vaut <c>false</c>.</summary>
     public string? HasAlreadyVisited { get; init; }
 
+    /// <summary><c>true</c> ou <c>false</c> ; absent vaut <c>false</c>.</summary>
+    public string? IsRenewal { get; init; }
+
+    public string? NoteFromPatient { get; init; }
     public string? SocialSecurityNumber { get; init; }
+
+    /// <summary>La première page de l'ordonnance.</summary>
     public IFormFile? PrescriptionFile { get; init; }
+
+    /// <summary>Les pages suivantes, quand l'ordonnance en a plusieurs.</summary>
+    public IReadOnlyList<IFormFile>? AdditionalPrescriptionPages { get; init; }
+
     public IFormFile? VitalCardPhoto { get; init; }
     public IFormFile? MutualCardFront { get; init; }
     public IFormFile? MutualCardBack { get; init; }

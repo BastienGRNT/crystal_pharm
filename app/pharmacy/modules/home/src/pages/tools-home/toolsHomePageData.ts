@@ -5,6 +5,7 @@ import type {
 	DayTimelineNow,
 	DayTimelineRange,
 	DayTimelineRow,
+	IconName,
 	ModuleKey,
 	StatusBadgeTone,
 	TimeListItem
@@ -48,12 +49,38 @@ export type TodayNow = {
 
 export type TodayShortcut = { key: string; label: string; href: string; module: ModuleKey };
 
+/** « 5 ordonnances à préparer, dont 1 en retard » : un chiffre qui ouvre la liste qu'il compte. */
+export type TodayFigure = {
+	key: string;
+	label: string;
+	value: string;
+	detail: string;
+	detailTone: 'neutral' | 'warning' | 'danger';
+	href: string;
+	icon: IconName;
+	module: ModuleKey;
+};
+
+/** « De garde ce soir · de 19:00 à 09:00 le lendemain ». */
+export type TodayOnDuty = {
+	title: string;
+	detail: string;
+	/** En cours, aujourd'hui ou demain : mise en avant. */
+	isSoon: boolean;
+	isInProgress: boolean;
+	/** La page des gardes, quand le compte y a accès. */
+	href: string | undefined;
+};
+
 export type TodayOverview = {
 	/** « Samedi 24 octobre ». */
 	dateLabel: string;
 	/** « Ouvert · ferme à 12:30 » ; `undefined` sans horaires saisis. */
 	openingStatus: { label: string; tone: StatusBadgeTone } | undefined;
 	now: TodayNow;
+	/** La garde en cours ou la prochaine ; `undefined` sans garde déclarée. */
+	onDuty: TodayOnDuty | undefined;
+	figures: TodayFigure[];
 	/** Ce qui demande une action, le plus urgent d'abord. */
 	tasks: ActionListItem[];
 	/** La frise, sur un écran large ; `undefined` quand rien n'est prévu. */

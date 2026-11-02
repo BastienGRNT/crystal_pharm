@@ -26,11 +26,18 @@
 	<title>Rendez-vous · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader title="Rendez-vous" context={data.context} icon="calendar-check" />
+<PageHeader title="Rendez-vous" context={data.context} icon="calendar-check">
+	{#snippet actions()}
+		<Button href="/booking/reglages" variant="secondary" icon="wrench">Réglages</Button>
+		<Button href={data.addAppointmentHref} icon="plus">Ajouter un rendez-vous</Button>
+	{/snippet}
+</PageHeader>
 
-<div class="flex flex-wrap items-center gap-3">
+<!-- Une seule rangée pour régler ce qu'on regarde : la vue, le statut, la période. -->
+<div class="flex flex-wrap items-center gap-x-4 gap-y-3">
 	<SegmentedControl label="Affichage des rendez-vous" options={data.viewOptions} />
-	<Button href={data.addAppointmentHref} icon="plus">Ajouter un rendez-vous</Button>
+	<span aria-hidden="true" class="h-6 w-px bg-line max-md:hidden"></span>
+	<FilterTabs label="Filtrer par statut" tabs={data.statusTabs} />
 	<div class="ml-auto">
 		<WeekNav
 			weekLabel={data.periodNavigation.label}
@@ -43,8 +50,6 @@
 		/>
 	</div>
 </div>
-
-<FilterTabs label="Filtrer par statut" tabs={data.statusTabs} />
 
 {#if data.view !== 'list'}
 	<AgendaBoard label={data.agendaLabel} hours={data.hours} columns={data.columns} />
@@ -76,6 +81,7 @@
 		<AddAppointmentForm
 			panel={data.addAppointmentPanel}
 			errorMessage={form?.message}
+			failedFieldName={form?.failedFieldName}
 			submittedValues={form?.values}
 		/>
 	</SidePanel>

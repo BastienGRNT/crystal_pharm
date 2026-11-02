@@ -1,5 +1,6 @@
 import { createAsync, useLocation } from '@solidjs/router';
 import { Match, Switch } from 'solid-js';
+import { appointmentGatewayOfSiteServer } from '../client/appointmentGatewayOfSiteServer';
 import { sendPrescriptionToSiteServer } from '../client/sendPrescriptionToSiteServer';
 import { TenantSitePageView, UnavailablePage } from '../components/TenantSitePageView';
 import { getTenantSiteOfRequest } from '../server/tenant-site/tenantSiteOfRequest';
@@ -26,6 +27,7 @@ export default function TenantSiteRoute() {
             requestedPath={location.pathname}
             renderedAt={reading().renderedAt}
             sendPrescription={sendPrescriptionToSiteServer}
+            appointments={appointmentGatewayOfSiteServer}
           />
         )}
       </Match>

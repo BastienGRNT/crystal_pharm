@@ -1,7 +1,9 @@
 import { definePage } from '@crystal-pharm/renderer';
 import type { AtelierSettings } from '../atelierManifest';
-import { EditorialIntro } from '../organisms/EditorialIntro';
 import { AsymmetricGridTemplate } from '../templates/AsymmetricGridTemplate';
+
+/** L'équipe et l'ordonnance ont leur propre page. */
+const homeModuleNames = ['services', 'brands', 'appointment', 'onlineOrder', 'dutyHotline', 'loyaltyCard', 'news'] as const;
 
 export default definePage<AtelierSettings>({
   title: 'Accueil',
@@ -9,12 +11,12 @@ export default definePage<AtelierSettings>({
     props.pageKit.Page({
       legalNotice: props.pageKit.LegalNotice({ class: 'at-legal-notice' }),
       children: (
-        <AsymmetricGridTemplate pharmacy={props.pharmacy} modules={props.modules} currentPath="/">
-          <EditorialIntro pharmacy={props.pharmacy} headline={props.settings.editorialHeadline} modules={props.modules} />
-          <props.pageKit.Module name="openingHours" />
-          <props.pageKit.Module name="services" />
-          <props.pageKit.Module name="loyaltyCard" />
-          <props.pageKit.Module name="news" />
+        <AsymmetricGridTemplate pharmacy={props.pharmacy} modules={props.modules} openingStatus={props.openingStatus} currentPath="/">
+          <props.pageKit.FixedSection name="hero" />
+          <props.pageKit.FixedSection name="onDuty" />
+          <props.pageKit.FixedSection name="openingHours" />
+          <props.pageKit.PlacedModules accepts={homeModuleNames} />
+          <props.pageKit.FixedSection name="findUs" />
         </AsymmetricGridTemplate>
       ),
     }),

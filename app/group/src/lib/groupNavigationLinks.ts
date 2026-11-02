@@ -1,11 +1,16 @@
 import type { NavigationLink } from '@crystal-pharm/ui';
+import { groupPathnames } from './groupPathnames';
 
+/** Quatre entrées : la fiche, le contrat, les factures et l'équipe se rangent en onglets sous « Mon groupement ». */
 export const groupNavigationLinks: readonly NavigationLink[] = [
 	{ label: 'Accueil', href: '/', icon: 'house' },
-	{ label: 'Mon groupement', href: '/groupement', icon: 'buildings' },
-	{ label: 'Pharmacies', href: '/pharmacies', icon: 'storefront' },
+	{ label: 'Pharmacies', href: groupPathnames.pharmacies, icon: 'storefront' },
 	{ label: 'Actualités', href: '/actualites', icon: 'sparkle' },
-	{ label: 'Contrat', href: '/contrat', icon: 'receipt' },
-	{ label: 'Factures', href: '/factures', icon: 'file-text' },
-	{ label: 'Équipe', href: '/equipe', icon: 'users-three' }
+	{
+		label: 'Mon groupement',
+		shortLabel: 'Groupement',
+		href: groupPathnames.profile,
+		icon: 'buildings',
+		alsoCurrentFor: [groupPathnames.contract, groupPathnames.invoices, groupPathnames.team]
+	}
 ];

@@ -17,7 +17,6 @@ import {
 } from '../domain/agenda';
 import {
 	appointmentStatuses,
-	formatAppointmentHours,
 	listAppointmentsOfDay,
 	listAppointmentsOfEmployee,
 	type Appointment,
@@ -43,7 +42,7 @@ import type {
 	AppointmentsView,
 	PeriodNavigation
 } from '../pages/appointmentsPageData';
-import { buildPageHref, type AppointmentsPageQuery } from './appointmentsPageQuery';
+import { buildActionHref, buildPageHref, type AppointmentsPageQuery } from './appointmentsPageQuery';
 
 type StatusPresentation = {
 	label: string;
@@ -169,14 +168,22 @@ export function buildAppointmentRows(
 		return {
 			id: appointment.id,
 			href: buildPageHref(query, {}, { kind: 'detail', appointmentId: appointment.id }),
-			hours: formatAppointmentHours(appointment),
+			startTime: appointment.startTime,
+			endTime: appointment.endTime,
 			patientName: appointment.patientName,
 			patientPhone: appointment.patientPhone,
 			reason: appointment.reason,
 			employeeName: findEmployeeName(employees, appointment.employeeId),
 			statusLabel: statusPresentation.label,
 			statusTone: statusPresentation.badgeTone,
-			isCancelled: appointment.status === 'cancelled'
+			isCancelled: appointment.status === 'cancelled',
+			quickConfirm:
+				appointment.status === 'pending'
+					? {
+							formAction: buildActionHref(query, { kind: 'none' }, 'confirmAppointment'),
+							notifiesByEmail: appointment.patientEmail !== null
+						}
+					: null
 		};
 	});
 }

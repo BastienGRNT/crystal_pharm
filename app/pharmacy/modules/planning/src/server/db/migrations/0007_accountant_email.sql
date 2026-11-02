@@ -1,0 +1,1 @@
+ALTER TABLE "planning"."planning_settings" ADD COLUMN "accountant_email" text;

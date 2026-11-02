@@ -6,7 +6,6 @@ import { availabilityKindLabels, describeAvailabilityRule } from '../domain/avai
 import {
 	addDays,
 	formatDayName,
-	formatWeekLabel,
 	formatWeekParameter,
 	formatWeekRange,
 	getMondayOfWeek,
@@ -22,7 +21,8 @@ import type {
 	AddAvailabilityFailure,
 	LeaveRequestFailure,
 	LeaveRequestFeedback,
-	MyPlanningPageData
+	MyPlanningPageData,
+	MyPlanningRequestPanel
 } from '../pages/myPlanningPageData';
 import { listAvailabilityRulesOfEmployee } from './repositories/availabilityRuleRepository';
 import { findEmployeeTerms } from './repositories/employeeTermsRepository';
@@ -40,6 +40,24 @@ type MyPlanningRequest = {
 
 const availabilityFieldNames = ['kind', 'recurrence', 'weekday', 'date', 'startTime', 'endTime', 'note'] as const;
 const leaveFieldNames = ['kind', 'firstDate', 'lastDate', 'note'] as const;
+
+const requestPanelParameterValues: Record<MyPlanningRequestPanel, string> = { leave: 'conge', availability: 'indisponibilite' };
+
+function findOpenedRequestPanel(url: URL): MyPlanningRequestPanel | undefined {
+	const requestedPanel = url.searchParams.get('demande');
+	return (Object.keys(requestPanelParameterValues) as MyPlanningRequestPanel[]).find(
+		(panel) => requestPanelParameterValues[panel] === requestedPanel
+	);
+}
+
+function buildRequestPanelHref(url: URL, panel: MyPlanningRequestPanel | undefined): string {
+	const parameters = new URLSearchParams();
+	const week = url.searchParams.get('week');
+	if (week) parameters.set('week', week);
+	if (panel) parameters.set('demande', requestPanelParameterValues[panel]);
+	const query = parameters.toString();
+	return query === '' ? url.pathname : `${url.pathname}?${query}`;
+}
 
 /** Ce que voit l'Employee relié au compte : sans Responsibility, mais seulement si la pharmacie a activé le planning. */
 async function requireEmployeeOfPlanning(user: AuthenticatedUser | null) {
@@ -72,14 +90,15 @@ export async function load({ url, locals }: MyPlanningRequest): Promise<MyPlanni
 
 	return {
 		firstName: myRow?.employee.fullName.split(' ')[0] ?? '',
-		periodLabel: `${formatWeekLabel(monday)} · ${formatWeekRange(monday)}`,
+		periodLabel: formatWeekRange(monday),
 		previousWeekHref: `?week=${formatWeekParameter(addDays(monday, -7))}`,
 		nextWeekHref: `?week=${formatWeekParameter(addDays(monday, 7))}`,
 		todayHref: toIsoDate(getMondayOfWeek(today)) === toIsoDate(monday) ? undefined : '?',
 		isWeekPublished,
 		days: (myRow?.cells ?? []).map((cell) => ({
 			date: cell.date,
-			title: `${formatDayName(new Date(`${cell.date}T00:00:00Z`))} ${Number(cell.date.slice(8))}`,
+			weekdayLabel: formatDayName(new Date(`${cell.date}T00:00:00Z`)),
+			dayOfMonth: Number(cell.date.slice(8)),
 			isToday: cell.date === toIsoDate(today),
 			shiftLabels: isWeekPublished ? cell.shifts.map((shift) => `${shift.startTime} – ${shift.endTime}`) : [],
 			absenceLabel: cell.absenceKind
@@ -109,7 +128,13 @@ export async function load({ url, locals }: MyPlanningRequest): Promise<MyPlanni
 		isAvailabilityAutomaticallyValidated:
 			(terms ?? buildDefaultEmployeeTerms(employeeId)).availabilityValidation === 'automatic',
 		addAvailabilityFormAction: '?/addAvailability',
-		removeAvailabilityFormAction: '?/removeAvailability'
+		removeAvailabilityFormAction: '?/removeAvailability',
+		openedRequestPanel: findOpenedRequestPanel(url),
+		requestPanelHrefs: {
+			leave: buildRequestPanelHref(url, 'leave'),
+			availability: buildRequestPanelHref(url, 'availability'),
+			closed: buildRequestPanelHref(url, undefined)
+		}
 	};
 }
 

@@ -12,7 +12,7 @@
 </script>
 
 <div
-	class="flex h-control w-full items-center gap-2 rounded-sm border border-line-strong bg-surface pl-1.5 transition-[border-color,box-shadow] duration-[120ms] focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft-value)] has-[[aria-invalid=true]]:border-danger {className}"
+	class="flex h-control w-full items-center gap-2 rounded-control border border-line-strong/55 bg-field pl-1.5 transition-[border-color,box-shadow] duration-[120ms] focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft-value)] has-[[aria-invalid=true]]:border-danger {className}"
 >
 	<!-- La saisie au clavier porte le nom du champ : le sélecteur ne fait que la remplir. -->
 	<input

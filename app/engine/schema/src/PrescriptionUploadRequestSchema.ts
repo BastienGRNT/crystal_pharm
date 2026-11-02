@@ -2,6 +2,10 @@ import * as v from 'valibot';
 
 const tenMegabytes = 10 * 1024 * 1024;
 
+/** Une ordonnance tient en quatre pages au plus : la première, puis jusqu'à trois autres. */
+export const MaximumPrescriptionPages = 4;
+export const PrescriptionNoteMaximumLength = 500;
+
 const documentMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'] as const;
 
 const requiredText = (message: string) => v.pipe(v.string(), v.trim(), v.nonEmpty(message));
@@ -48,10 +52,25 @@ const checkboxSchema = v.pipe(
   v.transform((value) => value === true || value === 'true'),
 );
 
+/** Un texte facultatif : vide veut dire « non renseigné », pour que le formulaire n'envoie rien. */
+const emptyAsMissing = v.transform((text: string) => (text === '' ? undefined : text));
+
+export const OptionalEmailSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.toLowerCase(),
+  emptyAsMissing,
+  v.check(
+    (email) => email === undefined || (email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)),
+    'Cette adresse email ne semble pas valide, par exemple : prenom.nom@gmail.com.',
+  ),
+);
+
 /**
  * Ce que le formulaire d'ordonnance envoie à l'API, validé à l'identique dans le navigateur et sur le serveur.
  * La carte Vitale (photo ou numéro) et la mutuelle sont facultatives : elles font gagner du temps au comptoir.
  * Un client déjà venu ne les envoie pas (la pharmacie les a) : l'API les ignore s'ils arrivent quand même.
+ * L'email et l'heure de passage sont facultatifs : sans heure, le patient passe « dès que c'est prêt ».
  */
 export const PrescriptionUploadRequestSchema = v.object({
   firstName: requiredText('Indiquez votre prénom.'),
@@ -66,13 +85,36 @@ export const PrescriptionUploadRequestSchema = v.object({
     v.trim(),
     v.regex(/^(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}$/, 'Indiquez un numéro de téléphone valide, par exemple 06 12 34 56 78.'),
   ),
-  /** Date et heure locales de la pharmacie, `2026-03-14T17:30`. */
-  plannedVisitAt: v.pipe(
-    v.string('Indiquez quand vous comptez passer.'),
-    v.regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Indiquez quand vous comptez passer.'),
+  /** Pour prévenir le patient quand c'est prêt. */
+  email: v.optional(OptionalEmailSchema),
+  /** Date et heure locales de la pharmacie, `2026-03-14T17:30` ; vide : « dès que c'est prêt ». */
+  plannedVisitAt: v.optional(
+    v.pipe(
+      v.string(),
+      emptyAsMissing,
+      v.check(
+        (plannedVisitAt) => plannedVisitAt === undefined || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(plannedVisitAt),
+        'Choisissez quand vous comptez passer.',
+      ),
+    ),
   ),
   hasAlreadyVisited: checkboxSchema,
-  prescriptionFile: documentFile('Ajoutez une photo ou un PDF de votre ordonnance.'),
+  isRenewal: v.optional(checkboxSchema, false),
+  noteFromPatient: v.optional(
+    v.pipe(
+      v.string(),
+      v.trim(),
+      v.maxLength(PrescriptionNoteMaximumLength, `Votre message est limité à ${PrescriptionNoteMaximumLength} caractères.`),
+      emptyAsMissing,
+    ),
+  ),
+  prescriptionFile: documentFile('Ajoutez une photo de votre ordonnance.'),
+  additionalPrescriptionPages: v.optional(
+    v.pipe(
+      v.array(documentFile('Une des pages est invalide.')),
+      v.maxLength(MaximumPrescriptionPages - 1, `Une ordonnance compte ${MaximumPrescriptionPages} pages au plus.`),
+    ),
+  ),
   socialSecurityNumber: v.optional(socialSecurityNumberSchema),
   vitalCardPhoto: optionalDocumentFile(),
   mutualCardFront: optionalDocumentFile(),

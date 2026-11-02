@@ -26,6 +26,7 @@ export function buildGenerationInput(week: LiveWeekInput): GenerationInput {
 		openingPeriodsByDate: week.openingPeriodsByDate,
 		requirementWindowsByDate: week.requirementWindowsByDate,
 		rules: week.rules,
+		overtimeRules: week.overtimeRules,
 		employees,
 		absences: week.absences,
 		availabilityRules: week.availabilityRules,

@@ -6,14 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CrystalPharm.Api.Controllers.Prescriptions;
 
-/// <summary>Les ordonnances reçues par la pharmacie du Manager connecté, en lecture seule.</summary>
+/// <summary>Les ordonnances reçues par la pharmacie du Manager connecté, et leur suivi.</summary>
 [ApiController]
 [Route("received-prescriptions")]
 [Authorize(Policy = ManagerAuthentication.PolicyName)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class ReceivedPrescriptionsController(IPrescriptionSubmissionService submissionService) : ControllerBase
 {
-    /// <summary>Les envois les plus récents d'abord, sans numéro de sécurité sociale.</summary>
+    /// <summary>
+    /// Les envois les plus récents d'abord, sans numéro de sécurité sociale. Ceux arrivés au bout de leur
+    /// durée de conservation sont effacés avant.
+    /// </summary>
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<ReceivedPrescriptionSummaryDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<ReceivedPrescriptionSummaryDto>>> List(CancellationToken cancellationToken) =>
@@ -44,4 +47,38 @@ public sealed class ReceivedPrescriptionsController(IPrescriptionSubmissionServi
         Response.Headers.XContentTypeOptions = "nosniff";
         return File(document.Content, document.MimeType);
     }
+
+    /// <summary>Fait avancer la préparation ; renvoie l'envoi à jour, avec l'adresse pour prévenir le patient.</summary>
+    [HttpPut("{submissionId:guid}/status")]
+    [ProducesResponseType<ReceivedPrescriptionDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ReceivedPrescriptionDto>> ChangeStatus(
+        Guid submissionId,
+        PrescriptionStatusChangeDto change,
+        CancellationToken cancellationToken)
+    {
+        var submission = await submissionService.ChangeStatusAsync(submissionId, change, cancellationToken);
+        return submission is null ? NotFound() : Ok(submission);
+    }
+
+    [HttpPut("{submissionId:guid}/team-note")]
+    [ProducesResponseType<ReceivedPrescriptionDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ReceivedPrescriptionDto>> WriteTeamNote(
+        Guid submissionId,
+        PrescriptionTeamNoteDto teamNote,
+        CancellationToken cancellationToken)
+    {
+        var submission = await submissionService.WriteTeamNoteAsync(submissionId, teamNote, cancellationToken);
+        return submission is null ? NotFound() : Ok(submission);
+    }
+
+    /// <summary>Efface l'envoi et ses fichiers, par exemple à la demande du patient.</summary>
+    [HttpDelete("{submissionId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid submissionId, CancellationToken cancellationToken) =>
+        await submissionService.DeleteAsync(submissionId, cancellationToken) ? NoContent() : NotFound();
 }

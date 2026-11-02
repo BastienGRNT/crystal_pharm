@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GenerationEmployee, GenerationInput } from '../generation/generationTypes';
+import { collectiveAgreementOvertimeRules } from '../overtime/overtimePay';
 import { defaultPlanningRules } from '../rules/planningRules';
 import { assessLeaveStaffingImpact } from './leaveStaffingImpact';
 
@@ -26,6 +27,7 @@ const buildWeek = (employees: GenerationEmployee[], overrides: Partial<Generatio
 	openingPeriodsByDate: weekDates.map((_, index) => (index < 5 ? workingDay : [])),
 	requirementWindowsByDate: weekDates.map(() => []),
 	rules: defaultPlanningRules,
+	overtimeRules: collectiveAgreementOvertimeRules,
 	employees,
 	absences: [],
 	availabilityRules: [],

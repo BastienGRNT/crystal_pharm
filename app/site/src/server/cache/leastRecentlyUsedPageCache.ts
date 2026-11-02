@@ -32,6 +32,10 @@ export class LeastRecentlyUsedPageCache {
   }
 
   find(key: string, now: Date): CachedPage | undefined {
+    return this.findEntry(key, now)?.page;
+  }
+
+  findEntry(key: string, now: Date): CachedPageEntry | undefined {
     const entry = this.entries.get(key);
     if (!entry) return undefined;
     if (entry.expiresAt <= now) {
@@ -40,7 +44,7 @@ export class LeastRecentlyUsedPageCache {
     }
     this.entries.delete(key);
     this.entries.set(key, entry);
-    return entry.page;
+    return entry;
   }
 
   store(entry: CachedPageEntry): void {

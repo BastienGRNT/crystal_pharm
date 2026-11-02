@@ -10,6 +10,11 @@ function countBilledMonths(billingPeriod: BillingPeriod, annualFreeMonths: numbe
 	return billingPeriod === 'yearly' ? monthsInBillingPeriod.yearly - annualFreeMonths : 1;
 }
 
+/** « 1 mois offert », « 2 mois offerts ». */
+export function describeFreeMonths(annualFreeMonths: number): string {
+	return `${annualFreeMonths} mois ${annualFreeMonths > 1 ? 'offerts' : 'offert'}`;
+}
+
 /** Le prix d'un mois quand on paie à l'année : « soit 24,17 € par mois ». */
 export function monthlyEquivalentOfYearlyPrice(monthlyPriceCents: number, annualFreeMonths: number): number {
 	return Math.round(priceForPeriod(monthlyPriceCents, 'yearly', annualFreeMonths) / monthsInBillingPeriod.yearly);
@@ -33,7 +38,7 @@ export function spreadLinesOverPeriod(
 	if (annualFreeMonths === 0 || monthlyTotalCents === 0) return yearlyLines;
 	return [
 		...yearlyLines,
-		{ label: `Paiement à l’année : ${annualFreeMonths} mois offerts`, amountCents: -monthlyTotalCents * annualFreeMonths }
+		{ label: `Paiement à l’année : ${describeFreeMonths(annualFreeMonths)}`, amountCents: -monthlyTotalCents * annualFreeMonths }
 	];
 }
 

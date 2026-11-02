@@ -87,6 +87,9 @@ importers:
       '@crystal-pharm/schema':
         specifier: workspace:*
         version: link:../schema
+      '@fontsource/atkinson-hyperlegible-next':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/fraunces':
         specifier: 5.3.0
         version: 5.3.0
@@ -276,6 +279,9 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../../../shared/auth
+      '@crystal-pharm/email':
+        specifier: workspace:*
+        version: link:../../../shared/email
       '@crystal-pharm/pharmacy-db':
         specifier: workspace:*
         version: link:../../../shared/pharmacy-db
@@ -402,6 +408,9 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../../../shared/auth
+      '@crystal-pharm/email':
+        specifier: workspace:*
+        version: link:../../../shared/email
       '@crystal-pharm/pharmacy-db':
         specifier: workspace:*
         version: link:../../../shared/pharmacy-db
@@ -424,6 +433,9 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@24.19.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
   pharmacy/modules/site-manager:
     dependencies:
@@ -448,6 +460,9 @@ importers:
       '@crystal-pharm/schema':
         specifier: workspace:*
         version: link:../../../engine/schema
+      '@crystal-pharm/site-traffic-db':
+        specifier: workspace:*
+        version: link:../../../shared/site-traffic-db
       '@crystal-pharm/ui':
         specifier: workspace:*
         version: link:../../../ui
@@ -590,6 +605,9 @@ importers:
       '@crystal-pharm/billing-db':
         specifier: workspace:*
         version: link:../billing-db
+      '@crystal-pharm/content-db':
+        specifier: workspace:*
+        version: link:../content-db
       '@crystal-pharm/email':
         specifier: workspace:*
         version: link:../email
@@ -599,6 +617,9 @@ importers:
       '@crystal-pharm/pharmacy-db':
         specifier: workspace:*
         version: link:../pharmacy-db
+      '@crystal-pharm/site-traffic-db':
+        specifier: workspace:*
+        version: link:../site-traffic-db
     devDependencies:
       '@types/node':
         specifier: ^24.19.2
@@ -678,6 +699,28 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@24.19.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
+  shared/site-traffic-db:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(kysely@0.29.7)(postgres@3.4.9)
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
+    devDependencies:
+      '@types/node':
+        specifier: ^24.19.2
+        version: 24.19.2
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@24.19.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+
   site:
     dependencies:
       '@crystal-pharm/billing-db':
@@ -701,6 +744,9 @@ importers:
       '@crystal-pharm/schema':
         specifier: workspace:*
         version: link:../engine/schema
+      '@crystal-pharm/site-traffic-db':
+        specifier: workspace:*
+        version: link:../shared/site-traffic-db
       '@solidjs/meta':
         specifier: 0.29.4
         version: 0.29.4(solid-js@1.9.17)
@@ -1370,6 +1416,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource/atkinson-hyperlegible-next@5.3.0':
+    resolution: {integrity: sha512-8p1tHVoPDo6oYwSO3sMw5snGwFwSf3TmeSF9Gcj792GXdsg6oqvhoItbj6Hj/XZIk0Xs+Cwu6pkLBAl3Q5HrwA==}
 
   '@fontsource/fraunces@5.3.0':
     resolution: {integrity: sha512-LEHTOBiZufQzAvnAe2rZ8ZknbDS28Q9kzwb0L+gZJEmjLGr8hhZ/5NuHXwDuHBWhVXYoiGGXmrb0H6Ko/RrHTg==}
@@ -3837,6 +3886,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@fontsource/atkinson-hyperlegible-next@5.3.0': {}
 
   '@fontsource/fraunces@5.3.0': {}
 

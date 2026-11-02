@@ -13,7 +13,8 @@ export type AppointmentsView = 'list' | 'day' | 'week';
 export type AppointmentRow = {
 	id: string;
 	href: string;
-	hours: string;
+	startTime: string;
+	endTime: string;
 	patientName: string;
 	patientPhone: string;
 	reason: string;
@@ -21,6 +22,8 @@ export type AppointmentRow = {
 	statusLabel: string;
 	statusTone: StatusBadgeTone;
 	isCancelled: boolean;
+	/** Une demande en attente se confirme depuis la liste, sans ouvrir la fiche. */
+	quickConfirm: { formAction: string; notifiesByEmail: boolean } | null;
 };
 
 export type PeriodNavigation = {
@@ -49,6 +52,8 @@ export type AppointmentDetailPanel = {
 	items: DescriptionItem[];
 	confirmFormAction: string | null;
 	cancelFormAction: string | null;
+	/** L'adresse à prévenir d'une confirmation ou d'une annulation ; null s'il n'en a pas laissé. */
+	patientEmail: string | null;
 };
 
 export type AddAppointmentPanel = {
@@ -56,6 +61,8 @@ export type AddAppointmentPanel = {
 	formAction: string;
 	employeeOptions: SelectMenuOption[];
 	reasonOptions: SelectMenuOption[];
+	/** Pour proposer l'heure de fin dès que le motif et le début sont choisis. */
+	reasonDurationsInMinutes: Record<string, number>;
 	defaultDate: string;
 };
 
@@ -96,9 +103,14 @@ export const appointmentFormFieldNames = [
 
 export type AppointmentFormFieldName = (typeof appointmentFormFieldNames)[number];
 
-export type AppointmentFormValues = Record<AppointmentFormFieldName, string>;
+export type AppointmentFormValues = Record<AppointmentFormFieldName, string> & {
+	/** Facultatif : vide si le patient ne veut pas de confirmation par email. */
+	patientEmail: string;
+};
 
 export type AppointmentsActionFailure = {
 	message: string;
+	/** Le champ à corriger, quand l'erreur en vise un : le message s'affiche dessous. */
+	failedFieldName?: AppointmentFormFieldName | 'patientEmail';
 	values?: AppointmentFormValues;
 };

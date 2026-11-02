@@ -4,9 +4,15 @@ import * as v from 'valibot';
 import { indexTermsByEmployee, type EmployeeTerms } from '../../../domain/rules/employeeTerms';
 import { planningRuleLimits, type PlanningRules } from '../../../domain/rules/planningRules';
 import { listEmployeeTerms, saveEmployeeTerms } from '../../repositories/employeeTermsRepository';
-import { findPlanningRules, savePlanningRules } from '../../repositories/planningSettingsRepository';
+import { overtimeRuleLimits, type OvertimeRules } from '../../../domain/overtime/overtimePay';
+import {
+	findOvertimeRules,
+	findPlanningRules,
+	saveOvertimeRules,
+	savePlanningRules
+} from '../../repositories/planningSettingsRepository';
 
-export { findPlanningRules };
+export { findOvertimeRules, findPlanningRules };
 
 export type PlanningSettingsResult = { isSaved: true } | { isSaved: false; message: string };
 
@@ -33,6 +39,31 @@ export async function updatePlanningRules(tenantId: string, submission: Planning
 		return { isSaved: false, message: 'Il faut au moins autant de personnes que de pharmaciens présents.' };
 	}
 	await savePlanningRules(tenantId, validation.output);
+	return { isSaved: true };
+}
+
+const limitedOvertimeValue = (rule: keyof OvertimeRules, message: string) =>
+	v.pipe(
+		v.number(message),
+		v.integer(message),
+		v.minValue(overtimeRuleLimits[rule].min, message),
+		v.maxValue(overtimeRuleLimits[rule].max, message)
+	);
+
+const OvertimeRulesSchema = v.object({
+	weeklyThresholdMinutes: limitedOvertimeValue('weeklyThresholdMinutes', 'Le seuil des heures supplémentaires va de 1 h à 48 h.'),
+	firstBandMinutes: limitedOvertimeValue('firstBandMinutes', 'La première tranche va jusqu’à 13 h.'),
+	firstBandRatePercent: limitedOvertimeValue('firstBandRatePercent', 'Une majoration va de 10 % à 200 %.'),
+	beyondRatePercent: limitedOvertimeValue('beyondRatePercent', 'Une majoration va de 10 % à 200 %.')
+});
+
+export async function updateOvertimeRules(tenantId: string, submission: OvertimeRules): Promise<PlanningSettingsResult> {
+	const validation = v.safeParse(OvertimeRulesSchema, submission);
+	if (!validation.success) return { isSaved: false, message: validation.issues[0].message };
+	if (validation.output.beyondRatePercent < validation.output.firstBandRatePercent) {
+		return { isSaved: false, message: 'Les heures au-delà de la première tranche ne peuvent pas être moins majorées qu’elle.' };
+	}
+	await saveOvertimeRules(tenantId, validation.output);
 	return { isSaved: true };
 }
 

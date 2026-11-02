@@ -23,6 +23,7 @@ import {
 } from './api/appointmentsApi.server';
 import type { BookingCaller } from './api/bookingApiClient.server';
 import { readAppointmentFormValues, validateAppointmentForm } from './appointmentForm';
+import { notifyPatientOfAppointmentChange, type AppointmentChange } from './appointmentNotifications.server';
 import { buildAddAppointmentPanel, buildDetailPanel } from './appointmentPanels';
 import { requireBookingCaller } from './bookingCaller.server';
 import { buildPageHref, parsePageQuery, parsePanel, type AppointmentsPageQuery } from './appointmentsPageQuery';
@@ -55,7 +56,7 @@ async function buildPanels(
 ): Promise<Pick<CommonAppointmentsPageData, 'detailPanel' | 'addAppointmentPanel'>> {
 	const panel = parsePanel(url);
 	if (panel.kind === 'add') {
-		return { detailPanel: null, addAppointmentPanel: buildAddAppointmentPanel(query, employees, await listAppointmentReasons()) };
+		return { detailPanel: null, addAppointmentPanel: buildAddAppointmentPanel(query, employees, await listAppointmentReasons(caller)) };
 	}
 	const appointment = panel.kind === 'detail' ? await findAppointment(caller, panel.appointmentId) : undefined;
 	return {
@@ -112,6 +113,17 @@ function readAppointmentId(formData: FormData): string {
 	return String(formData.get('appointmentId') ?? '');
 }
 
+async function notifyPatientIfAsked(
+	caller: BookingCaller,
+	formData: FormData,
+	appointmentId: string,
+	change: AppointmentChange
+): Promise<void> {
+	if (formData.get('notifyByEmail') !== 'on') return;
+	const appointment = await findAppointment(caller, appointmentId);
+	if (appointment) await notifyPatientOfAppointmentChange(caller.tenantId, appointment, change);
+}
+
 function readQueryOfAction(url: URL): AppointmentsPageQuery {
 	return parsePageQuery(url, toCalendarDay(new Date()));
 }
@@ -122,7 +134,11 @@ export const actions = {
 		const values = readAppointmentFormValues(await request.formData());
 		const formResult = validateAppointmentForm(values, await listBookableEmployees(caller));
 		if (!formResult.isValid) {
-			return fail(400, { message: formResult.message, values } satisfies AppointmentsActionFailure);
+			return fail(400, {
+				message: formResult.message,
+				failedFieldName: formResult.failedFieldName,
+				values
+			} satisfies AppointmentsActionFailure);
 		}
 
 		const creation = await createAppointment(caller, formResult.newAppointment);
@@ -130,6 +146,7 @@ export const actions = {
 			return fail(400, { message: creation.message, values } satisfies AppointmentsActionFailure);
 		}
 		const { appointment } = creation;
+		await notifyPatientOfAppointmentChange(caller.tenantId, appointment, 'confirmed');
 		redirect(
 			303,
 			buildPageHref(
@@ -142,19 +159,23 @@ export const actions = {
 
 	confirmAppointment: async ({ request, url, locals }) => {
 		const caller = await requireBookingCaller(locals.user);
-		const appointmentId = readAppointmentId(await request.formData());
+		const formData = await request.formData();
+		const appointmentId = readAppointmentId(formData);
 		if (!(await confirmAppointment(caller, appointmentId))) {
 			return fail(409, { message: 'Ce rendez-vous n’est plus en attente : rechargez la page.' } satisfies AppointmentsActionFailure);
 		}
-		redirect(303, buildPageHref(readQueryOfAction(url), {}, { kind: 'detail', appointmentId }));
+		await notifyPatientIfAsked(caller, formData, appointmentId, 'confirmed');
+		redirect(303, buildPageHref(readQueryOfAction(url), {}, parsePanel(url)));
 	},
 
 	cancelAppointment: async ({ request, url, locals }) => {
 		const caller = await requireBookingCaller(locals.user);
-		const appointmentId = readAppointmentId(await request.formData());
+		const formData = await request.formData();
+		const appointmentId = readAppointmentId(formData);
 		if (!(await cancelAppointment(caller, appointmentId))) {
 			return fail(409, { message: 'Ce rendez-vous est déjà annulé : rechargez la page.' } satisfies AppointmentsActionFailure);
 		}
+		await notifyPatientIfAsked(caller, formData, appointmentId, 'cancelled');
 		redirect(303, buildPageHref(readQueryOfAction(url), {}, { kind: 'detail', appointmentId }));
 	}
 } satisfies Actions;

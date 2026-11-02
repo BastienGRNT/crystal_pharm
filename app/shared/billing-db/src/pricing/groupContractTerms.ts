@@ -1,6 +1,6 @@
 import type { BillingPeriod, GroupBillingMode, GroupPaymentMethod } from '../database/billingTables';
 import { formatEuros } from '../money/euroAmount';
-import { priceForPeriod } from './billingPeriodPricing';
+import { describeFreeMonths, priceForPeriod } from './billingPeriodPricing';
 import { computeOverageUnitPrice } from './groupCharge';
 import { quoteTools, type ToolCatalog, type ToolCoverage } from './toolPricing';
 import { findIncludingToolKeys, findTool, isIncludedTool, joinToolLabels, sellableToolKeys, toolKeys, type ToolKey } from '../tools/tools';
@@ -164,7 +164,7 @@ function describePaymentRhythm(billing: GroupBillingTerms): string {
 	const paymentWording = billing.paymentMethod === 'card' ? 'prélevé sur sa carte' : 'par facture, à régler par virement';
 	if (billing.billingPeriod === 'yearly' && billing.billingMode === 'flat_rate') {
 		const yearlyPriceCents = priceForPeriod(billing.flatRateMonthlyPriceCents ?? 0, 'yearly', billing.annualFreeMonths);
-		return `Une fois par an : ${formatEuros(yearlyPriceCents)} HT, ${billing.annualFreeMonths} mois offerts, ${paymentWording}.`;
+		return `Une fois par an : ${formatEuros(yearlyPriceCents)} HT, ${describeFreeMonths(billing.annualFreeMonths)}, ${paymentWording}.`;
 	}
 	return `Chaque mois, ${paymentWording}.`;
 }

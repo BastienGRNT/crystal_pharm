@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { Button, Field, IconButton, Input, Select, Textarea } from '@crystal-pharm/ui';
 	import { createEmptyServiceDraft, serviceIconOptions, type ServiceDraft } from '../../domain/siteContentLists';
+	import SiteImageChooser from '../molecules/SiteImageChooser.svelte';
 
 	type ServiceListEditorProps = {
 		services: ServiceDraft[];
+		uploadedImagePreviewUrls: Record<string, string>;
 		/** Appelé à l'ajout d'un service : le premier rend le module affichable. */
 		onserviceadded?: () => void;
 	};
 
-	let { services = $bindable(), onserviceadded }: ServiceListEditorProps = $props();
+	let { services = $bindable(), uploadedImagePreviewUrls = $bindable(), onserviceadded }: ServiceListEditorProps = $props();
 
 	function addService(): void {
 		services.push(createEmptyServiceDraft());
@@ -32,9 +34,9 @@
 				<IconButton icon="trash" label="Retirer ce service" onclick={() => removeService(service)} />
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
-			<Field label="Nom" errorMessage={findMissingTextError(service.title, service.description, 'Donnez un nom à ce service.')}>
+			<Field label="Nom" hint="Ex. : Vaccination" errorMessage={findMissingTextError(service.title, service.description, 'Donnez un nom à ce service.')}>
 				{#snippet control(controlAttributes)}
-					<Input {...controlAttributes} maxlength={120} placeholder="Vaccination" bind:value={service.title} />
+					<Input {...controlAttributes} maxlength={120} bind:value={service.title} />
 				{/snippet}
 			</Field>
 			<Field label="Icône">
@@ -56,6 +58,12 @@
 					<Textarea {...controlAttributes} rows={2} maxlength={600} bind:value={service.description} />
 				{/snippet}
 			</Field>
+			<SiteImageChooser
+				label="Icône personnalisée"
+				defaultDescription="Sans icône personnalisée, celle choisie plus haut est utilisée."
+				bind:image={service.icon}
+				bind:uploadedImagePreviewUrls
+			/>
 		</div>
 	{:else}
 		<p class="text-small text-ink-muted">Aucun service pour l’instant : vaccination, tests, conseils…</p>

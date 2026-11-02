@@ -11,7 +11,10 @@ public sealed record AppointmentDto(
     string PatientName,
     string PatientPhone,
     string Reason,
-    AppointmentStatus Status)
+    AppointmentStatus Status,
+    Guid? ReasonId = null,
+    string? Note = null,
+    string? PatientEmail = null)
 {
     public static AppointmentDto From(Appointment appointment) =>
         new(
@@ -23,5 +26,8 @@ public sealed record AppointmentDto(
             appointment.PatientName,
             appointment.PatientPhone,
             appointment.Reason,
-            appointment.Status);
+            appointment.Status,
+            appointment.ReasonId,
+            appointment.Note,
+            appointment.PatientEmail);
 }

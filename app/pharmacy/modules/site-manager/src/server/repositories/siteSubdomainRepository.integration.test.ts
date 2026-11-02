@@ -46,4 +46,14 @@ describe('changeSiteSubdomain', () => {
 		expect(await changeSiteSubdomain(secondTenantId, `${testSubdomainPrefix}port`)).toBe('taken');
 		expect(await findCurrentSiteSubdomain(secondTenantId)).toBe(`${testSubdomainPrefix}gare`);
 	});
+
+	// Même avec un rôle qui contourne la Row-Level Security (le superutilisateur, en dev).
+	it('refuse l’adresse actuelle d’un autre site', async () => {
+		await changeSiteSubdomain(firstTenantId, `${testSubdomainPrefix}port`);
+		await changeSiteSubdomain(secondTenantId, `${testSubdomainPrefix}gare`);
+
+		expect(await changeSiteSubdomain(secondTenantId, `${testSubdomainPrefix}port`)).toBe('taken');
+		expect(await findCurrentSiteSubdomain(secondTenantId)).toBe(`${testSubdomainPrefix}gare`);
+		expect(await findCurrentSiteSubdomain(firstTenantId)).toBe(`${testSubdomainPrefix}port`);
+	});
 });

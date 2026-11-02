@@ -100,21 +100,64 @@ composants ne changent pas, et l'édition les range à part, sous « Couleurs et
 - Ne propose que ce que ton layout affiche proprement, et importe dans ton CSS chaque police
   proposée : le navigateur ne télécharge que celle qui s'affiche.
 
-## 3. Un composant par module
+## 3. Un composant par module et par section fixe
 
-Il y a 6 modules. Ton layout **doit** fournir un composant pour chacun, sinon il ne compile pas. Le
-moteur ne rendra un module que si la pharmacie l'a activé.
+Un site a deux sortes de blocs. Ton layout **doit** fournir un composant pour chacun, sinon il ne
+compile pas.
 
-Chaque composant reçoit les props calculées par le moteur pour ce module :
+- les **sections fixes** : toujours affichées, ni activables, ni déplaçables, ni imposables par un
+  groupement. Il y en a 4 : `hero`, `findUs`, `onDuty`, `openingHours` ;
+- les **modules** : la pharmacie les active et choisit leur ordre. Il y en a 8. Le moteur ne rend un
+  module que s'il est activé. `loyaltyCard` n'est rendu que si la pharmacie appartient à un groupement.
+
+Une section fixe ne reçoit jamais les réglages du layout : une valeur par défaut propre au layout (une
+accroche, par exemple) vit dans le composant, qui prend `props.headline ?? maValeurParDéfaut`.
+
+### Les sections fixes
+
+| Section | Props reçues | Type à importer |
+|---|---|---|
+| `hero` | `pharmacy`, `imageUrl?` (l'image de la pharmacie : sans elle, prévois ton illustration par défaut), `headline?` | `HeroSectionProps` |
+| `findUs` | `name`, `address`, `addressLabel`, `phone`, `accessInstructions?`, `parking?`, `publicTransport?`, `directionsUrl`, `mapEmbedUrl?` (à mettre dans une `iframe`) | `FindUsSectionProps` |
+| `onDuty` | `announcement?` (la garde en cours ou à venir), `hotline` (le 3237, toujours fourni) | `OnDutySectionProps` |
+| `openingHours` | `days[]` (`label`, `openingPeriodLabels[]`, `isToday`) | `OpeningHoursSectionProps` |
+
+### Les modules
 
 | Module | Props reçues | Type à importer |
 |---|---|---|
-| `openingHours` | `days[]` (`label`, `openingPeriodLabels[]`, `isToday`), `onDutyAnnouncement?`, `onDutyHotline` | `OpeningHoursModuleProps` |
 | `team` | `members[]` (`fullName`, `role`, `photoUrl?`, `initials`) | `TeamModuleProps` |
 | `services` | `services[]` (`title`, `description`, `iconName?`) | `ServicesModuleProps` |
 | `news` | `articles[]` (`title`, `summary`, `imageUrl?`, `publishedAt`, `publishedAtLabel`), du plus récent au plus ancien | `NewsModuleProps` |
 | `prescriptionUpload` | `introduction?`, `submitPrescription`, `validatePrescription` | `PrescriptionUploadModuleProps` |
 | `loyaltyCard` | `text`, `url`, `imageUrl?` | `LoyaltyCardModuleProps` |
+| `brands` | `brands[]` (`name`, `logoUrl?`, `url?`) | `BrandsModuleProps` |
+| `onlineOrder` | `introduction?`, `orderPath` (toujours `/commandeenligne` : n'affiche jamais l'adresse externe) | `OnlineOrderModuleProps` |
+| `appointment` | `mode: 'builtIn'` → `introduction?`, `today`, `pharmacyName`, `getOptions`, `listAvailableDays`, `listAvailableSlots`, `bookAppointment`, `validateAppointment` ; `mode: 'externalLink'` → `appointmentPath` (toujours `/rendezvous`) | `AppointmentModuleProps` |
+
+`announcement.status` vaut `onDutyNow` ou `onDutyLaterToday`. La garde **en cours** est déjà dite par
+le statut d'ouverture (§5, `openingStatus`) : n'affiche le bandeau de garde que pour `onDutyLaterToday`,
+sinon le visiteur lit deux fois la même chose.
+
+Pour le rendez-vous intégré, `createAppointmentWizardState({ actions: props, today: props.today })`
+fournit tout l'état (motif → jour → heure → coordonnées → `done`) : le layout ne fait que l'afficher.
+
+- Pas d'étape de relecture : le récapitulatif (motif, jour, heure, avec « Changer » →
+  `goBackTo('time')`) s'affiche **au-dessus** des coordonnées, et le bouton de cette étape appelle
+  `send()`. Une étape de moins, c'est un abandon de moins.
+- `contact` contient `firstName`, `lastName`, `phone`, `email` (facultatif : c'est par lui que part la
+  confirmation, dis-le) et `note`. `prefillContact(...)` remplit ce qui est encore vide.
+- `sendStatus()` : `requested` (→ `confirmation()`), `slotTaken` (les créneaux se rechargent seuls),
+  `reasonUnavailable`, `failed`.
+
+Exemple complet : `engine/layouts/src/essential/organisms/AppointmentWizard.tsx`.
+
+### Les adresses stables
+
+`/commandeenligne` (et `/rendezvous` quand le rendez-vous est un lien externe) redirigent en 302 vers
+l'adresse configurée par la pharmacie : un QR code imprimé ne change jamais. Le moteur répond
+`{ status: 'redirect', location }` ; c'est l'app qui sert le site qui envoie le 302. Les layouts
+pointent toujours vers `orderPath` et `appointmentPath`.
 
 ```tsx
 // organisms/TeamSection.tsx
@@ -179,8 +222,11 @@ Les champs du formulaire (`PrescriptionForm`) :
 | Champ | Obligatoire | Note |
 |---|---|---|
 | `firstName`, `lastName`, `birthDate` (`2026-03-14`), `phone` | oui | `<input type="date">` pour la date de naissance |
-| `plannedVisitAt` (`2026-03-14T17:30`) | oui | l'heure de passage prévue, `<input type="datetime-local">` |
-| `prescriptionFile` | oui | photo ou PDF |
+| `prescriptionFile`, `additionalPrescriptionPages` | oui (la 1re page) | photo ou PDF ; jusqu'à `MaximumPrescriptionPages` pages : passe par `prescriptionPages()` et `setPrescriptionPages(pages)` plutôt que par les deux champs |
+| `email` | non | c'est par lui que le patient est prévenu quand c'est prêt : dis-le |
+| `plannedVisitAt` (`2026-03-14T17:30`) | non | vide = « dès que c'est prêt » ; propose les choix de `listPlannedVisitChoices(new Date())` (dans un `onMount`), plus un `datetime-local` pour un autre jour |
+| `isRenewal` | non | « c'est un renouvellement » |
+| `noteFromPatient` | non | un mot pour l'équipe, `PrescriptionNoteMaximumLength` caractères au plus |
 | `hasAlreadyVisited` | — | « je suis déjà venu » : la carte Vitale et la mutuelle sont alors écartées à l'envoi, **masque-les** |
 | `socialSecurityNumber` **ou** `vitalCardPhoto` | non | au choix ; propose un sélecteur photo / numéro plutôt que deux champs |
 | `mutualCardFront`, `mutualCardBack` | non | un seul choix côté interface (`setMutualCardFiles`) : un PDF, ou une à deux photos ; le 1er fichier va dans `Front`, le 2e dans `Back` |
@@ -193,6 +239,13 @@ visiteur comme un gain de temps, pas comme une corvée.
 | `updateField(nom, valeur)` | Change un champ et efface son erreur |
 | `validateFields(noms)` | Valide ces champs seulement, affiche leurs erreurs, dit s'ils sont valides : pour passer à l'étape suivante |
 | `send()` | Valide, envoie, met à jour `status()` (`editing`, `sending`, `sent`, `failed`), renvoie les erreurs par champ |
+| `prefill(patient)` | Remplit l'identité et le contact encore vides |
+| `prescriptionPages()`, `setPrescriptionPages(pages)` | Les pages de l'ordonnance, dans l'ordre |
+
+**Retenir le patient sur cet appareil** : `readRememberedPatient()` (dans un `onMount`, puis
+`prefill`), `rememberPatient(...)` ou `forgetPatient()` après un envoi réussi. Une case à cocher,
+**décochée par défaut** sauf si le patient était déjà retenu. Seule l'identité est gardée, jamais un
+document ni une note : c'est une donnée de santé.
 
 Sans l'état fourni, `props.submitPrescription(form)` valide puis envoie (`{ outcome: 'sent' }`,
 `{ outcome: 'invalid', errorsByField }` ou `{ outcome: 'failed' }`), et `props.validatePrescription(form)`
@@ -230,12 +283,17 @@ export default definePage<MonLayoutSettings>({
             <a href="/ordonnance">Envoyer une ordonnance</a>
           </Show>
 
-          {/* Chaque module rend ton composant, ou rien s'il est désactivé. */}
-          <props.pageKit.Module name="openingHours" />
-          <props.pageKit.Module name="services" />
-          <props.pageKit.Module name="team" />
-          <props.pageKit.Module name="news" />
-          <props.pageKit.Module name="loyaltyCard" />
+          {/* Une section fixe est toujours rendue. */}
+          <props.pageKit.FixedSection name="hero" />
+          <props.pageKit.FixedSection name="onDuty" />
+          <props.pageKit.FixedSection name="openingHours" />
+
+          {/* Les modules activés, dans l'ordre choisi par la pharmacie. `accepts` limite ceux d'une zone :
+              un module qui a sa page à part (l'équipe) n'apparaît pas aussi ici. */}
+          <props.pageKit.PlacedModules accepts={['services', 'news', 'loyaltyCard']} />
+
+          <props.pageKit.FixedSection name="findUs" />
+          {/* Un seul module à un endroit précis : <props.pageKit.Module name="team" /> */}
         </PageTemplate>
       ),
     }),
@@ -249,30 +307,37 @@ Le `title` devient le titre de l'onglet du navigateur : « Accueil · Pharmacie 
 | `props.pharmacy` | Nom, adresse, téléphone, e-mail, logo, groupement (lecture seule) |
 | `props.settings` | Tes réglages, valeurs par défaut comprises |
 | `props.modules` | Les props de chaque module, `undefined` s'il est désactivé |
-| `props.pageKit` | `Page`, `LegalNotice`, `Module` |
+| `props.pageKit` | `Page`, `LegalNotice`, `Module`, `PlacedModules`, `FixedSection` |
+| `props.openingStatus()` | `OpeningStatus` : `state` (`open`, `closingSoon`, `closed`, `onDuty`), `label` (« Ouvert », « Fermé »…), `detail` (« jusqu'à 19 h 30 », « ouvre demain à 9 h »). Un accessor qui se met à jour seul : c'est la première chose que cherche un visiteur, mets-le en haut de chaque page |
 
 ## 6. Le layout : une valeur de type `PharmacySiteLayout`
 
 Un layout n'est pas une configuration : c'est une valeur d'un type que le moteur sait rendre, et
-seulement celui-là. Le type `PharmacySiteLayout` exige un composant pour chacun des 6 modules, sous le
-nom du module tel qu'il arrive de l'API. Un module oublié, ou un composant qui attend de mauvaises
+seulement celui-là. Le type `PharmacySiteLayout` exige un composant pour chacun des 8 modules et des 4 sections fixes,
+sous le nom tel qu'il arrive de l'API. Un module ou une section oubliés, ou un composant qui attend de mauvaises
 props, ne compile pas.
 
 ```ts
 // monLayout.ts
 import type { PharmacySiteLayout } from '@crystal-pharm/renderer';
 import { monLayoutSettingsSchema, type MonLayoutSettings } from './monLayoutManifest';
-// … imports des 6 composants de modules …
+// … imports des composants des modules et des sections fixes …
 import './monLayout.css';
 
 export const monLayout: PharmacySiteLayout<MonLayoutSettings> = {
   settingsSchema: monLayoutSettingsSchema,
+  hero: HeroSection,
+  findUs: FindUsSection,
+  onDuty: OnDutySection,
   openingHours: OpeningHoursSection,
   team: TeamSection,
   services: ServicesSection,
   news: NewsSection,
   prescriptionUpload: PrescriptionSection,
   loyaltyCard: LoyaltyCardSection,
+  brands: BrandsSection,
+  appointment: AppointmentSection,
+  onlineOrder: OnlineOrderSection,
 };
 // Sans `team` : « Property 'team' is missing in type … PharmacySiteLayout »
 ```

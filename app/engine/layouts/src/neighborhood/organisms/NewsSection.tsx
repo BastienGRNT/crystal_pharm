@@ -6,9 +6,9 @@ import { NewsCard } from '../molecules/NewsCard';
 export function NewsSection(props: NewsModuleProps) {
   return (
     <section class="nb-section" id="actualites">
-      <SectionHeading eyebrow="Du nouveau" title="Actualités" />
-      <div class="nb-card-grid">
-        <For each={props.articles}>{(article) => <NewsCard article={article} />}</For>
+      <SectionHeading eyebrow="À la pharmacie" title="Actualités" />
+      <div class="nb-news">
+        <For each={props.articles}>{(article, index) => <NewsCard article={article} isFeatured={index() === 0} />}</For>
       </div>
     </section>
   );

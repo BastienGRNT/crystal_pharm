@@ -1,8 +1,8 @@
-import type { OpeningHoursModuleData } from '@crystal-pharm/schema';
+import type { OpeningHoursSectionData } from '@crystal-pharm/schema';
 import { describe, expect, it } from 'vitest';
 import { computePageCacheExpiry, maximumPageAgeMilliseconds } from './pageCacheExpiry';
 
-const closedAllWeek: OpeningHoursModuleData['weeklySchedule'] = {
+const closedAllWeek: OpeningHoursSectionData['weeklySchedule'] = {
   monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [],
 };
 const farFuture = new Date('2100-01-01T00:00:00Z');

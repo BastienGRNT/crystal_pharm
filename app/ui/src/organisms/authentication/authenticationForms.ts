@@ -1,3 +1,5 @@
+import type { IconName } from '../../atoms/icons/icons';
+
 export type LoginCredentials = { email: string; password: string };
 
 export type RegistrationDetails = LoginCredentials & { firstName: string; lastName: string };
@@ -10,4 +12,12 @@ export type AuthenticationSpace = {
 	label: string;
 	headline: string;
 	description: string;
+	/** Trois étiquettes empilées sous l'accroche : ce qu'on fait ici, en exemples concrets. */
+	highlights?: AuthenticationHighlight[];
+};
+
+export type AuthenticationHighlight = {
+	icon: IconName;
+	title: string;
+	detail: string;
 };

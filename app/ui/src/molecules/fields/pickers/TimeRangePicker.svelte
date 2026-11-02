@@ -34,7 +34,7 @@
 </script>
 
 <div
-	class="group inline-flex h-control items-center gap-1.5 rounded-sm border border-line-strong bg-surface pl-3 tabular-nums transition-[border-color,box-shadow] duration-[120ms] focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft-value)] {onRemove
+	class="group inline-flex h-control items-center gap-1.5 rounded-control border border-line-strong/55 bg-field pl-3 tabular-nums transition-[border-color,box-shadow] duration-[120ms] focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft-value)] {onRemove
 		? 'pr-1'
 		: 'pr-3'}"
 >

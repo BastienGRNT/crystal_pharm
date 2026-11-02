@@ -1,8 +1,9 @@
 # Le design system — `app/ui/`
 
 Commun aux trois apps Svelte (`pharmacy`, `group`, `admin`) : rien ici ne
-connaît l'une d'elles. Direction « Santé » (IBM Plex Sans, colonne de
-navigation sombre).
+connaît l'une d'elles. Direction « Étiquette » : fond crème, bandeau d'encre,
+Manrope partout (épaissie par `font-display` pour les titres et les
+chiffres), perforations et encoches de ticket.
 
 - `tokens/theme.css` : la seule source des couleurs, polices, rayons et
   espacements (clair et sombre), y compris une couleur par module (`ModuleKey`
@@ -23,14 +24,16 @@ navigation sombre).
   et de créneaux, vit dans son module.
 - Composants **purs** : props en entrée, callbacks en sortie. Aucun fetch,
   aucun store global, aucune connaissance d'une app, d'un module ou du C#.
-- `AppShell` (la colonne `SideNav`, la barre `TopBar`, le contenu) reçoit le
-  menu en props (`navigationLinks`) et la personne connectée : chaque app
-  tient sa propre liste.
+- `AppShell` (le bandeau `NavigationBand` et ses onglets en haut, `TabBar` en
+  mobile, le contenu) reçoit le menu en props (`navigationLinks`, avec
+  `alsoCurrentFor` dans `navigation.ts`) et la personne connectée : chaque app
+  tient sa propre liste. Dans une page : `PageTabs` sous le `PageHeader`,
+  `FormSection` par bloc de formulaire, `StickyActionBar` pour enregistrer.
 - Les écrans communs aux trois apps vivent ici : `AuthenticationScreen`,
   `LoginForm`, `RegisterForm` (l'envoi est un callback, qui renvoie le message
   d'échec), `ThemeToggle` (le thème choisi, posé avant l'affichage par le
   script de `app.html` de chaque app). Un champ = `Field` + `Input`.
-- Une app prend sa couleur principale par le `data-module` de son `<body>`
-  (`app.html`), jamais en dur dans un composant.
+- Un seul vert de marque ; chaque app prend sa teinte par le `data-module` de
+  son `<body>` (`app.html`), jamais en dur dans un composant.
 - Les types partagés vont dans un `.ts`, jamais exportés depuis un `.svelte`.
 - La référence visuelle : `tokens/theme.css` et les composants eux-mêmes.

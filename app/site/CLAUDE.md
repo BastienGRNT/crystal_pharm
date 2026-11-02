@@ -41,6 +41,10 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 - Le navigateur ne garde rien de partagé : `Cache-Control: private, max-age=0`
   pour une page, `no-store` pour le reste.
 - Il n'écrit jamais dans `content`.
+- Il compte les pages vues (`shared/site-traffic-db`) : seulement une page
+  trouvée, rendue ou rejouée du cache, ni robot ni préchargement ; une vue
+  arrivée d'ailleurs que du site commence une visite. Additionnées en
+  mémoire, écrites toutes les 30 s, jamais loguées.
 
 ## L'aperçu (`/__preview`)
 

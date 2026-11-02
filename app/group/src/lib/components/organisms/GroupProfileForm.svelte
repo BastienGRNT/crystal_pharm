@@ -9,7 +9,7 @@
 		type PharmacyGroupProfileInput
 	} from '@crystal-pharm/group-db/domain';
 	import { wholeFormErrorKey, type FieldErrors } from '@crystal-pharm/pharmacy-db/domain';
-	import { Alert, Button, Card, Field, ImagePicker, Input, Textarea } from '@crystal-pharm/ui';
+	import { Alert, Button, Field, FormSection, ImagePicker, Input, StickyActionBar, Textarea, UnsavedChangesGuard } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 
 	type GroupProfileFormProps = {
@@ -22,14 +22,19 @@
 
 	// Le formulaire part du contenu reçu puis vit sa vie : la page est rechargée après chaque envoi.
 	const profile = $state(untrack(() => ({ ...initialProfile })));
+	const savedFingerprint = untrack(() => JSON.stringify(profile));
+	let hasChosenImage = $state(false);
+	const hasUnsavedChanges = $derived(hasChosenImage || JSON.stringify(profile) !== savedFingerprint);
+
+	function noticeChosenImage(event: Event): void {
+		if (event.target instanceof HTMLInputElement && event.target.type === 'file') hasChosenImage = true;
+	}
 	const imageHint = `JPEG, PNG, WebP ou SVG, ${maximumPharmacyGroupImageMegabytes} Mo au plus.`;
 </script>
 
-<form method="POST" enctype="multipart/form-data" class="grid gap-3.5">
-	<Card>
-		<div class="grid gap-4">
-			<h2 class="title-2 text-ink">Identité</h2>
-
+<form method="POST" enctype="multipart/form-data" class="grid gap-8" onchange={noticeChosenImage}>
+	<FormSection title="Identité" description="Votre nom et votre logo, tels que vos pharmacies membres les affichent.">
+		<div class="grid gap-5">
 			<Field label="Nom du groupement" errorMessage={fieldErrors.name}>
 				{#snippet control(controlAttributes)}
 					<Input {...controlAttributes} name="name" autocomplete="organization" required bind:value={profile.name} />
@@ -51,15 +56,10 @@
 				{/snippet}
 			</Field>
 		</div>
-	</Card>
+	</FormSection>
 
-	<Card>
-		<div class="grid gap-4">
-			<div class="grid gap-1">
-				<h2 class="title-2 text-ink">Carte de fidélité</h2>
-				<p class="text-small text-ink-muted">Facultatif : remplissez seulement ce que votre groupement propose.</p>
-			</div>
-
+	<FormSection title="Carte de fidélité" description="Facultatif : remplissez seulement ce que votre groupement propose.">
+		<div class="grid gap-5">
 			<Field label="Image de la carte" hint={imageHint} errorMessage={fieldErrors.loyaltyCardImage}>
 				{#snippet control(controlAttributes)}
 					<ImagePicker
@@ -75,7 +75,7 @@
 
 			<Field
 				label="Lien vers la carte"
-				hint="La page où un patient obtient ou consulte sa carte."
+				hint="La page où un patient obtient ou consulte sa carte. Ex. : https://www.mon-groupement.fr/carte"
 				errorMessage={fieldErrors.loyaltyCardUrl}
 			>
 				{#snippet control(controlAttributes)}
@@ -84,7 +84,6 @@
 						name="loyaltyCardUrl"
 						inputmode="url"
 						autocomplete="url"
-						placeholder="https://www.mon-groupement.fr/carte"
 						bind:value={profile.loyaltyCardUrl}
 					/>
 				{/snippet}
@@ -92,7 +91,7 @@
 
 			<Field
 				label="Message"
-				hint="{maximumLoyaltyCardMessageLength} caractères au plus."
+				hint="Ex. : « Retrouvez votre carte de fidélité en pharmacie. » {maximumLoyaltyCardMessageLength} caractères au plus."
 				errorMessage={fieldErrors.loyaltyCardMessage}
 			>
 				{#snippet control(controlAttributes)}
@@ -101,19 +100,25 @@
 						name="loyaltyCardMessage"
 						rows={2}
 						maxlength={maximumLoyaltyCardMessageLength}
-						placeholder="Retrouvez votre carte de fidélité en pharmacie."
 						bind:value={profile.loyaltyCardMessage}
 					/>
 				{/snippet}
 			</Field>
 		</div>
-	</Card>
+	</FormSection>
 
 	{#if fieldErrors[wholeFormErrorKey]}
 		<Alert tone="danger">{fieldErrors[wholeFormErrorKey]}</Alert>
 	{/if}
 
-	<div>
-		<Button type="submit">Enregistrer</Button>
-	</div>
+	<StickyActionBar>
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<p class="text-small {hasUnsavedChanges ? 'font-bold text-warning' : 'text-ink-muted'}" role="status">
+				{hasUnsavedChanges ? 'Modifications non enregistrées' : 'Tout est enregistré'}
+			</p>
+			<Button type="submit" icon="check">Enregistrer</Button>
+		</div>
+	</StickyActionBar>
 </form>
+
+<UnsavedChangesGuard {hasUnsavedChanges} />

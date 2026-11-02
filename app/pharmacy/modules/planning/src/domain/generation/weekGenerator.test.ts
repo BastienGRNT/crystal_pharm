@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { detectPlanningIssues } from '../issues/planningIssues';
+import { collectiveAgreementOvertimeRules } from '../overtime/overtimePay';
 import { defaultPlanningRules } from '../rules/planningRules';
 import type { Employee } from '../planning';
 import { generateWeek } from './weekGenerator';
@@ -28,6 +29,7 @@ const buildInput = (employees: GenerationEmployee[], overrides: Partial<Generati
 	openingPeriodsByDate: weekDates.map((_, index) => (index < 5 ? workingDay : [])),
 	requirementWindowsByDate: weekDates.map(() => []),
 	rules: defaultPlanningRules,
+	overtimeRules: collectiveAgreementOvertimeRules,
 	employees,
 	absences: [],
 	availabilityRules: [],

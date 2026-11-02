@@ -1,1 +1,1 @@
-export { load } from '@crystal-pharm/prescriptions/server';
+export { load, actions } from '@crystal-pharm/prescriptions/server';

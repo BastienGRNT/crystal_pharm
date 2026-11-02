@@ -1,21 +1,21 @@
-import { ModuleNameSchema, toThemeCssVariables, type PharmacyInfo, type ThemeCssVariables } from '@crystal-pharm/schema';
+import { ModuleNameSchema, toThemeCssVariables, type ThemeCssVariables } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutPage } from '../contract/definePage';
 import type { Part } from '../contract/Part';
-import type { LayoutModuleComponents, PharmacySiteLayout } from '../contract/PharmacySiteLayout';
-import type { EnabledModulesProps } from '../module-props/toEnabledModulesProps';
-import type { PageKit } from '../page-kit/createPageKit';
+import type { LayoutFixedSectionComponents, LayoutModuleComponents, PharmacySiteLayout } from '../contract/PharmacySiteLayout';
+import type { LayoutPageProps } from '../contract/LayoutPageProps';
+import { fixedSectionNames } from '../section-props/FixedSectionPropsByName';
 
 /** Un layout tel que le moteur le manipule, quel que soit le type de ses réglages. */
 export type RegisteredLayout = {
   id: string;
-  moduleComponents: LayoutModuleComponents;
+  layoutComponents: LayoutModuleComponents & LayoutFixedSectionComponents;
   /** Valide les réglages du tenant, les complète par leurs valeurs par défaut et en tire les variables CSS du thème. */
   readSettings: (layoutSettings: unknown) => ReadLayoutSettings;
   findPage: (requestedPath: string) =>
     | {
         title: string;
-        render: (input: { pharmacy: PharmacyInfo; settings: ReadLayoutSettings; modules: EnabledModulesProps; pageKit: PageKit }) => Part<'page'>;
+        render: (input: Omit<LayoutPageProps<unknown>, 'settings'> & { settings: ReadLayoutSettings }) => Part<'page'>;
       }
     | undefined;
 };
@@ -70,7 +70,7 @@ export function createLayoutRegistry(files: {
 function toRegisteredLayout(layoutId: string, layout: PharmacySiteLayout<unknown>, pagesByPath: Map<string, LayoutPage<unknown>>): RegisteredLayout {
   return {
     id: layoutId,
-    moduleComponents: layout,
+    layoutComponents: layout,
     readSettings: (layoutSettings) => {
       const settingsResult = v.safeParse(layout.settingsSchema, layoutSettings);
       if (!settingsResult.success) {
@@ -83,7 +83,7 @@ function toRegisteredLayout(layoutId: string, layout: PharmacySiteLayout<unknown
       if (!page) return undefined;
       return {
         title: page.title,
-        render: (input) => page.component({ pharmacy: input.pharmacy, settings: input.settings.settings, modules: input.modules, pageKit: input.pageKit }),
+        render: (input) => page.component({ ...input, settings: input.settings.settings }),
       };
     },
   };
@@ -109,7 +109,7 @@ function folderOf(filePath: string): string {
 
 function isPharmacySiteLayout(value: unknown): value is PharmacySiteLayout<unknown> {
   if (typeof value !== 'object' || value === null || !('settingsSchema' in value)) return false;
-  return ModuleNameSchema.options.every((moduleName) => moduleName in value);
+  return [...ModuleNameSchema.options, ...fixedSectionNames].every((componentName) => componentName in value);
 }
 
 function isLayoutPage(value: unknown): value is LayoutPage<unknown> {

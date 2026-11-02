@@ -16,7 +16,7 @@
 {#if issues.length === 0}
 	<p class="flex items-center gap-2 text-body text-success">
 		<Icon name="check-circle" />
-		Tout est bon : l’effectif, les contrats et les règles de la pharmacie sont respectés.
+		Effectif, contrats et règles respectés.
 	</p>
 {:else}
 	<details class="rounded-md border border-line bg-surface shadow-card" open={alertCount > 0}>

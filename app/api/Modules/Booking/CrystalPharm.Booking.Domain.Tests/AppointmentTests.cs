@@ -49,6 +49,21 @@ public sealed class AppointmentTests
     }
 
     [Fact]
+    public void An_email_is_optional_and_kept_in_lower_case()
+    {
+        Assert.Null(new PatientContact("Camille Durand", "06 12 34 56 78", "  ").Email);
+        Assert.Equal("camille@example.org", new PatientContact("Camille Durand", "06 12 34 56 78", " Camille@Example.org ").Email);
+    }
+
+    [Theory]
+    [InlineData("camille")]
+    [InlineData("camille@example")]
+    public void A_malformed_email_is_refused(string email)
+    {
+        Assert.Throws<InvalidAppointmentException>(() => new PatientContact("Camille Durand", "06 12 34 56 78", email));
+    }
+
+    [Fact]
     public void An_appointment_has_a_reason_and_an_employee()
     {
         var slot = new AppointmentSlot(Monday, new TimeOnly(8, 45), new TimeOnly(9, 0));

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from '../atoms/actions/Button.svelte';
-	import type { ButtonVariant } from '../atoms/actions/button';
+	import type { ButtonSize, ButtonVariant } from '../atoms/actions/button';
 	import type { IconName } from '../atoms/icons/icons';
 
 	type ConfirmButtonProps = {
@@ -8,6 +8,7 @@
 		label: string;
 		icon?: IconName;
 		variant?: ButtonVariant;
+		size?: ButtonSize;
 		title: string;
 		description: string;
 		confirmLabel: string;
@@ -21,6 +22,7 @@
 		label,
 		icon,
 		variant = 'secondary',
+		size = 'regular',
 		title,
 		description,
 		confirmLabel,
@@ -35,7 +37,7 @@
 	let dialogElement: HTMLDialogElement | undefined = $state();
 </script>
 
-<Button {variant} {icon} onclick={() => dialogElement?.showModal()}>{label}</Button>
+<Button {variant} {size} {icon} onclick={() => dialogElement?.showModal()}>{label}</Button>
 
 <dialog
 	bind:this={dialogElement}

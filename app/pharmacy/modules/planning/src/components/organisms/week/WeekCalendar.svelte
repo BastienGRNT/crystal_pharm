@@ -17,9 +17,16 @@
 	import { assignEmployeeColorIndexes, formatEmployeeInitials } from '../../../domain/employees/employeeAppearance';
 	import EmployeeInitials from '../../atoms/EmployeeInitials.svelte';
 	import { readEmployeeColorClasses, readShiftBlockClasses } from '../../atoms/employeeColor';
-	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
+	import type { ShiftChange, ShiftMenuTarget } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
-	import { dayStatusClasses, hoursStatusClasses, hoursStatusLabels, weekCalendarHourHeightPixels } from './weekCalendar';
+	import { sumOvertimeMinutes } from '../../../domain/overtime/overtimePay';
+	import {
+		dayStatusClasses,
+		describeEmployeeOvertime,
+		hoursStatusClasses,
+		hoursStatusLabels,
+		weekCalendarHourHeightPixels
+	} from './weekCalendar';
 
 	type WeekCalendarProps = {
 		live: LiveWeekInput;
@@ -30,9 +37,17 @@
 		/** Pendant un geste : le créneau tel qu'il serait, pour juger le résultat avant de lâcher. */
 		onPreview: (preview: ShiftPreview | undefined) => void;
 		onShiftChange: (change: ShiftChange) => void;
+		/** Le clic droit sur un créneau : ce qu'on peut en faire. */
+		onShiftMenu?: (event: MouseEvent, menuTarget: ShiftMenuTarget) => void;
 	};
 
-	let { live, assessment, todayDate, editHrefPrefix, dayHrefPrefix, onPreview, onShiftChange }: WeekCalendarProps = $props();
+	let { live, assessment, todayDate, editHrefPrefix, dayHrefPrefix, onPreview, onShiftChange, onShiftMenu }: WeekCalendarProps = $props();
+
+	function openShiftMenu(event: MouseEvent, shift: Shift, employeeName: string): void {
+		if (!onShiftMenu || shift.id === 'preview') return;
+		event.preventDefault();
+		onShiftMenu(event, { shiftId: shift.id, label: `Créneau de ${employeeName}, ${shift.startTime} – ${shift.endTime}` });
+	}
 
 	// L'axe ne dépend que de l'enregistré : il ne bouge pas sous le doigt.
 	const range = $derived(computeWeekTimelineRange(live.shifts, live.openingPeriodsByDate));
@@ -183,8 +198,10 @@
 		<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Employé à suivre et à placer en glissant sur le calendrier">
 			{#each orderedEmployees as employee (employee.id)}
 				{@const hoursOfEmployee = hoursByEmployee.get(employee.id)}
+				{@const overtimeDescription = hoursOfEmployee ? describeEmployeeOvertime(hoursOfEmployee, live.overtimeRules) : undefined}
 				<button
 					type="button"
+					title={overtimeDescription}
 					aria-pressed={brushEmployeeId === employee.id}
 					class="flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-small text-ink transition-colors {brushEmployeeId === employee.id
 						? `font-semibold ${readEmployeeColorClasses(colorIndexByEmployee.get(employee.id)).selected}`
@@ -198,6 +215,11 @@
 							{formatDuration(hoursOfEmployee.plannedMinutes)}{hoursOfEmployee.contractMinutes !== undefined ? ` / ${formatDuration(hoursOfEmployee.contractMinutes)}` : ''}
 							{#if hoursOfEmployee.status !== 'ok'}<span class="sr-only"> ({hoursStatusLabels[hoursOfEmployee.status]})</span>{/if}
 						</span>
+						{#if overtimeDescription}
+							<span class="text-small font-semibold text-warning tabular-nums">
+								+{formatDuration(sumOvertimeMinutes(hoursOfEmployee.overtime))} sup<span class="sr-only"> — {overtimeDescription}</span>
+							</span>
+						{/if}
 					{/if}
 				</button>
 			{/each}
@@ -305,6 +327,7 @@
 								style:left="calc({(laneIndex / weekLaneCount) * 100}% + 1px)"
 								style:width="calc({100 / weekLaneCount}% - 2px)"
 								onpointerdown={(event) => startShiftGesture(event, shift, 'move')}
+								oncontextmenu={(event) => openShiftMenu(event, shift, employee?.fullName ?? '')}
 							>
 								<span aria-hidden="true" class="absolute inset-x-0 top-0 z-20 h-2 cursor-ns-resize" onpointerdown={(event) => startShiftGesture(event, shift, 'start')}></span>
 								<a

@@ -6,7 +6,7 @@
 		type PharmacyContactDetailsFieldName,
 		type PharmacyContactDetailsInput
 	} from '@crystal-pharm/pharmacy-db/domain';
-	import { Alert, Button, Field, Input } from '@crystal-pharm/ui';
+	import { Alert, Button, Field, Input, UnsavedChangesGuard } from '@crystal-pharm/ui';
 	import { untrack, type Snippet } from 'svelte';
 	import StreetAddressField from '../molecules/StreetAddressField.svelte';
 	import type { FrenchAddress } from '../molecules/frenchAddressSearch';
@@ -25,6 +25,8 @@
 
 	// Le formulaire part du contenu reçu puis vit sa vie : la page est rechargée après chaque envoi.
 	const contactDetails = $state(untrack(() => ({ ...initialContactDetails })));
+	const savedFingerprint = untrack(() => JSON.stringify(contactDetails));
+	const hasUnsavedChanges = $derived(JSON.stringify(contactDetails) !== savedFingerprint);
 
 	function fillAddress(chosenAddress: FrenchAddress): void {
 		contactDetails.postalCode = chosenAddress.postalCode;
@@ -101,5 +103,10 @@
 	<div class="mt-1 flex flex-wrap items-center gap-2">
 		<Button type="submit">{submitLabel}</Button>
 		{@render secondaryAction?.()}
+		{#if hasUnsavedChanges}
+			<p class="text-small text-ink-muted" role="status">Modifications non enregistrées</p>
+		{/if}
 	</div>
 </form>
+
+<UnsavedChangesGuard {hasUnsavedChanges} />

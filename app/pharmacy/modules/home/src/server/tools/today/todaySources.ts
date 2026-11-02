@@ -30,6 +30,23 @@ export type TodayAppointmentsSummary = {
 	newAppointmentQuery: string;
 };
 
+/** Des nombres seulement : l'accueil ne montre jamais un patient ni son ordonnance. */
+export type TodayPrescriptionsSummary = {
+	receivedCount: number;
+	inPreparationCount: number;
+	waitingForProductsCount: number;
+	readyCount: number;
+	overdueCount: number;
+	/** Le patient passe dans les deux heures. */
+	soonCount: number;
+	/** Relatives au module : `?statut=received`. */
+	receivedQuery: string;
+	readyQuery: string;
+};
+
+/** Une garde, avec son fuseau horaire (2026-10-21T19:00:00+02:00). */
+export type TodayOnDutyPeriod = { startsAt: string; endsAt: string };
+
 export type TodayManager = { accountId: string; tenantId: string };
 
 export type TodaySources = {
@@ -41,4 +58,11 @@ export type TodaySources = {
 		getTodayAppointments: (manager: TodayManager, isoDate: string) => Promise<TodayAppointmentsSummary>;
 		confirmAppointment: (manager: TodayManager, appointmentId: string) => Promise<boolean>;
 	};
+	/** Les ordonnances, montées sur `href`. */
+	prescriptions: {
+		href: string;
+		getTodayPrescriptions: (manager: TodayManager, now: Date) => Promise<TodayPrescriptionsSummary>;
+	};
+	/** Les gardes, saisies avec le site : `href` est leur page. */
+	onDuty: { href: string; getNextOnDutyPeriod: (tenantId: string, now: Date) => Promise<TodayOnDutyPeriod | undefined> };
 };

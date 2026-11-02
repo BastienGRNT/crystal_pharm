@@ -48,6 +48,19 @@ export function findPlanOfToolKeys(plans: readonly SubscriptionPlan[], toolKeys:
 	return plans.find((plan) => plan.toolKeys.length === toolKeys.length && plan.toolKeys.every((toolKey) => toolKeys.includes(toolKey)));
 }
 
+/**
+ * La formule cochée d'office pour une pharmacie qui n'en a pas : celle du module
+ * qu'elle a demandé, le pack de préférence puisqu'il le contient aussi.
+ */
+export function findPlanToSuggest(plans: readonly SubscriptionPlan[], requestedToolKey: string | undefined): SubscriptionPlan | undefined {
+	const choosablePlans = plans.filter((plan) => !plan.isAlreadyIncluded);
+	const plansWithRequestedTool = choosablePlans.filter((plan) =>
+		plan.featureToolKeys.some((toolKey) => toolKey === requestedToolKey || findIncludedToolKeys(toolKey).some((includedToolKey) => includedToolKey === requestedToolKey))
+	);
+	const candidatePlans = plansWithRequestedTool.length > 0 ? plansWithRequestedTool : choosablePlans;
+	return candidatePlans.find((plan) => plan.isFeatured) ?? (plansWithRequestedTool.length > 0 ? plansWithRequestedTool[0] : undefined);
+}
+
 function buildSinglePlan(catalog: ToolCatalog, coverages: readonly ToolCoverage[], toolKey: ToolKey): SubscriptionPlan {
 	const tool = findTool(toolKey);
 	const quote = quoteTools({ catalog, coverages, selectedToolKeys: [toolKey] });
@@ -86,11 +99,13 @@ function buildPackPlan(catalog: ToolCatalog, coverages: readonly ToolCoverage[])
 
 /** Ce que la formule apporte : ses Tools, puis ce qui vient avec sans rien payer de plus. */
 export function listPlanFeatures(plan: SubscriptionPlan): { title: string; description?: string }[] {
+	// La formule d'un seul module porte déjà son argument en description : le répéter dans la liste noie le reste.
+	const describeUnlessRepeated = (pitch: string): string | undefined => (pitch === plan.description ? undefined : pitch);
 	return plan.featureToolKeys.flatMap((toolKey) => [
-		{ title: findTool(toolKey).label, description: findTool(toolKey).pitch },
+		{ title: findTool(toolKey).label, description: describeUnlessRepeated(findTool(toolKey).pitch) },
 		...findIncludedToolKeys(toolKey).map((includedToolKey) => ({
 			title: `${findTool(includedToolKey).label} en ligne`,
-			description: findTool(includedToolKey).pitch
+			description: describeUnlessRepeated(findTool(includedToolKey).pitch)
 		}))
 	]);
 }
