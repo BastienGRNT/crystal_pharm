@@ -14,11 +14,11 @@ function requiredText(missingMessage: string) {
 
 const EmailSchema = v.pipe(v.string(), v.email());
 
-const OptionalEmailSchema = v.pipe(
+const RequiredEmailSchema = v.pipe(
 	v.string(),
 	v.trim(),
-	v.check((email) => email === '' || v.is(EmailSchema, email), 'Cet email n’est pas valide. Vérifiez son orthographe.'),
-	v.transform((email) => email || undefined)
+	v.nonEmpty('Indiquez l’email de contact de la pharmacie.'),
+	v.check((email) => v.is(EmailSchema, email), 'Cet email n’est pas valide. Vérifiez son orthographe.')
 );
 
 /** Les coordonnées de la pharmacie : ce que son site affiche et ce qui la situe. */
@@ -28,7 +28,7 @@ export const PharmacyContactDetailsSchema = v.object({
 	postalCode: v.pipe(v.string(), v.trim(), v.regex(/^\d{5}$/, 'Le code postal compte 5 chiffres.')),
 	city: requiredText('Indiquez la ville.'),
 	phoneNumber: PhoneNumberSchema,
-	email: OptionalEmailSchema
+	email: RequiredEmailSchema
 });
 
 /** Ce qu'on saisit : du texte, tel qu'il a été tapé. */

@@ -90,7 +90,7 @@ export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'sub
             <FormField label="Téléphone" error={errorsByField().phone}>
               <input class="cl-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
             </FormField>
-            <FormField label="Email (facultatif)" hint="Pour vous prévenir quand c'est prêt." error={errorsByField().email}>
+            <FormField label="Email" hint="Pour vous prévenir quand c'est prêt." error={errorsByField().email}>
               <input class="cl-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
             </FormField>
           </div>

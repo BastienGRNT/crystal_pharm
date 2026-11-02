@@ -88,7 +88,7 @@ function demoPharmacyOf(personaKey: string, contactDetails: Omit<PharmacyContact
 		accountEmail: persona.email,
 		firstName: persona.firstName,
 		lastName: persona.lastName,
-		contactDetails: { ...contactDetails, phoneNumber: '01 23 45 67 89', email: '' }
+		contactDetails: { ...contactDetails, phoneNumber: '01 23 45 67 89', email: persona.email }
 	};
 }
 
@@ -264,13 +264,13 @@ function fillerPharmacies(): DemoPharmacy[] {
 			accountEmail: demoEmail('halles'),
 			firstName: 'Claire',
 			lastName: 'Petit',
-			contactDetails: { name: 'Pharmacie des Halles', street: '5 rue des Halles', postalCode: '75001', city: 'Paris', phoneNumber: '01 40 00 00 01', email: '' }
+			contactDetails: { name: 'Pharmacie des Halles', street: '5 rue des Halles', postalCode: '75001', city: 'Paris', phoneNumber: '01 40 00 00 01', email: demoEmail('halles') }
 		},
 		{
 			accountEmail: demoEmail('saint-michel'),
 			firstName: 'Louis',
 			lastName: 'Moreau',
-			contactDetails: { name: 'Pharmacie Saint-Michel', street: '40 boulevard Saint-Michel', postalCode: '75006', city: 'Paris', phoneNumber: '01 40 00 00 02', email: '' }
+			contactDetails: { name: 'Pharmacie Saint-Michel', street: '40 boulevard Saint-Michel', postalCode: '75006', city: 'Paris', phoneNumber: '01 40 00 00 02', email: demoEmail('saint-michel') }
 		}
 	];
 }

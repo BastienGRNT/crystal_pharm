@@ -74,7 +74,7 @@ export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'sub
             <FormField label="Téléphone" hint="Si nous avons une question." error={errorsByField().phone}>
               <input class="nb-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
             </FormField>
-            <FormField label="Email" optional hint="Pour être prévenu quand c’est prêt." error={errorsByField().email}>
+            <FormField label="Email" hint="Pour être prévenu quand c’est prêt." error={errorsByField().email}>
               <input class="nb-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
             </FormField>
           </div>

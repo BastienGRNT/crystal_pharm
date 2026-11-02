@@ -18,7 +18,9 @@ import {
 } from '../opening-hours/weeklyOpeningSchedule';
 
 /** La fiche de la pharmacie, telle que `home` l'affiche et que le site la montre. */
-export type PharmacyProfile = PharmacyContactDetails & {
+export type PharmacyProfile = Omit<PharmacyContactDetails, 'email'> & {
+	/** Obligatoire à la saisie, mais absent des pharmacies inscrites avant qu'il le soit. */
+	email: string | undefined;
 	/** `undefined` tant que la pharmacie ne les a pas saisis. */
 	weeklyOpeningSchedule: WeeklyOpeningSchedule | undefined;
 };
@@ -30,7 +32,7 @@ export function toContactDetailsColumns(contactDetails: PharmacyContactDetails) 
 		postalCode: contactDetails.postalCode,
 		city: contactDetails.city,
 		phoneNumber: contactDetails.phoneNumber.toStorageFormat(),
-		email: contactDetails.email ?? null
+		email: contactDetails.email
 	};
 }
 

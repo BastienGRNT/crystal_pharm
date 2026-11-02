@@ -1,6 +1,7 @@
 import { themeChoiceSetting } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutManifest } from '../manifest/LayoutManifest';
+import { apothecaryImages } from './apothecaryImages';
 
 export const apothecarySettingsSchema = v.object({
   /** Une palette fermée de boiseries sombres : le texte crème et les filets dorés restent lisibles sur chacune. */
@@ -23,4 +24,5 @@ export const apothecaryManifest: LayoutManifest = {
   label: 'Apothicaire',
   description: 'L’officine d’autrefois : boiseries, nom de la pharmacie sur une étiquette de bocal, services rangés dans des tiroirs.',
   settingsSchema: apothecarySettingsSchema,
+  images: apothecaryImages,
 };

@@ -89,7 +89,7 @@
 				/>
 			{/snippet}
 		</Field>
-		<Field label="Email de contact (facultatif)" errorMessage={fieldErrors.email}>
+		<Field label="Email de contact" hint="Affiché sur votre site, et utilisé par nous pour vous joindre." errorMessage={fieldErrors.email}>
 			{#snippet control(controlAttributes)}
 				<Input {...controlAttributes} type="email" name="email" autocomplete="email" bind:value={contactDetails.email} />
 			{/snippet}

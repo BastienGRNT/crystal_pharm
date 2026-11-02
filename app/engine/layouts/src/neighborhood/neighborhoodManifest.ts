@@ -1,6 +1,7 @@
 import { themeChoiceSetting, themeColorSetting } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutManifest } from '../manifest/LayoutManifest';
+import { neighborhoodImages } from './neighborhoodImages';
 
 export const neighborhoodSettingsSchema = v.object({
   /** Ses nuances (foncée, douce) en sont tirées par le CSS. */
@@ -23,4 +24,5 @@ export const neighborhoodManifest: LayoutManifest = {
   label: 'Quartier',
   description: 'Chaleureux et très lisible : l’état d’ouverture en tête, les démarches en grand, une barre d’actions sur téléphone.',
   settingsSchema: neighborhoodSettingsSchema,
+  images: neighborhoodImages,
 };

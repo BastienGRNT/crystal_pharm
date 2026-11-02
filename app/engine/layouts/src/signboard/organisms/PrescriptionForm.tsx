@@ -85,7 +85,7 @@ export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'sub
           <summary class="sb-strip__more-toggle">Préciser : retrait, email, message</summary>
           <div class="sb-strip__more-body">
             <PlannedVisitChoices value={form.plannedVisitAt} error={errorsByField().plannedVisitAt} onChange={(value) => updateField('plannedVisitAt', value)} />
-            <FormField label="Email (facultatif)" hint="C'est par lui que nous vous prévenons quand c'est prêt." error={errorsByField().email}>
+            <FormField label="Email" hint="C'est par lui que nous vous prévenons quand c'est prêt." error={errorsByField().email}>
               <input class="sb-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
             </FormField>
             <FormField label="Un mot pour l'équipe (facultatif)" error={errorsByField().noteFromPatient}>

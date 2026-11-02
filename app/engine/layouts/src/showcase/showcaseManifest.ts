@@ -1,6 +1,7 @@
 import { themeChoiceSetting } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutManifest } from '../manifest/LayoutManifest';
+import { showcaseImages } from './showcaseImages';
 
 export const showcaseSettingsSchema = v.object({
   /** Des teintes pâles seulement : le texte noir doit rester lisible sur chacune. */
@@ -22,4 +23,5 @@ export const showcaseManifest: LayoutManifest = {
   label: 'Vitrine',
   description: 'Comme une boutique de parapharmacie : une grande photo de l’officine en tête, une typographie de magazine, des pavés teintés.',
   settingsSchema: showcaseSettingsSchema,
+  images: showcaseImages,
 };

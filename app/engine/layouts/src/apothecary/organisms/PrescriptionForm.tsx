@@ -119,7 +119,7 @@ export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'sub
           <FormField label="Téléphone" error={errorsByField().phone}>
             <input class="ap-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
           </FormField>
-          <FormField label="Email (facultatif)" hint="C'est par lui que nous vous prévenons quand c'est prêt." error={errorsByField().email}>
+          <FormField label="Email" hint="C'est par lui que nous vous prévenons quand c'est prêt." error={errorsByField().email}>
             <input class="ap-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
           </FormField>
           <FormField label="Un mot pour l'équipe (facultatif)" error={errorsByField().noteFromPatient}>

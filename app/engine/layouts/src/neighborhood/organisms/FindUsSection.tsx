@@ -16,6 +16,16 @@ export function FindUsSection(props: FindUsSectionProps) {
           {props.address.postalCode} {props.address.city}
         </p>
         <dl class="nb-find-us__practical">
+          <Show when={props.email}>
+            {(email) => (
+              <div>
+                <dt>Email</dt>
+                <dd>
+                  <a href={`mailto:${email()}`}>{email()}</a>
+                </dd>
+              </div>
+            )}
+          </Show>
           <Show when={props.accessInstructions}>
             {(instructions) => (
               <div>

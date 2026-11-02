@@ -20,8 +20,10 @@ export {
 	renderSiteImageSuggestion,
 	resolveSiteImageUrl,
 	SiteImageSchema,
+	siteImageSlots,
 	siteImageSuggestions,
 	type SiteImage,
+	type SiteImageSlot,
 	type SiteImageSuggestionKey,
 	type SiteImageUrlResolver
 } from './tenant-sites/siteImage';

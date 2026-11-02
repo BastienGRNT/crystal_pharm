@@ -1,6 +1,7 @@
 import { themeChoiceSetting } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutManifest } from '../manifest/LayoutManifest';
+import { clearImages } from './clearImages';
 
 export const clearSettingsSchema = v.object({
   /** Une palette fermée : chaque teinte garde un contraste suffisant en texte blanc et sur le blanc du layout. */
@@ -22,4 +23,5 @@ export const clearManifest: LayoutManifest = {
   label: 'Clair',
   description: 'Précis et lumineux : blanc pur, filets fins, une seule couleur d’accent, les horaires de la semaine en sept colonnes.',
   settingsSchema: clearSettingsSchema,
+  images: clearImages,
 };

@@ -74,7 +74,7 @@ export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'sub
             </FormField>
           </section>
           <section class="sc-desk__section">
-            <FormField label="Email (facultatif)" hint="C'est par lui que nous vous prévenons quand c'est prêt." error={errorsByField().email}>
+            <FormField label="Email" hint="C'est par lui que nous vous prévenons quand c'est prêt." error={errorsByField().email}>
               <input class="sc-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
             </FormField>
             <FormField label="Un mot pour l'équipe (facultatif)" error={errorsByField().noteFromPatient}>

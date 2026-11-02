@@ -3,7 +3,7 @@ import type { NewsModuleProps } from '@crystal-pharm/renderer';
 
 export function NewsCard(props: { article: NewsModuleProps['articles'][number] }) {
   return (
-    <article class="sb-news__card">
+    <article class="sb-news__card" classList={{ 'sb-news__card--text-only': props.article.imageUrl === undefined }}>
       <Show when={props.article.imageUrl}>{(imageUrl) => <img class="sb-news__image" src={imageUrl()} alt="" loading="lazy" />}</Show>
       <time class="sb-news__date" datetime={props.article.publishedAt}>
         {props.article.publishedAtLabel}

@@ -4,11 +4,12 @@
 	import SiteImageChooser from '../molecules/SiteImageChooser.svelte';
 
 	type HeroEditorProps = {
+		layoutId: string;
 		hero: HeroDraft;
 		uploadedImagePreviewUrls: Record<string, string>;
 	};
 
-	let { hero = $bindable(), uploadedImagePreviewUrls = $bindable() }: HeroEditorProps = $props();
+	let { layoutId, hero = $bindable(), uploadedImagePreviewUrls = $bindable() }: HeroEditorProps = $props();
 </script>
 
 <div class="grid gap-4">
@@ -18,6 +19,8 @@
 		{/snippet}
 	</Field>
 	<SiteImageChooser
+		imageSlot="hero"
+		{layoutId}
 		label="Image d’accueil"
 		defaultDescription="Sans choix de votre part, la mise en page affiche son illustration."
 		bind:image={hero.image}

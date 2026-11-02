@@ -738,6 +738,8 @@
   border: 0;
   border-radius: var(--nb-radius);
   background: var(--nb-color-tint);
+  box-shadow: 0 10px 28px -14px rgb(0 0 0 / 0.35);
+  filter: saturate(0.75) hue-rotate(-8deg) brightness(1.03);
 }
 
 /* Rendez-vous */

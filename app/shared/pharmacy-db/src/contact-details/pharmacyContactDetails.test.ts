@@ -9,7 +9,7 @@ const typedContactDetails: PharmacyContactDetailsInput = {
 	postalCode: '80000',
 	city: 'Amiens',
 	phoneNumber: '03.22.12.34.56',
-	email: ''
+	email: ' contact@pharmacie.fr '
 };
 
 describe('PharmacyContactDetailsSchema', () => {
@@ -18,13 +18,13 @@ describe('PharmacyContactDetailsSchema', () => {
 
 		expect(contactDetails.name).toBe('Pharmacie du Port');
 		expect(contactDetails.phoneNumber.toDisplayFormat()).toBe('03 22 12 34 56');
-		expect(contactDetails.email).toBeUndefined();
+		expect(contactDetails.email).toBe('contact@pharmacie.fr');
 	});
 
-	it('garde un email valide', () => {
-		const contactDetails = v.parse(PharmacyContactDetailsSchema, { ...typedContactDetails, email: 'contact@pharmacie.fr' });
+	it('refuse un email vide', () => {
+		const result = v.safeParse(PharmacyContactDetailsSchema, { ...typedContactDetails, email: ' ' });
 
-		expect(contactDetails.email).toBe('contact@pharmacie.fr');
+		expect(collectFieldErrors(result.issues ?? [])).toEqual({ email: 'Indiquez l’email de contact de la pharmacie.' });
 	});
 
 	it('donne un message par champ refusé', () => {

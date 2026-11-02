@@ -302,7 +302,7 @@ function ContactStep(props: { state: AppointmentWizardState }) {
         <FormField label="Téléphone" error={errors().phone}>
           <input class="ap-input" type="tel" autocomplete="tel" value={state.contact.phone} onInput={(event) => state.updateContact('phone', event.currentTarget.value)} />
         </FormField>
-        <FormField label="Email (facultatif)" hint="C'est par lui que part la confirmation." error={errors().email}>
+        <FormField label="Email" hint="C'est par lui que part la confirmation." error={errors().email}>
           <input class="ap-input" type="email" autocomplete="email" value={state.contact.email} onInput={(event) => state.updateContact('email', event.currentTarget.value)} />
         </FormField>
         <div class="ap-ledger__form-wide">

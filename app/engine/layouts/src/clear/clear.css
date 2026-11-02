@@ -841,6 +841,9 @@
   height: 100%;
   min-height: 460px;
   border: 1px solid var(--cl-color-line);
+  border-radius: 10px;
+  box-shadow: 0 24px 48px -28px rgb(15 40 60 / 0.35);
+  filter: grayscale(0.7) contrast(1.05) brightness(1.04);
 }
 
 .layout-clear .cl-find-us__map--empty {

@@ -845,6 +845,10 @@
   border-radius: var(--sb-radius);
 }
 
+.layout-signboard .sb-news__card--text-only {
+  border-top: 4px solid var(--sb-color-signal);
+}
+
 .layout-signboard .sb-news__image {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -994,8 +998,9 @@
   flex: 1.4 1 420px;
   min-height: 420px;
   border: 1px solid var(--sb-color-line);
-  border-radius: 8px;
-  filter: invert(0.92) hue-rotate(180deg) saturate(0.4);
+  border-radius: 14px;
+  box-shadow: 0 20px 44px -20px rgb(0 0 0 / 0.7);
+  filter: invert(0.92) hue-rotate(180deg) saturate(0.55) brightness(0.95);
 }
 
 .layout-signboard .sb-find-us__map--empty {

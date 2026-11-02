@@ -12,8 +12,14 @@ export type SiteImageSuggestionKey = (typeof siteImageSuggestions)[number]['key'
 
 const suggestionKeys = siteImageSuggestions.map((suggestion) => suggestion.key);
 
-/** Une image du site : une suggestion de la plateforme, un lien ou un fichier envoyé par le Tenant. */
+/** Où une image se pose : chaque layout déclare un défaut et des propositions pour chacun de ces emplacements. */
+export const siteImageSlots = ['hero', 'service', 'brand', 'article'] as const;
+
+export type SiteImageSlot = (typeof siteImageSlots)[number];
+
+/** Une image du site : une proposition de son layout, une suggestion historique de la plateforme, un lien ou un fichier envoyé par le Tenant. */
 export const SiteImageSchema = v.variant('kind', [
+	v.object({ kind: v.literal('layout'), imageKey: v.pipe(v.string(), v.regex(/^[a-z0-9-]+$/), v.maxLength(64)) }),
 	v.object({ kind: v.literal('suggestion'), suggestionKey: v.picklist(suggestionKeys) }),
 	v.object({ kind: v.literal('link'), url: v.pipe(v.string(), v.url(), v.maxLength(2000)) }),
 	v.object({ kind: v.literal('upload'), imageId: v.pipe(v.string(), v.uuid()) })
@@ -23,12 +29,17 @@ export type SiteImage = v.InferOutput<typeof SiteImageSchema>;
 
 /** Comment le domaine qui affiche le site atteint une image de la plateforme ou envoyée. */
 export type SiteImageUrlResolver = {
+	/** L'image qu'un layout propose sous cette clé ; liée au layout du site affiché. */
+	toLayoutImageUrl: (slot: SiteImageSlot, imageKey: string) => string | undefined;
+	/** L'image que le layout montre quand le Tenant n'en choisit pas ; absente si le layout n'en déclare pas. */
+	toDefaultImageUrl: (slot: SiteImageSlot) => string | undefined;
 	toSuggestionUrl: (suggestionKey: SiteImageSuggestionKey) => string;
 	toUploadUrl: (imageId: string) => string;
 };
 
-export function resolveSiteImageUrl(image: SiteImage | undefined, resolver: SiteImageUrlResolver): string | undefined {
-	if (!image) return undefined;
+export function resolveSiteImageUrl(image: SiteImage | undefined, resolver: SiteImageUrlResolver, slot: SiteImageSlot): string | undefined {
+	if (!image) return resolver.toDefaultImageUrl(slot);
+	if (image.kind === 'layout') return resolver.toLayoutImageUrl(slot, image.imageKey) ?? resolver.toDefaultImageUrl(slot);
 	if (image.kind === 'link') return image.url;
 	if (image.kind === 'suggestion') return resolver.toSuggestionUrl(image.suggestionKey);
 	return resolver.toUploadUrl(image.imageId);

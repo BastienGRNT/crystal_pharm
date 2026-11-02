@@ -4,13 +4,14 @@
 	import SiteImageChooser from '../molecules/SiteImageChooser.svelte';
 
 	type ServiceListEditorProps = {
+		layoutId: string;
 		services: ServiceDraft[];
 		uploadedImagePreviewUrls: Record<string, string>;
 		/** Appelé à l'ajout d'un service : le premier rend le module affichable. */
 		onserviceadded?: () => void;
 	};
 
-	let { services = $bindable(), uploadedImagePreviewUrls = $bindable(), onserviceadded }: ServiceListEditorProps = $props();
+	let { layoutId, services = $bindable(), uploadedImagePreviewUrls = $bindable(), onserviceadded }: ServiceListEditorProps = $props();
 
 	function addService(): void {
 		services.push(createEmptyServiceDraft());
@@ -59,6 +60,8 @@
 				{/snippet}
 			</Field>
 			<SiteImageChooser
+				imageSlot="service"
+				{layoutId}
 				label="Icône personnalisée"
 				defaultDescription="Sans icône personnalisée, celle choisie plus haut est utilisée."
 				bind:image={service.icon}

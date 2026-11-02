@@ -8,7 +8,7 @@ export type PrescriptionForm = {
   /** `2026-03-14`, la valeur d'un `<input type="date">`. */
   birthDate: string;
   phone: string;
-  /** Facultatif : vide si le patient ne veut pas être prévenu par email. */
+  /** Obligatoire : c'est par lui que le patient est prévenu quand c'est prêt. */
   email: string;
   /** `2026-03-14T17:30` ; vide : « dès que c'est prêt ». */
   plannedVisitAt: string;

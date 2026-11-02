@@ -34,7 +34,7 @@ public sealed class PrescriptionSubmissionService(
             newSubmission.BirthDate,
             newSubmission.Phone,
             DateOnly.FromDateTime(now.UtcDateTime));
-        var email = string.IsNullOrWhiteSpace(newSubmission.Email) ? null : new PatientEmail(newSubmission.Email);
+        var email = new PatientEmail(newSubmission.Email ?? string.Empty);
         var request = new SubmissionRequest(
             newSubmission.PlannedVisitAt,
             newSubmission.HasAlreadyVisited,

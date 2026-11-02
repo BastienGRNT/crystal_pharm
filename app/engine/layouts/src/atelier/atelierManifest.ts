@@ -1,6 +1,7 @@
 import { themeChoiceSetting } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutManifest } from '../manifest/LayoutManifest';
+import { atelierImages } from './atelierImages';
 
 export const atelierSettingsSchema = v.object({
   /** Une palette fermée : chaque teinte garde un contraste suffisant sur le papier du layout, ce qu'une couleur libre ne garantit pas. */
@@ -31,4 +32,5 @@ export const atelierManifest: LayoutManifest = {
   label: 'Atelier',
   description: 'Éditorial, comme un beau magazine : grande typographie, sections numérotées, une couleur d’accent et une police de titres au choix.',
   settingsSchema: atelierSettingsSchema,
+  images: atelierImages,
 };

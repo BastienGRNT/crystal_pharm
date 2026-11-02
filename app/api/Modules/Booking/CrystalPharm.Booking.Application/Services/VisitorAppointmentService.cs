@@ -1,3 +1,4 @@
+using CrystalPharm.Booking.Domain;
 using CrystalPharm.Booking.Application.Dtos;
 using CrystalPharm.Booking.Application.Interfaces;
 using CrystalPharm.Booking.Domain.Configuration;
@@ -72,6 +73,11 @@ public sealed class VisitorAppointmentService(
 
     public async Task<VisitorAppointmentResult> RequestAsync(VisitorAppointmentRequestDto request, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            throw new InvalidAppointmentException("L’adresse email est obligatoire.");
+        }
+
         var configuration = await configurationRepository.GetAsync(cancellationToken);
         var reason = configuration.FindActiveReason(request.ReasonId);
         if (reason is null)

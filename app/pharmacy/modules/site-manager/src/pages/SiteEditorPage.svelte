@@ -120,7 +120,7 @@
 	const chosenFormValues = $derived(formValuesByLayoutId[layoutId] ?? {});
 	const layoutSettingsReading = $derived(chosenManifest && toLayoutSettings(chosenManifest, chosenFormValues));
 	const settingsFieldErrors = $derived(layoutSettingsReading && !layoutSettingsReading.success ? layoutSettingsReading.fieldErrors : {});
-	const contentDraft = $derived({ sections, services, brands, articles, newsSource });
+	const contentDraft = $derived({ layoutId, sections, services, brands, articles, newsSource });
 	const displayedNewsSource = $derived(chooseDisplayedNewsSource(newsSource, data.base.group).source);
 	const moduleChoices = $derived(listSiteModuleChoices(editorBase, contentDraft));
 	const previewedSite = $derived(
@@ -561,7 +561,7 @@
 
 				<div class="grid content-start gap-5 {selectedBlockId === 'hero' ? '' : 'hidden'}">
 					{@render panelHeader('hero', 'L’accroche et l’image qui ouvrent votre site.')}
-					<HeroEditor bind:hero={sections.hero} bind:uploadedImagePreviewUrls />
+					<HeroEditor {layoutId} bind:hero={sections.hero} bind:uploadedImagePreviewUrls />
 				</div>
 
 				<div class="grid content-start gap-5 {selectedBlockId === 'findUs' ? '' : 'hidden'}">
@@ -573,7 +573,7 @@
 					<div class="grid content-start gap-5 {selectedBlockId === moduleChoice.moduleName ? '' : 'hidden'}">
 						{@render panelHeader(moduleChoice.moduleName, moduleChoice.description)}
 						{#if moduleChoice.moduleName === 'services'}
-							<ServiceListEditor bind:services bind:uploadedImagePreviewUrls onserviceadded={() => enableModule('services')} />
+							<ServiceListEditor {layoutId} bind:services bind:uploadedImagePreviewUrls onserviceadded={() => enableModule('services')} />
 						{:else if moduleChoice.moduleName === 'news'}
 							{#if data.base.group}
 								<NewsSourceChooser group={data.base.group} bind:newsSource onchange={showGroupNewsWhenAvailable} />
@@ -581,10 +581,10 @@
 							{#if displayedNewsSource === 'group' && data.base.group}
 								<GroupArticleList groupName={data.base.group.name} articles={data.base.group.articles} />
 							{:else}
-								<ArticleListEditor bind:articles bind:uploadedImagePreviewUrls onarticleadded={() => enableModule('news')} />
+								<ArticleListEditor {layoutId} bind:articles bind:uploadedImagePreviewUrls onarticleadded={() => enableModule('news')} />
 							{/if}
 						{:else if moduleChoice.moduleName === 'brands'}
-							<BrandListEditor bind:brands bind:uploadedImagePreviewUrls onbrandadded={() => enableModule('brands')} />
+							<BrandListEditor {layoutId} bind:brands bind:uploadedImagePreviewUrls onbrandadded={() => enableModule('brands')} />
 						{:else if moduleChoice.moduleName === 'appointment'}
 							<AppointmentEditor bind:appointment={sections.appointment} />
 						{:else if moduleChoice.moduleName === 'onlineOrder'}

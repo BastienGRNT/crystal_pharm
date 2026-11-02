@@ -1,6 +1,7 @@
 import { themeChoiceSetting } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import type { LayoutManifest } from '../manifest/LayoutManifest';
+import { signboardImages } from './signboardImages';
 
 export const signboardSettingsSchema = v.object({
   /** Une palette fermée : sur le fond de nuit, une couleur libre pourrait rendre l'enseigne illisible. */
@@ -23,4 +24,5 @@ export const signboardManifest: LayoutManifest = {
   label: 'Enseigne',
   description: 'De nuit, comme la croix lumineuse dans la rue : fond sombre, horaires en tableau lumineux, idéal pour une pharmacie de ville souvent de garde.',
   settingsSchema: signboardSettingsSchema,
+  images: signboardImages,
 };

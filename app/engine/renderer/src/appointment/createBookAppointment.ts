@@ -14,7 +14,7 @@ export type AppointmentForm = {
   firstName: string;
   lastName: string;
   phone: string;
-  /** Facultatif : vide si le patient ne veut ni confirmation ni rappel par email. */
+  /** Obligatoire : c'est par lui que part la confirmation. */
   email: string;
   note: string;
 };
