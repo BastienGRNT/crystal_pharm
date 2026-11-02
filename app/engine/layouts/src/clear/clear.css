@@ -1612,3 +1612,106 @@
 .layout-clear .cl-done__when {
   font-weight: 700;
 }
+
+/* Ordonnance : une fiche en lignes, libellé à gauche, champ à droite. */
+
+.layout-clear .cl-sheet {
+  display: grid;
+  border-top: 2px solid var(--cl-form-text);
+  color: var(--cl-form-text);
+}
+
+.layout-clear .cl-sheet__row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--cl-form-line);
+}
+
+.layout-clear .cl-sheet__label {
+  margin: 0;
+  padding-top: 10px;
+  font-size: 0.8125em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cl-form-muted);
+}
+
+.layout-clear .cl-sheet__control {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.layout-clear .cl-sheet__control--inline {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+
+.layout-clear .cl-sheet__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px 32px;
+  padding-top: 20px;
+}
+
+.layout-clear .cl-sheet__note {
+  max-width: 46ch;
+  margin: 0;
+  font-size: 0.875em;
+  color: var(--cl-form-muted);
+}
+
+.layout-clear .cl-sheet__submit {
+  min-height: 48px;
+  padding: 0 32px;
+  border: 1px solid var(--cl-form-accent);
+  border-radius: var(--cl-form-radius);
+  background: var(--cl-form-accent);
+  color: var(--cl-form-on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layout-clear .cl-sheet__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.layout-clear .cl-sheet__status {
+  margin: 12px 0 0;
+  color: var(--cl-form-error);
+}
+
+.layout-clear .cl-sheet-sent {
+  display: grid;
+  gap: 8px;
+  padding: 24px 0;
+  border-top: 2px solid var(--cl-form-accent);
+  color: var(--cl-form-text);
+}
+
+.layout-clear .cl-sheet-sent p {
+  margin: 0;
+}
+
+.layout-clear .cl-sheet-sent-title {
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .layout-clear .cl-sheet__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .layout-clear .cl-sheet__label {
+    padding-top: 0;
+  }
+}
