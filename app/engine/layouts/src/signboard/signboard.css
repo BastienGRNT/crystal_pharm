@@ -1770,3 +1770,98 @@
 .layout-signboard .sb-done__when {
   font-weight: 700;
 }
+
+/* Ordonnance : une seule rangée pour l'essentiel, le reste se déplie. */
+
+.layout-signboard .sb-strip {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--sb-form-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-field);
+  color: var(--sb-form-text);
+}
+
+.layout-signboard .sb-strip__line {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.layout-signboard .sb-strip__submit {
+  min-height: 46px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-accent);
+  color: var(--sb-form-on-accent);
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-strip__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.layout-signboard .sb-strip__more {
+  border-top: 1px dashed var(--sb-form-line);
+  padding-top: 12px;
+}
+
+.layout-signboard .sb-strip__more-toggle {
+  color: var(--sb-form-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-strip__more-body {
+  display: grid;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.layout-signboard .sb-strip__status {
+  margin: 0;
+  color: var(--sb-form-error);
+}
+
+.layout-signboard .sb-strip__note {
+  margin: 0;
+  font-size: 0.8125em;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-strip__sent {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid var(--sb-form-accent);
+  border-radius: var(--sb-form-radius);
+  color: var(--sb-form-text);
+}
+
+.layout-signboard .sb-strip__sent p {
+  margin: 0;
+}
+
+.layout-signboard .sb-strip__sent-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: var(--sb-form-accent);
+}
+
+@media (max-width: 880px) {
+  .layout-signboard .sb-strip__line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .layout-signboard .sb-strip__submit {
+    grid-column: 1 / -1;
+  }
+}

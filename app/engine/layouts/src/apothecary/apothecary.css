@@ -1789,3 +1789,127 @@
 .layout-apothecary .ap-done__when {
   font-weight: 700;
 }
+
+/* Ordonnance : trois pleines pages, tournées une à une. */
+
+.layout-apothecary .ap-pages {
+  display: grid;
+  gap: 32px;
+  max-width: 640px;
+  margin-inline: auto;
+  color: var(--ap-form-text);
+}
+
+.layout-apothecary .ap-pages__progress {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--ap-form-line);
+}
+
+.layout-apothecary .ap-pages__progress-item {
+  display: grid;
+  gap: 4px;
+  padding: 0 0 12px;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  color: var(--ap-form-muted);
+  font-size: 0.875em;
+}
+
+.layout-apothecary .ap-pages__progress-item--current {
+  border-bottom-color: var(--ap-form-accent);
+  color: var(--ap-form-text);
+  font-weight: 700;
+}
+
+.layout-apothecary .ap-pages__progress-item--done {
+  color: var(--ap-form-accent);
+}
+
+.layout-apothecary .ap-pages__progress-number {
+  font-family: var(--ap-form-title-font);
+  font-size: 1.4em;
+}
+
+.layout-apothecary .ap-pages__page {
+  display: grid;
+  gap: 20px;
+  min-height: 340px;
+  align-content: start;
+}
+
+.layout-apothecary .ap-pages__page[hidden] {
+  display: none;
+}
+
+.layout-apothecary .ap-pages__title {
+  margin: 0;
+  font-family: var(--ap-form-title-font);
+  font-size: 1.6em;
+}
+
+.layout-apothecary .ap-pages__note {
+  margin: 0;
+  font-size: 0.875em;
+  color: var(--ap-form-muted);
+}
+
+.layout-apothecary .ap-pages__navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.layout-apothecary .ap-pages__navigation > :only-child {
+  margin-left: auto;
+}
+
+.layout-apothecary .ap-pages__next,
+.layout-apothecary .ap-pages__back {
+  min-height: 52px;
+  padding: 0 32px;
+  border: 1px solid var(--ap-form-accent);
+  border-radius: var(--ap-form-radius);
+  background: var(--ap-form-accent);
+  color: var(--ap-form-on-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.layout-apothecary .ap-pages__back {
+  background: transparent;
+  color: var(--ap-form-text);
+}
+
+.layout-apothecary .ap-pages__next:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.layout-apothecary .ap-pages__status {
+  margin: 0;
+  color: var(--ap-form-error);
+}
+
+.layout-apothecary .ap-pages__sent {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 32px;
+  border: 1px solid var(--ap-form-accent);
+  color: var(--ap-form-text);
+}
+
+.layout-apothecary .ap-pages__sent p {
+  margin: 0;
+}
+
+.layout-apothecary .ap-pages__sent-title {
+  font-family: var(--ap-form-title-font);
+  font-size: 1.5em;
+}

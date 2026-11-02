@@ -1590,3 +1590,117 @@
 .layout-showcase .sc-done__when {
   font-weight: 700;
 }
+
+/* Ordonnance : une carte pour remplir, un récapitulatif qui suit avec le bouton d'envoi. */
+
+.layout-showcase .sc-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 32px;
+  align-items: start;
+  color: var(--sc-form-text);
+}
+
+.layout-showcase .sc-desk__card {
+  display: grid;
+  border: 1px solid var(--sc-form-line);
+  border-radius: calc(var(--sc-form-radius) * 3);
+  background: var(--sc-form-field);
+}
+
+.layout-showcase .sc-desk__section {
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+}
+
+.layout-showcase .sc-desk__section + .sc-desk__section {
+  border-top: 1px solid var(--sc-form-line);
+}
+
+.layout-showcase .sc-desk__section--columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.layout-showcase .sc-desk__aside {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border-radius: calc(var(--sc-form-radius) * 3);
+  background: var(--sc-form-accent);
+  color: var(--sc-form-on-accent);
+}
+
+.layout-showcase .sc-desk__aside-title {
+  margin: 0;
+  font-family: var(--sc-form-title-font);
+  font-size: 1.3em;
+}
+
+.layout-showcase .sc-desk__aside .sc-checkbox {
+  font-size: 0.9375em;
+}
+
+.layout-showcase .sc-desk__submit {
+  min-height: 52px;
+  border: 0;
+  border-radius: var(--sc-form-radius);
+  background: var(--sc-form-on-accent);
+  color: var(--sc-form-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.layout-showcase .sc-desk__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.layout-showcase .sc-desk__status {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--sc-form-radius);
+  background: var(--sc-form-on-accent);
+  color: var(--sc-form-error);
+}
+
+.layout-showcase .sc-desk__note {
+  margin: 0;
+  font-size: 0.8125em;
+  opacity: 0.75;
+}
+
+.layout-showcase .sc-desk__sent {
+  display: grid;
+  gap: 8px;
+  padding: 32px;
+  border-radius: calc(var(--sc-form-radius) * 3);
+  background: var(--sc-form-accent);
+  color: var(--sc-form-on-accent);
+}
+
+.layout-showcase .sc-desk__sent p {
+  margin: 0;
+}
+
+.layout-showcase .sc-desk__sent-title {
+  font-family: var(--sc-form-title-font);
+  font-size: 1.5em;
+}
+
+@media (max-width: 880px) {
+  .layout-showcase .sc-desk {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .layout-showcase .sc-desk__aside {
+    position: static;
+  }
+
+  .layout-showcase .sc-desk__section--columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
