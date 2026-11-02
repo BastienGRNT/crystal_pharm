@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listModulesInDisplayOrder, listMovableModules, moveModule } from './moduleOrder';
+import { listModulesInDisplayOrder, listMovableModules, moveModule, moveModuleOnto } from './moduleOrder';
 
 describe('listModulesInDisplayOrder', () => {
 	it('puts the chosen order first and the modules never placed after, in the default order', () => {
@@ -43,5 +43,32 @@ describe('moveModule among the visible modules', () => {
 		const order = moveModule(['news', 'team', 'services'], 'services', 'earlier', ['news', 'services']);
 
 		expect(order.slice(0, 3)).toEqual(['services', 'team', 'news']);
+	});
+});
+
+describe('moveModuleOnto', () => {
+	it('puts the dragged module where the target was, shifting the ones in between', () => {
+		const order = moveModuleOnto(['news', 'team', 'services'], 'services', 'news');
+
+		expect(order.slice(0, 3)).toEqual(['services', 'news', 'team']);
+	});
+
+	it('moves a module later as well', () => {
+		const order = moveModuleOnto(['news', 'team', 'services'], 'news', 'services');
+
+		expect(order.slice(0, 3)).toEqual(['team', 'services', 'news']);
+	});
+
+	it('leaves the hidden modules at their rank', () => {
+		const order = moveModuleOnto(['news', 'team', 'services', 'brands'], 'brands', 'news', ['news', 'services', 'brands']);
+
+		expect(order.slice(0, 4)).toEqual(['brands', 'team', 'news', 'services']);
+	});
+
+	it('changes nothing when dropped on itself or on a module that cannot move', () => {
+		const initialOrder = listModulesInDisplayOrder(['news', 'team']);
+
+		expect(moveModuleOnto(initialOrder, 'news', 'news')).toEqual(initialOrder);
+		expect(moveModuleOnto(initialOrder, 'news', 'team', ['news', 'services'])).toEqual(initialOrder);
 	});
 });

@@ -34,3 +34,22 @@ export function moveModule(
 	completeOrder[targetIndex] = moduleName;
 	return completeOrder;
 }
+
+/** Pose le module glissé à la place de celui sur lequel on le lâche ; les modules masqués ou fixes gardent leur rang. */
+export function moveModuleOnto(
+	moduleOrder: readonly ModuleName[],
+	draggedModule: ModuleName,
+	targetModule: ModuleName,
+	movableModules: readonly ModuleName[] = listModulesInDisplayOrder(moduleOrder),
+): ModuleName[] {
+	const completeOrder = listModulesInDisplayOrder(moduleOrder);
+	const targetIndex = movableModules.indexOf(targetModule);
+	if (!movableModules.includes(draggedModule) || targetIndex === -1 || draggedModule === targetModule) return completeOrder;
+	const reorderedMovableModules = movableModules.filter((moduleName) => moduleName !== draggedModule);
+	reorderedMovableModules.splice(targetIndex, 0, draggedModule);
+	const movableSlots = completeOrder.flatMap((moduleName, index) => (movableModules.includes(moduleName) ? [index] : []));
+	movableSlots.forEach((slotIndex, movableIndex) => {
+		completeOrder[slotIndex] = reorderedMovableModules[movableIndex]!;
+	});
+	return completeOrder;
+}

@@ -8,7 +8,9 @@
 		Alert,
 		Button,
 		ChoiceGroup,
+		FloatingIsland,
 		Icon,
+		IconButton,
 		ResizableViewport,
 		ResizeHandle,
 		SegmentedToggle,
@@ -276,6 +278,7 @@
 	function selectBlock(blockId: EditorBlockId): void {
 		showBlock(blockId);
 		mobileView = 'edition';
+		if (editorView === 'immersive') openIslandSheet('edition');
 		replaceState(`#${toEditorBlockHash(blockId)}`, {});
 	}
 
@@ -326,6 +329,29 @@
 		{ value: 'apercu', label: 'Aperçu', icon: 'eye' }
 	];
 
+	// Les panneaux en colonnes, ou le site en plein écran avec l'édition dans un îlot flottant.
+	type EditorView = 'panels' | 'immersive';
+	let editorView: EditorView = $state('panels');
+
+	type IslandSheet = 'blocks' | 'edition';
+	let islandSheet: IslandSheet = $state('blocks');
+	let isIslandExpanded = $state(false);
+
+	function openIslandSheet(sheet: IslandSheet): void {
+		islandSheet = sheet;
+		isIslandExpanded = true;
+	}
+
+	function toggleIslandSheet(sheet: IslandSheet): void {
+		if (isIslandExpanded && islandSheet === sheet) isIslandExpanded = false;
+		else openIslandSheet(sheet);
+	}
+
+	function showPreviewAt(width: number): void {
+		previewWidth = width;
+		previewZoom = 'fit';
+	}
+
 	const viewportPresets: ViewportPreset[] = [
 		{ label: 'Mobile', width: 390, icon: 'device-mobile' },
 		{ label: 'Tablette', width: 820, icon: 'device-tablet' },
@@ -340,7 +366,8 @@
 	let hasRestoredEditorLayout = $state(false);
 	const editorLayoutStorageKey = 'crystal-pharm:site-editor-layout';
 
-	type StoredEditorLayout = { panelWidth: number; previewWidth: number; previewZoom: ViewportZoom };
+	// `editorView` est optionnel : les tailles gardées avant le mode immersif restent valables.
+	type StoredEditorLayout = { panelWidth: number; previewWidth: number; previewZoom: ViewportZoom; editorView?: EditorView };
 
 	function isStoredEditorLayout(value: unknown): value is StoredEditorLayout {
 		if (typeof value !== 'object' || value === null) return false;
@@ -348,7 +375,8 @@
 		return (
 			typeof layout.panelWidth === 'number' &&
 			typeof layout.previewWidth === 'number' &&
-			(layout.previewZoom === 'fit' || typeof layout.previewZoom === 'number')
+			(layout.previewZoom === 'fit' || typeof layout.previewZoom === 'number') &&
+			(layout.editorView === undefined || layout.editorView === 'panels' || layout.editorView === 'immersive')
 		);
 	}
 
@@ -364,6 +392,7 @@
 				panelWidth = clampPanelWidth(storedLayout.panelWidth);
 				previewWidth = storedLayout.previewWidth;
 				previewZoom = storedLayout.previewZoom;
+				editorView = storedLayout.editorView ?? 'panels';
 			}
 		} catch {
 			// Rien de gardé : les tailles par défaut conviennent.
@@ -372,7 +401,7 @@
 	});
 
 	$effect(() => {
-		const editorLayout: StoredEditorLayout = { panelWidth, previewWidth, previewZoom };
+		const editorLayout: StoredEditorLayout = { panelWidth, previewWidth, previewZoom, editorView };
 		if (!hasRestoredEditorLayout) return;
 		try {
 			localStorage.setItem(editorLayoutStorageKey, JSON.stringify(editorLayout));
@@ -486,6 +515,215 @@
 	{/if}
 {/snippet}
 
+{#snippet blockListItems(isAlwaysVertical: boolean)}
+	{#each blockIds as blockId, blockIndex (blockId)}
+		{#if blockIndex === 1 || blockId === 'display'}
+			<li aria-hidden="true" class="mx-2.5 my-1 border-t border-line-soft {isAlwaysVertical ? '' : 'max-lg:hidden'}"></li>
+		{/if}
+		<li class={isAlwaysVertical ? '' : 'max-lg:w-52 max-lg:flex-none'}>
+			<EditorBlockRow
+				icon={blockIcons[blockId]}
+				title={titleOfBlock(blockId)}
+				summary={summarizeBlock(blockId)}
+				isSelected={selectedBlockId === blockId}
+				status={statusOfBlock(blockId)}
+				onselect={() => selectBlock(blockId)}
+			/>
+		</li>
+	{/each}
+{/snippet}
+
+{#snippet blockPanels()}
+	<div class="grid content-start gap-5 p-4 sm:p-6">
+		{#if saveOutcome === 'failed' && failure?.formError}
+			<Alert tone="danger" title="Le site n’a pas été enregistré">{failure.formError}</Alert>
+		{/if}
+		{#if unavailableMandatoryModuleTitles.length > 0}
+			<Alert tone="warning" title="Modules imposés par votre groupement, encore masqués">
+				{unavailableMandatoryModuleTitles.join(', ')} : il leur manque des informations pour s’afficher.
+			</Alert>
+		{/if}
+
+		<div class="grid content-start gap-5 {selectedBlockId === 'appearance' ? '' : 'hidden'}">
+			{@render panelHeader('appearance', 'La mise en page, les couleurs et les polices.')}
+			<ChoiceGroup name="layoutId" legend="Mise en page" options={layoutOptions} layout="cards" bind:value={layoutId} />
+			{#if themePresets.length > 0}
+				{@render themePresetPicker()}
+			{/if}
+			{#if chosenManifest && themeSettingsFields.length > 0}
+				{@render layoutSettingsFields('Couleurs, polices et angles', themeSettingsFields)}
+			{/if}
+			{#if contrastWarnings.length > 0}
+				<Alert tone="warning" title="Certaines couleurs risquent d’être difficiles à lire">
+					<ul class="grid gap-1">
+						{#each contrastWarnings as contrastWarning (contrastWarning.label)}
+							<li>{contrastWarning.label} : contraste {contrastWarning.contrastRatio.toFixed(1)} sur 4,5 recommandé.</li>
+						{/each}
+					</ul>
+					Vous pouvez enregistrer quand même.
+				</Alert>
+			{/if}
+			{#if chosenManifest && otherSettingsFields.length > 0}
+				{@render layoutSettingsFields('Autres réglages', otherSettingsFields)}
+			{/if}
+		</div>
+
+		<div class="grid content-start gap-5 {selectedBlockId === 'hero' ? '' : 'hidden'}">
+			{@render panelHeader('hero', 'L’accroche et l’image qui ouvrent votre site.')}
+			<HeroEditor {layoutId} bind:hero={sections.hero} bind:uploadedImagePreviewUrls />
+		</div>
+
+		<div class="grid content-start gap-5 {selectedBlockId === 'findUs' ? '' : 'hidden'}">
+			{@render panelHeader('findUs', 'Les informations pour venir à la pharmacie.')}
+			<FindUsEditor bind:findUs={sections.findUs} />
+		</div>
+
+		{#each moduleChoices as moduleChoice (moduleChoice.moduleName)}
+			<div class="grid content-start gap-5 {selectedBlockId === moduleChoice.moduleName ? '' : 'hidden'}">
+				{@render panelHeader(moduleChoice.moduleName, moduleChoice.description)}
+				{#if moduleChoice.moduleName === 'services'}
+					<ServiceListEditor {layoutId} bind:services bind:uploadedImagePreviewUrls onserviceadded={() => enableModule('services')} />
+				{:else if moduleChoice.moduleName === 'news'}
+					{#if data.base.group}
+						<NewsSourceChooser group={data.base.group} bind:newsSource onchange={showGroupNewsWhenAvailable} />
+					{/if}
+					{#if displayedNewsSource === 'group' && data.base.group}
+						<GroupArticleList groupName={data.base.group.name} articles={data.base.group.articles} />
+					{:else}
+						<ArticleListEditor {layoutId} bind:articles bind:uploadedImagePreviewUrls onarticleadded={() => enableModule('news')} />
+					{/if}
+				{:else if moduleChoice.moduleName === 'brands'}
+					<BrandListEditor {layoutId} bind:brands bind:uploadedImagePreviewUrls onbrandadded={() => enableModule('brands')} />
+				{:else if moduleChoice.moduleName === 'appointment'}
+					<AppointmentEditor bind:appointment={sections.appointment} />
+				{:else if moduleChoice.moduleName === 'onlineOrder'}
+					<OnlineOrderEditor bind:onlineOrder={sections.onlineOrder} />
+				{:else if !modulesWithOwnEditor.includes(moduleChoice.moduleName) && moduleChoice.state.kind !== 'unavailable'}
+					<p class="text-small text-ink-muted">Rien à saisir ici : ce bloc reprend des informations déjà connues.</p>
+				{/if}
+			</div>
+		{/each}
+
+		<div class="grid content-start gap-5 {selectedBlockId === 'display' ? '' : 'hidden'}">
+			{@render panelHeader('display', 'Les blocs que votre site montre, et leur ordre.')}
+			<div class="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+				{#each moduleChoices as moduleChoice (moduleChoice.moduleName)}
+					<div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+						<button
+							type="button"
+							class="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
+							onclick={() => selectBlock(moduleChoice.moduleName)}
+						>
+							<Icon name={blockIcons[moduleChoice.moduleName]} size={18} class="flex-none text-ink-muted" />
+							<span class="min-w-0">
+								<span class="block body-strong text-ink underline-offset-3 hover:underline">{moduleChoice.title}</span>
+								{#if moduleChoice.state.kind === 'unavailable'}
+									<span class="block text-small text-ink-muted">{moduleChoice.state.reason}</span>
+								{/if}
+							</span>
+						</button>
+						{@render moduleSwitch(moduleChoice)}
+					</div>
+				{/each}
+			</div>
+			<div class="grid gap-2">
+				<p class="body-strong text-ink">Ordre des blocs</p>
+				<p class="text-small text-ink-muted">Seuls les blocs activés que ce modèle place dans la page d’accueil sont listés. L’en-tête, la garde, les horaires et « Nous trouver » gardent leur place.</p>
+				<ModuleOrderList bind:moduleOrder {enabledModules} orderableModules={chosenManifest?.orderableModules} titleOf={(moduleName) => moduleTitles[moduleName] ?? moduleName} />
+			</div>
+		</div>
+
+		<nav aria-label="Bloc précédent ou suivant" class="flex items-center justify-between gap-3 border-t border-line pt-4">
+			{#if neighbourBlocks.previous}
+				{@const previousBlockId = neighbourBlocks.previous}
+				<Button variant="ghost" icon="caret-left" onclick={() => selectBlock(previousBlockId)}>{titleOfBlock(previousBlockId)}</Button>
+			{:else}
+				<span></span>
+			{/if}
+			{#if neighbourBlocks.next}
+				{@const nextBlockId = neighbourBlocks.next}
+				<span title="Alt + ↓" class="contents">
+					<Button variant="secondary" onclick={() => selectBlock(nextBlockId)}>
+						{titleOfBlock(nextBlockId)}<Icon name="caret-right" size={18} />
+					</Button>
+				</span>
+			{/if}
+		</nav>
+	</div>
+{/snippet}
+
+{#snippet previewViewport(showsToolbar: boolean)}
+	<ResizableViewport label="Aperçu du site" presets={viewportPresets} bind:width={previewWidth} bind:zoom={previewZoom} {showsToolbar}>
+		<SitePreviewFrame frameUrl={data.preview.frameUrl} frameOrigin={data.preview.frameOrigin} tenantSite={previewedSite} />
+	</ResizableViewport>
+{/snippet}
+
+{#snippet islandDivider(hiddenBelowClass: string)}
+	<span aria-hidden="true" class="mx-1 h-6 border-l border-line {hiddenBelowClass}"></span>
+{/snippet}
+
+{#snippet islandBar()}
+	<Button variant="ghost" icon="arrow-left" href={siteOverviewPathname}><span class="sr-only">Vue d’ensemble</span></Button>
+	{@render islandDivider('')}
+	<button
+		type="button"
+		aria-pressed={isIslandExpanded && islandSheet === 'blocks'}
+		title="Les blocs du site"
+		class="inline-flex h-control cursor-pointer items-center gap-2 rounded-full px-3 text-small font-bold text-ink hover:bg-surface-muted aria-pressed:bg-accent-soft aria-pressed:text-accent-text"
+		onclick={() => toggleIslandSheet('blocks')}
+	>
+		<Icon name="puzzle-piece" size={18} /><span class="max-sm:sr-only">Blocs</span>
+	</button>
+	<button
+		type="button"
+		aria-pressed={isIslandExpanded && islandSheet === 'edition'}
+		title="Modifier « {titleOfBlock(selectedBlockId)} »"
+		class="inline-flex h-control min-w-0 cursor-pointer items-center gap-2 rounded-full px-3 text-small font-bold text-ink hover:bg-surface-muted aria-pressed:bg-accent-soft aria-pressed:text-accent-text"
+		onclick={() => toggleIslandSheet('edition')}
+	>
+		<Icon name={blockIcons[selectedBlockId]} size={18} class="flex-none" />
+		<span class="max-w-40 truncate max-sm:sr-only">{titleOfBlock(selectedBlockId)}</span>
+	</button>
+	{@render islandDivider('max-md:hidden')}
+	<div role="group" aria-label="Largeur de l’écran" class="inline-flex items-center gap-0.5 max-md:hidden">
+		{#each viewportPresets as preset (preset.width)}
+			<button
+				type="button"
+				aria-pressed={previewWidth === preset.width}
+				aria-label={preset.label}
+				title="{preset.label} · {preset.width} px"
+				class="inline-grid size-control cursor-pointer place-items-center rounded-full text-ink-muted hover:bg-surface-muted hover:text-ink aria-pressed:bg-surface aria-pressed:text-ink aria-pressed:shadow-card"
+				onclick={() => showPreviewAt(preset.width)}
+			>
+				<Icon name={preset.icon} size={18} />
+			</button>
+		{/each}
+	</div>
+	{@render islandDivider('max-lg:hidden')}
+	<p aria-live="polite" class="max-w-64 truncate px-2 text-small text-ink-muted max-lg:sr-only">{@render saveStatus()}</p>
+	<span title="Ctrl + S" class="contents">
+		<Button type="submit" icon="check" disabled={!canSave || !hasUnsavedChanges}><span class="max-sm:sr-only">Enregistrer</span></Button>
+	</span>
+	<IconButton icon="frame-corners" label="Quitter le mode immersif" onclick={() => (editorView = 'panels')} />
+{/snippet}
+
+{#snippet islandSheetContent()}
+	<div class="flex flex-none items-center gap-2 px-3 pt-3 pb-1">
+		{#if islandSheet === 'edition'}
+			<Button variant="ghost" size="compact" icon="caret-left" onclick={() => (islandSheet = 'blocks')}>Tous les blocs</Button>
+		{:else}
+			<p class="px-1 text-eyebrow text-ink-muted">Blocs du site</p>
+		{/if}
+		<span class="ml-auto"><IconButton icon="x" label="Replier" onclick={() => (isIslandExpanded = false)} /></span>
+	</div>
+	<ol class="grid min-h-0 content-start gap-1 overflow-y-auto px-2 pb-2 {islandSheet === 'blocks' ? '' : 'hidden'}">
+		{@render blockListItems(true)}
+	</ol>
+	<div bind:this={panelScroller} class="min-h-0 overflow-y-auto {islandSheet === 'edition' ? '' : 'hidden'}">
+		{@render blockPanels()}
+	</div>
+{/snippet}
+
 <!-- Le mode édition prend tout l'écran, au-dessus du menu de l'application : l'aperçu a besoin de la place. -->
 <form
 	bind:this={editionForm}
@@ -508,190 +746,77 @@
 		{/if}
 	{/each}
 
-	<header class="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-3 py-2 sm:px-4">
-		<Button variant="ghost" icon="arrow-left" href={siteOverviewPathname}><span class="max-sm:sr-only">Vue d’ensemble</span></Button>
-		<div class="min-w-0 border-l border-line pl-3">
-			<p class="truncate body-strong text-ink">{data.isSiteCreated ? 'Modifier le site' : 'Créer le site'}</p>
-			<p class="truncate text-label text-ink-muted">{publicSiteHost ?? 'Pas encore en ligne'}</p>
+	<!-- Les deux vues rendent les mêmes panneaux : passer de l'une à l'autre ne perd rien de ce qui est saisi. -->
+	{#if editorView === 'immersive'}
+		<div class="min-h-0 flex-1">
+			{@render previewViewport(false)}
 		</div>
-
-		<div class="ml-auto lg:hidden">
-			<SegmentedToggle label="Édition ou aperçu" options={mobileViewOptions} bind:value={mobileView} />
-		</div>
-
-		<p aria-live="polite" class="text-small text-ink-muted max-md:order-last max-md:w-full lg:ml-auto">{@render saveStatus()}</p>
-		<div class="flex items-center gap-2">
-			{#if data.publicSiteUrl}
-				<Button variant="secondary" icon="arrow-square-out" href={data.publicSiteUrl} opensInNewTab><span class="max-xl:sr-only">Voir mon site</span></Button>
-			{/if}
-			<span title="Ctrl + S" class="contents">
-				<Button type="submit" icon="check" disabled={!canSave || !hasUnsavedChanges}>Enregistrer</Button>
-			</span>
-		</div>
-	</header>
-
-	<div class="flex min-h-0 flex-1 max-lg:flex-col">
-		<nav
-			aria-label="Blocs du site"
-			class="flex-none border-line bg-surface max-lg:border-b lg:w-64 lg:overflow-y-auto lg:border-r {mobileView === 'edition' ? '' : 'max-lg:hidden'}"
+		<FloatingIsland
+			label="Édition du site"
+			sheetLabel={islandSheet === 'blocks' ? 'Blocs du site' : titleOfBlock(selectedBlockId)}
+			bind:isExpanded={isIslandExpanded}
 		>
-			<ol class="flex gap-1 p-2 max-lg:overflow-x-auto max-lg:[scrollbar-width:none] lg:flex-col">
-				{#each blockIds as blockId, blockIndex (blockId)}
-					{#if blockIndex === 1 || blockId === 'display'}
-						<li aria-hidden="true" class="mx-2.5 my-1 border-t border-line-soft max-lg:hidden"></li>
-					{/if}
-					<li class="max-lg:w-52 max-lg:flex-none">
-						<EditorBlockRow
-							icon={blockIcons[blockId]}
-							title={titleOfBlock(blockId)}
-							summary={summarizeBlock(blockId)}
-							isSelected={selectedBlockId === blockId}
-							status={statusOfBlock(blockId)}
-							onselect={() => selectBlock(blockId)}
-						/>
-					</li>
-				{/each}
-			</ol>
-		</nav>
+			{#snippet bar()}{@render islandBar()}{/snippet}
+			{#snippet sheet()}{@render islandSheetContent()}{/snippet}
+		</FloatingIsland>
+	{:else}
+		<header class="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-3 py-2 sm:px-4">
+			<Button variant="ghost" icon="arrow-left" href={siteOverviewPathname}><span class="max-sm:sr-only">Vue d’ensemble</span></Button>
+			<div class="min-w-0 border-l border-line pl-3">
+				<p class="truncate body-strong text-ink">{data.isSiteCreated ? 'Modifier le site' : 'Créer le site'}</p>
+				<p class="truncate text-label text-ink-muted">{publicSiteHost ?? 'Pas encore en ligne'}</p>
+			</div>
 
-		<div
-			bind:this={panelScroller}
-			class="min-h-0 overflow-y-auto max-lg:w-full! max-lg:flex-1 lg:flex-none {mobileView === 'edition' ? '' : 'max-lg:hidden'}"
-			style:width="{panelWidth}px"
-		>
-			<div class="grid content-start gap-5 p-4 sm:p-6">
-				{#if saveOutcome === 'failed' && failure?.formError}
-					<Alert tone="danger" title="Le site n’a pas été enregistré">{failure.formError}</Alert>
+			<div class="ml-auto lg:hidden">
+				<SegmentedToggle label="Édition ou aperçu" options={mobileViewOptions} bind:value={mobileView} />
+			</div>
+
+			<p aria-live="polite" class="text-small text-ink-muted max-md:order-last max-md:w-full lg:ml-auto">{@render saveStatus()}</p>
+			<div class="flex items-center gap-2">
+				<span title="Le site en plein écran, l’édition dans un îlot flottant" class="contents">
+					<Button variant="secondary" icon="frame-corners" onclick={() => (editorView = 'immersive')}><span class="max-xl:sr-only">Mode immersif</span></Button>
+				</span>
+				{#if data.publicSiteUrl}
+					<Button variant="secondary" icon="arrow-square-out" href={data.publicSiteUrl} opensInNewTab><span class="max-xl:sr-only">Voir mon site</span></Button>
 				{/if}
-				{#if unavailableMandatoryModuleTitles.length > 0}
-					<Alert tone="warning" title="Modules imposés par votre groupement, encore masqués">
-						{unavailableMandatoryModuleTitles.join(', ')} : il leur manque des informations pour s’afficher.
-					</Alert>
-				{/if}
+				<span title="Ctrl + S" class="contents">
+					<Button type="submit" icon="check" disabled={!canSave || !hasUnsavedChanges}>Enregistrer</Button>
+				</span>
+			</div>
+		</header>
 
-				<div class="grid content-start gap-5 {selectedBlockId === 'appearance' ? '' : 'hidden'}">
-					{@render panelHeader('appearance', 'La mise en page, les couleurs et les polices.')}
-					<ChoiceGroup name="layoutId" legend="Mise en page" options={layoutOptions} layout="cards" bind:value={layoutId} />
-					{#if themePresets.length > 0}
-						{@render themePresetPicker()}
-					{/if}
-					{#if chosenManifest && themeSettingsFields.length > 0}
-						{@render layoutSettingsFields('Couleurs, polices et angles', themeSettingsFields)}
-					{/if}
-					{#if contrastWarnings.length > 0}
-						<Alert tone="warning" title="Certaines couleurs risquent d’être difficiles à lire">
-							<ul class="grid gap-1">
-								{#each contrastWarnings as contrastWarning (contrastWarning.label)}
-									<li>{contrastWarning.label} : contraste {contrastWarning.contrastRatio.toFixed(1)} sur 4,5 recommandé.</li>
-								{/each}
-							</ul>
-							Vous pouvez enregistrer quand même.
-						</Alert>
-					{/if}
-					{#if chosenManifest && otherSettingsFields.length > 0}
-						{@render layoutSettingsFields('Autres réglages', otherSettingsFields)}
-					{/if}
-				</div>
+		<div class="flex min-h-0 flex-1 max-lg:flex-col">
+			<nav
+				aria-label="Blocs du site"
+				class="flex-none border-line bg-surface max-lg:border-b lg:w-64 lg:overflow-y-auto lg:border-r {mobileView === 'edition' ? '' : 'max-lg:hidden'}"
+			>
+				<ol class="flex gap-1 p-2 max-lg:overflow-x-auto max-lg:[scrollbar-width:none] lg:flex-col">
+					{@render blockListItems(false)}
+				</ol>
+			</nav>
 
-				<div class="grid content-start gap-5 {selectedBlockId === 'hero' ? '' : 'hidden'}">
-					{@render panelHeader('hero', 'L’accroche et l’image qui ouvrent votre site.')}
-					<HeroEditor {layoutId} bind:hero={sections.hero} bind:uploadedImagePreviewUrls />
-				</div>
+			<div
+				bind:this={panelScroller}
+				class="min-h-0 overflow-y-auto max-lg:w-full! max-lg:flex-1 lg:flex-none {mobileView === 'edition' ? '' : 'max-lg:hidden'}"
+				style:width="{panelWidth}px"
+			>
+				{@render blockPanels()}
+			</div>
 
-				<div class="grid content-start gap-5 {selectedBlockId === 'findUs' ? '' : 'hidden'}">
-					{@render panelHeader('findUs', 'Les informations pour venir à la pharmacie.')}
-					<FindUsEditor bind:findUs={sections.findUs} />
-				</div>
+			<div class="flex-none max-lg:hidden">
+				<ResizeHandle
+					label="Élargir ou rétrécir le panneau d’édition"
+					value={panelWidth}
+					minimum={smallestPanelWidth}
+					maximum={largestPanelWidth}
+					onmove={(deltaInPixels) => (panelWidth = clampPanelWidth(panelWidth + deltaInPixels))}
+					onreset={() => (panelWidth = defaultPanelWidth)}
+				/>
+			</div>
 
-				{#each moduleChoices as moduleChoice (moduleChoice.moduleName)}
-					<div class="grid content-start gap-5 {selectedBlockId === moduleChoice.moduleName ? '' : 'hidden'}">
-						{@render panelHeader(moduleChoice.moduleName, moduleChoice.description)}
-						{#if moduleChoice.moduleName === 'services'}
-							<ServiceListEditor {layoutId} bind:services bind:uploadedImagePreviewUrls onserviceadded={() => enableModule('services')} />
-						{:else if moduleChoice.moduleName === 'news'}
-							{#if data.base.group}
-								<NewsSourceChooser group={data.base.group} bind:newsSource onchange={showGroupNewsWhenAvailable} />
-							{/if}
-							{#if displayedNewsSource === 'group' && data.base.group}
-								<GroupArticleList groupName={data.base.group.name} articles={data.base.group.articles} />
-							{:else}
-								<ArticleListEditor {layoutId} bind:articles bind:uploadedImagePreviewUrls onarticleadded={() => enableModule('news')} />
-							{/if}
-						{:else if moduleChoice.moduleName === 'brands'}
-							<BrandListEditor {layoutId} bind:brands bind:uploadedImagePreviewUrls onbrandadded={() => enableModule('brands')} />
-						{:else if moduleChoice.moduleName === 'appointment'}
-							<AppointmentEditor bind:appointment={sections.appointment} />
-						{:else if moduleChoice.moduleName === 'onlineOrder'}
-							<OnlineOrderEditor bind:onlineOrder={sections.onlineOrder} />
-						{:else if !modulesWithOwnEditor.includes(moduleChoice.moduleName) && moduleChoice.state.kind !== 'unavailable'}
-							<p class="text-small text-ink-muted">Rien à saisir ici : ce bloc reprend des informations déjà connues.</p>
-						{/if}
-					</div>
-				{/each}
-
-				<div class="grid content-start gap-5 {selectedBlockId === 'display' ? '' : 'hidden'}">
-					{@render panelHeader('display', 'Les blocs que votre site montre, et leur ordre.')}
-					<div class="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
-						{#each moduleChoices as moduleChoice (moduleChoice.moduleName)}
-							<div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-								<button
-									type="button"
-									class="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
-									onclick={() => selectBlock(moduleChoice.moduleName)}
-								>
-									<Icon name={blockIcons[moduleChoice.moduleName]} size={18} class="flex-none text-ink-muted" />
-									<span class="min-w-0">
-										<span class="block body-strong text-ink underline-offset-3 hover:underline">{moduleChoice.title}</span>
-										{#if moduleChoice.state.kind === 'unavailable'}
-											<span class="block text-small text-ink-muted">{moduleChoice.state.reason}</span>
-										{/if}
-									</span>
-								</button>
-								{@render moduleSwitch(moduleChoice)}
-							</div>
-						{/each}
-					</div>
-					<div class="grid gap-2">
-						<p class="body-strong text-ink">Ordre des blocs</p>
-						<p class="text-small text-ink-muted">Seuls les blocs activés que ce modèle place dans la page d’accueil sont listés. L’en-tête, la garde, les horaires et « Nous trouver » gardent leur place.</p>
-						<ModuleOrderList bind:moduleOrder {enabledModules} orderableModules={chosenManifest?.orderableModules} titleOf={(moduleName) => moduleTitles[moduleName] ?? moduleName} />
-					</div>
-				</div>
-
-				<nav aria-label="Bloc précédent ou suivant" class="flex items-center justify-between gap-3 border-t border-line pt-4">
-					{#if neighbourBlocks.previous}
-						{@const previousBlockId = neighbourBlocks.previous}
-						<Button variant="ghost" icon="caret-left" onclick={() => selectBlock(previousBlockId)}>{titleOfBlock(previousBlockId)}</Button>
-					{:else}
-						<span></span>
-					{/if}
-					{#if neighbourBlocks.next}
-						{@const nextBlockId = neighbourBlocks.next}
-						<span title="Alt + ↓" class="contents">
-							<Button variant="secondary" onclick={() => selectBlock(nextBlockId)}>
-								{titleOfBlock(nextBlockId)}<Icon name="caret-right" size={18} />
-							</Button>
-						</span>
-					{/if}
-				</nav>
+			<div class="min-h-0 min-w-0 flex-1 border-line lg:border-l {mobileView === 'apercu' ? '' : 'max-lg:hidden'}">
+				{@render previewViewport(true)}
 			</div>
 		</div>
-
-		<div class="flex-none max-lg:hidden">
-			<ResizeHandle
-				label="Élargir ou rétrécir le panneau d’édition"
-				value={panelWidth}
-				minimum={smallestPanelWidth}
-				maximum={largestPanelWidth}
-				onmove={(deltaInPixels) => (panelWidth = clampPanelWidth(panelWidth + deltaInPixels))}
-				onreset={() => (panelWidth = defaultPanelWidth)}
-			/>
-		</div>
-
-		<div class="min-h-0 min-w-0 flex-1 border-line lg:border-l {mobileView === 'apercu' ? '' : 'max-lg:hidden'}">
-			<ResizableViewport label="Aperçu du site" presets={viewportPresets} bind:width={previewWidth} bind:zoom={previewZoom}>
-				<SitePreviewFrame frameUrl={data.preview.frameUrl} frameOrigin={data.preview.frameOrigin} tenantSite={previewedSite} />
-			</ResizableViewport>
-		</div>
-	</div>
+	{/if}
 </form>

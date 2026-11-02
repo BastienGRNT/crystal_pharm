@@ -124,4 +124,5 @@ export { default as LevelBarEditor } from './molecules/charts/LevelBarEditor.sve
 export type { LevelBarEditorColumn } from './molecules/charts/levelBarEditor';
 export { default as ResizeHandle } from './atoms/actions/ResizeHandle.svelte';
 export { default as ResizableViewport } from './organisms/viewport/ResizableViewport.svelte';
+export { default as FloatingIsland } from './organisms/viewport/FloatingIsland.svelte';
 export type { ViewportPreset, ViewportZoom } from './organisms/viewport/resizableViewport';

@@ -17,6 +17,8 @@
 		children: Snippet;
 		/** Des actions en plus, au bout de la barre (recharger, ouvrir…). */
 		toolbarEnd?: Snippet;
+		/** Sans barre : la page qui l'affiche pose elle-même les largeurs (dans un îlot flottant, par exemple). */
+		showsToolbar?: boolean;
 	};
 
 	let {
@@ -27,7 +29,8 @@
 		minimumWidth = 320,
 		maximumWidth = 1920,
 		children,
-		toolbarEnd
+		toolbarEnd,
+		showsToolbar = true
 	}: ResizableViewportProps = $props();
 
 	// L'espace autour de la fenêtre : la marge de la scène (p-6) et les deux poignées avec leur écart (w-3 + gap-2).
@@ -83,7 +86,7 @@
 </script>
 
 <section aria-label={label} class="flex size-full min-h-0 flex-col bg-surface-muted">
-	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-3 py-2">
+	<div class="flex flex-wrap {showsToolbar ? '' : 'hidden'} items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-3 py-2">
 		<div role="group" aria-label="Largeur de l’écran" class="inline-flex items-center gap-0.5 rounded-control border border-line bg-surface-muted p-[3px]">
 			{#each presets as preset (preset.width)}
 				<button
