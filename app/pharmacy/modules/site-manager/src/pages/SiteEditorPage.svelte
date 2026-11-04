@@ -658,53 +658,55 @@
 	</ResizableViewport>
 {/snippet}
 
-{#snippet islandDivider(hiddenBelowClass: string)}
-	<span aria-hidden="true" class="mx-1 h-6 border-l border-line {hiddenBelowClass}"></span>
+{#snippet islandDivider()}
+	<span aria-hidden="true" class="my-1 w-6 border-t border-line"></span>
+{/snippet}
+
+{#snippet islandButton(icon: IconName, label: string, isPressed: boolean, onclick: () => void)}
+	<button
+		type="button"
+		aria-pressed={isPressed}
+		aria-label={label}
+		title={label}
+		class="inline-grid size-control flex-none cursor-pointer place-items-center rounded-full text-ink-muted hover:bg-surface-muted hover:text-ink aria-pressed:bg-accent-soft aria-pressed:text-accent-text"
+		{onclick}
+	>
+		<Icon name={icon} size={20} />
+	</button>
 {/snippet}
 
 {#snippet islandBar()}
-	<Button variant="ghost" icon="arrow-left" href={siteOverviewPathname}><span class="sr-only">Vue d’ensemble</span></Button>
-	{@render islandDivider('')}
-	<button
-		type="button"
-		aria-pressed={isIslandExpanded && islandSheet === 'blocks'}
-		title="Les blocs du site"
-		class="inline-flex h-control cursor-pointer items-center gap-2 rounded-full px-3 text-small font-bold text-ink hover:bg-surface-muted aria-pressed:bg-accent-soft aria-pressed:text-accent-text"
-		onclick={() => toggleIslandSheet('blocks')}
+	<a
+		href={siteOverviewPathname}
+		aria-label="Vue d’ensemble"
+		title="Vue d’ensemble"
+		class="inline-grid size-control flex-none place-items-center rounded-full text-ink-muted hover:bg-surface-muted hover:text-ink"
 	>
-		<Icon name="puzzle-piece" size={18} /><span class="max-sm:sr-only">Blocs</span>
-	</button>
-	<button
-		type="button"
-		aria-pressed={isIslandExpanded && islandSheet === 'edition'}
-		title="Modifier « {titleOfBlock(selectedBlockId)} »"
-		class="inline-flex h-control min-w-0 cursor-pointer items-center gap-2 rounded-full px-3 text-small font-bold text-ink hover:bg-surface-muted aria-pressed:bg-accent-soft aria-pressed:text-accent-text"
-		onclick={() => toggleIslandSheet('edition')}
-	>
-		<Icon name={blockIcons[selectedBlockId]} size={18} class="flex-none" />
-		<span class="max-w-40 truncate max-sm:sr-only">{titleOfBlock(selectedBlockId)}</span>
-	</button>
-	{@render islandDivider('max-md:hidden')}
-	<div role="group" aria-label="Largeur de l’écran" class="inline-flex items-center gap-0.5 max-md:hidden">
+		<Icon name="arrow-left" size={20} />
+	</a>
+	{@render islandDivider()}
+	{@render islandButton('puzzle-piece', 'Les blocs du site', isIslandExpanded && islandSheet === 'blocks', () => toggleIslandSheet('blocks'))}
+	{@render islandButton(
+		blockIcons[selectedBlockId],
+		`Modifier « ${titleOfBlock(selectedBlockId)} »`,
+		isIslandExpanded && islandSheet === 'edition',
+		() => toggleIslandSheet('edition')
+	)}
+	{@render islandDivider()}
+	<div role="group" aria-label="Largeur de l’écran" class="flex flex-col items-center gap-1">
 		{#each viewportPresets as preset (preset.width)}
-			<button
-				type="button"
-				aria-pressed={previewWidth === preset.width}
-				aria-label={preset.label}
-				title="{preset.label} · {preset.width} px"
-				class="inline-grid size-control cursor-pointer place-items-center rounded-full text-ink-muted hover:bg-surface-muted hover:text-ink aria-pressed:bg-surface aria-pressed:text-ink aria-pressed:shadow-card"
-				onclick={() => showPreviewAt(preset.width)}
-			>
-				<Icon name={preset.icon} size={18} />
-			</button>
+			{@render islandButton(preset.icon, `${preset.label} · ${preset.width} px`, previewWidth === preset.width, () => showPreviewAt(preset.width))}
 		{/each}
 	</div>
-	{@render islandDivider('max-lg:hidden')}
-	<p aria-live="polite" class="max-w-64 truncate px-2 text-small text-ink-muted max-lg:sr-only">{@render saveStatus()}</p>
-	<span title="Ctrl + S" class="contents">
-		<Button type="submit" icon="check" disabled={!canSave || !hasUnsavedChanges}><span class="max-sm:sr-only">Enregistrer</span></Button>
+	{@render islandDivider()}
+	<p aria-live="polite" class="sr-only">{@render saveStatus()}</p>
+	<span title="Enregistrer (Ctrl + S)" class="relative">
+		<Button type="submit" icon="check" disabled={!canSave || !hasUnsavedChanges}><span class="sr-only">Enregistrer</span></Button>
+		{#if hasUnsavedChanges}
+			<span aria-hidden="true" class="absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 border-surface bg-warning"></span>
+		{/if}
 	</span>
-	<IconButton icon="frame-corners" label="Quitter le mode immersif" onclick={() => (editorView = 'panels')} />
+	{@render islandButton('frame-corners', 'Quitter le mode immersif', false, () => (editorView = 'panels'))}
 {/snippet}
 
 {#snippet islandSheetContent()}
