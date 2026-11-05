@@ -4,7 +4,7 @@ import { afterAll, beforeAll, it } from 'vitest';
 
 // Mesure la lecture non cachée d'une page : aller-retour 1 (adresse + droit), puis 2 (contenu, fiche, équipe, groupement).
 // Le rendu Solid n'y est pas : il se mesure à part, serveur lancé.
-const repositoryEnvironmentFile = new URL('../../../../../.env', import.meta.url);
+const repositoryEnvironmentFile = new URL('../../../../../env/development/web.env', import.meta.url);
 if (existsSync(repositoryEnvironmentFile)) process.loadEnvFile(repositoryEnvironmentFile);
 
 const databaseUrl = process.env.DATABASE_URL;

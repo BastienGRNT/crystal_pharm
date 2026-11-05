@@ -23,19 +23,22 @@ src/
 ├─ pages/                   un composant par écran, qui reçoit ses données en props
 ├─ components/              composants métier en atomic design (atoms/ → molecules/ → organisms/), construits avec ui
 ├─ domain/                  types et calculs purs, testés
-└─ server/
-   ├─ index.server.ts       la partie publique côté serveur (load, actions, endpoints)
-   ├─ db/                   le schéma Drizzle du module et ses migrations (s'il en possède un)
-   ├─ services/             la logique, quand il y en a
-   ├─ repositories/         SEUL endroit avec du Drizzle sur les tables du module
-   └─ api/                  SEUL endroit qui appelle le C# (shared/api-client)
+├─ server/
+│  ├─ index.server.ts       la partie publique côté serveur (load, actions, endpoints)
+│  ├─ db/                   le schéma Drizzle du module et ses migrations (s'il en possède un)
+│  ├─ services/             la logique, quand il y en a
+│  └─ repositories/         SEUL endroit avec du Drizzle sur les tables du module
+└─ api/                     SEUL endroit qui appelle le C#, depuis le navigateur (shared/api-client)
 ```
 
 - Chaque dossier est créé avec son premier fichier.
-- Une page ne fait ni Drizzle ni appel au C# : elle reçoit ses données du
-  `load` de `server/`.
-- Un `load` ou une action passe par `repositories/`, `api/` ou les fonctions
-  de `shared/pharmacy-db`.
+- Une page ne fait jamais de Drizzle : elle reçoit ses données du `load` de
+  `server/`, qui passe par `repositories/` ou les fonctions de
+  `shared/pharmacy-db`.
+- Les données de santé ne passent jamais par `server/` : la page les demande
+  au C# par `src/api/` (le JWT court de `pharmacy/host` en mémoire), les
+  garde en mémoire et les envoie de même. Le `load` d'un tel écran ne donne
+  que le reste (noms des Employees, droits…).
 - Un service n'existe que s'il apporte de la logique, sauf si le module
   expose une API : alors toute la logique est dans `services/`, appelée à la
   fois par les pages et par l'API.

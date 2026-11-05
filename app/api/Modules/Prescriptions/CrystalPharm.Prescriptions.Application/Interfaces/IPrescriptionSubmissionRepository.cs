@@ -5,17 +5,25 @@ namespace CrystalPharm.Prescriptions.Application.Interfaces;
 /// <summary>Les envois d'ordonnance du Tenant de la requête : jamais ceux d'un autre.</summary>
 public interface IPrescriptionSubmissionRepository
 {
+    /// <summary>L'envoi de cette clé avec ses fichiers, même s'il attend encore ses fichiers.</summary>
     Task<PrescriptionSubmission?> FindByIdempotencyKeyAsync(string idempotencyKey, CancellationToken cancellationToken);
 
-    /// <summary>Les envois les plus récents d'abord, avec leurs fichiers.</summary>
+    /// <summary>Comme <see cref="FindByIdempotencyKeyAsync"/>, mais suivi : ses changements partent au prochain enregistrement.</summary>
+    Task<PrescriptionSubmission?> FindByIdempotencyKeyForUpdateAsync(string idempotencyKey, CancellationToken cancellationToken);
+
+    /// <summary>Les envois arrivés chez l'équipe, les plus récents d'abord, avec leurs fichiers.</summary>
     Task<IReadOnlyList<PrescriptionSubmission>> ListLatestAsync(int limit, CancellationToken cancellationToken);
 
+    /// <summary>Seulement un envoi arrivé chez l'équipe.</summary>
     Task<PrescriptionSubmission?> FindAsync(Guid submissionId, CancellationToken cancellationToken);
 
     /// <summary>Comme <see cref="FindAsync"/>, mais suivi : ses changements partent au prochain enregistrement.</summary>
     Task<PrescriptionSubmission?> FindForUpdateAsync(Guid submissionId, CancellationToken cancellationToken);
 
-    /// <summary>Les envois arrivés au bout de leur durée de conservation, suivis pour être effacés.</summary>
+    /// <summary>
+    /// Les envois arrivés au bout de leur durée de conservation, et ceux dont les fichiers n'ont jamais été confirmés,
+    /// suivis pour être effacés.
+    /// </summary>
     Task<IReadOnlyList<PrescriptionSubmission>> ListPastRetentionAsync(DateTimeOffset now, CancellationToken cancellationToken);
 
     void Add(PrescriptionSubmission submission);

@@ -1,13 +1,14 @@
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, loadEnv, searchForWorkspaceRoot } from 'vite';
+import { existsSync } from 'node:fs';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 
-const repositoryRootDirectory = '../../..';
+const developmentEnvironmentFile = '../../../env/development/web.env';
 
-export default defineConfig(({ mode }) => {
-	// Le `.env` est à la racine du dépôt ; en prod, l'environnement vient du serveur.
-	Object.assign(process.env, loadEnv(mode, repositoryRootDirectory, ''));
+export default defineConfig(() => {
+	// Les variables de dev du VPS web ; en prod, l'environnement vient du serveur.
+	if (existsSync(developmentEnvironmentFile)) process.loadEnvFile(developmentEnvironmentFile);
 
 	return {
 		plugins: [

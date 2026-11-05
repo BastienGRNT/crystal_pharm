@@ -1,4 +1,4 @@
-/** Une adresse lue dans l'environnement ; l'erreur nomme la variable fautive, pour la corriger dans le `.env`. */
+/** Une adresse lue dans l'environnement ; l'erreur nomme la variable fautive, pour la corriger dans l'environnement. */
 export function readUrlFromEnvironment(variableName: string): URL {
 	const value = process.env[variableName];
 	if (!value) throw new Error(`${variableName} is missing from the environment.`);

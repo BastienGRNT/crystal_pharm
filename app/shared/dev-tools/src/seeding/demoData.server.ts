@@ -138,7 +138,7 @@ export async function resetDemoData(): Promise<string> {
 		throw new Error('Demo data are reset by pharmacy/host only: the module seeders are registered there.');
 	}
 	await deleteDemoData();
-	clearDevelopmentOutbox();
+	await clearDevelopmentOutbox();
 	return seedDemoData();
 }
 

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // Se lance avec `pnpm --filter @crystal-pharm/pharmacy-db test:integration`,
 // Postgres démarré (`make start`) et migré (`make migrate`). Les fonctions
 // écrivent pour de vrai : tout ce qui est créé ici est effacé à la fin.
-const repositoryEnvironmentFile = new URL('../../../../../.env', import.meta.url);
+const repositoryEnvironmentFile = new URL('../../../../../env/development/web.env', import.meta.url);
 if (existsSync(repositoryEnvironmentFile)) process.loadEnvFile(repositoryEnvironmentFile);
 
 const { deleteCustomerAccountsWithEmailEnding, ensureCustomerAccount } = await import('@crystal-pharm/auth');

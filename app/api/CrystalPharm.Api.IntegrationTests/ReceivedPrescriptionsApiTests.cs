@@ -40,6 +40,7 @@ public sealed class ReceivedPrescriptionsApiTests(ApiFixture api)
             { new StringContent(lastName), "lastName" },
             { new StringContent("1985-05-17"), "birthDate" },
             { new StringContent("0612345678"), "phone" },
+            { new StringContent("camille.durand@example.org"), "email" },
             { new StringContent("2026-10-26T14:30"), "plannedVisitAt" },
             { new StringContent("false"), "hasAlreadyVisited" },
             { new StringContent("185057800608491"), "socialSecurityNumber" },
@@ -254,8 +255,7 @@ public sealed class ReceivedPrescriptionsApiTests(ApiFixture api)
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"received-prescriptions/{submissionId}")).StatusCode);
         Assert.Equal(0, await CountAsync("select count(*) from prescriptions.documents where submission_id = @id", submissionId));
-        var submissionDirectory = Path.Combine(api.PrescriptionStorageDirectory, tenantId.ToString("N"), submissionId.ToString("N"));
-        Assert.True(!Directory.Exists(submissionDirectory) || Directory.GetFiles(submissionDirectory).Length == 0);
+        Assert.Empty(await api.ListStoredKeysAsync($"{tenantId:N}/{submissionId:N}/"));
     }
 
     [Fact]

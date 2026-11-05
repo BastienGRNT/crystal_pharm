@@ -23,6 +23,52 @@ public sealed class PrescriptionsController(IPrescriptionSubmissionService submi
     private const long MaximumRequestSizeInBytes =
         (PrescriptionSubmission.MaximumPrescriptionPages + 3) * SubmittedDocument.MaximumSizeInBytes + 1024 * 1024;
 
+    // Les champs et la description des fichiers, jamais les fichiers eux-mêmes.
+    private const long MaximumUploadStartSizeInBytes = 64 * 1024;
+
+    /// <summary>
+    /// Commence un envoi dont le navigateur dépose lui-même les fichiers : les champs, et ce qu'il annonce de chaque
+    /// fichier (nature, taille, type). Renvoie un lien pré-signé par fichier gardé. L'en-tête <c>Idempotency-Key</c>
+    /// rend l'appel rejouable : 200 et des liens neufs tant que l'envoi n'est pas confirmé, 200 sans lien après.
+    /// </summary>
+    [HttpPost("uploads")]
+    [RequestSizeLimit(MaximumUploadStartSizeInBytes)]
+    [Consumes("application/json")]
+    [ProducesResponseType<PrescriptionUploadStartResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<PrescriptionUploadStartResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult<PrescriptionUploadStartResult>> StartUpload(
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+        [FromBody] PrescriptionUploadStartForm form,
+        CancellationToken cancellationToken)
+    {
+        var result = await submissionService.StartUploadAsync(ToNewUpload(idempotencyKey, form), cancellationToken);
+        return result.AlreadyStarted ? Ok(result) : StatusCode(StatusCodes.Status201Created, result);
+    }
+
+    /// <summary>
+    /// Confirme que les fichiers sont déposés : ils sont vérifiés (taille, format reconnu au contenu, antivirus) et
+    /// l'envoi arrive chez l'équipe. Un fichier refusé efface tout l'envoi. Rejouable : 200 avec le même envoi.
+    /// </summary>
+    [HttpPost("uploads/completion")]
+    [ProducesResponseType<PrescriptionSubmissionResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult<PrescriptionSubmissionResult>> CompleteUpload(
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            throw new InvalidPrescriptionException("L’identifiant de l’envoi est obligatoire.");
+        }
+
+        var result = await submissionService.CompleteUploadAsync(idempotencyKey, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
     /// <summary>
     /// Reçoit une ordonnance (une ou plusieurs pages) et, si le patient les a jointes, sa carte Vitale et sa mutuelle. L'en-tête
     /// <c>Idempotency-Key</c> rend l'appel rejouable : le rejouer renvoie le même envoi (200) sans en créer un second.
@@ -57,6 +103,25 @@ public sealed class PrescriptionsController(IPrescriptionSubmissionService submi
         form.NoteFromPatient,
         form.SocialSecurityNumber,
         IncomingDocumentsOf(form));
+
+    private static NewPrescriptionUploadDto ToNewUpload(string? idempotencyKey, PrescriptionUploadStartForm form) => new(
+        idempotencyKey ?? string.Empty,
+        form.FirstName ?? string.Empty,
+        form.LastName ?? string.Empty,
+        ParseBirthDateOrRefuse(form.BirthDate),
+        form.Phone ?? string.Empty,
+        form.Email,
+        ParseOptionalPlannedVisitOrRefuse(form.PlannedVisitAt),
+        form.HasAlreadyVisited,
+        form.IsRenewal,
+        form.NoteFromPatient,
+        form.SocialSecurityNumber,
+        (form.Documents ?? []).Select(ToAnnouncedDocumentOrRefuse).ToArray());
+
+    private static AnnouncedDocument ToAnnouncedDocumentOrRefuse(AnnouncedDocumentForm document) =>
+        Enum.TryParse<DocumentKind>(document.Kind, ignoreCase: true, out var kind) && Enum.IsDefined(kind)
+            ? new AnnouncedDocument(kind, document.SizeInBytes, document.ContentType ?? string.Empty)
+            : throw new InvalidPrescriptionException("La nature d’un des fichiers n’est pas valide.");
 
     private static IReadOnlyList<IncomingDocument> IncomingDocumentsOf(PrescriptionSubmissionForm form)
     {
@@ -139,4 +204,41 @@ public sealed class PrescriptionSubmissionForm
     public IFormFile? VitalCardPhoto { get; init; }
     public IFormFile? MutualCardFront { get; init; }
     public IFormFile? MutualCardBack { get; init; }
+}
+
+/// <summary>
+/// Les champs du formulaire de l'ordonnance du site (cf. <c>PrescriptionUploadRequestSchema</c>), et la description de
+/// chaque fichier dans l'ordre : la première page, les suivantes, la carte Vitale, puis les deux faces de la mutuelle.
+/// </summary>
+public sealed class PrescriptionUploadStartForm
+{
+    public string? FirstName { get; init; }
+    public string? LastName { get; init; }
+
+    /// <summary>Au format <c>2000-01-31</c>.</summary>
+    public string? BirthDate { get; init; }
+
+    public string? Phone { get; init; }
+    public string? Email { get; init; }
+
+    /// <summary>Date et heure locales de la pharmacie, au format <c>2026-10-25T14:30</c> ; absente : « dès que c'est prêt ».</summary>
+    public string? PlannedVisitAt { get; init; }
+
+    public bool HasAlreadyVisited { get; init; }
+    public bool IsRenewal { get; init; }
+    public string? NoteFromPatient { get; init; }
+    public string? SocialSecurityNumber { get; init; }
+    public IReadOnlyList<AnnouncedDocumentForm>? Documents { get; init; }
+}
+
+/// <summary>Un fichier que le navigateur va déposer.</summary>
+public sealed class AnnouncedDocumentForm
+{
+    /// <summary><c>prescription</c>, <c>vitalCard</c>, <c>mutualCardFront</c> ou <c>mutualCardBack</c>.</summary>
+    public string? Kind { get; init; }
+
+    public long SizeInBytes { get; init; }
+
+    /// <summary>Le type MIME annoncé, vérifié au contenu une fois le fichier déposé.</summary>
+    public string? ContentType { get; init; }
 }

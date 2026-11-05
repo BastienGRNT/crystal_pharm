@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { defineConfig } from 'drizzle-kit';
 
-const repositoryEnvironmentFile = '../../../../.env';
+const repositoryEnvironmentFile = '../../../../env/development/web.env';
 
 if (existsSync(repositoryEnvironmentFile)) process.loadEnvFile(repositoryEnvironmentFile);
 

@@ -164,7 +164,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 		label: 'Vider la boîte mail',
 		description: 'Efface les emails reçus en dev.',
 		categoryKey: 'demos',
-		run: runEverywhere(async () => clearDevelopmentOutbox(), 'Boîte mail vidée.')
+		run: runEverywhere(clearDevelopmentOutbox, 'Boîte mail vidée.')
 	},
 	{
 		actionName: 'reset-demo-data',

@@ -120,17 +120,17 @@ export async function deleteReceivedPrescription(caller: PrescriptionsCaller, su
 	throw unexpectedResponse('the deletion of a received prescription', response);
 }
 
-/** Le fichier en flux, tel que le C# le sert : jamais lu en entier ni copié ici. */
-export async function openReceivedDocument(
+/** Un lien de lecture pré-signé et très court vers le fichier, servi par le stockage de santé, jamais par ce serveur. */
+export async function createReceivedDocumentLink(
 	caller: PrescriptionsCaller,
 	submissionId: string,
 	documentId: string
-): Promise<Response | null> {
-	const { response } = await createPrescriptionsApiClient(caller).GET(
-		'/received-prescriptions/{submissionId}/documents/{documentId}',
-		{ params: { path: { submissionId, documentId } }, parseAs: 'stream' }
+): Promise<string | null> {
+	const { data, response } = await createPrescriptionsApiClient(caller).GET(
+		'/received-prescriptions/{submissionId}/documents/{documentId}/link',
+		{ params: { path: { submissionId, documentId } } }
 	);
-	if (response.ok) return response;
+	if (data) return data.url;
 	if (response.status === 404) return null;
-	throw unexpectedResponse('the reading of a prescription file', response);
+	throw unexpectedResponse('the link to a prescription file', response);
 }

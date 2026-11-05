@@ -1,1 +1,1 @@
-export { streamReceivedDocument as GET } from '@crystal-pharm/prescriptions/server';
+export { createReceivedDocumentReadLink as GET } from '@crystal-pharm/prescriptions/server';

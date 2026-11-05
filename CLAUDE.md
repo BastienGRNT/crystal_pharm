@@ -45,8 +45,10 @@ Un dossier d'app porte le nom de **son public** ; un package `shared/*-db`, le
 nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 
 ```
-├─ CLAUDE.md  README.md  Makefile  compose.yml  .env
-├─ docker/                  Caddy : relais de dev devant app/site
+├─ CLAUDE.md  README.md  Makefile  compose.yml  docker-compose.prod.yml
+├─ env/                     les variables, un fichier par VPS : development · simulation · production
+├─ docs/                    l'architecture de prod (serveurs, fournisseurs, sauvegardes)
+├─ docker/                  Caddy, images de prod, stand-ins des fournisseurs, simulation
 └─ app/
    ├─ pharmacy/             l'espace des pharmacies
    │  ├─ host/              SvelteKit : monte les modules, sert l'auth et l'API mobile
@@ -70,7 +72,9 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
   la pharmacie et ses employés, les groupements, le planning, le contenu des
   sites.
 - **C#** (`app/api`) : seulement `Booking` (concurrence, file d'attente) et
-  `Prescriptions`, qui portent les données de santé. Une seule API.
+  `Prescriptions`, qui portent les données de santé. Une seule API, exposée
+  sur Internet et appelée **directement par le navigateur** ; aucune app Node
+  ne l'appelle.
 - **`pharmacy`** : les outils d'un Tenant, des modules montés par une seule
   app SvelteKit (`pharmacy/host`) — un déploiement, des frontières de packages.
 - **`group`** : un PharmacyGroup voit ses pharmacies membres et les invite.
@@ -80,14 +84,19 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
   d'utiliser et ce que chacun paie. Le paiement passe par un
   `PaymentProvider` (faux en dev, Stripe plus tard), jamais appelé ailleurs.
 - **SolidStart** (`app/site`) : rend les sites. Lit `content` et
-  `shared/pharmacy-db` directement, jamais via le C#.
+  `shared/pharmacy-db` directement. Pour un formulaire de santé, il ne fait que
+  signer le ticket du Visitor (cf. « Sécurité ») : le navigateur envoie au C#.
 - **L'app mobile du planning** (créée avec son premier besoin) : consomme
   l'API versionnée de `pharmacy/modules/planning`, exposée par `pharmacy/host`.
 - Un envoi du Visitor appartient au module qui le traite : un rendez-vous →
   `Booking`, une ordonnance → `Prescriptions`. Un nouveau type d'envoi sans
   module évident : on en parle avant.
-- Les emails partent par Resend, derrière l'interface de `shared/email` (en
-  dev, rien ne part : ils arrivent dans la boîte de l'outil de dev).
+- Les emails partent en SMTP par Scaleway TEM (qui ne garde rien), derrière
+  l'interface de `shared/email` (en dev, rien ne part : ils arrivent dans
+  Mailpit, lu par l'outil de dev). Un email à un patient part du C#, par le
+  même SMTP : son adresse est une donnée de santé.
+- Les fichiers d'un Tenant (photos, icônes…) vont dans un stockage objet (R2
+  en prod), derrière le `FileStorage` de `shared/pharmacy-db`.
 
 ## Les déployables
 
@@ -97,10 +106,10 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 | `group` | les GroupMembers | `http://groupement.localhost:5174` |
 | `admin` | les PlatformAdmins | `http://admin.localhost:5175` |
 | `site` | les Visitors | — |
-| `api` | `pharmacy`, `site` (jamais Internet) | `5158` |
+| `api` | les navigateurs des TenantMembers et des Visitors | `http://localhost:5158` |
 
 - Le domaine de chaque app vient de l'environnement (`PHARMACY_URL`,
-  `GROUP_URL`, `ADMIN_URL`), jamais du code. Une requête sur un autre domaine
+  `GROUP_URL`, `ADMIN_URL`, `API_URL`), jamais du code. Une requête sur un autre domaine
   est renvoyée vers celui-là (le cookie de session n'y vaut pas).
 - Une app est sans état : on la fait grossir en lançant plusieurs instances.
   Un module de `pharmacy` ne sort dans sa propre app que pour une raison
@@ -125,15 +134,24 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
   appartenance (un Owner les a toutes), jamais de son type de compte. Chaque
   droit se vérifie côté serveur ; une interface qui masque un bouton ne
   protège rien.
-- Le C# n'est **jamais exposé à Internet**. Il n'accepte que deux appelants
-  identifiés : un TenantMember (JWT court de Better Auth, vérifié par sa clé
-  publique) ou le service `site` (identité de service).
+- Le C# est exposé à Internet (`API_URL`, derrière son Caddy : TLS, limites
+  de débit) et n'accepte que deux preuves, jamais mélangées :
+  - un **TenantMember** : un JWT court de Better Auth, que la page demande à
+    `pharmacy` et garde en mémoire, vérifié par le C# avec les clés publiques
+    (JWKS) de `pharmacy` ; CORS limité à `PHARMACY_URL` ;
+  - un **Visitor** : un ticket court signé par `site` pour le Tenant du Host
+    et un type de formulaire, que la page demande à `site` juste avant
+    l'envoi ; le C# le vérifie avec la clé publique de `site`. Sans cookie ni
+    compte : CORS ouvert, limites de débit par IP et par Tenant, champ piège.
+  Aucune app Node n'appelle le C#, pas même l'outil de dev.
 - Le `tenantId` vient de la session (ou de son JWT) pour un TenantMember, du
-  Host de la requête pour un Visitor, résolu en base par `app/site` : jamais
-  d'un en-tête, même posé par la passerelle. Le `groupId` vient de la session d'un GroupMember. Jamais d'un
+  Host de la requête pour un Visitor, résolu en base par `app/site` et porté
+  jusqu'au C# par le ticket signé : jamais d'un en-tête, même posé par la
+  passerelle. Le `groupId` vient de la session d'un GroupMember. Jamais d'un
   paramètre, d'une URL ou d'un champ de formulaire.
 - Chaque processus n'a que ses propres secrets : le C# n'a ni le secret de
-  Better Auth ni accès aux schémas `auth` et `platform_auth`.
+  Better Auth ni accès aux schémas `auth` et `platform_auth`, et ne connaît
+  que les clés publiques de `pharmacy` et de `site`.
 - Chaque app a son rôle Postgres : écriture sur les schémas qu'elle possède
   ou qu'elle écrit par leurs fonctions, lecture seule sur ce qu'elle lit.
 
@@ -142,12 +160,20 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
 
 - stockés **uniquement** par le C#, dans `booking` et `prescriptions` (et leurs
-  fichiers), derrière des interfaces d'`Application` : local en dev, HDS en prod ;
+  fichiers, dans un stockage objet), derrière des interfaces d'`Application` :
+  des conteneurs en dev, Postgres et stockage objet HDS en prod ;
+- un fichier se dépose du navigateur au stockage par un lien pré-signé court
+  du C# (écriture seule), le seul à détenir une clé ; il se relit par le C#,
+  qui le renvoie au TenantMember. La page le lit en arrière-plan et l'affiche
+  depuis la mémoire, jamais dans une barre d'adresse, un historique ou un
+  `href` ;
 - en prod, seules ces données sont chez l'hébergeur HDS, le reste est sur un
   serveur normal. Donc aucune clé étrangère ni jointure entre un schéma de
   santé et un autre : on se référence par identifiant ;
-- côté Node, ils ne font que transiter : jamais en cache, sur disque, dans une
-  URL, un log, un message d'erreur ou un outil d'analytics ;
+- ils ne passent **jamais** par un serveur Node, pas même en transit : ils
+  vont du navigateur au C#. Dans le navigateur, en mémoire seulement : jamais
+  dans un stockage du navigateur, une URL (hors identifiant opaque), un log
+  ou un outil d'analytics ;
 - ni `group` ni `admin` n'en voient jamais : au plus des compteurs agrégés.
 
 ## Dépendances autorisées
@@ -209,9 +235,12 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
 - **Données du C#** : son OpenAPI génère `shared/api-client`
   (`make gen-types`), **jamais édité à la main**. Les types régénérés vont
   dans le commit qui change le contrat.
-- **La seule frontière TS → C#** : la vue `planning.staff_availability`, lue
-  par `Booking`. Changer ses colonnes = changer un contrat : le C# s'adapte
-  dans la même branche.
+- **Le seul lien entre le Node et le C#** : la vue
+  `planning.staff_availability`, lue par `Booking` en lecture seule. Changer
+  ses colonnes = changer un contrat : le C# s'adapte dans la même branche.
+- **Les clés publiques** : le JWKS de `pharmacy` et la clé du ticket de
+  `site`. En changer se fait sans coupure (la nouvelle publiée avant d'être
+  utilisée).
 - À la frontière, un **adapter** (une fonction qui traduit un type dans
   l'autre), dans la zone qui en a besoin.
 
@@ -221,9 +250,10 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
   externe) est versionnée dans l'URL : `/api/v1/…`. Dans une version, on
   ajoute, on ne retire ni ne renomme jamais. Un changement cassant = `/v2`,
   et la v1 vit tant qu'un client l'utilise.
-- Entre les apps du monorepo et le C# (déployés ensemble, mais pas au même
-  instant) : pas de version dans l'URL, mais toujours compatible — on ajoute
-  d'abord, on retire seulement quand plus personne ne l'utilise.
+- Entre les pages du monorepo et le C# (déployés ensemble, mais pas au même
+  instant, et une page déjà ouverte garde son ancien code) : pas de version
+  dans l'URL, mais toujours compatible — on ajoute d'abord, on retire
+  seulement quand plus personne ne l'utilise.
 - Les `load` et actions SvelteKit ne sont pas une API : rien à versionner.
 
 ## Base de données
@@ -305,8 +335,9 @@ Seulement en dev, dans les trois apps Svelte : cf. `app/shared/CLAUDE.md`,
 
 ## Commandes
 
-`make start` (Postgres) · `make migrate` (les migrations Drizzle) · `make logs` ·
-`make api` · `make gen-types` (créée avec le premier appel d'une app au C#) ·
+`make start` (Postgres, stockages objet, Mailpit) · `make migrate` (les migrations
+Drizzle) · `make logs` · `make api` · `make gen-types` · `make simulate` (la prod
+simulée, cf. `docs/architecture.md`) ·
 `pnpm dev` dans `app/` (les trois apps Svelte). Dépendances JS : `pnpm install` dans
 `app/`. Rien d'autre tant que le besoin n'est pas réel.
 

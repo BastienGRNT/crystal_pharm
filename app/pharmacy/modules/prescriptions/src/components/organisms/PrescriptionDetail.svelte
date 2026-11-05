@@ -14,6 +14,7 @@
 		Textarea
 	} from '@crystal-pharm/ui';
 	import type { ReceivedPrescriptionsActionResult, SelectedPrescription } from '../../pages/receivedPrescriptionsPageData';
+	import ReceivedDocumentCard from '../molecules/ReceivedDocumentCard.svelte';
 
 	type PrescriptionDetailProps = {
 		prescription: SelectedPrescription;
@@ -120,35 +121,8 @@
 	<section class="grid gap-3" aria-labelledby="documents-title">
 		<h3 id="documents-title" class={sectionTitleClasses}>Documents envoyés</h3>
 		<div class="grid gap-3 sm:grid-cols-2">
-			{#each prescription.documents as document (document.id)}
-				<a
-					href={document.href}
-					target="_blank"
-					rel="noopener"
-					class="group grid overflow-hidden rounded-lg border border-line bg-surface no-underline shadow-card hover:border-line-strong {document.isPreviewable &&
-					prescription.documents.indexOf(document) === 0
-						? 'sm:col-span-2'
-						: ''}"
-				>
-					{#if document.isPreviewable}
-						<img
-							src={document.href}
-							alt={document.label}
-							loading="lazy"
-							class="max-h-[420px] w-full bg-surface-muted object-contain"
-						/>
-					{:else}
-						<span class="grid h-28 place-items-center bg-surface-muted text-ink-subtle">
-							<Icon name="file-text" size={32} />
-						</span>
-					{/if}
-					<span class="flex items-center justify-between gap-2 border-t border-dashed border-line-strong/50 px-3.5 py-2.5 text-small font-bold text-ink">
-						{document.label}
-						<span class="flex items-center gap-1 text-ink-subtle group-hover:text-ink">
-							Ouvrir <Icon name="arrow-square-out" size={14} />
-						</span>
-					</span>
-				</a>
+			{#each prescription.documents as receivedDocument, documentIndex (receivedDocument.id)}
+				<ReceivedDocumentCard {receivedDocument} isWide={receivedDocument.isPreviewable && documentIndex === 0} />
 			{/each}
 		</div>
 	</section>

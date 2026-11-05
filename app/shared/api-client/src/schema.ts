@@ -4,6 +4,155 @@
  */
 
 export interface paths {
+    "/prescriptions/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    "Idempotency-Key"?: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PrescriptionUploadStartForm"];
+                    "application/*+json": components["schemas"]["PrescriptionUploadStartForm"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PrescriptionUploadStartResult"];
+                        "application/json": components["schemas"]["PrescriptionUploadStartResult"];
+                        "text/json": components["schemas"]["PrescriptionUploadStartResult"];
+                    };
+                };
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PrescriptionUploadStartResult"];
+                        "application/json": components["schemas"]["PrescriptionUploadStartResult"];
+                        "text/json": components["schemas"]["PrescriptionUploadStartResult"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/prescriptions/uploads/completion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    "Idempotency-Key"?: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PrescriptionSubmissionResult"];
+                        "application/json": components["schemas"]["PrescriptionSubmissionResult"];
+                        "text/json": components["schemas"]["PrescriptionSubmissionResult"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/prescriptions": {
         parameters: {
             query?: never;
@@ -208,6 +357,57 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/received-prescriptions/{submissionId}/documents/{documentId}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    submissionId: string;
+                    documentId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ReceivedDocumentLinkDto"];
+                        "application/json": components["schemas"]["ReceivedDocumentLinkDto"];
+                        "text/json": components["schemas"]["ReceivedDocumentLinkDto"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -938,6 +1138,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AnnouncedDocumentForm: {
+            kind?: string | null;
+            /** Format: int64 */
+            sizeInBytes?: number;
+            contentType?: string | null;
+        };
         AppointmentClosureDto: {
             /** Format: date */
             firstDay: string;
@@ -1018,6 +1224,15 @@ export interface components {
         DocumentFormat: "jpeg" | "png" | "webp" | "heic" | "pdf";
         /** @enum {unknown} */
         DocumentKind: "prescription" | "vitalCard" | "mutualCardFront" | "mutualCardBack";
+        DocumentUploadLinkDto: {
+            /** Format: int32 */
+            position: number;
+            /** Format: uri */
+            url: string;
+            requiredHeaders: {
+                [key: string]: string;
+            };
+        };
         EntityTagHeaderValue: {
             tag?: components["schemas"]["StringSegment"];
             isWeak?: boolean;
@@ -1072,6 +1287,28 @@ export interface components {
         PrescriptionTeamNoteDto: {
             note: string | null;
         };
+        PrescriptionUploadStartForm: {
+            firstName?: string | null;
+            lastName?: string | null;
+            birthDate?: string | null;
+            phone?: string | null;
+            email?: string | null;
+            plannedVisitAt?: string | null;
+            hasAlreadyVisited?: boolean;
+            isRenewal?: boolean;
+            noteFromPatient?: string | null;
+            socialSecurityNumber?: string | null;
+            documents?: components["schemas"]["AnnouncedDocumentForm"][] | null;
+        };
+        PrescriptionUploadStartResult: {
+            /** Format: uuid */
+            submissionId: string;
+            alreadyStarted: boolean;
+            alreadyReceived: boolean;
+            uploadLinks: components["schemas"]["DocumentUploadLinkDto"][];
+            /** Format: date-time */
+            uploadLinksExpireAt: string;
+        };
         ProblemDetails: {
             type?: string | null;
             title?: string | null;
@@ -1087,6 +1324,12 @@ export interface components {
             format: components["schemas"]["DocumentFormat"];
             /** Format: int64 */
             sizeInBytes: number;
+        };
+        ReceivedDocumentLinkDto: {
+            /** Format: uri */
+            url: string;
+            /** Format: date-time */
+            expiresAt: string;
         };
         ReceivedPrescriptionDto: {
             /** Format: uuid */

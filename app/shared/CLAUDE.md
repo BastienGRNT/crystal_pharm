@@ -47,9 +47,10 @@ lui.
   par `pharmacy-db` (ou `group-db`).
 - Le CounterAccount se connecte par un identifiant et un mot de passe, sans
   email ; tous les autres comptes, par leur email.
-- Pour appeler le C# : un JWT court (plugin `jwt`, `tenantId` et les
-  `responsibilityKey` du Tenant actif dans les claims), clés publiques
-  exposées en JWKS interne par `pharmacy/host`.
+- Pour que le navigateur appelle le C# : un JWT court (plugin `jwt`,
+  `tenantId` et les `responsibilityKey` du Tenant actif dans les claims),
+  demandé par la page à `pharmacy/host` et gardé en mémoire ; clés publiques
+  exposées en JWKS public par `pharmacy/host`.
 - Pour l'app mobile : un jeton porteur (plugin `bearer`), vérifié par le même
   hook.
 
@@ -183,8 +184,9 @@ lui.
 
 ## `email` — les emails
 
-- `sendEmail` : par Resend quand `RESEND_API_KEY` existe ; sinon, l'email est
-  rangé dans la boîte de dev (un fichier hors du dépôt), lue par l'outil de dev.
+- `sendEmail` : en SMTP, vers Scaleway TEM en prod (`SMTP_URL`, TLS exigé),
+  vers Mailpit avec `APP_ENV=development` (rien ne part, même si `SMTP_URL`
+  existe). L'outil de dev lit et vide cette boîte par l'API de Mailpit.
 - Jamais de donnée de santé dans un email.
 
 ## `dev-tools` — l'outil de dev
@@ -204,7 +206,8 @@ lui.
 ## `api-client` — généré
 
 Produit par `make gen-types`. **Jamais édité à la main** : un type faux se
-corrige dans le C#, puis on régénère.
+corrige dans le C#, puis on régénère. Il ne s'importe que dans du code qui
+tourne dans le navigateur : aucun serveur Node n'appelle le C#.
 
 ## `content-db` — le schéma `content`
 
