@@ -155,7 +155,7 @@ const developmentActions: readonly DevelopmentAction[] = [
 	{
 		actionName: 'rebuild-tool-access',
 		label: 'Reconstruire les accès',
-		description: 'Refait les accès aux modules de toutes les pharmacies depuis leurs abonnements et leur groupement.',
+		description: 'Refait les accès aux outils de toutes les pharmacies depuis leurs abonnements et leur groupement.',
 		categoryKey: 'time',
 		run: runEverywhere(rebuildToolAccessOfAllTenants, 'Accès reconstruits pour toutes les pharmacies.')
 	},

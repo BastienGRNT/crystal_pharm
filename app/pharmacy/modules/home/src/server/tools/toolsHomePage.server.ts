@@ -5,7 +5,7 @@ import { findCurrentGroupOfTenant, listPendingInvitationsForAccountEmail } from 
 import { getPharmacyProfile } from '@crystal-pharm/pharmacy-db';
 import { canManageSubscriptionAndAccess, weekdays, type WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
 import { fail, redirect, type ActionFailure } from '@sveltejs/kit';
-import { describeToolCards } from '../../domain/toolCards';
+import { activeToolCardStatuses, describeToolCards } from '../../domain/toolCards';
 import { keepToolsPermittedToMember } from '../../domain/toolResponsibilities';
 import { homePathnames } from '../../homePathnames';
 import type { ConfirmAppointmentFailure, ToolsHomePageData } from '../../pages/tools-home/toolsHomePageData';
@@ -39,6 +39,12 @@ export async function loadToolsHomePage(
 		canManageSubscriptionAndAccess(memberAccess) ? listPendingInvitationsForAccountEmail(accountEmail) : [],
 		getPharmacyProfile(tenantId)
 	]);
+	const toolCards = describeToolCards(toolAccess);
+	const hasActiveTool = toolCards.some((toolCard) => activeToolCardStatuses.includes(toolCard.status));
+	// Sans formule, l'accueil n'a rien à résumer : le titulaire arrive directement sur le choix de la formule,
+	// sauf s'il a un groupement ou une invitation à lire d'abord.
+	const mustChooseSubscriptionFirst = !hasActiveTool && !toolAccess.coveringGroup && pendingInvitations.length === 0;
+	if (mustChooseSubscriptionFirst && canManageSubscriptionAndAccess(memberAccess)) redirect(303, homePathnames.subscription);
 	const todayInput = await readToday(
 		{ accountId, tenantId },
 		{
@@ -52,7 +58,7 @@ export async function loadToolsHomePage(
 		// Le compte comptoir est partagé : « Bonjour, Comptoir » ne salue personne.
 		greetingName: memberAccess.memberKind === 'counter' ? '' : readFirstName(locals.user),
 		today: buildTodayOverview(todayInput),
-		toolCards: describeToolCards(toolAccess),
+		toolCards,
 		coveringGroup: toolAccess.coveringGroup && {
 			groupName: toolAccess.coveringGroup.groupName,
 			coverageEndsAt: toolAccess.coveringGroup.coverageEndsAt,
@@ -60,6 +66,7 @@ export async function loadToolsHomePage(
 			joinedAt: currentGroup?.joinedAt
 		},
 		hasSubscription: toolAccess.subscription !== undefined,
+		canManageSubscription: canManageSubscriptionAndAccess(memberAccess),
 		pendingInvitations: await Promise.all(
 			pendingInvitations.map(async (invitation) => {
 				const preview = await previewGroupJoining(tenantId, invitation.groupId, {

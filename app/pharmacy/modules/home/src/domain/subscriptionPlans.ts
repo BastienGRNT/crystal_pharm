@@ -87,7 +87,7 @@ function buildPackPlan(catalog: ToolCatalog, coverages: readonly ToolCoverage[])
 		planKey: packPlanKey,
 		toolKeys: paidToolKeys,
 		title: paidToolKeys.map((toolKey) => findTool(toolKey).label).join(' + '),
-		description: 'Tous vos modules ensemble, au meilleur prix.',
+		description: 'Tout ensemble, au meilleur prix.',
 		isFeatured: true,
 		pharmacyMonthlyPriceCents: quote.pharmacyMonthlyTotalCents,
 		listMonthlyPriceCents: quote.listMonthlyTotalCents,
