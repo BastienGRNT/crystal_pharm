@@ -30,7 +30,7 @@
 >
 	{#if data.overduePayment}
 		<Alert tone="warning" title="Paiement en retard">
-			Vos modules restent actifs jusqu’au {dateFormatter.format(data.overduePayment.modulesCloseAt)}. Régularisez-le depuis
+			Votre formule reste active jusqu’au {dateFormatter.format(data.overduePayment.modulesCloseAt)}. Régularisez-le depuis
 			<a class="underline" href="/abonnement">votre abonnement</a>.
 		</Alert>
 	{/if}

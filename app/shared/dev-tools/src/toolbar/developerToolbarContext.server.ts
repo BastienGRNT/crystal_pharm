@@ -53,8 +53,8 @@ async function loadPharmacyContext(accountId: string): Promise<DeveloperToolbarC
 			{ label: 'Rôle', value: tenantMemberKindLabels[memberAccess.memberKind] },
 			{ label: 'Responsabilités', value: describeResponsibilities(memberAccess) },
 			openToolLabels.length > 0
-				? { label: 'Modules ouverts', value: joinToolLabels(openToolLabels), tone: 'success' }
-				: { label: 'Modules ouverts', value: 'Aucun', tone: 'warning' },
+				? { label: 'Outils ouverts', value: joinToolLabels(openToolLabels), tone: 'success' }
+				: { label: 'Outils ouverts', value: 'Aucun', tone: 'warning' },
 			describeSubscription(subscribedOffers),
 			describeCoveringGroup(coveringGroup),
 			{ label: 'Horaires', value: profile.weeklyOpeningSchedule ? 'Saisis' : 'Pas encore saisis', tone: profile.weeklyOpeningSchedule ? 'neutral' : 'warning' }

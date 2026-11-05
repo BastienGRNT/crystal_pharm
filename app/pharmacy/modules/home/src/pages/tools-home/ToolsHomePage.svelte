@@ -24,7 +24,7 @@
 	const toolLabels = (toolKeys: readonly ToolKey[]) => toolKeys.map((toolKey) => findTool(toolKey).label).join(', ');
 	const findToolLink = (toolKey: string) => toolLinks.find((toolLink) => toolLink.toolKey === toolKey);
 	const coveringGroupName = $derived(data.coveringGroup?.isContractActive ? data.coveringGroup.groupName : undefined);
-	// Un module actif est déjà dans la colonne de gauche : l'accueil ne montre en grand que ceux à activer.
+	// Un outil actif est déjà dans la colonne de gauche : l'accueil ne montre en grand que ceux à activer.
 	const toolCardsToActivate = $derived(data.toolCards.filter((toolCard) => !activeToolCardStatuses.includes(toolCard.status)));
 </script>
 
@@ -52,7 +52,7 @@
 {#if searchParams.get('groupement') === 'rejoint' && data.coveringGroup}
 	<Alert tone="success" title="Bienvenue dans {data.coveringGroup.groupName}">
 		{data.coveringGroup.isContractActive
-			? 'Les modules offerts par votre groupement sont actifs, et vos tarifs sont à jour.'
+			? 'Ce que votre groupement offre est actif, et vos tarifs sont à jour.'
 			: 'Votre groupement active bientôt son contrat : vous profiterez alors de sa prise en charge.'}
 	</Alert>
 {:else if searchParams.get('invitation') === 'refusee'}
@@ -84,8 +84,8 @@
 
 {#if data.coveringGroup?.coverageEndsAt}
 	<Alert tone="warning" title="Vous avez quitté {data.coveringGroup.groupName}">
-		Sa prise en charge court jusqu’au {formatLastDayBefore(data.coveringGroup.coverageEndsAt)}. Ensuite, abonnez-vous pour garder les modules
-		dont vous avez besoin : <a href={homePathnames.subscription} class="font-semibold underline">choisir mes modules</a>.
+		Sa prise en charge court jusqu’au {formatLastDayBefore(data.coveringGroup.coverageEndsAt)}. Ensuite, abonnez-vous pour garder ce dont vous
+		avez besoin : <a href={homePathnames.subscription} class="font-semibold underline">choisir ma formule</a>.
 	</Alert>
 {:else if data.coveringGroup && !data.coveringGroup.isContractActive}
 	<Alert tone="info" title="Membre de {data.coveringGroup.groupName}">
@@ -97,12 +97,18 @@
 	<Card spacing="spacious">
 		<div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 			<div class="grid gap-1.5">
-				<h2 class="title-1 text-ink">Activez vos premiers modules</h2>
+				<h2 class="title-1 text-ink">{data.canManageSubscription ? 'Choisissez votre formule' : 'Pas encore de formule'}</h2>
 				<p class="text-body text-ink-muted">
-					Votre pharmacie est prête. Choisissez les modules dont vous avez besoin, sans engagement : satisfait ou remboursé pendant 30 jours.
+					{#if data.canManageSubscription}
+						Votre pharmacie est prête. Site, planning ou les deux, sans engagement : satisfait ou remboursé pendant 30 jours.
+					{:else}
+						Aucune formule n’est active pour le moment. Un titulaire de la pharmacie la choisit depuis l’abonnement.
+					{/if}
 				</p>
 			</div>
-			<Button href={homePathnames.subscription} icon="sparkle">Choisir mes modules</Button>
+			{#if data.canManageSubscription}
+				<Button href={homePathnames.subscription} icon="sparkle">Choisir ma formule</Button>
+			{/if}
 		</div>
 	</Card>
 {/if}
@@ -167,7 +173,7 @@
 {#if toolCardsToActivate.length > 0}
 	<section aria-labelledby="modules-titre" class="grid gap-2">
 		<div class="flex flex-wrap items-center justify-between gap-2">
-			<h2 id="modules-titre" class="title-2 text-ink">{hasActiveTool ? 'À activer' : 'Vos modules'}</h2>
+			<h2 id="modules-titre" class="title-2 text-ink">{hasActiveTool ? 'À activer' : 'Les outils disponibles'}</h2>
 			{#if data.coveringGroup?.joinedAt && !data.coveringGroup.coverageEndsAt}
 				<a href={homePathnames.pharmacyGroup} class="text-small text-ink-muted underline">
 					Membre de {data.coveringGroup.groupName} depuis le {formatDay(data.coveringGroup.joinedAt)}

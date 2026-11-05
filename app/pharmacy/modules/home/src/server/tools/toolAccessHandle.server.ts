@@ -22,7 +22,7 @@ export function createToolAccessHandle(protectedTools: readonly ProtectedTool[])
 			const memberAccess = await findActiveTenantMemberAccess(event.locals.user.userId);
 			if (memberAccess) {
 				if (!hasResponsibility(memberAccess, toolResponsibilityKeys[protectedTool.toolKey])) {
-					error(403, 'Votre compte n’a pas accès à ce module. Demandez-le à un titulaire de la pharmacie.');
+					error(403, 'Votre compte n’a pas accès à cet outil. Demandez-le à un titulaire de la pharmacie.');
 				}
 				if (!(await canTenantUseTool(memberAccess.tenantId, protectedTool.toolKey))) {
 					redirect(303, subscriptionPathnameHighlighting(protectedTool.toolKey));

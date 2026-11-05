@@ -55,7 +55,7 @@
 	<title>Abonnement · Crystal Pharm</title>
 </svelte:head>
 
-<PageHeader icon="credit-card" title="Abonnement" context="Vos modules, leur prix et vos factures">
+<PageHeader icon="credit-card" title="Abonnement" context="Votre formule, son prix et vos factures">
 	{#snippet actions()}
 		<ul class="flex flex-wrap gap-x-4 gap-y-1">
 			{#each commitments as commitment (commitment.label)}
@@ -74,25 +74,25 @@
 </PageHeader>
 
 {#if searchParams.get('paiement') === 'reussi'}
-	<Alert tone="success" title="Paiement accepté">Vos modules sont actifs : ils sont dans le menu.</Alert>
+	<Alert tone="success" title="Paiement accepté">Votre formule est active : ses outils sont dans le menu.</Alert>
 {:else if searchParams.get('paiement') === 'refuse'}
 	<Alert tone="danger" title="Paiement refusé">Votre banque a refusé le paiement : rien n’a changé. Réessayez quand vous voulez.</Alert>
 {:else if searchParams.has('modifie')}
 	<Alert tone="success">Votre abonnement est à jour.</Alert>
 {:else if searchParams.get('resiliation') === 'rembourse'}
 	<Alert tone="success" title="Abonnement résilié">
-		{formatEuros(Number(searchParams.get('montant') ?? 0))} vous sont remboursés. Vos modules payants sont désactivés.
+		{formatEuros(Number(searchParams.get('montant') ?? 0))} vous sont remboursés. Votre formule est désactivée.
 	</Alert>
 {:else if searchParams.get('resiliation') === 'fin' && cancellationEnd}
-	<Alert tone="info" title="Abonnement résilié">Vos modules restent actifs jusqu’au {formatLastDayBefore(new Date(cancellationEnd))}.</Alert>
+	<Alert tone="info" title="Abonnement résilié">Votre formule reste active jusqu’au {formatLastDayBefore(new Date(cancellationEnd))}.</Alert>
 {:else if searchParams.has('repris')}
 	<Alert tone="success">Votre abonnement continue, comme avant.</Alert>
 {:else if requestedToolLabel}
-	<Alert tone="info" title="Le module {requestedToolLabel} n’est pas activé">
+	<Alert tone="info" title="{requestedToolLabel} n’est pas dans votre formule">
 		{#if requestedToolIncludingLabels.length > 0}
 			Il est compris avec {requestedToolIncludingLabels.join(' ou ')} : la formule cochée ci-dessous le contient.
 		{:else}
-			Activez-le ci-dessous pour l’utiliser.
+			Choisissez ci-dessous une formule qui le contient.
 		{/if}
 	</Alert>
 {/if}
@@ -107,7 +107,7 @@
 
 {#if data.subscribedOffers?.paymentStatus === 'past_due'}
 	<Alert tone="warning" title="Paiement en retard">
-		Votre dernier prélèvement a été refusé. Vos modules restent actifs pendant quelques jours.
+		Votre dernier prélèvement a été refusé. Votre formule reste active pendant quelques jours.
 		{#if data.subscribedOffers.nextRetryAt}Nous réessaierons le {formatDay(data.subscribedOffers.nextRetryAt)}.{/if}
 
 	</Alert>
@@ -175,7 +175,7 @@
 								variant="ghost"
 								size="compact"
 								title="Résilier et être remboursé ?"
-								description="Vos modules payants s’arrêtent tout de suite et {formatEuros(data.refundableAmountCents)} vous sont remboursés (un avoir annule chaque facture). Les modules offerts par votre groupement restent actifs."
+								description="Votre formule s’arrête tout de suite et {formatEuros(data.refundableAmountCents)} vous sont remboursés (un avoir annule chaque facture). Ce que votre groupement offre reste actif."
 								confirmLabel="Résilier et être remboursé"
 								isDestructive
 							/>
@@ -185,7 +185,7 @@
 								variant="ghost"
 								size="compact"
 								title="Résilier votre abonnement ?"
-								description="Vos modules restent actifs jusqu’au {formatLastDayBefore(data.subscription.currentPeriodEndsAt)}, puis s’arrêtent. Vous pourrez changer d’avis d’ici là."
+								description="Votre formule reste active jusqu’au {formatLastDayBefore(data.subscription.currentPeriodEndsAt)}, puis s’arrête. Vous pourrez changer d’avis d’ici là."
 								confirmLabel="Résilier"
 								isDestructive
 							/>

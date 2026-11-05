@@ -27,6 +27,8 @@ export type ToolsHomePageData = {
 		| { groupName: string; coverageEndsAt: Date | undefined; isContractActive: boolean; joinedAt: Date | undefined }
 		| undefined;
 	hasSubscription: boolean;
+	/** Seul un titulaire choisit la formule : les autres lisent qui s'en charge. */
+	canManageSubscription: boolean;
 	pendingInvitations: PendingInvitationSummary[];
 	/** « Léa », pour « Bonjour, Léa ». */
 	greetingName: string;
