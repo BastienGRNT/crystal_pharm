@@ -2,6 +2,7 @@ import { connectToDatabase } from '@crystal-pharm/auth/toolkit';
 import { eq, sql } from 'drizzle-orm';
 import * as v from 'valibot';
 import { PhoneNumber } from '../contact-details/PhoneNumber';
+import { Siret } from '../contact-details/Siret';
 import {
 	PharmacyContactDetailsSchema,
 	type PharmacyContactDetails,
@@ -18,9 +19,11 @@ import {
 } from '../opening-hours/weeklyOpeningSchedule';
 
 /** La fiche de la pharmacie, telle que `home` l'affiche et que le site la montre. */
-export type PharmacyProfile = Omit<PharmacyContactDetails, 'email'> & {
+export type PharmacyProfile = Omit<PharmacyContactDetails, 'email' | 'siret'> & {
 	/** Obligatoire à la saisie, mais absent des pharmacies inscrites avant qu'il le soit. */
 	email: string | undefined;
+	/** Obligatoire à la saisie ; absent des pharmacies inscrites avant qu'il le soit, et de la lecture du site. */
+	siret?: Siret | undefined;
 	/** `undefined` tant que la pharmacie ne les a pas saisis. */
 	weeklyOpeningSchedule: WeeklyOpeningSchedule | undefined;
 };
@@ -32,7 +35,8 @@ export function toContactDetailsColumns(contactDetails: PharmacyContactDetails) 
 		postalCode: contactDetails.postalCode,
 		city: contactDetails.city,
 		phoneNumber: contactDetails.phoneNumber.toStorageFormat(),
-		email: contactDetails.email
+		email: contactDetails.email,
+		siret: contactDetails.siret.toStorageFormat()
 	};
 }
 
@@ -45,9 +49,11 @@ export async function getPharmacyProfile(tenantId: string): Promise<PharmacyProf
 	return toPharmacyProfile(tenant);
 }
 
-type PharmacyProfileRow = Omit<PharmacyContactDetails, 'phoneNumber' | 'email'> & {
+type PharmacyProfileRow = Omit<PharmacyContactDetails, 'phoneNumber' | 'email' | 'siret'> & {
 	phoneNumber: string;
 	email: string | null;
+	/** Absent de `pharmacy.read_pharmacy_profile_for_site` : le site n'en a pas besoin. */
+	siret?: string | null;
 	weeklyOpeningSchedule: WeeklyOpeningSchedule | null;
 };
 
@@ -71,6 +77,7 @@ function toPharmacyProfile(row: PharmacyProfileRow): PharmacyProfile {
 		city: row.city,
 		phoneNumber: PhoneNumber.fromStorageFormat(row.phoneNumber),
 		email: row.email ?? undefined,
+		siret: row.siret ? Siret.fromStorageFormat(row.siret) : undefined,
 		weeklyOpeningSchedule: row.weeklyOpeningSchedule ?? undefined
 	};
 }

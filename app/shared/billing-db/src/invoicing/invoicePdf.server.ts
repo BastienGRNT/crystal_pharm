@@ -1,3 +1,4 @@
+import { formatSiren } from '@crystal-pharm/pharmacy-db/domain';
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import { formatEuros } from '../money/euroAmount';
 import { readInvoiceIssuer } from './invoiceIssuer';
@@ -62,6 +63,10 @@ function writeCustomer(writer: PdfWriter, invoice: Invoice): void {
 	for (const addressLine of invoice.customerAddressLines) {
 		customerTop -= 14;
 		writeText(writer, addressLine, customerLeft, customerTop, { size: 10 });
+	}
+	if (invoice.customerSiren) {
+		customerTop -= 14;
+		writeText(writer, `SIREN ${formatSiren(invoice.customerSiren)}`, customerLeft, customerTop, { size: 10 });
 	}
 }
 

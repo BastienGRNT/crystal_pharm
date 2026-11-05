@@ -31,6 +31,8 @@ export const tenants = pharmacySchema.table(
 		/** Au format de `PhoneNumber.toStorageFormat`. */
 		phoneNumber: text('phone_number').notNull(),
 		email: text('email'),
+		/** Au format de `Siret.toStorageFormat` ; `null` pour une pharmacie inscrite avant qu'il soit demandé. */
+		siret: text('siret'),
 		/** `null` tant que la pharmacie n'a pas saisi ses horaires. */
 		weeklyOpeningSchedule: jsonb('weekly_opening_schedule').$type<WeeklyOpeningSchedule>(),
 		createdAt: timestampWithTimeZone('created_at').notNull().defaultNow(),

@@ -1,5 +1,6 @@
 // Ce qui sert aussi dans le navigateur (formater, vérifier une saisie) : sans base de données.
 export { PhoneNumber } from './contact-details/PhoneNumber';
+export { formatSiren, Siret } from './contact-details/Siret';
 export {
 	pharmacyContactDetailsFieldNames,
 	type PharmacyContactDetails,

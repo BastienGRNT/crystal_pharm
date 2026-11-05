@@ -66,7 +66,8 @@ export async function loadPharmacyPage({
 			postalCode: pharmacyProfile.postalCode,
 			city: pharmacyProfile.city,
 			phoneNumber: pharmacyProfile.phoneNumber.toDisplayFormat(),
-			email: pharmacyProfile.email ?? ''
+			email: pharmacyProfile.email ?? '',
+			siret: pharmacyProfile.siret?.toDisplayFormat() ?? ''
 		},
 		weeklyOpeningSchedule: pharmacyProfile.weeklyOpeningSchedule,
 		team,

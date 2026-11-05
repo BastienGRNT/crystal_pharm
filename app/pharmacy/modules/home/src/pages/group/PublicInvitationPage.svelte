@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { passwordRequirements } from '@crystal-pharm/auth/account-rules';
 	import { registerAndOpen, signInAndOpen } from '@crystal-pharm/auth/client';
 	import { Alert, AuthenticationScreen, Button, LoginForm, RegisterForm, TextLink } from '@crystal-pharm/ui';
 	import { homePathnames } from '../../homePathnames';
@@ -33,6 +34,7 @@
 	{:else}
 		<p class="text-body text-ink-muted">Créez votre compte, puis présentez votre pharmacie : l’invitation vous attendra sur l’accueil.</p>
 		<RegisterForm
+			{passwordRequirements}
 			initialEmail={data.invitedEmail}
 			isEmailLocked
 			onSubmit={(newAccount) => registerAndOpen(newAccount, homePathnames.contactDetailsStep)}

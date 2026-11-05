@@ -103,9 +103,12 @@ export type {
 	AuthenticationHighlight,
 	AuthenticationSpace,
 	AuthenticationSubmission,
+	EmailVerificationDetails,
 	LoginCredentials,
+	PasswordRequirement,
 	RegistrationDetails
 } from './organisms/authentication/authenticationForms';
+export { default as EmailVerificationForm } from './organisms/authentication/EmailVerificationForm.svelte';
 export { default as LoginForm } from './organisms/authentication/LoginForm.svelte';
 export { default as RegisterForm } from './organisms/authentication/RegisterForm.svelte';
 export { default as SidePanel } from './organisms/SidePanel.svelte';

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { passwordRequirements } from '@crystal-pharm/auth/account-rules';
 	import { registerAndOpen, signInAndOpen, signOutAndOpen } from '@crystal-pharm/auth/client';
 	import { Alert, AuthenticationScreen, Button, LoginForm, RegisterForm, TextLink } from '@crystal-pharm/ui';
 	import { homePathnames, teamInvitationPathname } from '../../homePathnames';
@@ -41,6 +42,7 @@
 		<LoginForm initialEmail={data.invitedEmail} isEmailLocked onSubmit={(credentials) => signInAndOpen(credentials, invitationPathname)} />
 	{:else}
 		<RegisterForm
+			{passwordRequirements}
 			initialEmail={data.invitedEmail}
 			isEmailLocked
 			onSubmit={(newAccount) => registerAndOpen(newAccount, invitationPathname)}

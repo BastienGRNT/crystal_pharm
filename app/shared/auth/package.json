@@ -5,12 +5,15 @@
 	"exports": {
 		".": "./src/index.server.ts",
 		"./toolkit": "./src/toolkit.server.ts",
+		"./account-rules": "./src/accountRules.ts",
 		"./tables": "./src/toolkit/betterAuthTables.ts",
 		"./customer-tables": "./src/customer/customerAuthSchema.ts",
 		"./client": "./src/client.ts"
 	},
 	"scripts": {
 		"check": "tsc --project tsconfig.json",
+		"test": "vitest run --exclude '**/*.integration.test.ts'",
+		"test:integration": "vitest run integration",
 		"generate-migration": "drizzle-kit generate",
 		"migrate": "drizzle-kit migrate"
 	},
@@ -23,7 +26,8 @@
 		"@sveltejs/kit": "^2.70.3",
 		"@types/node": "^24.19.2",
 		"drizzle-kit": "^0.31.11",
-		"typescript": "^6.0.3"
+		"typescript": "^6.0.3",
+		"vitest": "^5.0.5"
 	},
 	"peerDependencies": {
 		"@sveltejs/kit": "^2.70.3"
