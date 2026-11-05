@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { capitalizeFirstLetter, hasLowercaseLetter, tidyTypedText } from './typedText';
+import { capitalizeFirstLetter, hasLowercaseLetter, tidyTypedText } from '@crystal-pharm/auth/account-rules';
 
 export const maximumJobTitleLength = 60;
 

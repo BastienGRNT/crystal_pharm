@@ -2,7 +2,7 @@ import type { Handle, ServerInit } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { createCustomerAuthenticationHandle } from '@crystal-pharm/auth';
 import { assertProductionSecretsAreStrong } from '@crystal-pharm/auth/toolkit';
-import { createToolAccessHandle } from '@crystal-pharm/home/server';
+import { createToolAccessHandle, sendRegistrationVerificationCode } from '@crystal-pharm/home/server';
 import { protectedTools } from '$lib/toolLinks';
 
 if (import.meta.env.DEV) {
@@ -33,9 +33,10 @@ const preventCachingOfHealthData: Handle = async ({ event, resolve }) => {
 export const handle = sequence(
 	createCustomerAuthenticationHandle({
 		baseUrlEnvironmentVariable: 'PHARMACY_URL',
+		sendVerificationCode: sendRegistrationVerificationCode,
 		loginPathname: '/login',
 		signedInHomePathname: '/',
-		anonymousOnlyPathnames: ['/login', '/register'],
+		anonymousOnlyPathnames: ['/login', '/register', '/verification-email'],
 		publicPathnamePrefixes: ['/__dev/', '/invitation/', '/rejoindre/', '/conditions/']
 	}),
 	createToolAccessHandle(protectedTools),

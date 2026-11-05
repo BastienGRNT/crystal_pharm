@@ -1,5 +1,6 @@
 import * as v from 'valibot';
 import { PhoneNumberSchema } from './PhoneNumber';
+import { SiretSchema } from './Siret';
 
 const maximumTextLength = 200;
 
@@ -21,14 +22,15 @@ const RequiredEmailSchema = v.pipe(
 	v.check((email) => v.is(EmailSchema, email), 'Cet email n’est pas valide. Vérifiez son orthographe.')
 );
 
-/** Les coordonnées de la pharmacie : ce que son site affiche et ce qui la situe. */
+/** Les coordonnées de la pharmacie : ce que son site affiche, ce qui la situe et, pour ses factures, son SIRET. */
 export const PharmacyContactDetailsSchema = v.object({
 	name: requiredText('Indiquez le nom de la pharmacie.'),
 	street: requiredText('Indiquez le numéro et la rue.'),
 	postalCode: v.pipe(v.string(), v.trim(), v.regex(/^\d{5}$/, 'Le code postal compte 5 chiffres.')),
 	city: requiredText('Indiquez la ville.'),
 	phoneNumber: PhoneNumberSchema,
-	email: RequiredEmailSchema
+	email: RequiredEmailSchema,
+	siret: SiretSchema
 });
 
 /** Ce qu'on saisit : du texte, tel qu'il a été tapé. */

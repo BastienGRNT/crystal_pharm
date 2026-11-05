@@ -1,6 +1,7 @@
 export { summarizeSignedInUser, type AuthenticatedUser, type SignedInUserSummary } from './toolkit/authenticatedUser';
 export { issueApiToken, type ApiTokenClaims } from './customer/customerApiTokens.server';
 export { createCustomerAuthenticationHandle } from './customer/customerAuthenticationHandle.server';
+export type { VerificationCodeSender } from './customer/customerBetterAuth.server';
 export {
 	deleteCustomerAccountsWithEmailEnding,
 	ensureCustomerAccount,

@@ -1,3 +1,4 @@
+export { sendRegistrationVerificationCode } from './authentication/verificationCodeEmail.server';
 export {
 	groupInvitationPageActions,
 	loadGroupInvitationPage,

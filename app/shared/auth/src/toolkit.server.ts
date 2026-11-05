@@ -1,3 +1,4 @@
+export { enforceAccountRules } from './toolkit/accountRulesHook.server';
 export { summarizeSignedInUser, type AuthenticatedUser, type SignedInUserSummary } from './toolkit/authenticatedUser';
 export {
 	createAuthenticationHandle,

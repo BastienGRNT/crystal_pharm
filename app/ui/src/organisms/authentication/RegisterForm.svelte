@@ -3,17 +3,20 @@
 	import Button from '../../atoms/actions/Button.svelte';
 	import Input from '../../atoms/fields/Input.svelte';
 	import Alert from '../../molecules/Alert.svelte';
+	import CheckList from '../../molecules/CheckList.svelte';
 	import Field from '../../molecules/fields/Field.svelte';
-	import type { AuthenticationSubmission, RegistrationDetails } from './authenticationForms';
+	import type { AuthenticationSubmission, PasswordRequirement, RegistrationDetails } from './authenticationForms';
 
 	type RegisterFormProps = {
 		onSubmit: AuthenticationSubmission<RegistrationDetails>;
 		/** L'email déjà connu (une invitation) ; verrouillé, il ne peut plus être changé. */
 		initialEmail?: string;
 		isEmailLocked?: boolean;
+		/** Les conditions du mot de passe, cochées pendant la saisie. Sans elles : 8 caractères minimum. */
+		passwordRequirements?: readonly PasswordRequirement[];
 	};
 
-	let { onSubmit, initialEmail = '', isEmailLocked = false }: RegisterFormProps = $props();
+	let { onSubmit, initialEmail = '', isEmailLocked = false, passwordRequirements }: RegisterFormProps = $props();
 
 	let firstName = $state('');
 	let lastName = $state('');
@@ -22,8 +25,17 @@
 	let failureMessage = $state<string | undefined>();
 	let isSubmitting = $state(false);
 
+	const passwordChecklist = $derived(
+		passwordRequirements?.map((requirement) => ({ title: requirement.label, isChecked: requirement.isMetBy(password) }))
+	);
+	const isPasswordAccepted = $derived(passwordChecklist?.every((item) => item.isChecked) ?? true);
+
 	async function submitRegistration(submitEvent: SubmitEvent) {
 		submitEvent.preventDefault();
+		if (!isPasswordAccepted) {
+			failureMessage = 'Le mot de passe ne remplit pas encore toutes les conditions.';
+			return;
+		}
 		isSubmitting = true;
 		failureMessage = await onSubmit({ firstName, lastName, email, password });
 		isSubmitting = failureMessage === undefined;
@@ -48,7 +60,7 @@
 			<Input {...controlAttributes} type="email" name="email" autocomplete="email" required readonly={isEmailLocked} bind:value={email} />
 		{/snippet}
 	</Field>
-	<Field label="Mot de passe" hint="8 caractères minimum.">
+	<Field label="Mot de passe" hint={passwordChecklist ? undefined : '8 caractères minimum.'}>
 		{#snippet control(controlAttributes)}
 			<Input
 				{...controlAttributes}
@@ -56,11 +68,14 @@
 				name="password"
 				autocomplete="new-password"
 				required
-				minlength={8}
+				minlength={passwordChecklist ? undefined : 8}
 				bind:value={password}
 			/>
 		{/snippet}
 	</Field>
+	{#if passwordChecklist}
+		<CheckList items={passwordChecklist} />
+	{/if}
 	{#if failureMessage}
 		<Alert tone="danger">{failureMessage}</Alert>
 	{/if}

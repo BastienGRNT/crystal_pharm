@@ -1,3 +1,4 @@
+export { composeEmailVerificationCodeEmail } from './messages/accountEmails';
 export { composeAvailabilityDecisionEmail, composeAvailabilityRequestEmail } from './messages/availabilityEmails';
 export { composeMonthlyPlanningExportEmail } from './messages/accountantEmails';
 export { composeLeaveDecisionEmail, composeLeaveRequestEmail } from './messages/leaveEmails';

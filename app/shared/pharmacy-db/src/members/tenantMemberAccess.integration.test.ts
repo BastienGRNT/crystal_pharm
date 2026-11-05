@@ -34,7 +34,8 @@ beforeAll(async () => {
 		postalCode: '75002',
 		city: 'Paris',
 		phoneNumber: '01 23 45 67 89',
-		email: ''
+		email: 'contact@pharmacie-des-tests.fr',
+		siret: '73282932000074'
 	});
 	if (!tenantCreation.isSaved) throw new Error('The test pharmacy was refused.');
 	tenantId = tenantCreation.tenantId;

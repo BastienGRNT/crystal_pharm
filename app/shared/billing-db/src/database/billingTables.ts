@@ -443,6 +443,7 @@ export const invoices = billingSchema.table(
 		/** Le nom et l'adresse du client au moment de la facture : une facture ne change plus. */
 		customerName: text('customer_name').notNull(),
 		customerAddressLines: jsonb('customer_address_lines').$type<string[]>().notNull(),
+		customerSiren: text('customer_siren'),
 		lines: jsonb('lines').$type<InvoiceLine[]>().notNull(),
 		subtotalCents: integer('subtotal_cents').notNull(),
 		vatRatePercent: integer('vat_rate_percent').notNull(),

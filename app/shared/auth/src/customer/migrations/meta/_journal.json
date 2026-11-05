@@ -29,6 +29,13 @@
       "when": 1793119297481,
       "tag": "0003_add_counter_account_usernames",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793917579257,
+      "tag": "0004_counter_accounts_email_verified",
+      "breakpoints": true
     }
   ]
 }

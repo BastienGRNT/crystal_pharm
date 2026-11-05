@@ -1,16 +1,5 @@
 import * as v from 'valibot';
-import { maximumPersonNameLength, normalizePersonName, type NamePart } from './personNameCasing';
-
-const particles = new Set(['de', 'du', 'des']);
-const articlesAfterDe = new Set(['la', 'le']);
-const elidedParticles = new Set(['d', 'l']);
-
-/** Les particules restent en minuscules derrière le prénom : « de la Fontaine », « Giscard d’Estaing ». */
-function isParticle({ lowercaseText, previousWord, isFollowedByApostrophe, isLastPart }: NamePart): boolean {
-	if (isLastPart) return false;
-	if (isFollowedByApostrophe) return lowercaseText === 'd' || (elidedParticles.has(lowercaseText) && previousWord === 'de');
-	return particles.has(lowercaseText) || (articlesAfterDe.has(lowercaseText) && previousWord === 'de');
-}
+import { maximumPersonNameLength, normalizeLastName } from '@crystal-pharm/auth/account-rules';
 
 /** Un nom de famille, toujours écrit de la même façon : « Dupont », jamais « DUPONT » ni « dupont ». */
 export class LastName {
@@ -18,7 +7,7 @@ export class LastName {
 
 	/** Lit un nom tel qu'on le tape ; `undefined` si ce n'en est pas un. */
 	static parse(typedLastName: string): LastName | undefined {
-		const normalizedLastName = normalizePersonName(typedLastName, isParticle);
+		const normalizedLastName = normalizeLastName(typedLastName);
 		return normalizedLastName === undefined ? undefined : new LastName(normalizedLastName);
 	}
 
