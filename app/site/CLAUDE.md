@@ -51,8 +51,8 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 - Les données en cours d'édition arrivent de `site-manager` par
   `postMessage` : origine vérifiée, contenu validé par `engine/schema`,
   tout le reste refusé.
-- En aperçu, le moteur reçoit des adapters **sans effet** : rien ne part
-  jamais vers le C#.
+- En aperçu, le moteur reçoit des adapters **sans effet** et aucun ticket :
+  rien ne part jamais vers le C#.
 - `frame-ancestors` limité au domaine des outils ; `/__preview` n'est jamais
   servi sur le domaine d'un tenant.
 - Ses images passent par `/__preview/media/<jeton>` : un jeton signé et
@@ -61,14 +61,17 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 
 ## Envois du Visitor (by design, dès le premier formulaire)
 
+- Le serveur ne fait qu'une chose : signer le **ticket du Visitor**
+  (`tenantId` résolu du Host, type de formulaire, ≤ 10 min) par sa clé
+  privée, sur une route du même domaine que la page, limitée en débit par
+  IP. Jamais dans le HTML rendu (une page en cache garderait un ticket
+  expiré) : le formulaire le demande juste avant l'envoi.
 - Les fonctions d'envoi données au moteur (`submitPrescription`…) sont des
-  adapters : formulaire validé → appel au C#, côté serveur, avec l'identité de
-  service `site` et le `tenantId` du Host.
-- Le fichier ne passe pas par ici : le serveur annonce l'envoi au C#
-  (`/api/prescriptions/uploads`), le navigateur dépose chaque fichier par le
-  lien pré-signé reçu, puis le serveur confirme (`…/uploads/completion`).
-  L'ancienne route multipart (en flux vers le C#, sans disque) reste pour
-  les pages déjà chargées, le temps qu'elles disparaissent.
-- Une clé d'idempotence par envoi (un double clic ne crée pas deux envois),
-  un champ piège anti-robot et une limite de débit par IP.
-- Rien de ce que le Visitor envoie n'est gardé ici.
+  adapters qui tournent dans le navigateur : formulaire validé → ticket →
+  appel au C# (`API_URL`, `shared/api-client`). Les créneaux libres se lisent
+  de même.
+- Un fichier : le navigateur annonce l'envoi au C#, dépose chaque fichier par
+  le lien pré-signé reçu, puis confirme.
+- Une clé d'idempotence par envoi (un double clic ne crée pas deux envois) et
+  un champ piège anti-robot, vérifiés par le C#.
+- Rien de ce que le Visitor envoie ne passe par le serveur `site`.
