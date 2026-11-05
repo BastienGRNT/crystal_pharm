@@ -113,6 +113,30 @@
 	</Card>
 {/if}
 
+{#if data.toolSetupCalls.length > 0}
+	<section aria-label="À configurer" class="grid gap-3 {data.toolSetupCalls.length > 1 ? 'md:grid-cols-2' : ''}">
+		{#each data.toolSetupCalls as setupCall (setupCall.toolKey)}
+			{@const toolLink = findToolLink(setupCall.toolKey)}
+			<div data-module={toolLink?.module}>
+				<Card spacing="spacious">
+					<div class="grid h-full content-between gap-4">
+						<div class="flex items-start gap-3">
+							<span class="grid size-10 flex-none place-items-center rounded-md bg-accent-soft text-accent-text">
+								<Icon name={toolLink?.icon ?? 'puzzle-piece'} size={22} />
+							</span>
+							<div class="grid min-w-0 gap-1">
+								<h2 class="title-2 text-ink">{setupCall.title}</h2>
+								<p class="text-body text-ink-muted">{setupCall.description}</p>
+							</div>
+						</div>
+						<div><Button href={setupCall.href} icon="arrow-right">{setupCall.buttonLabel}</Button></div>
+					</div>
+				</Card>
+			</div>
+		{/each}
+	</section>
+{/if}
+
 {#if hasActiveTool}
 	<TodayBoard now={data.today.now} figures={data.today.figures} onDuty={data.today.onDuty} />
 

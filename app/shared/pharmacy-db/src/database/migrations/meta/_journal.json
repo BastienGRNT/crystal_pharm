@@ -43,6 +43,13 @@
       "when": 1793916110676,
       "tag": "0005_round_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793919230289,
+      "tag": "0006_place_owners_in_their_team",
+      "breakpoints": true
     }
   ]
 }

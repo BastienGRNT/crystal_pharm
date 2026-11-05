@@ -2,12 +2,13 @@ import type { AuthenticatedUser } from '@crystal-pharm/auth';
 import { getToolAccessOfTenant, previewGroupJoining } from '@crystal-pharm/billing-db';
 import type { ToolKey } from '@crystal-pharm/billing-db/domain';
 import { findCurrentGroupOfTenant, listPendingInvitationsForAccountEmail } from '@crystal-pharm/group-db';
-import { getPharmacyProfile } from '@crystal-pharm/pharmacy-db';
-import { canManageSubscriptionAndAccess, weekdays, type WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
+import { getPharmacyProfile, listEmployees } from '@crystal-pharm/pharmacy-db';
+import { canManageSubscriptionAndAccess, hasResponsibility, weekdays, type WeeklyOpeningSchedule } from '@crystal-pharm/pharmacy-db/domain';
 import { fail, redirect, type ActionFailure } from '@sveltejs/kit';
 import { activeToolCardStatuses, describeToolCards } from '../../domain/toolCards';
 import { keepToolsPermittedToMember } from '../../domain/toolResponsibilities';
-import { homePathnames } from '../../homePathnames';
+import { listToolSetupCalls } from '../../domain/toolSetupCalls';
+import { employeePanelPathname, homePathnames } from '../../homePathnames';
 import type { ConfirmAppointmentFailure, ToolsHomePageData } from '../../pages/tools-home/toolsHomePageData';
 import { requireActiveTenantMember } from '../activeTenant.server';
 import { appointmentIdFieldName, buildTodayOverview, type TodayOverviewInput } from './today/todayOverview';
@@ -33,12 +34,15 @@ export async function loadToolsHomePage(
 	const { tenantId, accountId } = memberAccess;
 	const accountEmail = locals.user?.email ?? '';
 	// Les invitations d'un groupement s'acceptent par un Owner : les autres ne les voient pas.
-	const [toolAccess, currentGroup, pendingInvitations, pharmacyProfile] = await Promise.all([
+	const [toolAccess, currentGroup, pendingInvitations, pharmacyProfile, employees, hasCreatedSite] = await Promise.all([
 		getToolAccessOfTenant(tenantId),
 		findCurrentGroupOfTenant(tenantId),
 		canManageSubscriptionAndAccess(memberAccess) ? listPendingInvitationsForAccountEmail(accountEmail) : [],
-		getPharmacyProfile(tenantId)
+		getPharmacyProfile(tenantId),
+		listEmployees(tenantId),
+		todaySources.site.hasCreatedSite(tenantId)
 	]);
+	const permittedToolKeys = keepToolsPermittedToMember(toolAccess.accessibleToolKeys, memberAccess);
 	const toolCards = describeToolCards(toolAccess);
 	const hasActiveTool = toolCards.some((toolCard) => activeToolCardStatuses.includes(toolCard.status));
 	// Sans formule, l'accueil n'a rien à résumer : le titulaire arrive directement sur le choix de la formule,
@@ -49,7 +53,7 @@ export async function loadToolsHomePage(
 		{ accountId, tenantId },
 		{
 			accessible: toolAccess.accessibleToolKeys,
-			permitted: keepToolsPermittedToMember(toolAccess.accessibleToolKeys, memberAccess)
+			permitted: permittedToolKeys
 		},
 		pharmacyProfile.weeklyOpeningSchedule,
 		todaySources
@@ -59,6 +63,13 @@ export async function loadToolsHomePage(
 		greetingName: memberAccess.memberKind === 'counter' ? '' : readFirstName(locals.user),
 		today: buildTodayOverview(todayInput),
 		toolCards,
+		toolSetupCalls: listToolSetupCalls({
+			permittedToolKeys,
+			canEditPharmacyProfile: hasResponsibility(memberAccess, 'edit-pharmacy-profile'),
+			employeeCount: employees.length,
+			hasCreatedSite,
+			pathnames: { newEmployee: employeePanelPathname(undefined), siteEditor: todaySources.site.href }
+		}),
 		coveringGroup: toolAccess.coveringGroup && {
 			groupName: toolAccess.coveringGroup.groupName,
 			coverageEndsAt: toolAccess.coveringGroup.coverageEndsAt,

@@ -303,7 +303,9 @@ const demoTeam = [
 ];
 
 async function addDemoTeam(tenantId: string): Promise<void> {
-	for (const teamMember of demoTeam) {
+	// Le titulaire est déjà dans l'équipe depuis la création de la pharmacie : sa fiche n'est pas ajoutée deux fois.
+	const alreadyInTeam = new Set((await listEmployees(tenantId)).map((employee) => `${employee.firstName.toDisplayFormat()} ${employee.lastName.toDisplayFormat()}`));
+	for (const teamMember of demoTeam.filter((candidate) => !alreadyInTeam.has(`${candidate.firstName} ${candidate.lastName}`))) {
 		const addition = await addEmployee(tenantId, teamMember, { kind: 'unchanged' });
 		if (!addition.isSaved) throw new Error(`The demo employee ${teamMember.firstName} was refused.`);
 	}
