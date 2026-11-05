@@ -41,7 +41,7 @@ beforeAll(async () => {
 	tenantId = tenantCreation.tenantId;
 
 	await pharmacyDatabase.addEmployee(tenantId, { firstName: 'Camille', lastName: 'Fontaine', jobTitle: 'Préparatrice' }, { kind: 'unchanged' });
-	const [employee] = await pharmacyDatabase.listEmployees(tenantId);
+	const employee = (await pharmacyDatabase.listEmployees(tenantId)).find((candidate) => candidate.firstName.toDisplayFormat() === 'Camille');
 	if (!employee) throw new Error('The test employee was refused.');
 	employeeId = employee.employeeId;
 });
@@ -67,6 +67,13 @@ describe('les accès d’un TenantMember', () => {
 
 		expect(ownerAccess?.memberKind).toBe('owner');
 		expect(ownerAccess?.responsibilityKeys).toContain('edit-site');
+	});
+
+	it('place le titulaire dans l’équipe, avec le poste « Titulaire »', async () => {
+		const ownerEmployee = (await pharmacyDatabase.listEmployees(tenantId)).find((candidate) => candidate.firstName.toDisplayFormat() === 'Léa');
+
+		expect(ownerEmployee?.jobTitle.toDisplayFormat()).toBe('Titulaire');
+		expect((await pharmacyDatabase.findActiveTenantMemberAccess(ownerAccountId))?.employeeId).toBe(ownerEmployee?.employeeId);
 	});
 
 	it('ne laisse pas retirer ni rétrograder le dernier Owner', async () => {

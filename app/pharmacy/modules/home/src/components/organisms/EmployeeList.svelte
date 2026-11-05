@@ -18,7 +18,7 @@
 			<div class="grid justify-items-center gap-3 px-5 pt-6 pb-4 text-center">
 				<Avatar name={teamMember.fullName} imageUrl={teamMember.photoUrl} size="large" />
 				<div class="grid gap-0.5">
-					<p class="font-display text-[19px] leading-6 text-ink">{teamMember.fullName}</p>
+					<p class="font-display text-[19px] leading-6 text-ink">{teamMember.identity.firstName} <span class="uppercase">{teamMember.identity.lastName}</span></p>
 					<p class="text-small text-ink-muted">{teamMember.identity.jobTitle}</p>
 				</div>
 			</div>

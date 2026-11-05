@@ -7,7 +7,7 @@ import {
 	type PharmacyContactDetailsInput
 } from '../contact-details/pharmacyContactDetails';
 import { runAsAccount, runAsTenant } from '../database/pharmacyDatabase.server';
-import { tenantMemberships, tenants } from '../database/pharmacyTables';
+import { employees, tenantMemberships, tenants } from '../database/pharmacyTables';
 import { collectFieldErrors, type FieldErrors } from '../fieldErrors';
 import { toContactDetailsColumns } from './pharmacyProfile.server';
 
@@ -15,7 +15,10 @@ export type TenantCreationResult =
 	| { isSaved: true; tenantId: string }
 	| { isSaved: false; fieldErrors: FieldErrors<PharmacyContactDetailsFieldName> };
 
-/** Crée la pharmacie et en fait Owner le compte qui l'a créée. */
+/** Le poste que prend d'abord le titulaire dans l'équipe, qu'il change ensuite sur sa fiche. */
+export const ownerInitialJobTitle = 'Titulaire';
+
+/** Crée la pharmacie, en fait Owner le compte qui l'a créée, et place ce titulaire dans l'équipe. */
 export async function createTenantForAccount(
 	accountId: string,
 	contactDetailsInput: PharmacyContactDetailsInput
@@ -28,7 +31,15 @@ export async function createTenantForAccount(
 	const tenantId = crypto.randomUUID();
 	await runAsTenant(tenantId, async (transaction) => {
 		await transaction.insert(tenants).values({ id: tenantId, ...toContactDetailsColumns(validation.output) });
-		await transaction.insert(tenantMemberships).values({ tenantId, accountId, memberKind: 'owner' });
+		const [owner] = await transaction.select({ firstName: users.firstName, lastName: users.lastName }).from(users).where(eq(users.id, accountId));
+		// Un compte d'avant les règles de noms n'a ni prénom ni nom : sa fiche d'équipe attendrait qu'il les saisisse.
+		const employeeId = owner?.firstName && owner.lastName ? crypto.randomUUID() : undefined;
+		if (employeeId && owner) {
+			await transaction
+				.insert(employees)
+				.values({ id: employeeId, tenantId, firstName: owner.firstName, lastName: owner.lastName, jobTitle: ownerInitialJobTitle });
+		}
+		await transaction.insert(tenantMemberships).values({ tenantId, accountId, memberKind: 'owner', employeeId });
 	});
 	return { isSaved: true, tenantId };
 }

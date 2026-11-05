@@ -4,3 +4,4 @@ export { loadSiteAddressPage, siteAddressActions } from './site-address/siteAddr
 export { loadOnDutyPage, onDutyActions } from './on-duty/onDutyPage.server';
 export { getNextOnDutyPeriod } from './on-duty/nextOnDutyPeriod.server';
 export { deleteSiteManagerDemoData, seedSiteManagerDemoData } from './demo/siteManagerDemoSeeder.server';
+export { hasCreatedSite } from './site-overview/hasCreatedSite.server';

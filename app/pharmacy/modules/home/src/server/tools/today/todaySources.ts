@@ -65,4 +65,6 @@ export type TodaySources = {
 	};
 	/** Les gardes, saisies avec le site : `href` est leur page. */
 	onDuty: { href: string; getNextOnDutyPeriod: (tenantId: string, now: Date) => Promise<TodayOnDutyPeriod | undefined> };
+	/** Le site : `href` est son éditeur, `hasCreatedSite` dit s'il a déjà été enregistré. */
+	site: { href: string; hasCreatedSite: (tenantId: string) => Promise<boolean> };
 };
