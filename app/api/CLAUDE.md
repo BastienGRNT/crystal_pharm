@@ -84,8 +84,9 @@ app/api/
   `IPrescriptionDocumentStore`) : un stockage objet S3 (SeaweedFS en dev, HDS
   en prod), choisi par la configuration (`PrescriptionStorage__*`).
 - Le navigateur n'y entre que par un lien pré-signé court : dépôt (15 min,
-  `Content-Type` signé) ou lecture (2 min, tracée). Jamais d'URL publique ni
-  de bucket ouvert ; la clé du C# est limitée à son bucket.
+  `Content-Type` signé) ou lecture (30 s, tracée, lue en arrière-plan par la
+  page, jamais montrée). Jamais d'URL publique ni de bucket ouvert ; la clé du
+  C# est limitée à son bucket.
 - Chaque lecture d'une donnée de santé laisse une trace (qui, quand, quoi).
   Depuis le CounterAccount, « qui » est le compte comptoir, pas la personne :
   choix assumé.

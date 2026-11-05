@@ -23,7 +23,7 @@ public sealed class PrescriptionSubmissionService(
     private static readonly TimeSpan UploadLinkValidity = TimeSpan.FromMinutes(15);
 
     /// <summary>Le navigateur suit le lien aussitôt : il n'a pas à vivre plus longtemps.</summary>
-    private static readonly TimeSpan DownloadLinkValidity = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan DownloadLinkValidity = TimeSpan.FromSeconds(30);
 
     public async Task<PrescriptionSubmissionResult> SubmitAsync(
         NewPrescriptionSubmissionDto newSubmission,

@@ -68,8 +68,10 @@ Le fichier va du navigateur au stockage HDS, sans passer par le Node ni par le C
    l'envoi entier est effacé. Un fichier manquant : refus, le navigateur peut réessayer.
    Un envoi jamais confirmé est purgé, fichiers compris, après 30 minutes (à la lecture suivante
    de la liste par la pharmacie).
-5. La pharmacie ouvre un fichier : `pharmacy` demande au C# un lien de lecture (GET, 2 min, tracé)
-   et y redirige le navigateur, sans `Referer` ni cache.
+5. La pharmacie ouvre un fichier : la page demande à `pharmacy` un lien de lecture, que `pharmacy`
+   demande au C# (GET, 30 s, tracé). La page lit le fichier en arrière-plan, sans `Referer` ni cache,
+   et l'affiche depuis la mémoire : le lien n'est jamais dans une barre d'adresse ni l'historique,
+   et le fichier ne passe ni par le Node ni par le C#.
 
 Le bucket HDS n'est jamais public ni listable ; seule la clé du C#, limitée à ce bucket, y accède.
 Son CORS autorise le navigateur à déposer et lire depuis les sites :

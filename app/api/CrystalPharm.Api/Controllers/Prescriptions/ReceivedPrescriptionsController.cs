@@ -32,7 +32,7 @@ public sealed class ReceivedPrescriptionsController(IPrescriptionSubmissionServi
     }
 
     /// <summary>
-    /// Un lien pré-signé vers le fichier, valable deux minutes : le navigateur l'affiche depuis le stockage HDS,
+    /// Un lien pré-signé vers le fichier, valable 30 secondes : la page le lit en arrière-plan depuis le stockage HDS,
     /// avec le type reconnu au contenu et sans cache.
     /// </summary>
     [HttpGet("{submissionId:guid}/documents/{documentId:guid}/link")]

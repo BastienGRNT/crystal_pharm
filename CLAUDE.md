@@ -150,7 +150,9 @@ Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
   fichiers, dans un stockage objet), derrière des interfaces d'`Application` :
   des conteneurs en dev, Postgres et stockage objet HDS en prod ;
 - un fichier passe entre le navigateur et ce stockage par un lien pré-signé
-  court du C#, le seul à détenir une clé ;
+  court du C#, le seul à détenir une clé. Un lien de lecture n'est jamais
+  montré : la page le lit en arrière-plan et affiche le fichier depuis la
+  mémoire, jamais dans une barre d'adresse, un historique ou un `href` ;
 - en prod, seules ces données sont chez l'hébergeur HDS, le reste est sur un
   serveur normal. Donc aucune clé étrangère ni jointure entre un schéma de
   santé et un autre : on se référence par identifiant ;

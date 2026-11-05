@@ -7,8 +7,10 @@ Données de santé.
   envoyées depuis le site public et en suit le traitement.
 - Pas de schéma propre : tous les appels passent par `src/server/api/`.
 - Les réponses ne sont jamais mises en cache (posé par `pharmacy/host`).
-- Les fichiers d’ordonnance ne passent jamais par Node : la route du fichier vérifie le droit, puis renvoie (303,
-  `no-store`) vers un lien de lecture pré-signé de deux minutes, demandé au C# qui trace la lecture.
+- Les fichiers d’ordonnance ne passent jamais par Node : la route du fichier vérifie le droit et rend (JSON,
+  `no-store`, refusé à une navigation) un lien de lecture pré-signé de 30 secondes, demandé au C# qui trace la
+  lecture. `ReceivedDocumentCard` le lit en arrière-plan et montre le fichier depuis la mémoire (`blob:`) : le
+  lien n’est jamais dans un `href`, une barre d’adresse ni l’historique.
 - Un identifiant opaque (UUID) dans une URL est autorisé ; une recherche par
   nom de patient se fait en POST, jamais dans l'URL.
 - Une règle qui manque côté C# ne se recode pas ici : tu le signales, ça se
