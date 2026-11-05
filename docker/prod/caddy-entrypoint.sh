@@ -1,10 +1,11 @@
 #!/bin/sh
-# Caddy veut des noms d'hôte seuls ; les variables du déploiement sont des URLs (https://domaine).
+# Caddy veut des noms d'hôte seuls ; les variables du déploiement sont des URLs (https://domaine[:port]).
 set -eu
 
 extract_host() {
 	without_scheme="${1#*://}"
-	echo "${without_scheme%%/*}"
+	host_and_port="${without_scheme%%/*}"
+	echo "${host_and_port%%:*}"
 }
 
 export PHARMACY_HOST="$(extract_host "$PHARMACY_URL")"

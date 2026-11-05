@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "node",
+      "credentials": [{ "accessKey": "dev-files-node", "secretKey": "dev-files-node-secret-not-for-production" }],
+      "actions": ["Read:files", "Write:files", "List:files"]
+    },
+    {
+      "name": "backup",
+      "credentials": [{ "accessKey": "dev-files-backup", "secretKey": "dev-files-backup-secret-not-for-production" }],
+      "actions": ["Read:files", "List:files"]
+    }
+  ]
+}

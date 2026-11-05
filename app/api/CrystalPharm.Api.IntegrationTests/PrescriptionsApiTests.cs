@@ -35,6 +35,7 @@ public sealed class PrescriptionsApiTests(ApiFixture api)
             ["lastName"] = "Durand",
             ["birthDate"] = "1985-05-17",
             ["phone"] = "06 12 34 56 78",
+            ["email"] = "camille.durand@example.org",
             ["plannedVisitAt"] = "2026-10-26T14:30",
             ["hasAlreadyVisited"] = "false",
         };
@@ -131,7 +132,7 @@ public sealed class PrescriptionsApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task A_complete_submission_is_stored_in_the_database_and_on_disk()
+    public async Task A_complete_submission_is_stored_in_the_database_and_in_the_object_storage()
     {
         var tenantId = Guid.NewGuid();
         var form = FormWith(
@@ -147,9 +148,10 @@ public sealed class PrescriptionsApiTests(ApiFixture api)
             "select count(*) from prescriptions.submissions where id = @id and tenant_id = @tenant and social_security_number = @number",
             ("id", result.SubmissionId), ("tenant", tenantId), ("number", ValidSocialSecurityNumber)));
         Assert.Equal(3, await CountAsync("select count(*) from prescriptions.documents where submission_id = @id", ("id", result.SubmissionId)));
-        var storedFiles = Directory.GetFiles(Path.Combine(api.PrescriptionStorageDirectory, tenantId.ToString("N"), result.SubmissionId.ToString("N")));
-        Assert.Equal(3, storedFiles.Length);
-        Assert.Contains(storedFiles, file => File.ReadAllBytes(file).SequenceEqual(PdfBytes));
+        var storedKeys = await api.ListStoredKeysAsync($"{tenantId:N}/{result.SubmissionId:N}/");
+        Assert.Equal(3, storedKeys.Count);
+        var storedContents = await Task.WhenAll(storedKeys.Select(api.ReadStoredObjectAsync));
+        Assert.Contains(storedContents, content => content.SequenceEqual(PdfBytes));
     }
 
     [Fact]
@@ -257,7 +259,7 @@ public sealed class PrescriptionsApiTests(ApiFixture api)
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(0, await CountAsync("select count(*) from prescriptions.submissions where tenant_id = @tenant", ("tenant", tenantId)));
-        Assert.False(Directory.Exists(Path.Combine(api.PrescriptionStorageDirectory, tenantId.ToString("N"))));
+        Assert.Empty(await api.ListStoredKeysAsync($"{tenantId:N}/"));
     }
 
     [Fact]

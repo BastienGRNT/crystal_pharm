@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CrystalPharm.Api.Authentication;
+using CrystalPharm.Api.Database;
 using CrystalPharm.Api.ErrorHandling;
 using CrystalPharm.Api.Tenancy;
 using CrystalPharm.Booking.Infrastructure;
@@ -8,16 +9,17 @@ using CrystalPharm.Prescriptions.Infrastructure;
 using CrystalPharm.SharedKernel.Tenancy;
 using DotNetEnv;
 
-var envFile = new DirectoryInfo(Directory.GetCurrentDirectory());
-while (envFile is not null && !File.Exists(Path.Combine(envFile.FullName, ".env")))
+var developmentEnvironmentFile = Path.Combine("env", "development", "api.env");
+var repositoryDirectory = new DirectoryInfo(Directory.GetCurrentDirectory());
+while (repositoryDirectory is not null && !File.Exists(Path.Combine(repositoryDirectory.FullName, developmentEnvironmentFile)))
 {
-    envFile = envFile.Parent;
+    repositoryDirectory = repositoryDirectory.Parent;
 }
 
-if (envFile is not null)
+if (repositoryDirectory is not null)
 {
-    // Une variable déjà posée (la production, les tests) l'emporte sur le fichier .env.
-    Env.Load(Path.Combine(envFile.FullName, ".env"), new LoadOptions(clobberExistingVars: false));
+    // Une variable déjà posée (la production, les tests) l'emporte sur le fichier de dev.
+    Env.Load(Path.Combine(repositoryDirectory.FullName, developmentEnvironmentFile), new LoadOptions(clobberExistingVars: false));
 }
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,8 +52,7 @@ if (app.Environment.IsDevelopment())
 // Les déploiements posent ApplyMigrationsAtStartup : le C# est seul à migrer ses schémas.
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("ApplyMigrationsAtStartup"))
 {
-    await app.Services.ApplyBookingMigrationsAsync(CancellationToken.None);
-    await app.Services.ApplyPrescriptionsMigrationsAsync(CancellationToken.None);
+    await HealthDatabaseMigrations.ApplyAsync(app.Services, app.Configuration, CancellationToken.None);
 }
 
 app.UseExceptionHandler();

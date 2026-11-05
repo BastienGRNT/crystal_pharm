@@ -64,8 +64,11 @@ elle-même est créée à l'étape 2 de `app/engine/docs/prochaines-etapes.md`.
 - Les fonctions d'envoi données au moteur (`submitPrescription`…) sont des
   adapters : formulaire validé → appel au C#, côté serveur, avec l'identité de
   service `site` et le `tenantId` du Host.
-- Le fichier passe en flux vers le C#, sans jamais toucher le disque (pas de
-  fichier temporaire du parseur multipart).
+- Le fichier ne passe pas par ici : le serveur annonce l'envoi au C#
+  (`/api/prescriptions/uploads`), le navigateur dépose chaque fichier par le
+  lien pré-signé reçu, puis le serveur confirme (`…/uploads/completion`).
+  L'ancienne route multipart (en flux vers le C#, sans disque) reste pour
+  les pages déjà chargées, le temps qu'elles disparaissent.
 - Une clé d'idempotence par envoi (un double clic ne crée pas deux envois),
   un champ piège anti-robot et une limite de débit par IP.
 - Rien de ce que le Visitor envoie n'est gardé ici.

@@ -80,7 +80,7 @@ public sealed record ReceivedPrescriptionDto(
             submission.StatusChangedAt,
             submission.ExpectedProductsOn,
             submission.TeamNote,
-            submission.Documents.Select(ReceivedDocumentDto.From).ToArray());
+            submission.Documents.OrderBy(document => document.Position).Select(ReceivedDocumentDto.From).ToArray());
 }
 
 /// <summary>Un fichier à renvoyer en flux : l'appelant ferme <see cref="Content"/>.</summary>

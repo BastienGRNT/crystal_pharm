@@ -183,8 +183,9 @@ lui.
 
 ## `email` — les emails
 
-- `sendEmail` : par Resend quand `RESEND_API_KEY` existe ; sinon, l'email est
-  rangé dans la boîte de dev (un fichier hors du dépôt), lue par l'outil de dev.
+- `sendEmail` : en SMTP, vers Scaleway TEM en prod (`SMTP_URL`, TLS exigé),
+  vers Mailpit avec `APP_ENV=development` (rien ne part, même si `SMTP_URL`
+  existe). L'outil de dev lit et vide cette boîte par l'API de Mailpit.
 - Jamais de donnée de santé dans un email.
 
 ## `dev-tools` — l'outil de dev

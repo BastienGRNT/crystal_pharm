@@ -1,6 +1,5 @@
 start:
-	docker compose up -d
-	until docker compose exec -T postgres pg_isready -U $$(sed -n 's/^POSTGRES_USER=//p' .env) > /dev/null 2>&1; do sleep 1; done
+	docker compose up -d --wait
 
 # Tout d'une commande : Postgres et Caddy, les dépendances, les migrations, puis l'API C#
 # et les apps dans ce terminal (Ctrl+C arrête tout). Un serveur resté d'une session
@@ -29,8 +28,22 @@ api:
 # Le contrat du C# (OpenAPI, écrit au build sans lancer l'API) devient les types de
 # shared/api-client. Les valeurs factices ne servent qu'à construire l'hôte, jamais à se connecter.
 gen-types:
-	cd app/api && ConnectionStrings__Booking=Host=unused ConnectionStrings__Prescriptions=Host=unused PrescriptionStorage__LocalDirectory=unused SiteService__ApiKey=unused-unused-unused-unused-unused ManagerJwt__JwksUrl=http://unused ManagerJwt__Issuer=unused ManagerJwt__Audience=unused \
+	cd app/api && ConnectionStrings__Booking=Host=unused ConnectionStrings__Prescriptions=Host=unused PrescriptionStorage__ServiceUrl=http://unused PrescriptionStorage__BucketName=unused PrescriptionStorage__AccessKeyId=unused PrescriptionStorage__SecretAccessKey=unused SiteService__ApiKey=unused-unused-unused-unused-unused ManagerJwt__JwksUrl=http://unused ManagerJwt__Issuer=unused ManagerJwt__Audience=unused \
 		dotnet build CrystalPharm.Api -p:OpenApiGenerateDocuments=true
 	cd app && pnpm --filter @crystal-pharm/api-client generate
 
-.PHONY: start dev logs migrate api gen-types
+# La prod simulée : docker-compose.prod.yml, ses fournisseurs remplacés par des conteneurs et chaque
+# serveur borné à sa taille (docker/simulation/). Pharmacie : http://pharmacie.localhost:8090,
+# emails : http://localhost:8026.
+simulation_compose = docker compose -p crystal-pharm-simulation \
+	--env-file env/simulation/providers.env --env-file env/simulation/database.env \
+	--env-file env/simulation/web.env --env-file env/simulation/api.env \
+	-f docker-compose.prod.yml -f docker/simulation/compose.yml
+
+simulate:
+	$(simulation_compose) up -d --build
+
+simulate-stop:
+	$(simulation_compose) down
+
+.PHONY: start dev logs migrate api gen-types simulate simulate-stop

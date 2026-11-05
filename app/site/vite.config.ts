@@ -1,15 +1,16 @@
 import { solidStart } from '@solidjs/start/config';
 import { nitro } from 'nitro/vite';
-import { defineConfig, loadEnv } from 'vite';
+import { existsSync } from 'node:fs';
+import { defineConfig } from 'vite';
 
-const repositoryRootDirectory = '../..';
+const developmentEnvironmentFile = '../../env/development/web.env';
 const entryClientFile = './src/entry-client.tsx';
 const entryServerFile = './src/entry-server.tsx';
 const routeFiles = './src/routes/**/*.tsx';
 
-export default defineConfig(({ mode }) => {
-  // Le `.env` est à la racine du dépôt ; en prod, l'environnement vient du serveur.
-  Object.assign(process.env, loadEnv(mode, repositoryRootDirectory, ''));
+export default defineConfig(() => {
+  // Les variables de dev du VPS web ; en prod, l'environnement vient du serveur.
+  if (existsSync(developmentEnvironmentFile)) process.loadEnvFile(developmentEnvironmentFile);
 
   return {
     // Sans la surcouche de dev : elle s'affichait par-dessus l'aperçu de site-manager.

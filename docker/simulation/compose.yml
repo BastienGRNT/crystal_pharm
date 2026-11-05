@@ -1,0 +1,113 @@
+# La prod simulée (`make simulate`) : ajoutée à docker-compose.prod.yml, elle remplace chaque fournisseur
+# par un conteneur sur le réseau qui le joint en prod, et borne chaque service à la part de son serveur.
+#
+#   VPS Caddy + Node   2 vCPU · 2 Go   caddy, pharmacy, group, admin, site (et migrate, ponctuel)
+#   VPS Postgres Node  1 vCPU · 1 Go   postgres, backup
+#   VPS C#             1 vCPU · 1 Go   api
+#   Fournisseurs       sans limite     stockage objet (R2), HDS (Postgres + stockage), TEM, stockage des sauvegardes
+#
+# Le stockage HDS est publié sur localhost:8335 : le navigateur y dépose et y lit les ordonnances
+# par les liens pré-signés du C#, comme il joindra le point d'accès public de l'hébergeur HDS.
+
+x-object-storage: &object_storage
+  image: chrislusf/seaweedfs:4.47@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
+  restart: unless-stopped
+  entrypoint: ["/usr/local/bin/start-object-storage.sh"]
+
+services:
+  caddy:
+    deploy: { resources: { limits: { cpus: "0.20", memory: 128M } } }
+  pharmacy:
+    deploy: { resources: { limits: { cpus: "0.60", memory: 640M } } }
+  group:
+    deploy: { resources: { limits: { cpus: "0.30", memory: 320M } } }
+  admin:
+    deploy: { resources: { limits: { cpus: "0.30", memory: 320M } } }
+  site:
+    deploy: { resources: { limits: { cpus: "0.60", memory: 576M } } }
+  postgres:
+    deploy: { resources: { limits: { cpus: "0.80", memory: 768M } } }
+  backup:
+    deploy: { resources: { limits: { cpus: "0.20", memory: 256M } } }
+    depends_on:
+      object-storage:
+        condition: service_started
+      backup-object-storage:
+        condition: service_started
+  api:
+    deploy: { resources: { limits: { cpus: "1.00", memory: 1G } } }
+    depends_on:
+      health-postgres:
+        condition: service_healthy
+      health-object-storage:
+        condition: service_started
+
+  # Le stockage objet des fichiers (R2), joint par les apps Node et les sauvegardes.
+  object-storage:
+    <<: *object_storage
+    environment:
+      OBJECT_STORAGE_BUCKETS: files
+    volumes:
+      - object_storage_data:/data
+      - ./docker/object-storage/start.sh:/usr/local/bin/start-object-storage.sh:ro
+      - ./docker/object-storage/files.s3.json:/etc/seaweedfs/s3.json:ro
+    networks: [gateway, backup_outbound]
+
+  # Le stockage des sauvegardes, joint par le seul service `backup`.
+  backup-object-storage:
+    <<: *object_storage
+    environment:
+      OBJECT_STORAGE_BUCKETS: backups
+    volumes:
+      - backup_object_storage_data:/data
+      - ./docker/object-storage/start.sh:/usr/local/bin/start-object-storage.sh:ro
+      - ./docker/object-storage/backups.s3.json:/etc/seaweedfs/s3.json:ro
+    networks: [backup_outbound]
+
+  # Le Postgres HDS managé, joint par le seul C#.
+  health-postgres:
+    image: postgres:16@sha256:1beaa3084eee2676f20a9cd9928f0bf2c5bf674f8e49f81017912183d377c61c
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: crystal_pharm_health
+      POSTGRES_PASSWORD: ${SIMULATED_HEALTH_POSTGRES_PASSWORD:?}
+      POSTGRES_DB: crystal_pharm_health
+      HEALTH_API_ROLE: crystal_pharm_api
+      HEALTH_API_PASSWORD: ${SIMULATED_HEALTH_API_PASSWORD:?}
+    volumes:
+      - health_postgres_data:/var/lib/postgresql/data
+      - ./docker/health-postgres/create-api-role.sh:/docker-entrypoint-initdb.d/create-api-role.sh:ro
+    networks: [hds]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Le stockage objet HDS, joint par le C# et, par liens pré-signés, par le navigateur.
+  health-object-storage:
+    <<: *object_storage
+    ports:
+      - "8335:8333"
+    environment:
+      OBJECT_STORAGE_BUCKETS: prescriptions
+    volumes:
+      - health_object_storage_data:/data
+      - ./docker/object-storage/start.sh:/usr/local/bin/start-object-storage.sh:ro
+      - ./docker/object-storage/health.s3.json:/etc/seaweedfs/s3.json:ro
+    networks: [hds]
+
+  # L'envoi d'emails (TEM) : tout arrive dans la boîte, http://localhost:8026, rien ne part.
+  mailpit:
+    profiles: !reset []
+    ports:
+      - "8026:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+
+volumes:
+  object_storage_data:
+  backup_object_storage_data:
+  health_postgres_data:
+  health_object_storage_data:

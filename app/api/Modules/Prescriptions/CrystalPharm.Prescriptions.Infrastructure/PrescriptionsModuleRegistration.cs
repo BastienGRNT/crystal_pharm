@@ -14,23 +14,24 @@ namespace CrystalPharm.Prescriptions.Infrastructure;
 public static class PrescriptionsModuleRegistration
 {
     private const string ConnectionStringName = "Prescriptions";
-    private const string LocalDirectorySetting = "PrescriptionStorage:LocalDirectory";
 
     /// <summary>
     /// Le module Prescriptions. L'hôte enregistre l'<see cref="SharedKernel.Tenancy.ITenantContext"/>
-    /// de la requête et un <see cref="TimeProvider"/>. Les fichiers vont dans un dossier local
-    /// (<c>PrescriptionStorage__LocalDirectory</c>) tant qu'il n'y a pas d'hébergeur HDS.
+    /// de la requête et un <see cref="TimeProvider"/>. Les fichiers vont dans le stockage objet HDS
+    /// (<c>PrescriptionStorage__*</c>), SeaweedFS en dev.
     /// </summary>
     public static IServiceCollection AddPrescriptionsModule(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString(ConnectionStringName)
             ?? throw new InvalidOperationException($"ConnectionStrings__{ConnectionStringName} is missing from the environment.");
-        var localDirectory = configuration[LocalDirectorySetting]
-            ?? throw new InvalidOperationException("PrescriptionStorage__LocalDirectory is missing from the environment.");
+        var storageSettings = PrescriptionStorageSettings.ReadFrom(configuration);
 
         services.AddTenantScopedDbContext<PrescriptionsDbContext>(options => ConfigurePrescriptionsDatabase(options, connectionString));
         services.AddScoped<IPrescriptionSubmissionRepository, PrescriptionSubmissionRepository>();
-        services.AddSingleton<IPrescriptionDocumentStore>(new LocalDiskPrescriptionDocumentStore(localDirectory));
+        services.AddSingleton<IPrescriptionDocumentStore>(new S3PrescriptionDocumentStore(
+            storageSettings.CreateClient(storageSettings.ServiceUrl),
+            storageSettings.CreateClient(storageSettings.PublicServiceUrl),
+            storageSettings.BucketName));
         services.AddSingleton<IMalwareScanner, NoOpMalwareScanner>();
         services.AddScoped<IPrescriptionAccessLog, PrescriptionAccessLog>();
         services.AddScoped<IPrescriptionSubmissionService, PrescriptionSubmissionService>();

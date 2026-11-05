@@ -60,6 +60,21 @@ public static class DocumentFormatDetection
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 
+    /// <summary>Le format qu'annonce un type MIME : seulement pour un fichier encore à déposer, vérifié ensuite à son contenu.</summary>
+    public static bool TryParseMimeType(string? mimeType, [NotNullWhen(true)] out DocumentFormat? format)
+    {
+        format = mimeType?.Trim().ToLowerInvariant() switch
+        {
+            "image/jpeg" => DocumentFormat.Jpeg,
+            "image/png" => DocumentFormat.Png,
+            "image/webp" => DocumentFormat.Webp,
+            "image/heic" => DocumentFormat.Heic,
+            "application/pdf" => DocumentFormat.Pdf,
+            _ => null,
+        };
+        return format is not null;
+    }
+
     private static bool IsHeicBrand(ReadOnlySpan<byte> brand)
     {
         foreach (var heicBrand in HeicBrands)

@@ -4,12 +4,15 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace CrystalPharm.Api.Tenancy;
 
-/// <summary>Limite les envois d'ordonnance par pharmacie : un site abusé ne peut pas saturer le disque.</summary>
+/// <summary>
+/// Limite les appels d'envoi d'ordonnance par pharmacie : un site abusé ne peut pas saturer le stockage.
+/// Un envoi par liens pré-signés compte deux appels (le début et la confirmation).
+/// </summary>
 public static class PrescriptionRateLimiting
 {
     public const string PolicyName = "prescriptions";
 
-    private const int SubmissionsPerMinutePerTenant = 30;
+    private const int RequestsPerMinutePerTenant = 60;
 
     public static IServiceCollection AddPrescriptionRateLimiting(this IServiceCollection services) =>
         services.AddRateLimiter(options =>
@@ -22,7 +25,7 @@ public static class PrescriptionRateLimiting
                     tenantContext.IsResolved ? tenantContext.TenantId.ToString() : "unresolved",
                     _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = SubmissionsPerMinutePerTenant,
+                        PermitLimit = RequestsPerMinutePerTenant,
                         Window = TimeSpan.FromMinutes(1),
                     });
             });

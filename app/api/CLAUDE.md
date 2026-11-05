@@ -49,6 +49,9 @@ app/api/
 
 - Une `DbContext` par module = un schéma (`booking`, `prescriptions`), avec
   sa propre chaîne de connexion, qui pointe vers l'instance HDS en prod.
+- L'API se connecte par un rôle ordinaire, soumis à la RLS ; elle migre par le
+  propriétaire des schémas (`ConnectionStrings__HealthMigrations`, cf.
+  `CrystalPharm.Api/Database`), jamais l'inverse.
 - Chaque contexte a sa table d'historique de migrations dans son schéma
   (`MigrationsHistoryTable("__EFMigrationsHistory", "<schéma>")`).
   Migrations au nom explicite.
@@ -77,8 +80,12 @@ app/api/
 
 ## Données de santé
 
-- Stockage derrière des interfaces d'`Application` (ex. `IPrescriptionStore`) :
-  local en dev, HDS en prod, choisi par la configuration.
+- Stockage derrière des interfaces d'`Application` (ex.
+  `IPrescriptionDocumentStore`) : un stockage objet S3 (SeaweedFS en dev, HDS
+  en prod), choisi par la configuration (`PrescriptionStorage__*`).
+- Le navigateur n'y entre que par un lien pré-signé court : dépôt (15 min,
+  `Content-Type` signé) ou lecture (2 min, tracée). Jamais d'URL publique ni
+  de bucket ouvert ; la clé du C# est limitée à son bucket.
 - Chaque lecture d'une donnée de santé laisse une trace (qui, quand, quoi).
   Depuis le CounterAccount, « qui » est le compte comptoir, pas la personne :
   choix assumé.
@@ -89,6 +96,10 @@ app/api/
 
 - Taille maximale fixée, type de fichier vérifié par son contenu (pas par
   l'extension), passage par un `IMalwareScanner` (sans effet en dev).
+- Un fichier arrive en trois temps : `site` annonce l'envoi (types, tailles),
+  le navigateur dépose par lien pré-signé, `site` confirme. Les vérifications
+  ont lieu à la confirmation ; un envoi non confirmé reste invisible et est
+  purgé.
 - Idempotence : `site` envoie une clé unique par envoi ; la même clé renvoie
   le même résultat, jamais un doublon.
 - Limite de débit par tenant.

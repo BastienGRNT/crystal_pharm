@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "api",
+      "credentials": [{ "accessKey": "dev-health-api", "secretKey": "dev-health-api-secret-not-for-production" }],
+      "actions": ["Read:prescriptions", "Write:prescriptions", "List:prescriptions"]
+    }
+  ]
+}

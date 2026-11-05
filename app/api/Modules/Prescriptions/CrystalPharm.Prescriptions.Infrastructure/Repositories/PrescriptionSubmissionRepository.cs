@@ -12,6 +12,14 @@ internal sealed class PrescriptionSubmissionRepository(PrescriptionsDbContext co
         context.ReadInTenantTransactionAsync(
             () => context.Submissions
                 .AsNoTracking()
+                .Include(candidate => candidate.Documents)
+                .SingleOrDefaultAsync(candidate => candidate.IdempotencyKey == idempotencyKey, cancellationToken),
+            cancellationToken);
+
+    public Task<PrescriptionSubmission?> FindByIdempotencyKeyForUpdateAsync(string idempotencyKey, CancellationToken cancellationToken) =>
+        context.ReadInTenantTransactionAsync(
+            () => context.Submissions
+                .Include(candidate => candidate.Documents)
                 .SingleOrDefaultAsync(candidate => candidate.IdempotencyKey == idempotencyKey, cancellationToken),
             cancellationToken);
 
@@ -20,6 +28,7 @@ internal sealed class PrescriptionSubmissionRepository(PrescriptionsDbContext co
             () => context.Submissions
                 .AsNoTracking()
                 .Include(submission => submission.Documents)
+                .Where(submission => submission.DocumentsConfirmedAt != null)
                 .OrderByDescending(submission => submission.SubmittedAt)
                 .Take(limit)
                 .ToListAsync(cancellationToken),
@@ -30,24 +39,26 @@ internal sealed class PrescriptionSubmissionRepository(PrescriptionsDbContext co
             () => context.Submissions
                 .AsNoTracking()
                 .Include(candidate => candidate.Documents)
-                .SingleOrDefaultAsync(candidate => candidate.Id == submissionId, cancellationToken),
+                .SingleOrDefaultAsync(candidate => candidate.Id == submissionId && candidate.DocumentsConfirmedAt != null, cancellationToken),
             cancellationToken);
 
     public Task<PrescriptionSubmission?> FindForUpdateAsync(Guid submissionId, CancellationToken cancellationToken) =>
         context.ReadInTenantTransactionAsync(
             () => context.Submissions
                 .Include(candidate => candidate.Documents)
-                .SingleOrDefaultAsync(candidate => candidate.Id == submissionId, cancellationToken),
+                .SingleOrDefaultAsync(candidate => candidate.Id == submissionId && candidate.DocumentsConfirmedAt != null, cancellationToken),
             cancellationToken);
 
     public async Task<IReadOnlyList<PrescriptionSubmission>> ListPastRetentionAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
         var submittedBefore = now - PrescriptionSubmission.MaximumRetention;
         var collectedBefore = now - PrescriptionSubmission.RetentionAfterCollection;
+        var abandonedIfStartedBefore = now - PrescriptionSubmission.DocumentUploadWindow;
         return await context.ReadInTenantTransactionAsync(
             () => context.Submissions
                 .Include(submission => submission.Documents)
                 .Where(submission => submission.SubmittedAt < submittedBefore
+                    || (submission.DocumentsConfirmedAt == null && submission.SubmittedAt < abandonedIfStartedBefore)
                     || (submission.Status == PrescriptionStatus.Collected && submission.StatusChangedAt < collectedBefore))
                 .ToListAsync(cancellationToken),
             cancellationToken);

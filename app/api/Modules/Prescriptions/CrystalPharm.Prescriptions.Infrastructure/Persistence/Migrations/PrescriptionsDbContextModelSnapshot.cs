@@ -33,6 +33,10 @@ namespace CrystalPharm.Prescriptions.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("birth_date");
 
+                    b.Property<DateTimeOffset?>("DocumentsConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("documents_confirmed_at");
+
                     b.Property<string>("Email")
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
@@ -144,6 +148,10 @@ namespace CrystalPharm.Prescriptions.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("kind");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
 
                     b.Property<long>("SizeInBytes")
                         .HasColumnType("bigint")

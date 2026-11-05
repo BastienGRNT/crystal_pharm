@@ -8,7 +8,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0.22@sha256:8bbd3f6fcc157792d96f0932107d9
 ENV ASPNETCORE_URLS=http://+:8080 DOTNET_gcServer=0
 WORKDIR /srv/api
 COPY --from=build /publish ./
-RUN mkdir -p /var/lib/prescriptions && chown app:app /var/lib/prescriptions
 USER app
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "CrystalPharm.Api.dll"]

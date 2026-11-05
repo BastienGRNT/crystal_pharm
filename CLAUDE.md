@@ -45,8 +45,10 @@ Un dossier d'app porte le nom de **son public** ; un package `shared/*-db`, le
 nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 
 ```
-├─ CLAUDE.md  README.md  Makefile  compose.yml  .env
-├─ docker/                  Caddy : relais de dev devant app/site
+├─ CLAUDE.md  README.md  Makefile  compose.yml  docker-compose.prod.yml
+├─ env/                     les variables, un fichier par VPS : development · simulation · production
+├─ docs/                    l'architecture de prod (serveurs, fournisseurs, sauvegardes)
+├─ docker/                  Caddy, images de prod, stand-ins des fournisseurs, simulation
 └─ app/
    ├─ pharmacy/             l'espace des pharmacies
    │  ├─ host/              SvelteKit : monte les modules, sert l'auth et l'API mobile
@@ -86,8 +88,11 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 - Un envoi du Visitor appartient au module qui le traite : un rendez-vous →
   `Booking`, une ordonnance → `Prescriptions`. Un nouveau type d'envoi sans
   module évident : on en parle avant.
-- Les emails partent par Resend, derrière l'interface de `shared/email` (en
-  dev, rien ne part : ils arrivent dans la boîte de l'outil de dev).
+- Les emails partent en SMTP par Scaleway TEM (qui ne garde rien), derrière
+  l'interface de `shared/email` (en dev, rien ne part : ils arrivent dans
+  Mailpit, lu par l'outil de dev).
+- Les fichiers d'un Tenant (photos, icônes…) vont dans un stockage objet (R2
+  en prod), derrière le `FileStorage` de `shared/pharmacy-db`.
 
 ## Les déployables
 
@@ -142,7 +147,10 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
 Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
 
 - stockés **uniquement** par le C#, dans `booking` et `prescriptions` (et leurs
-  fichiers), derrière des interfaces d'`Application` : local en dev, HDS en prod ;
+  fichiers, dans un stockage objet), derrière des interfaces d'`Application` :
+  des conteneurs en dev, Postgres et stockage objet HDS en prod ;
+- un fichier passe entre le navigateur et ce stockage par un lien pré-signé
+  court du C#, le seul à détenir une clé ;
 - en prod, seules ces données sont chez l'hébergeur HDS, le reste est sur un
   serveur normal. Donc aucune clé étrangère ni jointure entre un schéma de
   santé et un autre : on se référence par identifiant ;
@@ -305,8 +313,9 @@ Seulement en dev, dans les trois apps Svelte : cf. `app/shared/CLAUDE.md`,
 
 ## Commandes
 
-`make start` (Postgres) · `make migrate` (les migrations Drizzle) · `make logs` ·
-`make api` · `make gen-types` (créée avec le premier appel d'une app au C#) ·
+`make start` (Postgres, stockages objet, Mailpit) · `make migrate` (les migrations
+Drizzle) · `make logs` · `make api` · `make gen-types` · `make simulate` (la prod
+simulée, cf. `docs/architecture.md`) ·
 `pnpm dev` dans `app/` (les trois apps Svelte). Dépendances JS : `pnpm install` dans
 `app/`. Rien d'autre tant que le besoin n'est pas réel.
 
