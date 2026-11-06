@@ -50,6 +50,8 @@ export { default as ActionList } from './molecules/ActionList.svelte';
 export type { ActionListAction, ActionListItem, ActionListTone } from './molecules/actionList';
 export { default as AgendaBoard } from './organisms/agenda/AgendaBoard.svelte';
 export type { AgendaColumn, AgendaEvent, AgendaEventTone, AgendaHour } from './organisms/agenda/agendaBoard';
+export { default as ComboBox } from './molecules/fields/pickers/ComboBox.svelte';
+export type { ComboBoxOption } from './molecules/fields/pickers/comboBox';
 export { default as DatePicker } from './molecules/fields/pickers/DatePicker.svelte';
 export { default as DescriptionList } from './molecules/DescriptionList.svelte';
 export type { DescriptionItem } from './molecules/descriptionList';

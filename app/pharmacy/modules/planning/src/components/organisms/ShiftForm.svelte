@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, DatePicker, Field, SelectMenu, TimePicker } from '@crystal-pharm/ui';
+	import { Button, ComboBox, DatePicker, Field, TimePicker } from '@crystal-pharm/ui';
 	import type { Employee } from '../../domain/planning';
 
 	type ShiftFormProps = {
@@ -37,11 +37,11 @@
 	{#if editedShiftId}<input type="hidden" name="shiftId" value={editedShiftId} />{/if}
 	<Field label="Employé">
 		{#snippet control({ id })}
-			<SelectMenu
+			<ComboBox
 				{id}
 				name="employeeId"
 				options={employeeOptions}
-				placeholder="Choisir un employé"
+				placeholder="Rechercher un employé"
 				value={submittedValues?.employeeId ?? ''}
 			/>
 		{/snippet}
