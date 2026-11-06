@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, DatePicker, Field, FormSection, Input, SelectMenu, TimePicker } from '@crystal-pharm/ui';
+	import { Button, ComboBox, DatePicker, Field, FormSection, Input, SelectMenu, TimePicker } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
 	import { addMinutesToTime } from '../../domain/agenda';
 	import type { AddAppointmentPanel, AppointmentFormValues, AppointmentsActionFailure } from '../../pages/appointmentsPageData';
@@ -42,11 +42,11 @@
 		</Field>
 		<Field label="Avec" errorMessage={errorOf('employeeId')}>
 			{#snippet control({ id })}
-				<SelectMenu
+				<ComboBox
 					{id}
 					name="employeeId"
 					options={panel.employeeOptions}
-					placeholder="Choisir une personne"
+					placeholder="Rechercher une personne"
 					value={submittedValues?.employeeId ?? ''}
 				/>
 			{/snippet}
