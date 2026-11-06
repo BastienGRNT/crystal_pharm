@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, DatePicker, Field, Input, SelectMenu, TimePicker } from '@crystal-pharm/ui';
+	import { Button, ComboBox, DatePicker, Field, Input, SelectMenu, TimePicker } from '@crystal-pharm/ui';
 	import type { AddAppointmentPanel, AppointmentFormValues } from '../../pages/appointmentsPageData';
 
 	type AddAppointmentFormProps = {
@@ -35,11 +35,11 @@
 	</Field>
 	<Field label="Avec">
 		{#snippet control({ id })}
-			<SelectMenu
+			<ComboBox
 				{id}
 				name="employeeId"
 				options={panel.employeeOptions}
-				placeholder="Choisir un employé"
+				placeholder="Rechercher un employé"
 				value={submittedValues?.employeeId ?? ''}
 			/>
 		{/snippet}
