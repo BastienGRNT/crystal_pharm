@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, ChoiceGroup, DatePicker, Field, Input, SelectMenu, TimePicker } from '@crystal-pharm/ui';
+	import { Button, ChoiceGroup, ComboBox, DatePicker, Field, Input, TimePicker } from '@crystal-pharm/ui';
 	import { describePlannedActivity, plannedActivityKindLabels, plannedActivityKinds, type PlannedActivity } from '../../../domain/activities/plannedActivities';
 	import { formatDayTitle } from '../../../domain/calendar/week';
 	import type { Employee } from '../../../domain/planning';
@@ -56,7 +56,7 @@
 		<ChoiceGroup name="kind" legend="Type" options={kindOptions} value={submittedValues?.kind ?? 'training'} layout="segmented" />
 		<Field label="Employé">
 			{#snippet control({ id })}
-				<SelectMenu {id} name="employeeId" options={employeeOptions} placeholder="Choisir un employé" value={submittedValues?.employeeId ?? ''} />
+				<ComboBox {id} name="employeeId" options={employeeOptions} placeholder="Rechercher un employé" value={submittedValues?.employeeId ?? ''} />
 			{/snippet}
 		</Field>
 		<Field label="Jour">
