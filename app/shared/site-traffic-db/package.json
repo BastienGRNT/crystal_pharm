@@ -1,0 +1,26 @@
+{
+	"name": "@crystal-pharm/site-traffic-db",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.server.ts",
+		"./domain": "./src/domain.ts"
+	},
+	"scripts": {
+		"check": "tsc --project tsconfig.json",
+		"test": "vitest run --exclude '**/*.integration.test.ts'",
+		"test:integration": "vitest run integration",
+		"generate-migration": "drizzle-kit generate",
+		"migrate": "drizzle-kit migrate"
+	},
+	"dependencies": {
+		"drizzle-orm": "^0.45.4",
+		"postgres": "^3.4.9"
+	},
+	"devDependencies": {
+		"@types/node": "^24.19.2",
+		"drizzle-kit": "^0.31.11",
+		"typescript": "^6.0.3",
+		"vitest": "^5.0.5"
+	}
+}

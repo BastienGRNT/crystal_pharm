@@ -1,36 +1,58 @@
-import type { PharmacyInfo } from '@crystal-pharm/schema';
 import { Show } from 'solid-js';
+import type { FindUsSectionProps } from '@crystal-pharm/renderer';
 import { ButtonLink } from '../atoms/ButtonLink';
-import { SectionHeading } from '../atoms/SectionHeading';
+import { telephoneHref } from '../atoms/telephoneHref';
 
-export function FindUsSection(props: { pharmacy: Readonly<PharmacyInfo> }) {
-  const fullAddress = () => `${props.pharmacy.address.street}, ${props.pharmacy.address.postalCode} ${props.pharmacy.address.city}`;
+export function FindUsSection(props: FindUsSectionProps) {
   return (
-    <section class="nb-section nb-find-us" id="nous-trouver">
-      <SectionHeading eyebrow="Venir nous voir" title="Trouvez-nous" />
-      <div class="nb-find-us__card">
-        <div class="nb-find-us__details">
-          <p class="nb-find-us__address">
-            {props.pharmacy.address.street}
-            <br />
-            {props.pharmacy.address.postalCode} {props.pharmacy.address.city}
-          </p>
-          <p>
-            Téléphone : <a href={`tel:${props.pharmacy.phone.replace(/\s/g, '')}`}>{props.pharmacy.phone}</a>
-          </p>
-          <Show when={props.pharmacy.email}>
-            {(email) => (
-              <p>
-                E-mail : <a href={`mailto:${email()}`}>{email()}</a>
-              </p>
+    <section class="nb-find-us" id="nous-trouver" aria-labelledby="nb-find-us-title">
+      <div class="nb-find-us__details">
+        <h2 class="nb-panel-title" id="nb-find-us-title">
+          Venir à la pharmacie
+        </h2>
+        <p class="nb-find-us__address">
+          {props.address.street}
+          <br />
+          {props.address.postalCode} {props.address.city}
+        </p>
+        <dl class="nb-find-us__practical">
+          <Show when={props.accessInstructions}>
+            {(instructions) => (
+              <div>
+                <dt>Accès</dt>
+                <dd>{instructions()}</dd>
+              </div>
             )}
           </Show>
-          <ButtonLink href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(fullAddress())}`} variant="primary">
-            Voir l'itinéraire
+          <Show when={props.parking}>
+            {(parking) => (
+              <div>
+                <dt>Stationnement</dt>
+                <dd>{parking()}</dd>
+              </div>
+            )}
+          </Show>
+          <Show when={props.publicTransport}>
+            {(publicTransport) => (
+              <div>
+                <dt>Transports</dt>
+                <dd>{publicTransport()}</dd>
+              </div>
+            )}
+          </Show>
+        </dl>
+        <div class="nb-find-us__actions">
+          <ButtonLink href={props.directionsUrl} variant="primary" icon="pin">
+            Itinéraire
+          </ButtonLink>
+          <ButtonLink href={telephoneHref(props.phone)} variant="secondary" icon="phone">
+            {props.phone}
           </ButtonLink>
         </div>
-        <div class="nb-find-us__map" aria-hidden="true" />
       </div>
+      <Show when={props.mapEmbedUrl}>
+        {(mapEmbedUrl) => <iframe class="nb-find-us__map" src={mapEmbedUrl()} title={`Carte : ${props.name}`} loading="lazy" />}
+      </Show>
     </section>
   );
 }

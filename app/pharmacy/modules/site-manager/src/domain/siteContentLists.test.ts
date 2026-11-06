@@ -14,14 +14,20 @@ describe('readSiteContentLists', () => {
 				{ title: ' Vaccination ', description: 'Sans rendez-vous.', iconName: '' },
 				{ title: '', description: '', iconName: 'pill' }
 			],
+			[],
 			[]
 		);
 
-		expect(reading).toEqual({ success: true, services: [{ title: 'Vaccination', description: 'Sans rendez-vous.' }], articles: [] });
+		expect(reading).toEqual({
+			success: true,
+			services: [{ title: 'Vaccination', description: 'Sans rendez-vous.' }],
+			articles: [],
+			brands: []
+		});
 	});
 
 	it('refuses a half-filled row instead of silently dropping it', () => {
-		const reading = readSiteContentLists([], [{ title: 'Campagne grippe', summary: '  ', publishedAt: '2026-10-01' }]);
+		const reading = readSiteContentLists([], [{ title: 'Campagne grippe', summary: '  ', publishedAt: '2026-10-01' }], []);
 
 		expect(reading.success).toBe(false);
 	});
@@ -54,5 +60,28 @@ describe('parseServiceDrafts and parseArticleDrafts', () => {
 		expect(parseServiceDrafts('pas du json')).toBeUndefined();
 		expect(parseServiceDrafts('[{"title":"Tests","description":"","iconName":"rocket"}]')).toBeUndefined();
 		expect(parseArticleDrafts('[{"title":"Titre","summary":"Résumé","publishedAt":"hier"}]')).toBeUndefined();
+	});
+});
+
+describe('les marques', () => {
+	it('keeps the logo choice and the address of a complete brand', () => {
+		const reading = readSiteContentLists([], [], [
+			{ name: ' Avène ', url: 'https://avene.example', logo: { kind: 'suggestion', suggestionKey: 'blue-morning' } },
+			{ name: '', url: '' }
+		]);
+
+		expect(reading).toEqual({
+			success: true,
+			services: [],
+			articles: [],
+			brands: [{ name: 'Avène', url: 'https://avene.example', logo: { kind: 'suggestion', suggestionKey: 'blue-morning' } }]
+		});
+	});
+
+	it('refuses a brand with a logo but no name, and a brand with an invalid address', () => {
+		const logo = { kind: 'link', url: 'https://logo.example/a.png' } as const;
+
+		expect(readSiteContentLists([], [], [{ name: '', url: '', logo }]).success).toBe(false);
+		expect(readSiteContentLists([], [], [{ name: 'Avène', url: 'avene' }]).success).toBe(false);
 	});
 });

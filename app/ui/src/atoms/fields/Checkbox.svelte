@@ -14,14 +14,14 @@
 	let { name, value = 'on', checked = $bindable(false), required = false, children }: CheckboxProps = $props();
 </script>
 
-<label class="flex cursor-pointer items-start gap-2 text-small text-ink">
+<label class="flex cursor-pointer items-start gap-2.5 text-body text-ink">
 	<input
 		type="checkbox"
 		{name}
 		{value}
 		{required}
 		bind:checked
-		class="mt-0.5 size-4 flex-none cursor-pointer rounded-xs accent-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+		class="mt-0.5 size-[18px] flex-none cursor-pointer rounded-xs accent-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
 	/>
 	<span>{@render children()}</span>
 </label>

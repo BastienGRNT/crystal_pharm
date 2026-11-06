@@ -14,19 +14,19 @@
 </script>
 
 {#if rules.length === 0}
-	<p class="text-body text-ink-muted">Aucune indisponibilité ni disponibilité renseignée.</p>
+	<p class="rounded-xl border border-dashed border-line-strong/60 px-4 py-6 text-center text-small text-ink-subtle">Aucune indisponibilité ni disponibilité renseignée.</p>
 {:else}
-	<ul class="rounded-md border border-line bg-surface">
+	<ul class="divide-y divide-dashed divide-line-strong/40 rounded-xl border border-line bg-surface shadow-card">
 		{#each rules as rule (rule.id)}
-			<li class="flex flex-wrap items-center gap-3 px-4 py-2.5 not-last:border-b not-last:border-line-soft">
-				<span class="min-w-0 flex-1 text-body">
+			<li class="flex flex-wrap items-center gap-3 px-4 py-3">
+				<span class="min-w-0 flex-1 text-body font-bold text-ink">
 					{rule.summary}
-					{#if rule.note !== ''}<span class="block text-small text-ink-muted">« {rule.note} »</span>{/if}
+					{#if rule.note !== ''}<span class="block text-small font-normal text-ink-muted italic">« {rule.note} »</span>{/if}
 				</span>
 				<StatusBadge tone={statusTones[rule.status]}>{statusLabels[rule.status]}</StatusBadge>
 				<form method="POST" action={removeFormAction}>
 					<input type="hidden" name="ruleId" value={rule.id} />
-					<Button type="submit" variant="ghost" icon="trash">Retirer</Button>
+					<Button type="submit" variant="ghost" size="compact" icon="trash">Retirer</Button>
 				</form>
 			</li>
 		{/each}

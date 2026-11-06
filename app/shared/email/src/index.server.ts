@@ -6,6 +6,12 @@ export {
 	composePharmacyInvitationEmail,
 	composeTenantMemberInvitationEmail
 } from './messages/invitationEmails';
+export {
+	composeAppointmentCancelledEmail,
+	composeAppointmentConfirmedEmail,
+	composeRequestReadyEmail
+} from './messages/visitorEmails';
+export type { PharmacyContact } from './messages/visitorEmails';
 export { clearDevelopmentOutbox, readDevelopmentOutbox } from './sending/developmentOutbox.server';
 export type { Email, EmailActionLink, EmailAttachment, SentEmail } from './sending/email';
 export { sendEmail } from './sending/sendEmail.server';

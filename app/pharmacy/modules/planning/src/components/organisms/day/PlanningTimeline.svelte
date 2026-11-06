@@ -8,7 +8,7 @@
 	import EmployeeInitials from '../../atoms/EmployeeInitials.svelte';
 	import { readEmployeeColorClasses, readShiftBlockClasses } from '../../atoms/employeeColor';
 	import { dayStatusClasses, hoursStatusClasses } from '../week/weekCalendar';
-	import type { ShiftChange } from '../../shift-dragging/submitShiftChange';
+	import type { ShiftChange, ShiftMenuTarget } from '../../shift-dragging/submitShiftChange';
 	import { trackPointerDrag } from '../../shift-dragging/trackPointerDrag';
 	import {
 		dayStatusLabels,
@@ -36,9 +36,18 @@
 		status?: DayStatus;
 		/** Les heures de chaque employé jugées en direct : en rouge quand il lui en manque ou qu'il en a trop. */
 		hoursStatusByEmployee?: Map<string, EmployeeHoursStatus>;
+		/** Le clic droit sur un créneau modifiable : ce qu'on peut en faire. */
+		onShiftMenu?: (event: MouseEvent, menuTarget: ShiftMenuTarget) => void;
 	};
 
-	let { hours, rows, colorIndexByEmployee, opening, coverage, now, dragging, status, hoursStatusByEmployee }: PlanningTimelineProps = $props();
+	let { hours, rows, colorIndexByEmployee, opening, coverage, now, dragging, status, hoursStatusByEmployee, onShiftMenu }: PlanningTimelineProps =
+		$props();
+
+	function openShiftMenu(event: MouseEvent, bar: PlanningTimelineBar, personName: string): void {
+		if (!onShiftMenu || !bar.editHref) return;
+		event.preventDefault();
+		onShiftMenu(event, { shiftId: bar.id, label: `Créneau de ${personName}, ${bar.label}` });
+	}
 
 	type Gesture = { barId: string | undefined; employeeId: string; span: MinuteSpan };
 	let gesture = $state<Gesture>();
@@ -142,7 +151,7 @@
 	{/if}
 	<div class="min-w-[840px]">
 		<div class="flex border-b border-line bg-surface-subtle text-[12px] leading-4 font-semibold text-ink-muted">
-			<div class="w-[200px] flex-none px-4 py-2">Employé</div>
+			<div class="w-[248px] flex-none px-4 py-2">Employé</div>
 			<div class="relative mr-4 ml-2 flex-1" aria-hidden="true">
 				{#each hours as hour (hour.label)}
 					{#if !isHiddenByNowMarker(hour.percent)}
@@ -164,7 +173,7 @@
 
 		{#if coverage}
 			<div class="flex border-b border-line bg-surface-subtle">
-				<div class="w-[200px] flex-none px-4 py-2 text-[12.5px] leading-[17px] font-semibold text-ink-muted">
+				<div class="w-[248px] flex-none px-4 py-2 text-[12.5px] leading-[17px] font-semibold text-ink-muted">
 					{coverage.label}
 				</div>
 				<div class="relative mr-4 ml-2 min-h-10 flex-1">
@@ -190,7 +199,7 @@
 				{@const colorIndex = colorIndexByEmployee.get(row.employeeId)}
 				{@const hoursStatus = hoursStatusByEmployee?.get(row.employeeId) ?? 'ok'}
 				<li class="flex border-line-soft not-last:border-b" data-timeline-employee-id={dragging ? row.employeeId : undefined}>
-					<div class="flex w-[200px] flex-none items-center gap-2 px-4 py-2">
+					<div class="flex w-[248px] flex-none items-center gap-2 px-4 py-2">
 						<EmployeeInitials fullName={row.personName} {colorIndex} size="medium" />
 						<div class="min-w-0 flex-1">
 							<span class="flex items-baseline gap-2">
@@ -248,6 +257,7 @@
 									style:left="{position.startPercent}%"
 									style:width="{position.widthPercent}%"
 									onpointerdown={dragging ? (event) => startBarGesture(event, bar, row.employeeId, 'move') : undefined}
+									oncontextmenu={(event) => openShiftMenu(event, bar, row.personName)}
 								>
 									{#if dragging}
 										<span aria-hidden="true" class="{resizeHandleClasses} left-0" onpointerdown={(event) => startBarGesture(event, bar, row.employeeId, 'start')}></span>

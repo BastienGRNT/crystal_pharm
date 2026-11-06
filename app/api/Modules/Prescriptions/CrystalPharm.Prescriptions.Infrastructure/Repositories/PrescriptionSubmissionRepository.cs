@@ -33,9 +33,34 @@ internal sealed class PrescriptionSubmissionRepository(PrescriptionsDbContext co
                 .SingleOrDefaultAsync(candidate => candidate.Id == submissionId, cancellationToken),
             cancellationToken);
 
+    public Task<PrescriptionSubmission?> FindForUpdateAsync(Guid submissionId, CancellationToken cancellationToken) =>
+        context.ReadInTenantTransactionAsync(
+            () => context.Submissions
+                .Include(candidate => candidate.Documents)
+                .SingleOrDefaultAsync(candidate => candidate.Id == submissionId, cancellationToken),
+            cancellationToken);
+
+    public async Task<IReadOnlyList<PrescriptionSubmission>> ListPastRetentionAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var submittedBefore = now - PrescriptionSubmission.MaximumRetention;
+        var collectedBefore = now - PrescriptionSubmission.RetentionAfterCollection;
+        return await context.ReadInTenantTransactionAsync(
+            () => context.Submissions
+                .Include(submission => submission.Documents)
+                .Where(submission => submission.SubmittedAt < submittedBefore
+                    || (submission.Status == PrescriptionStatus.Collected && submission.StatusChangedAt < collectedBefore))
+                .ToListAsync(cancellationToken),
+            cancellationToken);
+    }
+
     public void Add(PrescriptionSubmission submission)
     {
         context.Submissions.Add(submission);
+    }
+
+    public void Remove(PrescriptionSubmission submission)
+    {
+        context.Submissions.Remove(submission);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)

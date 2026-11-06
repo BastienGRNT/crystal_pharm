@@ -11,6 +11,7 @@ internal sealed class BookingDbContext(DbContextOptions<BookingDbContext> option
     public const string SchemaName = "booking";
 
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<StoredAppointmentConfiguration> AppointmentConfigurations => Set<StoredAppointmentConfiguration>();
     public DbSet<HealthDataAccessRecord> HealthDataAccessRecords => Set<HealthDataAccessRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -18,6 +19,7 @@ internal sealed class BookingDbContext(DbContextOptions<BookingDbContext> option
         modelBuilder.HasDefaultSchema(SchemaName);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BookingDbContext).Assembly);
         FilterByCurrentTenant<Appointment>(modelBuilder);
+        FilterByCurrentTenant<StoredAppointmentConfiguration>(modelBuilder);
         FilterByCurrentTenant<HealthDataAccessRecord>(modelBuilder);
     }
 }

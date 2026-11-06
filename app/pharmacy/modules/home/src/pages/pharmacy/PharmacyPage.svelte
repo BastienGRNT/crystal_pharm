@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Alert, Button, Card, ConfirmButton, EmptyState, FilterTabs, PageHeader, SidePanel } from '@crystal-pharm/ui';
+	import { Alert, Button, ConfirmButton, EmptyState, FormSection, Icon, PageHeader, PageTabs, SidePanel } from '@crystal-pharm/ui';
 	import { formatDay, formatLastDayBefore } from '../../dateFormats';
 	import { accessPanelPathname, employeePanelPathname, homePathnames } from '../../homePathnames';
 	import AccessInvitationList from '../../components/organisms/access/AccessInvitationList.svelte';
@@ -59,9 +59,25 @@
 	<title>Ma pharmacie · Crystal Pharm</title>
 </svelte:head>
 
-<div class="mx-auto grid w-full max-w-5xl gap-3.5">
-	<PageHeader icon="storefront" title="Ma pharmacie" context="Les informations de votre officine, affichées sur son site." />
+<PageHeader icon="storefront" title="Ma pharmacie" context="Les informations de votre officine, affichées sur son site.">
+	{#snippet actions()}
+		{#if selectedSection === 'team'}
+			<Button href={employeePanelPathname(undefined)} icon="user-plus">Ajouter un membre</Button>
+		{:else if selectedSection === 'access' && data.access}
+			{#if !data.access.hasCounterAccount}
+				<Button href={accessPanelPathname({ kind: 'counter-account' })} variant="secondary" icon="storefront">
+					Créer le compte comptoir
+				</Button>
+			{/if}
+			<Button href={accessPanelPathname({ kind: 'invitation' })} icon="envelope-simple">Inviter un membre</Button>
+		{/if}
+	{/snippet}
+	{#snippet navigation()}
+		<PageTabs label="Informations de la pharmacie" tabs={toPharmacySectionTabs(selectedSection, optionalSections)} />
+	{/snippet}
+</PageHeader>
 
+<div class="grid gap-6">
 	{#if data.weeklyOpeningSchedule === undefined && selectedSection !== 'openingHours'}
 		<Alert tone="warning" title="Horaires d’ouverture à compléter">
 			Renseignez-les dans l’onglet <a href={homePathnames.pharmacyOpeningHours} class="font-semibold underline">Horaires</a> :
@@ -69,25 +85,18 @@
 		</Alert>
 	{/if}
 
-	<FilterTabs label="Informations de la pharmacie" tabs={toPharmacySectionTabs(selectedSection, optionalSections)} />
-
 	{#if selectedSection === 'contactDetails'}
-		<section aria-labelledby="coordonnees-titre" class="max-w-3xl">
-			<Card>
-				<div class="grid gap-4">
-					<h2 id="coordonnees-titre" class="title-2 text-ink">Coordonnées</h2>
-					{#if savedSection === 'contactDetails'}
-						<Alert tone="success">{savedMessages.contactDetails}</Alert>
-					{/if}
-					<PharmacyContactDetailsForm
-						formAction="?/contactDetails"
-						initialContactDetails={contactDetailsFailure?.submittedContactDetails ?? data.contactDetails}
-						fieldErrors={contactDetailsFailure?.fieldErrors}
-						submitLabel="Enregistrer les coordonnées"
-					/>
-				</div>
-			</Card>
-		</section>
+		<FormSection title="Coordonnées" description="Le nom, l’adresse et le téléphone que vos patients voient sur votre site.">
+			{#if savedSection === 'contactDetails'}
+				<Alert tone="success">{savedMessages.contactDetails}</Alert>
+			{/if}
+			<PharmacyContactDetailsForm
+				formAction="?/contactDetails"
+				initialContactDetails={contactDetailsFailure?.submittedContactDetails ?? data.contactDetails}
+				fieldErrors={contactDetailsFailure?.fieldErrors}
+				submitLabel="Enregistrer les coordonnées"
+			/>
+		</FormSection>
 	{:else if selectedSection === 'openingHours'}
 		<section aria-label="Horaires d’ouverture" class="grid gap-3.5">
 			{#if savedSection === 'openingHours'}
@@ -103,112 +112,81 @@
 			/>
 		</section>
 	{:else if selectedSection === 'team'}
-		<section aria-labelledby="equipe-titre" class="max-w-3xl">
-			<Card>
-				<div class="grid gap-4">
-					<div class="flex flex-wrap items-center justify-between gap-3">
-						<h2 id="equipe-titre" class="title-2 text-ink">Équipe</h2>
-						{#if data.team.length > 0}
-							<Button href={employeePanelPathname(undefined)} variant="secondary" icon="user-plus">Ajouter un membre</Button>
-						{/if}
-					</div>
-					{#if savedSection === 'team'}
-						<Alert tone="success">{savedMessages.team}</Alert>
-					{/if}
-					{#if data.team.length > 0}
-						<EmployeeList team={data.team} removeAction="?/removeEmployee" />
-					{:else}
-						<EmptyState
-							icon="users-three"
-							title="Présentez votre équipe"
-							description="Le nom, le poste et, si vous le souhaitez, la photo de chacun s’afficheront sur votre site."
-						>
-							{#snippet actions()}
-								<Button href={employeePanelPathname(undefined)} icon="user-plus">Ajouter un membre</Button>
-							{/snippet}
-						</EmptyState>
-					{/if}
-				</div>
-			</Card>
+		<section aria-labelledby="equipe-titre" class="grid gap-4">
+			<div class="grid gap-0.5">
+				<h2 id="equipe-titre" class="font-display text-[22px] leading-7 text-ink">L’équipe sur votre site</h2>
+				<p class="text-small text-ink-muted">Le nom, le poste et la photo de chacun, tels que vos patients les voient.</p>
+			</div>
+			{#if savedSection === 'team'}
+				<Alert tone="success">{savedMessages.team}</Alert>
+			{/if}
+			{#if data.team.length > 0}
+				<EmployeeList team={data.team} removeAction="?/removeEmployee" />
+			{:else}
+				<EmptyState
+					icon="users-three"
+					title="Présentez votre équipe"
+					description="Le nom, le poste et, si vous le souhaitez, la photo de chacun s’afficheront sur votre site."
+				/>
+			{/if}
 		</section>
 	{:else if selectedSection === 'access' && data.access}
-		<section aria-labelledby="acces-titre" class="grid max-w-3xl gap-3.5">
-			{#if savedSection === 'access'}
-				<Alert tone="success">{savedMessage}</Alert>
-			{/if}
-			{#if accessFailure && !accessPanel}
-				<Alert tone="danger">{accessFailure.failureMessage}</Alert>
-			{/if}
-			<Card>
-				<div class="grid gap-4">
-					<div class="flex flex-wrap items-center justify-between gap-3">
-						<h2 id="acces-titre" class="title-2 text-ink">Comptes et accès</h2>
-						<div class="flex flex-wrap gap-2">
-							{#if !data.access.hasCounterAccount}
-								<Button href={accessPanelPathname({ kind: 'counter-account' })} variant="secondary" icon="storefront">
-									Créer le compte comptoir
-								</Button>
-							{/if}
-							<Button href={accessPanelPathname({ kind: 'invitation' })} icon="envelope-simple">Inviter un membre</Button>
-						</div>
-					</div>
-					<p class="text-small text-ink-muted">
-						Les titulaires ont tous les droits. Les autres comptes n’ouvrent que les responsabilités que vous leur donnez.
-					</p>
-					<AccessMemberList members={data.access.members} />
-				</div>
-			</Card>
-			{#if data.access.pendingInvitations.length > 0}
-				<Card>
-					<div class="grid gap-4">
-						<h3 class="body-strong text-ink">Invitations en attente</h3>
-						<AccessInvitationList invitations={data.access.pendingInvitations} revokeAction="?/revokeInvitation" />
-					</div>
-				</Card>
-			{/if}
-		</section>
+		{#if savedSection === 'access'}
+			<Alert tone="success">{savedMessage}</Alert>
+		{/if}
+		{#if accessFailure && !accessPanel}
+			<Alert tone="danger">{accessFailure.failureMessage}</Alert>
+		{/if}
+		<FormSection
+			title="Les comptes"
+			description="Les titulaires ont tous les droits. Les autres comptes n’ouvrent que les responsabilités que vous leur donnez."
+		>
+			<AccessMemberList members={data.access.members} />
+		</FormSection>
+		{#if data.access.pendingInvitations.length > 0}
+			<FormSection title="Invitations en attente" description="Le lien reçu par email est valable quelques jours.">
+				<AccessInvitationList invitations={data.access.pendingInvitations} revokeAction="?/revokeInvitation" />
+			</FormSection>
+		{/if}
 	{:else}
-		<section aria-labelledby="groupement-titre" data-module="grp" class="max-w-3xl">
-			<Card>
-				<div class="grid gap-4">
-					<h2 id="groupement-titre" class="title-2 text-ink">Groupement</h2>
-					{#if savedSection === 'group'}
-						<Alert tone="success">{savedMessages.group}</Alert>
+		<div data-module="grp">
+			<FormSection title="Groupement" description="Il voit le nom et la ville de votre pharmacie, et les modules que vous utilisez.">
+				{#if savedSection === 'group'}
+					<Alert tone="success">{savedMessages.group}</Alert>
+				{/if}
+				{#if data.group?.coverageEndsAt}
+					<Alert tone="warning" title="Vous avez quitté {data.group.groupName}">
+						Sa prise en charge court jusqu’au {formatLastDayBefore(data.group.coverageEndsAt)}. Ensuite, vos modules passent au prix
+						normal.
+					</Alert>
+				{:else if data.group}
+					<div class="grid gap-1">
+						<p class="font-display text-[24px] leading-8 text-ink">{data.group.groupName}</p>
+						{#if data.group.joinedAt}<p class="text-small text-ink-muted">Membre depuis le {formatDay(data.group.joinedAt)}</p>{/if}
+					</div>
+					{#if data.group.coverageLines.length > 0}
+						<ul class="grid gap-1.5 border-t border-dashed border-line-strong/50 pt-3 text-body text-ink">
+							{#each data.group.coverageLines as coverageLine (coverageLine)}
+								<li class="flex items-start gap-2"><Icon name="check" size={18} class="mt-0.5 flex-none text-accent-text" />{coverageLine}</li>
+							{/each}
+						</ul>
 					{/if}
-					{#if data.group?.coverageEndsAt}
-						<Alert tone="warning" title="Vous avez quitté {data.group.groupName}">
-							Sa prise en charge court jusqu’au {formatLastDayBefore(data.group.coverageEndsAt)}. Ensuite, vos modules passent au prix
-							normal.
-						</Alert>
-					{:else if data.group}
-						<div class="grid gap-1">
-							<p class="text-body">
-								<span class="body-strong">{data.group.groupName}</span>
-								{#if data.group.joinedAt}<span class="text-ink-muted"> · membre depuis le {formatDay(data.group.joinedAt)}</span>{/if}
-							</p>
-							{#if data.group.coverageLines.length > 0}
-								<ul class="text-small text-ink-muted">
-									{#each data.group.coverageLines as coverageLine (coverageLine)}<li>{coverageLine}</li>{/each}
-								</ul>
-							{/if}
-							<p class="text-small text-ink-muted">Il voit le nom et la ville de votre pharmacie, et les modules que vous utilisez.</p>
-						</div>
-						{#if data.canLeaveGroup}
-						<form method="POST" action="?/leaveGroup">
+					{#if data.canLeaveGroup}
+						<form method="POST" action="?/leaveGroup" class="border-t border-dashed border-line-strong/50 pt-3">
 							<ConfirmButton
 								label="Quitter le groupement"
 								icon="sign-out"
+								variant="ghost"
 								title="Quitter {data.group.groupName} ?"
 								description="Le groupement ne verra plus votre pharmacie. Sa prise en charge court jusqu’à la fin du mois ; ensuite, vos modules passent au prix normal."
 								confirmLabel="Quitter le groupement"
 								isDestructive
 							/>
 						</form>
-						{/if}
 					{/if}
-				</div>
-			</Card>
-		</section>
+				{/if}
+			</FormSection>
+		</div>
 	{/if}
 </div>
 

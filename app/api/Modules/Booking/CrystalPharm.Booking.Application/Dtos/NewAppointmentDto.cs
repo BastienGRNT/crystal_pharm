@@ -7,4 +7,8 @@ public sealed record NewAppointmentDto(
     TimeOnly EndTime,
     string PatientName,
     string PatientPhone,
-    string Reason);
+    string Reason,
+    Guid? ReasonId = null,
+    string? Note = null,
+    bool ConfirmImmediately = false,
+    string? PatientEmail = null);

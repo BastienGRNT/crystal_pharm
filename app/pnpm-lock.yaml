@@ -87,7 +87,34 @@ importers:
       '@crystal-pharm/schema':
         specifier: workspace:*
         version: link:../schema
+      '@fontsource/archivo':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/archivo-narrow':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/atkinson-hyperlegible-next':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/bodoni-moda':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/cinzel':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/doto':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/eb-garamond':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/figtree':
+        specifier: 5.3.0
+        version: 5.3.0
       '@fontsource/fraunces':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/hanken-grotesk':
         specifier: 5.3.0
         version: 5.3.0
       '@fontsource/ibm-plex-mono':
@@ -276,6 +303,9 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../../../shared/auth
+      '@crystal-pharm/email':
+        specifier: workspace:*
+        version: link:../../../shared/email
       '@crystal-pharm/pharmacy-db':
         specifier: workspace:*
         version: link:../../../shared/pharmacy-db
@@ -402,6 +432,9 @@ importers:
       '@crystal-pharm/auth':
         specifier: workspace:*
         version: link:../../../shared/auth
+      '@crystal-pharm/email':
+        specifier: workspace:*
+        version: link:../../../shared/email
       '@crystal-pharm/pharmacy-db':
         specifier: workspace:*
         version: link:../../../shared/pharmacy-db
@@ -424,6 +457,9 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@24.19.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
   pharmacy/modules/site-manager:
     dependencies:
@@ -448,6 +484,9 @@ importers:
       '@crystal-pharm/schema':
         specifier: workspace:*
         version: link:../../../engine/schema
+      '@crystal-pharm/site-traffic-db':
+        specifier: workspace:*
+        version: link:../../../shared/site-traffic-db
       '@crystal-pharm/ui':
         specifier: workspace:*
         version: link:../../../ui
@@ -590,6 +629,9 @@ importers:
       '@crystal-pharm/billing-db':
         specifier: workspace:*
         version: link:../billing-db
+      '@crystal-pharm/content-db':
+        specifier: workspace:*
+        version: link:../content-db
       '@crystal-pharm/email':
         specifier: workspace:*
         version: link:../email
@@ -599,6 +641,9 @@ importers:
       '@crystal-pharm/pharmacy-db':
         specifier: workspace:*
         version: link:../pharmacy-db
+      '@crystal-pharm/site-traffic-db':
+        specifier: workspace:*
+        version: link:../site-traffic-db
     devDependencies:
       '@types/node':
         specifier: ^24.19.2
@@ -678,6 +723,28 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@24.19.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
+  shared/site-traffic-db:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(kysely@0.29.7)(postgres@3.4.9)
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
+    devDependencies:
+      '@types/node':
+        specifier: ^24.19.2
+        version: 24.19.2
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@24.19.2)(vite@8.3.3(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+
   site:
     dependencies:
       '@crystal-pharm/billing-db':
@@ -701,6 +768,9 @@ importers:
       '@crystal-pharm/schema':
         specifier: workspace:*
         version: link:../engine/schema
+      '@crystal-pharm/site-traffic-db':
+        specifier: workspace:*
+        version: link:../shared/site-traffic-db
       '@solidjs/meta':
         specifier: 0.29.4
         version: 0.29.4(solid-js@1.9.17)
@@ -1371,8 +1441,35 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@fontsource/archivo-narrow@5.3.0':
+    resolution: {integrity: sha512-fK2Y7PdIP23+t5Dp7gh9n94zxTCdHD6M955aJ8QzR6RvW+5WgmryKySEvaCUAeSLXzA113hyW0BwEHHxHADX7Q==}
+
+  '@fontsource/archivo@5.3.0':
+    resolution: {integrity: sha512-5DIMgPVJRi62OqdOVoogCFxP73EkNM/E0YVTSDIQlDEJfDbxqZduwM/YoNZwC9Sx1CDgpKinqf8ckRY1QNIecw==}
+
+  '@fontsource/atkinson-hyperlegible-next@5.3.0':
+    resolution: {integrity: sha512-8p1tHVoPDo6oYwSO3sMw5snGwFwSf3TmeSF9Gcj792GXdsg6oqvhoItbj6Hj/XZIk0Xs+Cwu6pkLBAl3Q5HrwA==}
+
+  '@fontsource/bodoni-moda@5.3.0':
+    resolution: {integrity: sha512-Wt2XBCHivYxkTP3ydq/Ax+7VshwsOh/6ayA5om2t+yClCkGwLPj2Mi6OnyMANjyLcqDUWs4rlOHnc8SBLf6/pA==}
+
+  '@fontsource/cinzel@5.3.0':
+    resolution: {integrity: sha512-KEOYTsrRppW0uRIPWBDPrQgunCS6f8u4nzZxYRBfo9SCknKojLYjK7B0ZoVmJhyVLefz271ZQRF9EOpHZlfhRw==}
+
+  '@fontsource/doto@5.3.0':
+    resolution: {integrity: sha512-LTsUEUijHxf/0XmRGF8CiS8GyMuSKQSfX5XzzFYjTzWZSG8yPi0p+OV1D3Z4Ra7AfTYZ+Wzra1waw+j/bJBBCw==}
+
+  '@fontsource/eb-garamond@5.3.0':
+    resolution: {integrity: sha512-VplwHpB8FLuzl+4G5LDci1b3Z4SghiuXH8XEgaxjnOb5aue5mEt1njmDKeO6iyLeGa73LffU7PC7hzncLRx0ZA==}
+
+  '@fontsource/figtree@5.3.0':
+    resolution: {integrity: sha512-/iTcTXL1eRBGhvD7NN9dnKzXzWqDLVZVEUFI9xIxAC1G/hXU8tCyYeXCAuPOuvSYPInFUP7H6KLGgygmDfy1SA==}
+
   '@fontsource/fraunces@5.3.0':
     resolution: {integrity: sha512-LEHTOBiZufQzAvnAe2rZ8ZknbDS28Q9kzwb0L+gZJEmjLGr8hhZ/5NuHXwDuHBWhVXYoiGGXmrb0H6Ko/RrHTg==}
+
+  '@fontsource/hanken-grotesk@5.3.0':
+    resolution: {integrity: sha512-eiqAvcMT88tCMCBzn6qKgMHGLJKq3NEXO3+0y9JXqzyty2U6KZnaGtbfiQgzRAXfwFp559hJQ0zBgJ6d89AuTA==}
 
   '@fontsource/ibm-plex-mono@5.3.0':
     resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
@@ -3838,7 +3935,25 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
+  '@fontsource/archivo-narrow@5.3.0': {}
+
+  '@fontsource/archivo@5.3.0': {}
+
+  '@fontsource/atkinson-hyperlegible-next@5.3.0': {}
+
+  '@fontsource/bodoni-moda@5.3.0': {}
+
+  '@fontsource/cinzel@5.3.0': {}
+
+  '@fontsource/doto@5.3.0': {}
+
+  '@fontsource/eb-garamond@5.3.0': {}
+
+  '@fontsource/figtree@5.3.0': {}
+
   '@fontsource/fraunces@5.3.0': {}
+
+  '@fontsource/hanken-grotesk@5.3.0': {}
 
   '@fontsource/ibm-plex-mono@5.3.0': {}
 

@@ -14,7 +14,7 @@ export type SubscribedOffer = {
 	billedMonthlyPriceCents: number;
 	/** Défini quand un prix négocié est ce qui s'applique (la fin de l'accord, vide : à vie). */
 	priceAgreement: { endsAt: Date | undefined } | undefined;
-	/** Une baisse de prix publiée : le prix de la nouvelle version, appliqué au prochain renouvellement. */
+	/** Une baisse de prix publiée, sous ce qui est facturé : le prix de la nouvelle version, appliqué au prochain renouvellement. */
 	upcomingVersionPriceCents: number | undefined;
 	endsAt: Date | undefined;
 };
@@ -54,7 +54,8 @@ export function readSubscribedOffers(tenantId: string): Promise<SubscribedOffers
 				versionPriceCents: versionRow?.monthlyPriceCents ?? item.billedMonthlyPriceCents,
 				billedMonthlyPriceCents: item.billedMonthlyPriceCents,
 				priceAgreement: agreementRow && { endsAt: agreementRow.endsAt ?? undefined },
-				upcomingVersionPriceCents: upcomingVersionRow?.monthlyPriceCents,
+				upcomingVersionPriceCents:
+					upcomingVersionRow && upcomingVersionRow.monthlyPriceCents < item.billedMonthlyPriceCents ? upcomingVersionRow.monthlyPriceCents : undefined,
 				endsAt: item.endsAt ?? undefined
 			});
 		}

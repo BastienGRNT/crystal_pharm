@@ -139,7 +139,7 @@ flowchart TD
     findPage --> pageFound{"page trouvée ?"}
     pageFound -- non --> notFound(["{ status: 'notFound' }"])
     pageFound -- oui --> submit["<b>createSubmitPrescription</b>(sendPrescription)<br/>→ submitPrescription(form) : valide, puis sendPrescription(demande)"]
-    submit --> props["<b>toEnabledModulesProps</b>(tenantSite.modules, { renderedAt, submitPrescription })<br/>pour chacun des 6 modules :<br/>activé → toXxxModuleProps(data) · désactivé → undefined"]
+    submit --> props["<b>toEnabledModulesProps</b>(tenantSite.modules, { renderedAt, submitPrescription })<br/>pour chacun des 8 modules (les 4 sections fixes passent par toFixedSectionsProps) :<br/>activé → toXxxModuleProps(data) · désactivé → undefined"]
     props --> kit["<b>createPageKit</b>({ pharmacy, moduleComponents, enabledModulesProps })<br/>→ { Page, LegalNotice, Module }"]
     kit --> result(["{ status: 'found',<br/>title: « Accueil · Pharmacie Dupont »,<br/>Page }"])
 ```
@@ -268,7 +268,7 @@ Les données de l'API ne vont pas telles quelles dans les composants. Elles pass
 ```mermaid
 flowchart LR
     subgraph api["Données de l'API (TenantSite)"]
-        hours["openingHours.data<br/>weeklySchedule.monday = [{ opensAt, closesAt }]<br/>onDutyPeriods = [{ startsAt, endsAt }]"]
+        hours["fixedSections.openingHours<br/>weeklySchedule.monday = [{ opensAt, closesAt }]<br/>onDutyPeriods = [{ startsAt, endsAt }]"]
         team["team.data<br/>members = [{ fullName, role, photoUrl? }]"]
         news["news.data<br/>articles = [{ title, summary, publishedAt: '2026-10-14', imageUrl? }]"]
         prescription["prescriptionUpload.data<br/>{ introduction? }"]
@@ -277,7 +277,7 @@ flowchart LR
     end
 
     subgraph transform["module-props/ (moteur)"]
-        toHours["<b>toOpeningHoursModuleProps</b><br/>jours dans l'ordre, en français<br/>'08:30 – 12:30', isToday<br/>+ computeOnDutyAnnouncement<br/>+ numéro 3237"]
+        toHours["<b>toOpeningHoursSectionProps</b><br/>jours dans l'ordre, en français<br/>'08:30 – 12:30', isToday<br/>(la garde : toOnDutySectionProps<br/>+ computeOnDutyAnnouncement + 3237)"]
         toTeam["<b>toTeamModuleProps</b><br/>+ initials : 'Hélène Dupont' → 'HD'"]
         toNews["<b>toNewsModuleProps</b><br/>tri du plus récent au plus ancien<br/>+ publishedAtLabel : '14 octobre 2026'"]
         toPrescription["<b>toPrescriptionUploadModuleProps</b><br/>+ submitPrescription<br/>+ validatePrescription"]
@@ -286,7 +286,7 @@ flowchart LR
     end
 
     subgraph layout["Composant du layout"]
-        layoutComponents["layout.openingHours<br/>layout.team<br/>layout.news<br/>layout.prescriptionUpload<br/>layout.loyaltyCard<br/>layout.services"]
+        layoutComponents["layout.hero · findUs · onDuty · openingHours<br/>layout.team · services · news · brands<br/>layout.prescriptionUpload · appointment<br/>layout.onlineOrder · loyaltyCard"]
     end
 
     hours --> toHours --> layoutComponents

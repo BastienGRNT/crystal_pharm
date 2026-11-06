@@ -34,6 +34,12 @@ public sealed class PrescriptionSubmissionService(
             newSubmission.BirthDate,
             newSubmission.Phone,
             DateOnly.FromDateTime(now.UtcDateTime));
+        var email = string.IsNullOrWhiteSpace(newSubmission.Email) ? null : new PatientEmail(newSubmission.Email);
+        var request = new SubmissionRequest(
+            newSubmission.PlannedVisitAt,
+            newSubmission.HasAlreadyVisited,
+            newSubmission.IsRenewal,
+            newSubmission.NoteFromPatient);
         var socialSecurityNumber = string.IsNullOrWhiteSpace(newSubmission.SocialSecurityNumber)
             ? null
             : new SocialSecurityNumber(newSubmission.SocialSecurityNumber);
@@ -47,8 +53,8 @@ public sealed class PrescriptionSubmissionService(
         var submission = PrescriptionSubmission.Submit(
             newSubmission.IdempotencyKey,
             patient,
-            newSubmission.PlannedVisitAt,
-            newSubmission.HasAlreadyVisited,
+            email,
+            request,
             socialSecurityNumber,
             drafts,
             now);
@@ -56,9 +62,8 @@ public sealed class PrescriptionSubmissionService(
         var storedKeys = new List<string>();
         try
         {
-            foreach (var document in submission.Documents)
+            foreach (var (document, incoming) in submission.Documents.Zip(KeptIncomingDocumentsOf(newSubmission)))
             {
-                var incoming = newSubmission.Documents.Single(candidate => candidate.Kind == document.Kind);
                 await using var content = incoming.OpenRead();
                 var storageKey = StorageKeyOf(document);
                 await documentStore.SaveAsync(storageKey, content, cancellationToken);
@@ -86,6 +91,7 @@ public sealed class PrescriptionSubmissionService(
 
     public async Task<IReadOnlyList<ReceivedPrescriptionSummaryDto>> ListReceivedAsync(CancellationToken cancellationToken)
     {
+        await DeleteSubmissionsPastRetentionAsync(cancellationToken);
         var submissions = await submissionRepository.ListLatestAsync(MaximumListedSubmissions, cancellationToken);
         await accessLog.RecordAsync("prescriptions.list", submissions.Select(submission => submission.Id).ToArray(), cancellationToken);
         return submissions.Select(ReceivedPrescriptionSummaryDto.From).ToArray();
@@ -121,6 +127,83 @@ public sealed class PrescriptionSubmissionService(
         await accessLog.RecordAsync("prescriptions.document", [document.SubmissionId], cancellationToken);
         return new ReceivedDocumentContent(content, document.Format.ToMimeType());
     }
+
+    public async Task<ReceivedPrescriptionDto?> ChangeStatusAsync(
+        Guid submissionId,
+        PrescriptionStatusChangeDto change,
+        CancellationToken cancellationToken)
+    {
+        var submission = await submissionRepository.FindForUpdateAsync(submissionId, cancellationToken);
+        if (submission is null)
+        {
+            return null;
+        }
+
+        submission.MoveTo(change.Status, change.ExpectedProductsOn, timeProvider.GetUtcNow());
+        await submissionRepository.SaveChangesAsync(cancellationToken);
+        await accessLog.RecordAsync("prescriptions.status", [submission.Id], cancellationToken);
+        return ReceivedPrescriptionDto.From(submission);
+    }
+
+    public async Task<ReceivedPrescriptionDto?> WriteTeamNoteAsync(
+        Guid submissionId,
+        PrescriptionTeamNoteDto teamNote,
+        CancellationToken cancellationToken)
+    {
+        var submission = await submissionRepository.FindForUpdateAsync(submissionId, cancellationToken);
+        if (submission is null)
+        {
+            return null;
+        }
+
+        submission.WriteTeamNote(teamNote.Note);
+        await submissionRepository.SaveChangesAsync(cancellationToken);
+        await accessLog.RecordAsync("prescriptions.note", [submission.Id], cancellationToken);
+        return ReceivedPrescriptionDto.From(submission);
+    }
+
+    public async Task<bool> DeleteAsync(Guid submissionId, CancellationToken cancellationToken)
+    {
+        var submission = await submissionRepository.FindForUpdateAsync(submissionId, cancellationToken);
+        if (submission is null)
+        {
+            return false;
+        }
+
+        await DeleteWithFilesAsync([submission], cancellationToken);
+        await accessLog.RecordAsync("prescriptions.delete", [submissionId], cancellationToken);
+        return true;
+    }
+
+    private async Task DeleteSubmissionsPastRetentionAsync(CancellationToken cancellationToken)
+    {
+        var expiredSubmissions = await submissionRepository.ListPastRetentionAsync(timeProvider.GetUtcNow(), cancellationToken);
+        if (expiredSubmissions.Count == 0)
+        {
+            return;
+        }
+
+        await DeleteWithFilesAsync(expiredSubmissions, cancellationToken);
+        await accessLog.RecordAsync("prescriptions.retention", expiredSubmissions.Select(submission => submission.Id).ToArray(), cancellationToken);
+    }
+
+    // La ligne part avant les fichiers : un fichier resté orphelin ne se relit plus, une ligne sans fichier tromperait l'équipe.
+    private async Task DeleteWithFilesAsync(IReadOnlyCollection<PrescriptionSubmission> submissions, CancellationToken cancellationToken)
+    {
+        var storageKeys = submissions.SelectMany(submission => submission.Documents).Select(StorageKeyOf).ToArray();
+        foreach (var submission in submissions)
+        {
+            submissionRepository.Remove(submission);
+        }
+
+        await submissionRepository.SaveChangesAsync(cancellationToken);
+        await DeleteStoredFilesAsync(storageKeys);
+    }
+
+    private static IEnumerable<IncomingDocument> KeptIncomingDocumentsOf(NewPrescriptionSubmissionDto newSubmission) =>
+        newSubmission.HasAlreadyVisited
+            ? newSubmission.Documents.Where(document => document.Kind == DocumentKind.Prescription)
+            : newSubmission.Documents;
 
     private async Task<DocumentDraft> InspectAsync(IncomingDocument document, CancellationToken cancellationToken)
     {

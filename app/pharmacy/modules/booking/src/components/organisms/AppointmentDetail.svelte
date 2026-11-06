@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, DescriptionList, PersonLabel, StatusBadge } from '@crystal-pharm/ui';
+	import { Button, Checkbox, ConfirmButton, DescriptionList, PersonLabel, StatusBadge } from '@crystal-pharm/ui';
 	import type { AppointmentDetailPanel } from '../../pages/appointmentsPageData';
 
 	type AppointmentDetailProps = {
@@ -8,6 +8,8 @@
 	};
 
 	let { detail, errorMessage }: AppointmentDetailProps = $props();
+
+	const hasAction = $derived(detail.confirmFormAction !== null || detail.cancelFormAction !== null);
 </script>
 
 <div class="grid gap-5">
@@ -22,20 +24,35 @@
 		<p role="alert" class="text-[13px] leading-[18px] font-medium text-danger">{errorMessage}</p>
 	{/if}
 
-	{#if detail.confirmFormAction || detail.cancelFormAction}
-		<div class="flex flex-wrap gap-2 border-t border-line pt-4">
-			{#if detail.confirmFormAction}
-				<form method="POST" action={detail.confirmFormAction}>
-					<input type="hidden" name="appointmentId" value={detail.appointmentId} />
-					<Button type="submit" icon="check">Confirmer</Button>
-				</form>
+	{#if hasAction}
+		<!-- Un seul formulaire : la case « prévenir » vaut pour la confirmation comme pour l'annulation. -->
+		<form method="POST" action={detail.confirmFormAction ?? detail.cancelFormAction} class="grid gap-3.5 border-t border-line pt-4">
+			<input type="hidden" name="appointmentId" value={detail.appointmentId} />
+			{#if detail.patientEmail}
+				<Checkbox name="notifyByEmail" checked>
+					Le prévenir par email
+					<span class="block text-small text-ink-subtle">{detail.patientEmail} · le jour et l’heure, jamais le motif</span>
+				</Checkbox>
+			{:else}
+				<p class="text-small text-ink-subtle">Pas d’email laissé : prévenez-le par téléphone.</p>
 			{/if}
-			{#if detail.cancelFormAction}
-				<form method="POST" action={detail.cancelFormAction}>
-					<input type="hidden" name="appointmentId" value={detail.appointmentId} />
-					<Button type="submit" variant="ghost" icon="x">Annuler le rendez-vous</Button>
-				</form>
-			{/if}
-		</div>
+			<div class="flex flex-wrap gap-2">
+				{#if detail.confirmFormAction}
+					<Button type="submit" icon="check">Confirmer le rendez-vous</Button>
+				{/if}
+				{#if detail.cancelFormAction}
+					<ConfirmButton
+						label="Annuler le rendez-vous"
+						icon="x"
+						variant="ghost"
+						title="Annuler ce rendez-vous ?"
+						description="Le créneau redevient libre sur votre site."
+						confirmLabel="Annuler le rendez-vous"
+						formaction={detail.cancelFormAction}
+						isDestructive
+					/>
+				{/if}
+			</div>
+		</form>
 	{/if}
 </div>

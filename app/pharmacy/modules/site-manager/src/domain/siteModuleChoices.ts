@@ -16,12 +16,6 @@ export type SiteModuleChoice = {
 type ModuleTexts = { title: string; description: string; unavailableReason: string; fixHref?: string };
 
 const moduleTexts: Record<ModuleName, ModuleTexts> = {
-	openingHours: {
-		title: 'Horaires d’ouverture',
-		description: 'Vos horaires de la semaine et vos gardes.',
-		unavailableReason: 'Renseignez d’abord vos horaires d’ouverture.',
-		fixHref: '/pharmacie?onglet=horaires'
-	},
 	team: {
 		title: 'L’équipe',
 		description: 'Les membres de votre équipe, avec leur photo et leur fonction.',
@@ -31,19 +25,42 @@ const moduleTexts: Record<ModuleName, ModuleTexts> = {
 	services: {
 		title: 'Services',
 		description: 'Les services que propose la pharmacie.',
-		unavailableReason: 'Ajoutez au moins un service, plus bas sur cette page.',
+		unavailableReason: 'Ajoutez au moins un service.',
 		fixHref: '#services'
 	},
 	news: {
 		title: 'Actualités',
 		description: 'Vos dernières actualités, de la plus récente à la plus ancienne.',
-		unavailableReason: 'Ajoutez au moins une actualité, plus bas sur cette page.',
+		unavailableReason: 'Écrivez au moins une actualité.',
 		fixHref: '#actualites'
 	},
 	prescriptionUpload: {
 		title: 'Envoi d’ordonnance',
 		description: 'Vos patients vous envoient leur ordonnance depuis le site.',
 		unavailableReason: 'L’envoi d’ordonnance n’est pas disponible pour ce site.'
+	},
+	brands: {
+		title: 'Marques',
+		description: 'Les marques que vous proposez, avec leur logo.',
+		unavailableReason: 'Ajoutez au moins une marque.',
+		fixHref: '#marques'
+	},
+	appointment: {
+		title: 'Prise de rendez-vous',
+		description: 'Vos patients réservent un créneau depuis le site, ou vont sur votre outil habituel.',
+		unavailableReason: 'Renseignez l’adresse de votre site de rendez-vous.',
+		fixHref: '#rendez-vous'
+	},
+	onlineOrder: {
+		title: 'Commande en ligne',
+		description: 'Un lien vers votre site de commande, aussi accessible par /commandeenligne.',
+		unavailableReason: 'Renseignez l’adresse de votre site de commande.',
+		fixHref: '#commande'
+	},
+	dutyHotline: {
+		title: 'Numéro de garde (3237)',
+		description: 'Un rappel du 3237, qui oriente vers la pharmacie de garde la plus proche. Vous choisissez sa place.',
+		unavailableReason: 'Ce bloc n’est pas disponible pour ce site.'
 	},
 	loyaltyCard: {
 		title: 'Carte de fidélité',

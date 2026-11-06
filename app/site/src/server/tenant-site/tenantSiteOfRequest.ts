@@ -26,13 +26,12 @@ export const getTenantSiteOfRequest = query(async (): Promise<TenantSiteOfReques
   if (reading.status !== 'ready') return reading;
 
   const renderedAt = new Date();
-  const openingHours = reading.tenantSite.modules.openingHours;
   setPageCacheContext(event.locals, {
     displayedGroupId: reading.displayedGroupId,
     expiresAt: computePageCacheExpiry({
       now: renderedAt,
       siteAccessEndsAt: siteRequest.siteAccessEndsAt,
-      weeklyOpeningSchedule: openingHours.enabled ? openingHours.data.weeklySchedule : undefined,
+      weeklyOpeningSchedule: reading.tenantSite.fixedSections.openingHours.weeklySchedule,
     }),
   });
   return { status: 'ready', tenantSite: reading.tenantSite, renderedAt: renderedAt.toISOString() };

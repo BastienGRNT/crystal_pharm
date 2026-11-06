@@ -1,5 +1,5 @@
 import { WeeklyOpeningScheduleSchema } from '@crystal-pharm/pharmacy-db/domain';
-import { OpeningHoursModuleDataSchema, type OpeningHoursModuleData } from '@crystal-pharm/schema';
+import { OpeningHoursSectionDataSchema, type OpeningHoursSectionData } from '@crystal-pharm/schema';
 import * as v from 'valibot';
 import { expect, it } from 'vitest';
 import { suggestUsualPharmacyOpeningHours, toWeeklyOpeningSchedule } from './openingHoursDraft';
@@ -11,7 +11,7 @@ it('des horaires acceptés par la fiche de la pharmacie sont acceptés tels quel
 		WeeklyOpeningScheduleSchema,
 		toWeeklyOpeningSchedule(suggestUsualPharmacyOpeningHours())
 	);
-	const engineWeeklySchedule: OpeningHoursModuleData['weeklySchedule'] = weeklyOpeningSchedule;
+	const engineWeeklySchedule: OpeningHoursSectionData['weeklySchedule'] = weeklyOpeningSchedule;
 
-	expect(v.is(OpeningHoursModuleDataSchema, { weeklySchedule: engineWeeklySchedule })).toBe(true);
+	expect(v.is(OpeningHoursSectionDataSchema, { weeklySchedule: engineWeeklySchedule })).toBe(true);
 });

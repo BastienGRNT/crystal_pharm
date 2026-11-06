@@ -58,7 +58,7 @@
 
 					<div class="grid gap-1.5" aria-hidden="true">
 						<p class="text-[13px] font-medium">Carte de test</p>
-						<div class="flex items-center gap-2 rounded-sm border border-line-strong bg-surface-subtle px-2.5 py-2 text-body text-ink-muted tabular-nums">
+						<div class="flex items-center gap-2 rounded-control border border-line-strong/55 bg-field-subtle px-2.5 py-2 text-body text-ink-muted tabular-nums">
 							<Icon name="credit-card" size={18} />
 							4242 4242 4242 4242
 							<span class="ml-auto">12/34 · 123</span>

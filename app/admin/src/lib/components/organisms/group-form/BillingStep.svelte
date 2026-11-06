@@ -63,7 +63,7 @@
 
 <div class="grid gap-5">
 	<div class="grid gap-1">
-		<h2 class="title-2 text-ink">Comment facturer le groupement ?</h2>
+		<h2 class="font-display text-[24px] leading-8 text-ink">Comment facturer le groupement ?</h2>
 		<p class="text-small text-ink-muted">Ce que le groupement paie à Crystal Pharm, hors taxes.</p>
 	</div>
 

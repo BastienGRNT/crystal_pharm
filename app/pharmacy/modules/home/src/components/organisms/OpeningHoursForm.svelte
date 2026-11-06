@@ -7,7 +7,7 @@
 		type Weekday,
 		type WeeklyOpeningSchedule
 	} from '@crystal-pharm/pharmacy-db/domain';
-	import { Alert, Button, Card } from '@crystal-pharm/ui';
+	import { Alert, Button, Card, UnsavedChangesGuard } from '@crystal-pharm/ui';
 	import { untrack, type Snippet } from 'svelte';
 	import * as v from 'valibot';
 	import {
@@ -52,6 +52,9 @@
 			initialWeeklyOpeningSchedule ? toOpeningHoursDraft(initialWeeklyOpeningSchedule) : suggestUsualPharmacyOpeningHours()
 		)
 	);
+
+	const savedFingerprint = untrack(() => JSON.stringify(draft));
+	const hasUnsavedChanges = $derived(JSON.stringify(draft) !== savedFingerprint);
 
 	const weeklyOpeningSchedule = $derived(toWeeklyOpeningSchedule(draft));
 	// Les mêmes règles que celles du serveur, appliquées pendant la saisie.
@@ -98,6 +101,9 @@
 		<div class="flex flex-wrap items-center gap-2 border-t border-line-soft pt-4">
 			<Button type="submit" disabled={hasScheduleErrors}>{submitLabel}</Button>
 			{@render secondaryAction?.()}
+			{#if hasUnsavedChanges}
+				<p class="text-small text-ink-muted" role="status">Modifications non enregistrées</p>
+			{/if}
 		</div>
 	</div>
 {/snippet}
@@ -116,3 +122,5 @@
 		{@render openingHoursEditor()}
 	{/if}
 </form>
+
+<UnsavedChangesGuard {hasUnsavedChanges} />

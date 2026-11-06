@@ -29,7 +29,9 @@
 		</p>
 		<Field label="Membre de l’équipe" errorMessage={failure?.failedFieldName === 'employeeId' ? failure.failureMessage : undefined}>
 			{#snippet control(controlAttributes)}
+				<!-- Rien de présélectionné : la première personne de la liste n'est pas la plus probable, et l'erreur passerait inaperçue. -->
 				<Select {...controlAttributes} name="employeeId" required>
+					<option value="" disabled selected>Choisir une personne</option>
 					{#each invitableEmployees as employee (employee.employeeId)}
 						<option value={employee.employeeId}>{employee.fullName}</option>
 					{/each}

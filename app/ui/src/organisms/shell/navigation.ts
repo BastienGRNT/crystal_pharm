@@ -3,9 +3,13 @@ import type { ModuleKey } from '../../modules';
 
 export type NavigationLink = {
 	label: string;
+	/** Le nom sous l'icône de la barre du bas, sur un téléphone, quand `label` y serait coupé. */
+	shortLabel?: string;
 	href: string;
 	icon?: IconName;
 	module?: ModuleKey;
+	/** D'autres pages rangées sous ce lien (ses onglets) : le lien reste allumé sur elles. */
+	alsoCurrentFor?: readonly string[];
 };
 
 export type SignedInUserSummary = {
@@ -17,9 +21,9 @@ export function findCurrentNavigationLink(
 	navigationLinks: readonly NavigationLink[],
 	currentPathname: string
 ): NavigationLink | undefined {
+	const isUnder = (pathname: string): boolean => currentPathname === pathname || currentPathname.startsWith(`${pathname}/`);
 	return navigationLinks.find(
-		(navigationLink) =>
-			currentPathname === navigationLink.href || currentPathname.startsWith(`${navigationLink.href}/`)
+		(navigationLink) => isUnder(navigationLink.href) || (navigationLink.alsoCurrentFor ?? []).some(isUnder)
 	);
 }
 

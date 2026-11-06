@@ -19,6 +19,10 @@ internal sealed class PrescriptionSubmissionConfiguration : IEntityTypeConfigura
         builder.Property(submission => submission.LastName).HasMaxLength(PatientIdentity.MaximumNameLength);
         builder.Property(submission => submission.Phone).HasMaxLength(PatientIdentity.MaximumPhoneLength);
         builder.Property(submission => submission.SocialSecurityNumber).HasMaxLength(SocialSecurityNumber.Length);
+        builder.Property(submission => submission.Email).HasMaxLength(PatientEmail.MaximumLength);
+        builder.Property(submission => submission.NoteFromPatient).HasMaxLength(SubmissionRequest.MaximumNoteLength);
+        builder.Property(submission => submission.TeamNote).HasMaxLength(PrescriptionSubmission.MaximumTeamNoteLength);
+        builder.Property(submission => submission.Status).HasConversion<string>().HasMaxLength(30);
         builder.HasMany(submission => submission.Documents)
             .WithOne()
             .HasForeignKey(document => document.SubmissionId)
@@ -26,5 +30,6 @@ internal sealed class PrescriptionSubmissionConfiguration : IEntityTypeConfigura
         builder.Navigation(submission => submission.Documents).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.HasIndex(submission => new { submission.TenantId, submission.IdempotencyKey }).IsUnique();
         builder.HasIndex(submission => new { submission.TenantId, submission.PlannedVisitAt });
+        builder.HasIndex(submission => new { submission.TenantId, submission.Status, submission.StatusChangedAt });
     }
 }

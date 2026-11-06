@@ -8,9 +8,13 @@ export type Appointment = {
 	endTime: string;
 	patientName: string;
 	patientPhone: string;
+	/** Laissé pour recevoir la confirmation et un éventuel report ; null sinon. */
+	patientEmail: string | null;
 	reason: string;
 	employeeId: string;
 	status: AppointmentStatus;
+	/** Le mot laissé par le patient en réservant ; vide si rien. */
+	note: string;
 };
 
 export type BookableEmployee = {

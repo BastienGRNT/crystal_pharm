@@ -55,10 +55,7 @@
 	}
 </script>
 
-<section
-	class="relative h-[720px] overflow-hidden rounded-lg border border-line bg-surface shadow-card lg:fixed lg:inset-y-0 lg:right-0 lg:z-10 lg:h-dvh lg:w-[45vw] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-none"
-	aria-label="Aperçu du site"
->
+<div class="relative size-full bg-surface">
 	<iframe bind:this={frame} src={frameUrl} title="Aperçu du site" class="block size-full bg-surface"></iframe>
 	{#if !isFrameReady}
 		<div class="absolute inset-0 grid place-items-center bg-surface p-6">
@@ -72,4 +69,4 @@
 			{/if}
 		</div>
 	{/if}
-</section>
+</div>

@@ -59,7 +59,8 @@ nom du **schéma qu'il possède** ; le reste, le nom de **ce qu'il fait**.
    ├─ engine/               LE MOTEUR (Solid) : schema · renderer · layouts
    └─ shared/               TS sans interface, partagé entre apps :
                             auth · pharmacy-db · group-db · billing-db ·
-                            content-db · api-client · email · dev-tools
+                            content-db · site-traffic-db · api-client ·
+                            email · dev-tools
 ```
 
 ## Qui fait quoi
@@ -158,7 +159,7 @@ Ordonnances, rendez-vous et tout ce qui relie une personne à un soin :
 | `pharmacy/modules/site-manager` | en plus : l'export sans Solid de `layouts` (`/manifest`) |
 | `group` | `ui`, `shared/*` |
 | `admin` | `ui`, `shared/*` — de `shared/auth`, seulement `/toolkit`, `/tables` et `/client` (sauf par `shared/dev-tools`, en dev) |
-| `app/site` | `engine/*`, `shared/content-db`, `shared/pharmacy-db`, `shared/group-db`, `shared/api-client`, `shared/billing-db` (seulement la lecture des droits) |
+| `app/site` | `engine/*`, `shared/content-db`, `shared/pharmacy-db`, `shared/group-db`, `shared/api-client`, `shared/billing-db` (seulement la lecture des droits), `shared/site-traffic-db` (seulement l'écriture des pages vues) |
 | `ui` | rien d'autre que Svelte |
 | `shared/*` | voir `app/shared/CLAUDE.md` |
 | `engine/*` | entre eux seulement : `layouts → renderer → schema` |
@@ -230,7 +231,7 @@ Créer ou modifier un layout : lis d'abord `app/engine/docs/creer-un-layout.md`.
 - Un schéma = un seul outil de migration **et un seul propriétaire**. Drizzle :
   `auth` → `shared/auth`, `pharmacy` → `shared/pharmacy-db`, `groups` →
   `shared/group-db`, `billing` → `shared/billing-db`, `content` →
-  `shared/content-db`, `planning` →
+  `shared/content-db`, `site_traffic` → `shared/site-traffic-db`, `planning` →
   `pharmacy/modules/planning`, `platform_auth` → `admin`. EF Core : `booking`,
   `prescriptions` → le C#.
 - Table de suivi Drizzle dans le schéma du propriétaire : drizzle-kit le crée

@@ -8,7 +8,7 @@ import {
 } from '../domain/rules/hoursInput';
 import type { PlanningSettingsActionResult, PlanningSettingsPageData } from '../pages/planningSettingsPageData';
 import { toCalendarDay } from '../domain/calendar/week';
-import { describePeakWindow } from '../domain/coverage/peakWindows';
+import { parsePlanningSettingsTab, planningSettingsTabParameter } from '../domain/settings/planningSettingsTabs';
 import { summarizeWeekTemplate } from '../domain/templates/weekTemplates';
 import { requirePlanningManager } from './activeTenant.server';
 import {
@@ -16,6 +16,7 @@ import {
 	findPlanningRules,
 	listEmployeeTermsRows,
 	updateEmployeeTerms,
+	type EmployeeTermsSubmission,
 	updateOvertimeRules,
 	updatePlanningRules
 } from './services/settings/planningSettingsService';
@@ -24,28 +25,40 @@ import {
 	sendMonthlyPlanningToAccountant,
 	updateAccountantEmail
 } from './services/accountant-export/accountantExportService';
-import { findPreviousPayrollMonth, formatPayrollMonthParameter } from '../domain/accountant-export/monthlyPayrollExport';
-import { addPeakWindow, findPeakWindows, removePeakWindow } from './services/peaks/peakWindowService';
+import {
+	findPreviousPayrollMonth,
+	formatPayrollMonthLabel,
+	formatPayrollMonthParameter,
+	listRecentPayrollMonths
+} from '../domain/accountant-export/monthlyPayrollExport';
+import { findPeakWeek, replacePeakWindowsOfWeek } from './services/peaks/peakWindowService';
 import { findWeekTemplates, removeWeekTemplate } from './services/templates/weekTemplateService';
+
+const monthsOfferedForExport = 13;
+
+const capitalize = (text: string): string => text.charAt(0).toLocaleUpperCase('fr') + text.slice(1);
 
 type SettingsRequest = {
 	locals: { user: AuthenticatedUser | null };
 };
 
-export async function load({ locals }: SettingsRequest): Promise<PlanningSettingsPageData> {
+type SettingsPageRequest = SettingsRequest & { url: URL };
+
+export async function load({ locals, url }: SettingsPageRequest): Promise<PlanningSettingsPageData> {
 	const { tenantId } = await requirePlanningManager(locals.user);
 	const today = toCalendarDay(new Date());
-	const [rules, overtimeRules, accountantEmail, termsRows, peakWindows, templates] = await Promise.all([
+	const [rules, overtimeRules, accountantEmail, termsRows, peakWeek, templates] = await Promise.all([
 		findPlanningRules(tenantId),
 		findOvertimeRules(tenantId),
 		findAccountantEmail(tenantId),
 		listEmployeeTermsRows(tenantId),
-		findPeakWindows(tenantId),
+		findPeakWeek(tenantId),
 		findWeekTemplates(tenantId)
 	]);
 	return {
 		planningHref: '/planning',
-		peakWindows: peakWindows.map((peakWindow) => ({ id: peakWindow.id, label: describePeakWindow(peakWindow) })),
+		selectedTab: parsePlanningSettingsTab(url.searchParams.get(planningSettingsTabParameter)),
+		peakWeek: { ...peakWeek, teamSize: termsRows.length, openingHoursHref: '/pharmacie?onglet=horaires' },
 		templates: templates.map(summarizeWeekTemplate),
 		rules: {
 			minimumPharmacistsPresent: String(rules.minimumPharmacistsPresent),
@@ -63,7 +76,10 @@ export async function load({ locals }: SettingsRequest): Promise<PlanningSetting
 		accountantExport: {
 			accountantEmail: accountantEmail ?? '',
 			defaultMonth: formatPayrollMonthParameter(findPreviousPayrollMonth(today)),
-			latestMonth: formatPayrollMonthParameter({ year: today.getUTCFullYear(), month: today.getUTCMonth() + 1 }),
+			monthOptions: listRecentPayrollMonths(today, monthsOfferedForExport).map((month) => ({
+				value: formatPayrollMonthParameter(month),
+				label: capitalize(formatPayrollMonthLabel(month))
+			})),
 			downloadAction: '/planning/parametres/export'
 		},
 		employees: termsRows.map((row) => ({
@@ -81,23 +97,28 @@ export async function load({ locals }: SettingsRequest): Promise<PlanningSetting
 
 const readText = (formData: FormData, fieldName: string): string => String(formData.get(fieldName) ?? '').trim();
 
-export const actions = {
-	addPeakWindow: async ({ request, locals }) => {
-		const { tenantId } = await requirePlanningManager(locals.user);
-		const formData = await request.formData();
-		const result = await addPeakWindow(tenantId, {
-			weekday: readText(formData, 'weekday'),
-			startTime: readText(formData, 'startTime'),
-			endTime: readText(formData, 'endTime'),
-			requiredCount: readText(formData, 'requiredCount')
-		});
-		if (!result.isSaved) return fail(400, { failedSection: 'peaks', message: result.message } satisfies PlanningSettingsActionResult);
-		return { savedSection: 'peaks' } satisfies PlanningSettingsActionResult;
-	},
+/** Les contrats de toute l'équipe partent ensemble : chaque champ porte l'identifiant de son employé. */
+function readEmployeeTermsSubmission(formData: FormData, employeeId: string): EmployeeTermsSubmission | undefined {
+	const contractText = readText(formData, `weeklyContractHours.${employeeId}`);
+	const rateText = readText(formData, `hourlyRateEuros.${employeeId}`);
+	const weeklyContractMinutes = contractText === '' ? null : (parseHoursToMinutes(contractText) ?? NaN);
+	const hourlyRateCents = rateText === '' ? null : (parseEurosToCents(rateText) ?? NaN);
+	if (Number.isNaN(weeklyContractMinutes) || Number.isNaN(hourlyRateCents)) return undefined;
+	return {
+		employeeId,
+		weeklyContractMinutes,
+		hourlyRateCents,
+		isStudent: formData.get(`isStudent.${employeeId}`) === 'on',
+		isPlannedManually: formData.get(`isPlannedManually.${employeeId}`) === 'on',
+		availabilityValidation: readText(formData, `availabilityValidation.${employeeId}`)
+	};
+}
 
-	removePeakWindow: async ({ request, locals }) => {
+export const actions = {
+	savePeakWindows: async ({ request, locals }) => {
 		const { tenantId } = await requirePlanningManager(locals.user);
-		await removePeakWindow(tenantId, readText(await request.formData(), 'peakWindowId'));
+		const result = await replacePeakWindowsOfWeek(tenantId, readText(await request.formData(), 'peakWindows'));
+		if (!result.isSaved) return fail(400, { failedSection: 'peaks', message: result.message } satisfies PlanningSettingsActionResult);
 		return { savedSection: 'peaks' } satisfies PlanningSettingsActionResult;
 	},
 
@@ -163,24 +184,14 @@ export const actions = {
 	saveTerms: async ({ request, locals }) => {
 		const { tenantId } = await requirePlanningManager(locals.user);
 		const formData = await request.formData();
-		const employeeId = readText(formData, 'employeeId');
-		const contractText = readText(formData, 'weeklyContractHours');
-		const rateText = readText(formData, 'hourlyRateEuros');
-		const weeklyContractMinutes = contractText === '' ? null : (parseHoursToMinutes(contractText) ?? NaN);
-		const hourlyRateCents = rateText === '' ? null : (parseEurosToCents(rateText) ?? NaN);
-		if (Number.isNaN(weeklyContractMinutes) || Number.isNaN(hourlyRateCents)) {
-			return fail(400, { failedSection: 'terms', employeeId, message: 'Heures ou taux horaire illisibles (par exemple 35 et 12,50).' } satisfies PlanningSettingsActionResult);
+		for (const employeeId of formData.getAll('employeeId').map(String)) {
+			const submission = readEmployeeTermsSubmission(formData, employeeId);
+			if (!submission) {
+				return fail(400, { failedSection: 'terms', employeeId, message: 'Heures ou taux horaire illisibles (par exemple 35 et 12,50).' } satisfies PlanningSettingsActionResult);
+			}
+			const result = await updateEmployeeTerms(tenantId, submission);
+			if (!result.isSaved) return fail(400, { failedSection: 'terms', employeeId, message: result.message } satisfies PlanningSettingsActionResult);
 		}
-
-		const result = await updateEmployeeTerms(tenantId, {
-			employeeId,
-			weeklyContractMinutes,
-			hourlyRateCents,
-			isStudent: formData.get('isStudent') === 'on',
-			isPlannedManually: formData.get('isPlannedManually') === 'on',
-			availabilityValidation: readText(formData, 'availabilityValidation')
-		});
-		if (!result.isSaved) return fail(400, { failedSection: 'terms', employeeId, message: result.message } satisfies PlanningSettingsActionResult);
-		return { savedSection: 'terms', employeeId } satisfies PlanningSettingsActionResult;
+		return { savedSection: 'terms' } satisfies PlanningSettingsActionResult;
 	}
 } satisfies Actions;

@@ -20,6 +20,7 @@
 	"dependencies": {
 		"@crystal-pharm/api-client": "workspace:*",
 		"@crystal-pharm/auth": "workspace:*",
+		"@crystal-pharm/email": "workspace:*",
 		"@crystal-pharm/pharmacy-db": "workspace:*",
 		"@crystal-pharm/ui": "workspace:*",
 		"openapi-fetch": "^0.14.0"

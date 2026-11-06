@@ -12,7 +12,7 @@
 	let { invitations, revokeAction }: AccessInvitationListProps = $props();
 </script>
 
-<ul class="grid divide-y divide-line-soft">
+<ul class="-my-1 grid divide-y divide-dashed divide-line-strong/40">
 	{#each invitations as invitation (invitation.invitationId)}
 		<li class="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
 			<p class="text-body">
@@ -24,6 +24,7 @@
 					label="Annuler"
 					icon="x"
 					variant="ghost"
+					size="compact"
 					title="Annuler l’invitation de {invitation.employeeFullName} ?"
 					description="Le lien reçu par email ne fonctionnera plus. Vous pourrez l’inviter à nouveau."
 					confirmLabel="Annuler l’invitation"

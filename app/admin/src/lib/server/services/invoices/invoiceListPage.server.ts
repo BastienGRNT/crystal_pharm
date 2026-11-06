@@ -9,6 +9,9 @@ export type InvoiceListPageData = {
 	dueInvoiceCount: number;
 	/** Ce qui reste à encaisser par virement, TTC. */
 	dueTotalCents: number;
+	/** Factures moins avoirs émis depuis le 1er du mois, HT : le chiffre d'affaires du mois en cours. */
+	currentMonthInvoicedSubtotalCents: number;
+	currentMonthLabel: string;
 };
 
 export type InvoiceListActionResult = { paidInvoiceNumber: string };
@@ -27,8 +30,22 @@ export async function loadInvoiceListPage({ url }: { url: URL }): Promise<Invoic
 		filter,
 		invoices: (filter === 'due' ? dueInvoices : invoices).map((invoice) => toInvoiceRow(invoice, invoicePdfPathname(invoice.invoiceId))),
 		dueInvoiceCount: dueInvoices.length,
-		dueTotalCents: dueInvoices.reduce((total, invoice) => total + invoice.totalCents, 0)
+		dueTotalCents: dueInvoices.reduce((total, invoice) => total + invoice.totalCents, 0),
+		currentMonthInvoicedSubtotalCents: sumSubtotalsIssuedSince(invoices, startOfCurrentMonth()),
+		currentMonthLabel: monthFormat.format(new Date())
 	};
+}
+
+const monthFormat = new Intl.DateTimeFormat('fr-FR', { month: 'long' });
+
+function startOfCurrentMonth(): Date {
+	const today = new Date();
+	return new Date(today.getFullYear(), today.getMonth(), 1);
+}
+
+// Un avoir porte déjà un montant négatif : la somme donne le net.
+function sumSubtotalsIssuedSince(invoices: readonly { issuedAt: Date; subtotalCents: number }[], since: Date): number {
+	return invoices.filter((invoice) => invoice.issuedAt >= since).reduce((total, invoice) => total + invoice.subtotalCents, 0);
 }
 
 export const invoiceListPageActions = {

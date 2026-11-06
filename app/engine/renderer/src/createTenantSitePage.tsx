@@ -1,11 +1,19 @@
 import type { TenantSite } from '@crystal-pharm/schema';
 import type { Component } from 'solid-js';
+import { createAppointmentActions, type AppointmentGateway } from './appointment/createBookAppointment';
 import type { LayoutRegistry } from './layout-registry/createLayoutRegistry';
 import { toEnabledModulesProps } from './module-props/toEnabledModulesProps';
+import { findStableRedirectLocation } from './redirect/findStableRedirectLocation';
+import { toFixedSectionsProps } from './section-props/toFixedSectionsProps';
 import { createPageKit } from './page-kit/createPageKit';
+import { createOpeningStatus } from './opening-status/createOpeningStatus';
 import { createSubmitPrescription, type SendPrescription } from './prescription/createSubmitPrescription';
 
-export type TenantSitePage = { status: 'notFound' } | { status: 'found'; title: string; Page: Component };
+export type TenantSitePage =
+  | { status: 'notFound' }
+  /** Une adresse stable (`/commandeenligne`, `/rendezvous`) dont la destination est choisie par la pharmacie : l'app répond par une redirection temporaire (302). */
+  | { status: 'redirect'; location: string }
+  | { status: 'found'; title: string; Page: Component };
 
 /**
  * Le point d'entrée du moteur, identique sur le serveur et dans le navigateur : il ne fait que construire la page.
@@ -19,8 +27,12 @@ export function createTenantSitePage(input: {
   renderedAt: Date;
   layouts: LayoutRegistry;
   sendPrescription: SendPrescription;
+  appointments: AppointmentGateway;
 }): TenantSitePage {
   const { tenantSite } = input;
+  const redirectLocation = findStableRedirectLocation(tenantSite.modules, input.requestedPath);
+  if (redirectLocation) return { status: 'redirect', location: redirectLocation };
+
   const layout = input.layouts.findLayoutById(tenantSite.layoutId);
   const page = layout.findPage(input.requestedPath);
   if (!page) return { status: 'notFound' };
@@ -28,18 +40,31 @@ export function createTenantSitePage(input: {
 
   const enabledModulesProps = toEnabledModulesProps(tenantSite.modules, {
     renderedAt: input.renderedAt,
+    belongsToGroup: tenantSite.pharmacy.group !== undefined,
     submitPrescription: createSubmitPrescription(input.sendPrescription),
+    pharmacyName: tenantSite.pharmacy.name,
+    appointmentActions: createAppointmentActions(input.appointments),
   });
-  const pageKit = createPageKit({ pharmacy: tenantSite.pharmacy, moduleComponents: layout.moduleComponents, enabledModulesProps });
+  const pageKit = createPageKit({
+    pharmacy: tenantSite.pharmacy,
+    moduleComponents: layout.layoutComponents,
+    fixedSectionComponents: layout.layoutComponents,
+    enabledModulesProps,
+    fixedSectionsProps: toFixedSectionsProps(tenantSite.fixedSections, tenantSite.pharmacy, input.renderedAt),
+    moduleOrder: tenantSite.moduleOrder,
+  });
 
   return {
     status: 'found',
     title: `${page.title} · ${tenantSite.pharmacy.name}`,
-    Page: () => (
-      // Le thème écrase, sur ce même élément, les variables CSS par défaut que le layout y déclare.
-      <div class={`layout-${layout.id}`} style={layoutSettings.themeCssVariables}>
-        {page.render({ pharmacy: tenantSite.pharmacy, settings: layoutSettings, modules: enabledModulesProps, pageKit })}
-      </div>
-    ),
+    Page: () => {
+      const openingStatus = createOpeningStatus(tenantSite.fixedSections.openingHours, input.renderedAt);
+      return (
+        // Le thème écrase, sur ce même élément, les variables CSS par défaut que le layout y déclare.
+        <div class={`layout-${layout.id}`} style={layoutSettings.themeCssVariables}>
+          {page.render({ pharmacy: tenantSite.pharmacy, settings: layoutSettings, modules: enabledModulesProps, pageKit, openingStatus })}
+        </div>
+      );
+    },
   };
 }

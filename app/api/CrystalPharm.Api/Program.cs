@@ -36,6 +36,7 @@ builder.Services.AddScoped<ITenantContext>(services => services.GetRequiredServi
 builder.Services.AddManagerAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSiteServiceAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddPrescriptionRateLimiting();
+builder.Services.AddAppointmentRateLimiting();
 builder.Services.AddBookingModule(builder.Configuration);
 builder.Services.AddPrescriptionsModule(builder.Configuration);
 

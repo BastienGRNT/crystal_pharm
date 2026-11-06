@@ -55,14 +55,31 @@ const appointments: NonNullable<TodayOverviewInput['appointments']> = {
 	}
 };
 
+const prescriptions: NonNullable<TodayOverviewInput['prescriptions']> = {
+	href: '/prescriptions',
+	summary: {
+		receivedCount: 2,
+		inPreparationCount: 1,
+		waitingForProductsCount: 1,
+		readyCount: 2,
+		overdueCount: 1,
+		soonCount: 1,
+		receivedQuery: '?statut=received',
+		readyQuery: '?statut=ready'
+	}
+};
+
 const saturdayMorning = [{ startMinutes: 9 * 60, endMinutes: 12 * 60 + 30 }];
 
 const input: TodayOverviewInput = {
 	isoDate: '2026-10-24',
 	nowMinutes: 10 * 60 + 12,
+	currentInstant: new Date('2026-10-24T10:12:00+02:00'),
 	openingPeriods: saturdayMorning,
 	team,
 	appointments,
+	prescriptions,
+	onDuty: undefined,
 	confirmAppointmentFormAction: '?/confirmAppointment'
 };
 
@@ -93,13 +110,14 @@ describe('buildTodayOverview', () => {
 		expect(overview.now.summary).toBe('2 rendez-vous aujourd’hui · 3 / 5 de l’équipe dans la journée');
 	});
 
-	it('met d’abord ce que la loi impose, puis les rendez-vous à confirmer, chacun avec son action', () => {
+	it('met d’abord ce que la loi impose, puis les patients en retard, puis les rendez-vous à confirmer', () => {
 		expect(overview.tasks.map((task) => [task.title, task.actions.map((action) => action.label)])).toEqual([
 			['Aucun pharmacien, 09:00–12:30', ['Corriger le planning']],
+			['1 ordonnance en retard', ['Voir']],
 			['Test antigénique · aujourd’hui, 10:15', ['Confirmer', 'Voir']],
 			['Vaccination · lun. 26 oct., 09:30', ['Confirmer', 'Voir']]
 		]);
-		expect(overview.tasks[1]?.actions[0]).toEqual({
+		expect(overview.tasks[2]?.actions[0]).toEqual({
 			label: 'Confirmer',
 			isPrimary: true,
 			formAction: '?/confirmAppointment',
@@ -121,7 +139,7 @@ describe('buildTodayOverview', () => {
 	it('propose les raccourcis des modules actifs', () => {
 		expect(overview.shortcuts.map((shortcut) => [shortcut.label, shortcut.href])).toEqual([
 			['Nouveau rendez-vous', '/booking?jour=2026-10-24&nouveau=1'],
-			['Ajouter un créneau', '/planning?view=day&day=2026-10-24&add=1']
+			['Ajouter quelqu’un au planning', '/planning?view=day&day=2026-10-24&add=1']
 		]);
 	});
 
@@ -146,7 +164,49 @@ describe('buildTodayOverview', () => {
 		const withoutAppointments = buildTodayOverview({ ...input, appointments: { href: '/booking', summary: undefined } });
 		expect(withoutAppointments.areAppointmentsUnavailable).toBe(true);
 		expect(withoutAppointments.now.nextAppointment).toBeUndefined();
-		expect(withoutAppointments.tasks.map((task) => task.id)).toEqual(['pharmacist-gap-540']);
+		expect(withoutAppointments.tasks.map((task) => task.id)).toEqual(['pharmacist-gap-540', 'overdue-prescriptions']);
+	});
+
+	it('donne les chiffres du comptoir, chacun vers sa liste, le plus urgent en précision', () => {
+		expect(overview.figures.map((figure) => [figure.label, figure.value, figure.detail, figure.href])).toEqual([
+			['Ordonnances à préparer', '4', 'dont 1 en retard', '/prescriptions'],
+			['Prêtes, pas encore retirées', '2', 'Le patient peut passer', '/prescriptions?statut=ready'],
+			['Rendez-vous à confirmer', '2', 'Le patient attend votre réponse', '/booking?jour=2026-10-24&vue=semaine&statut=en-attente']
+		]);
+	});
+
+	it('garde les chiffres des ordonnances quand le C# ne répond pas, sans inventer de nombre', () => {
+		const withoutPrescriptions = buildTodayOverview({ ...input, prescriptions: { href: '/prescriptions', summary: undefined } });
+		expect(withoutPrescriptions.figures[0]).toMatchObject({ value: '–', detail: 'Indisponible pour le moment' });
+	});
+
+	it('annonce la garde de ce soir, et la suivante plus discrètement', () => {
+		const onDutyTonight = buildTodayOverview({
+			...input,
+			onDuty: { href: '/site-manager/gardes', period: { startsAt: '2026-10-24T19:00:00+02:00', endsAt: '2026-10-25T09:00:00+01:00' } }
+		}).onDuty;
+		expect(onDutyTonight).toEqual({
+			title: 'De garde ce soir',
+			detail: 'de 19:00 à 09:00 le lendemain',
+			isSoon: true,
+			isInProgress: false,
+			href: '/site-manager/gardes'
+		});
+		const nextOnDuty = buildTodayOverview({
+			...input,
+			onDuty: { href: undefined, period: { startsAt: '2026-11-07T19:00:00+01:00', endsAt: '2026-11-08T09:00:00+01:00' } }
+		}).onDuty;
+		expect(nextOnDuty).toMatchObject({ title: 'Prochaine garde', detail: 'Sam. 7 nov., de 19:00 à 09:00 le lendemain', isSoon: false });
+	});
+
+	it('dit jusqu’à quand dure la garde en cours', () => {
+		const inProgress = buildTodayOverview({
+			...input,
+			currentInstant: new Date('2026-10-24T23:30:00+02:00'),
+			onDuty: { href: undefined, period: { startsAt: '2026-10-24T19:00:00+02:00', endsAt: '2026-10-25T09:00:00+01:00' } }
+		});
+		expect(inProgress.onDuty).toMatchObject({ title: 'De garde en ce moment', detail: 'jusqu’à demain 09:00' });
+		expect(inProgress.openingStatus).toEqual({ label: 'Ouvert · de garde', tone: 'success' });
 	});
 });
 

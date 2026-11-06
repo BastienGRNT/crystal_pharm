@@ -8,11 +8,14 @@ const fromMockOverride = 'fromMock';
 type ModuleOverrideChoice = ModuleOverride | typeof fromMockOverride;
 
 const moduleLabels = {
-  openingHours: 'Horaires',
   team: 'Équipe',
   services: 'Services',
+  brands: 'Marques',
   news: 'Actualités',
   prescriptionUpload: "Envoi d'ordonnance",
+  appointment: 'Prise de rendez-vous',
+  onlineOrder: 'Commande en ligne',
+  dutyHotline: 'Numéro de garde (3237)',
   loyaltyCard: 'Carte de fidélité',
 } satisfies Record<ModuleName, string>;
 

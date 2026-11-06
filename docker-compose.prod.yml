@@ -1,7 +1,8 @@
 # Le déploiement Forge (prod = branche main, dev = branche develop, chacun avec son .env).
 # Seule la passerelle publie un port ; le HTTPS est terminé par le proxy placé devant.
 # APP_ENV absent = production. `APP_ENV=development` embarque l'outil de dev et garde la boîte mail de dev
-# et le faux PaymentProvider quelles que soient les clés.
+# et le faux PaymentProvider quelles que soient les clés. L'API C# ne lit pas APP_ENV : ses endpoints de dev
+# (données de santé de démo) demandent `ASPNETCORE_ENVIRONMENT=Development`, absent = Production.
 
 x-application-environment: &application_environment
   APP_ENV: ${APP_ENV:-production}
@@ -67,7 +68,7 @@ services:
       dockerfile: docker/prod/api.Dockerfile
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ApplyMigrationsAtStartup: "true"
       ConnectionStrings__Booking: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       ConnectionStrings__Prescriptions: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}

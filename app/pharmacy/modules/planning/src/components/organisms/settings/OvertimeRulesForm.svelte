@@ -16,22 +16,22 @@
 	<div class="grid gap-4 sm:grid-cols-2">
 		<Field label="Heures supplémentaires au-delà de" hint="La durée légale : 35 h par semaine.">
 			{#snippet control(attributes)}
-				<UnitInput {...attributes} name="weeklyThresholdHours" unit="h / sem." inputmode="decimal" value={values.weeklyThresholdHours} />
+				<UnitInput {...attributes} class="max-w-40" name="weeklyThresholdHours" unit="h / sem." inputmode="decimal" value={values.weeklyThresholdHours} />
 			{/snippet}
 		</Field>
 		<Field label="Première tranche" hint="8 h : de la 36e à la 43e heure.">
 			{#snippet control(attributes)}
-				<UnitInput {...attributes} name="firstBandHours" unit="h" inputmode="decimal" value={values.firstBandHours} />
+				<UnitInput {...attributes} class="max-w-40" name="firstBandHours" unit="h" inputmode="decimal" value={values.firstBandHours} />
 			{/snippet}
 		</Field>
 		<Field label="Majoration de la première tranche">
 			{#snippet control(attributes)}
-				<UnitInput {...attributes} name="firstBandRatePercent" unit="%" inputmode="numeric" value={values.firstBandRatePercent} />
+				<UnitInput {...attributes} class="max-w-40" name="firstBandRatePercent" unit="%" inputmode="numeric" value={values.firstBandRatePercent} />
 			{/snippet}
 		</Field>
 		<Field label="Majoration au-delà">
 			{#snippet control(attributes)}
-				<UnitInput {...attributes} name="beyondRatePercent" unit="%" inputmode="numeric" value={values.beyondRatePercent} />
+				<UnitInput {...attributes} class="max-w-40" name="beyondRatePercent" unit="%" inputmode="numeric" value={values.beyondRatePercent} />
 			{/snippet}
 		</Field>
 	</div>

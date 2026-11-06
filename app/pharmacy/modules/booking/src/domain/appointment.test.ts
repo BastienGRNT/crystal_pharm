@@ -15,9 +15,11 @@ const appointment = (overrides: Partial<Appointment>): Appointment => ({
 	endTime: '09:15',
 	patientName: 'Camille Durand',
 	patientPhone: '06 00 00 00 00',
+	patientEmail: null,
 	reason: 'Vaccination',
 	employeeId: 'employee-lea',
 	status: 'confirmed',
+	note: '',
 	...overrides
 });
 

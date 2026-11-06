@@ -13,21 +13,24 @@
 
 	const componentId = $props.id();
 	const controlId = `field-${componentId}`;
-	const descriptionId = `field-description-${componentId}`;
-	const description = $derived(errorMessage ?? hint);
+	const hintId = `field-hint-${componentId}`;
+	const errorId = `field-error-${componentId}`;
+	const describedBy = $derived([errorMessage ? errorId : undefined, hint ? hintId : undefined].filter(Boolean).join(' ') || undefined);
 	const controlAttributes: FieldControlAttributes = $derived({
 		id: controlId,
-		'aria-describedby': description ? descriptionId : undefined,
+		'aria-describedby': describedBy,
 		'aria-invalid': errorMessage ? true : undefined
 	});
 </script>
 
-<div class="flex min-w-0 flex-col gap-[5px]">
-	<label for={controlId} class="text-[13px] leading-[18px] font-medium text-ink">{label}</label>
+<!-- L'aide reste sous l'erreur : c'est souvent elle qui dit comment corriger. -->
+<div class="flex min-w-0 flex-col gap-2">
+	<label for={controlId} class="text-label text-ink">{label}</label>
 	{@render control(controlAttributes)}
-	{#if description}
-		<p id={descriptionId} class={errorMessage ? 'text-small font-medium text-danger' : 'text-small text-ink-subtle'}>
-			{description}
-		</p>
+	{#if errorMessage}
+		<p id={errorId} class="text-small font-medium text-danger">{errorMessage}</p>
+	{/if}
+	{#if hint}
+		<p id={hintId} class="text-small text-ink-muted">{hint}</p>
 	{/if}
 </div>

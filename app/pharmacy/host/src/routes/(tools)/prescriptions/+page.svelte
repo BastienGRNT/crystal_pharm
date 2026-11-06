@@ -2,7 +2,7 @@
 	import { ReceivedPrescriptionsPage } from '@crystal-pharm/prescriptions';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 </script>
 
-<ReceivedPrescriptionsPage {data} />
+<ReceivedPrescriptionsPage {data} {form} />

@@ -38,6 +38,8 @@ internal sealed class AppointmentRepository(BookingDbContext context) : IAppoint
         }
         catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.ExclusionViolation })
         {
+            // Le rendez-vous refusé reste suivi : sans cela, un nouvel essai le réécrirait.
+            context.ChangeTracker.Clear();
             throw new AppointmentSlotAlreadyTakenException(exception);
         }
     }
