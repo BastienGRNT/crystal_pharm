@@ -4,7 +4,7 @@
 .idea
 .env
 .env.*
-!.env.example
+env
 .storage
 .logs
 **/node_modules

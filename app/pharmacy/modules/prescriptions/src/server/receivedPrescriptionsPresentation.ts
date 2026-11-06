@@ -235,7 +235,7 @@ function buildDocument(prescriptionId: string, document: ReceivedDocument, sameK
 	return {
 		id: document.id,
 		label: sameKindIndex > 0 ? `${label} (page ${sameKindIndex + 1})` : label,
-		href: `/prescriptions/${prescriptionId}/fichiers/${document.id}`,
+		readLinkEndpoint: `/prescriptions/${prescriptionId}/fichiers/${document.id}`,
 		isPreviewable: document.format === 'jpeg' || document.format === 'png' || document.format === 'webp'
 	};
 }

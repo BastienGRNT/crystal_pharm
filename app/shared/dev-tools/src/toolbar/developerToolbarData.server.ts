@@ -64,9 +64,10 @@ export async function loadDeveloperToolbarData({
 }): Promise<DeveloperToolbarData> {
 	const signedInPersona = findDemoPersonaByEmail(signedInEmail);
 	const signedInCounterAccount = findDemoCounterAccountByUsername(signedInUsername);
-	const [{ accountActionGroups, globalActionGroups }, currentContext] = await Promise.all([
+	const [{ accountActionGroups, globalActionGroups }, currentContext, sentEmails] = await Promise.all([
 		listDevelopmentActionGroups(space, signedInAccountId),
-		loadDeveloperToolbarContext(space, signedInAccountId)
+		loadDeveloperToolbarContext(space, signedInAccountId),
+		readDevelopmentOutbox()
 	]);
 	return {
 		signedInLabel: signedInPersona?.label ?? signedInCounterAccount?.label ?? signedInEmail ?? signedInUsername,
@@ -74,7 +75,7 @@ export async function loadDeveloperToolbarData({
 		accountGroups: listAccountGroups(space, [signedInPersona?.personaKey, signedInCounterAccount?.personaKey]),
 		accountActionGroups,
 		globalActionGroups,
-		emails: readDevelopmentOutbox().map((email) => ({
+		emails: sentEmails.map((email) => ({
 			to: email.to,
 			subject: email.subject,
 			text: email.text,

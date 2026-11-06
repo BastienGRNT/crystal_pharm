@@ -1,44 +1,41 @@
-import { createSignal, For, onMount, Show } from 'solid-js';
+import { createSignal, createUniqueId, For, onMount, Show } from 'solid-js';
 import { listPlannedVisitChoices, type PlannedVisitChoice } from '@crystal-pharm/renderer';
 
-/** Quand passer : « dès que c'est prêt » par défaut, les autres moments dépendent de l'heure, donc n'apparaissent qu'une fois la page ouverte. */
+const anotherMomentKey = 'another-moment';
+
+/** Quand passer, dans un menu déroulant : « dès que c'est prêt » d'abord ; les autres moments dépendent de l'heure, donc n'apparaissent qu'une fois la page ouverte. */
 export function PlannedVisitChoices(props: { value: string; error: string | undefined; onChange: (value: string) => void }) {
+  const selectId = createUniqueId();
   const [choices, setChoices] = createSignal<PlannedVisitChoice[]>([]);
   const [isChoosingAnotherMoment, setIsChoosingAnotherMoment] = createSignal(false);
   onMount(() => setChoices(listPlannedVisitChoices(new Date())));
 
-  const isChosen = (plannedVisitAt: string) => !isChoosingAnotherMoment() && props.value === plannedVisitAt;
-
-  function choose(plannedVisitAt: string): void {
-    setIsChoosingAnotherMoment(false);
-    props.onChange(plannedVisitAt);
+  function choose(selectedKey: string): void {
+    const isAnotherMoment = selectedKey === anotherMomentKey;
+    setIsChoosingAnotherMoment(isAnotherMoment);
+    props.onChange(isAnotherMoment ? '' : selectedKey);
   }
 
   return (
     <div class="ap-field">
-      <span class="ap-field__label">Quand passez-vous ?</span>
-      <div class="ap-choice" role="group" aria-label="Quand passez-vous ?">
-        <button type="button" aria-pressed={isChosen('')} onClick={() => choose('')}>
+      <label class="ap-field__label" for={selectId}>
+        Quand passerez-vous ?
+      </label>
+      <select id={selectId} class="ap-input ap-select" onChange={(event) => choose(event.currentTarget.value)}>
+        <option value="" selected={!isChoosingAnotherMoment() && props.value === ''}>
           Dès que c'est prêt
-        </button>
+        </option>
         <For each={choices()}>
           {(choice) => (
-            <button type="button" aria-pressed={isChosen(choice.plannedVisitAt)} onClick={() => choose(choice.plannedVisitAt)}>
+            <option value={choice.plannedVisitAt} selected={!isChoosingAnotherMoment() && props.value === choice.plannedVisitAt}>
               {choice.label}
-            </button>
+            </option>
           )}
         </For>
-        <button
-          type="button"
-          aria-pressed={isChoosingAnotherMoment()}
-          onClick={() => {
-            setIsChoosingAnotherMoment(true);
-            props.onChange('');
-          }}
-        >
-          Un autre jour
-        </button>
-      </div>
+        <option value={anotherMomentKey} selected={isChoosingAnotherMoment()}>
+          Un autre jour, à préciser
+        </option>
+      </select>
       <Show when={isChoosingAnotherMoment()}>
         <input class="ap-input" type="datetime-local" aria-label="Jour et heure de passage" value={props.value} onInput={(event) => props.onChange(event.currentTarget.value)} />
       </Show>

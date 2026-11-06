@@ -39,7 +39,8 @@ export type PrescriptionColumn = {
 export type PrescriptionDocument = {
 	id: string;
 	label: string;
-	href: string;
+	/** La route qui donne le lien de lecture : lue en arrière-plan, jamais ouverte comme une page. */
+	readLinkEndpoint: string;
 	/** Une photo s'affiche dans la fiche ; un PDF (ou un HEIC, que les navigateurs lisent mal) s'ouvre à côté. */
 	isPreviewable: boolean;
 };

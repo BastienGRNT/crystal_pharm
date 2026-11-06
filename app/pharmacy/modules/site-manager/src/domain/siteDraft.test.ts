@@ -112,6 +112,7 @@ describe('listSiteModuleChoices', () => {
 
 	it('makes news imposed by the group as soon as an article is complete', () => {
 		const newsChoice = listSiteModuleChoices(baseWithGroup, {
+			layoutId: 'essential',
 			sections: createEmptySectionDrafts(),
 			services: [],
 			brands: [],

@@ -55,7 +55,8 @@ export async function createCounterAccount({
 			firstName: displayName,
 			lastName: '',
 			name: displayName,
-			emailVerified: false
+			// Sans email : il n'y a rien à vérifier, et un compte non vérifié ne pourrait pas se connecter.
+			emailVerified: true
 		});
 		await transaction.insert(accounts).values({
 			id: crypto.randomUUID(),

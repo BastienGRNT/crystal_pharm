@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 // Se lance avec `pnpm --filter @crystal-pharm/pharmacy-db test:integration`,
 // Postgres démarré (`make start`) et migré (`make migrate`).
-const repositoryEnvironmentFile = new URL('../../../../../.env', import.meta.url);
+const repositoryEnvironmentFile = new URL('../../../../../env/development/web.env', import.meta.url);
 if (existsSync(repositoryEnvironmentFile)) process.loadEnvFile(repositoryEnvironmentFile);
 
 const databaseUrl = process.env.DATABASE_URL;

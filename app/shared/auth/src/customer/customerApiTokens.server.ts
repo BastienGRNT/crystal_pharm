@@ -14,7 +14,7 @@ export async function issueApiToken(
 	baseUrlEnvironmentVariable: string,
 	{ accountId, tenantId }: ApiTokenClaims
 ): Promise<string> {
-	const { token } = await getCustomerBetterAuth(baseUrlEnvironmentVariable).api.signJWT({
+	const { token } = await getCustomerBetterAuth({ baseUrlEnvironmentVariable }).api.signJWT({
 		body: { payload: { sub: accountId, tenantId } }
 	});
 	return token;

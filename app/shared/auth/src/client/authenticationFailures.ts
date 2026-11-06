@@ -5,6 +5,9 @@ export type AuthenticationFailureReason =
 	| 'invalid-email'
 	| 'password-too-short'
 	| 'password-too-long'
+	| 'password-too-weak'
+	| 'invalid-person-name'
+	| 'invalid-verification-code'
 	| 'too-many-attempts'
 	| 'unexpected-failure';
 
@@ -19,7 +22,12 @@ const failureReasonByBetterAuthErrorCode: Record<string, AuthenticationFailureRe
 	EMAIL_NOT_ALLOWED: 'email-not-allowed',
 	INVALID_EMAIL: 'invalid-email',
 	PASSWORD_TOO_SHORT: 'password-too-short',
-	PASSWORD_TOO_LONG: 'password-too-long'
+	PASSWORD_TOO_LONG: 'password-too-long',
+	PASSWORD_TOO_WEAK: 'password-too-weak',
+	INVALID_PERSON_NAME: 'invalid-person-name',
+	INVALID_OTP: 'invalid-verification-code',
+	OTP_EXPIRED: 'invalid-verification-code',
+	TOO_MANY_ATTEMPTS: 'invalid-verification-code'
 };
 
 const tooManyRequestsStatus = 429;
@@ -31,6 +39,10 @@ export const authenticationFailureMessages: Record<AuthenticationFailureReason, 
 	'invalid-email': 'Cet email n’est pas valide. Vérifiez son orthographe.',
 	'password-too-short': 'Le mot de passe doit contenir au moins 8 caractères.',
 	'password-too-long': 'Le mot de passe doit contenir au plus 128 caractères.',
+	'password-too-weak':
+		'Le mot de passe doit contenir au moins 12 caractères, dont une majuscule, une minuscule, un chiffre et un caractère spécial.',
+	'invalid-person-name': 'Le prénom et le nom ne contiennent que des lettres, des espaces, des tirets et des apostrophes.',
+	'invalid-verification-code': 'Ce code est incorrect ou a expiré. Vérifiez-le, ou demandez-en un nouveau.',
 	'too-many-attempts': 'Trop de tentatives. Patientez une minute avant de réessayer.',
 	'unexpected-failure': 'Une erreur est survenue. Réessayez dans un instant.'
 };

@@ -150,13 +150,13 @@
 		{/if}
 	{:else}
 		<div data-module="grp">
-			<FormSection title="Groupement" description="Il voit le nom et la ville de votre pharmacie, et les modules que vous utilisez.">
+			<FormSection title="Groupement" description="Il voit le nom et la ville de votre pharmacie, et les outils que vous utilisez.">
 				{#if savedSection === 'group'}
 					<Alert tone="success">{savedMessages.group}</Alert>
 				{/if}
 				{#if data.group?.coverageEndsAt}
 					<Alert tone="warning" title="Vous avez quitté {data.group.groupName}">
-						Sa prise en charge court jusqu’au {formatLastDayBefore(data.group.coverageEndsAt)}. Ensuite, vos modules passent au prix
+						Sa prise en charge court jusqu’au {formatLastDayBefore(data.group.coverageEndsAt)}. Ensuite, votre formule passe au prix
 						normal.
 					</Alert>
 				{:else if data.group}
@@ -178,7 +178,7 @@
 								icon="sign-out"
 								variant="ghost"
 								title="Quitter {data.group.groupName} ?"
-								description="Le groupement ne verra plus votre pharmacie. Sa prise en charge court jusqu’à la fin du mois ; ensuite, vos modules passent au prix normal."
+								description="Le groupement ne verra plus votre pharmacie. Sa prise en charge court jusqu’à la fin du mois ; ensuite, votre formule passe au prix normal."
 								confirmLabel="Quitter le groupement"
 								isDestructive
 							/>

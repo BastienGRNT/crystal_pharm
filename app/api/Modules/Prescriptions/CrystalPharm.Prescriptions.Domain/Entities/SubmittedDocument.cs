@@ -15,6 +15,9 @@ public sealed class SubmittedDocument : ITenantOwned
     public DocumentFormat Format { get; private set; }
     public long SizeInBytes { get; private set; }
 
+    /// <summary>Sa place dans ce que le patient a envoyé : la première page de l'ordonnance vaut 0.</summary>
+    public int Position { get; private set; }
+
     /// <summary>
     /// Où le stockage garde ce fichier : une clé opaque faite d'identifiants, jamais d'un nom reçu.
     /// </summary>
@@ -25,7 +28,7 @@ public sealed class SubmittedDocument : ITenantOwned
     {
     }
 
-    internal SubmittedDocument(Guid submissionId, DocumentDraft draft)
+    internal SubmittedDocument(Guid submissionId, int position, DocumentDraft draft)
     {
         if (draft.SizeInBytes is <= 0 or > MaximumSizeInBytes)
         {
@@ -34,8 +37,13 @@ public sealed class SubmittedDocument : ITenantOwned
 
         Id = Guid.NewGuid();
         SubmissionId = submissionId;
+        Position = position;
         Kind = draft.Kind;
         Format = draft.Format;
         SizeInBytes = draft.SizeInBytes;
     }
+
+    /// <summary>Ce qui a été déposé est bien ce que le navigateur avait annoncé : même format reconnu, même taille.</summary>
+    public bool IsAnnouncedAs(DocumentFormat detectedFormat, long storedSizeInBytes) =>
+        Format == detectedFormat && SizeInBytes == storedSizeInBytes;
 }

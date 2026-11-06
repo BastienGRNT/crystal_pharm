@@ -20,6 +20,12 @@ public sealed class PrescriptionSubmission : ITenantOwned
     public static readonly TimeSpan RetentionAfterCollection = TimeSpan.FromDays(30);
     public static readonly TimeSpan MaximumRetention = TimeSpan.FromDays(90);
 
+    /// <summary>
+    /// Le temps laissé au navigateur pour déposer les fichiers par leurs liens pré-signés. Passé ce délai, un envoi
+    /// dont les fichiers ne sont pas confirmés est abandonné : il est effacé avec ce qui a été déposé.
+    /// </summary>
+    public static readonly TimeSpan DocumentUploadWindow = TimeSpan.FromMinutes(30);
+
     private readonly List<SubmittedDocument> documents = [];
 
     public Guid Id { get; private set; }
@@ -42,6 +48,14 @@ public sealed class PrescriptionSubmission : ITenantOwned
     public string? NoteFromPatient { get; private set; }
     public string? SocialSecurityNumber { get; private set; }
     public DateTimeOffset SubmittedAt { get; private set; }
+
+    /// <summary>
+    /// Quand les fichiers ont été vérifiés dans le stockage ; aucun : le navigateur les dépose encore. Tant
+    /// qu'il n'est pas confirmé, l'envoi n'existe pas pour l'équipe.
+    /// </summary>
+    public DateTimeOffset? DocumentsConfirmedAt { get; private set; }
+
+    public bool IsAwaitingDocuments => DocumentsConfirmedAt is null;
 
     public PrescriptionStatus Status { get; private set; }
     public DateTimeOffset StatusChangedAt { get; private set; }
@@ -87,10 +101,38 @@ public sealed class PrescriptionSubmission : ITenantOwned
     }
 
     /// <summary>
-    /// Un nouvel envoi. Un client déjà venu n'a ni carte Vitale ni mutuelle à fournir : si elles arrivent
+    /// Un nouvel envoi dont les fichiers sont déjà reçus et vérifiés. Un client déjà venu n'a ni carte Vitale ni mutuelle à fournir : si elles arrivent
     /// quand même, elles sont écartées plutôt que gardées pour rien.
     /// </summary>
     public static PrescriptionSubmission Submit(
+        string idempotencyKey,
+        PatientIdentity patient,
+        PatientEmail? email,
+        SubmissionRequest request,
+        SocialSecurityNumber? socialSecurityNumber,
+        IReadOnlyCollection<DocumentDraft> documentDrafts,
+        DateTimeOffset submittedAt)
+    {
+        var submission = Start(idempotencyKey, patient, email, request, socialSecurityNumber, documentDrafts, submittedAt);
+        submission.DocumentsConfirmedAt = submittedAt;
+        return submission;
+    }
+
+    /// <summary>
+    /// Un nouvel envoi dont les fichiers restent à déposer dans le stockage (cf. <see cref="DocumentUploadWindow"/>) :
+    /// mêmes règles que <see cref="Submit"/>, sur ce que le navigateur annonce.
+    /// </summary>
+    public static PrescriptionSubmission StartAwaitingDocuments(
+        string idempotencyKey,
+        PatientIdentity patient,
+        PatientEmail? email,
+        SubmissionRequest request,
+        SocialSecurityNumber? socialSecurityNumber,
+        IReadOnlyCollection<DocumentDraft> announcedDrafts,
+        DateTimeOffset startedAt) =>
+        Start(idempotencyKey, patient, email, request, socialSecurityNumber, announcedDrafts, startedAt);
+
+    private static PrescriptionSubmission Start(
         string idempotencyKey,
         PatientIdentity patient,
         PatientEmail? email,
@@ -123,10 +165,10 @@ public sealed class PrescriptionSubmission : ITenantOwned
         }
 
         var submission = new PrescriptionSubmission(trimmedKey, patient, email, request, submittedAt);
-        var keptDrafts = request.HasAlreadyVisited
-            ? documentDrafts.Where(draft => draft.Kind == DocumentKind.Prescription)
-            : documentDrafts;
-        submission.documents.AddRange(keptDrafts.Select(draft => new SubmittedDocument(submission.Id, draft)));
+        var keptDrafts = documentDrafts
+            .Select((draft, position) => (Draft: draft, Position: position))
+            .Where(candidate => !request.HasAlreadyVisited || candidate.Draft.Kind == DocumentKind.Prescription);
+        submission.documents.AddRange(keptDrafts.Select(kept => new SubmittedDocument(submission.Id, kept.Position, kept.Draft)));
         submission.SocialSecurityNumber = request.HasAlreadyVisited ? null : socialSecurityNumber?.Value;
         return submission;
     }
@@ -158,7 +200,26 @@ public sealed class PrescriptionSubmission : ITenantOwned
         TeamNote = string.IsNullOrEmpty(trimmedNote) ? null : trimmedNote;
     }
 
+    /// <summary>Les fichiers déposés ont été vérifiés : l'envoi arrive chez l'équipe. Sans effet s'il y est déjà.</summary>
+    public void ConfirmDocuments(DateTimeOffset now)
+    {
+        if (!IsAwaitingDocuments)
+        {
+            return;
+        }
+
+        if (HasUploadWindowClosed(now))
+        {
+            throw new InvalidPrescriptionException("L’envoi a expiré : recommencez-le.");
+        }
+
+        DocumentsConfirmedAt = now;
+    }
+
+    public bool HasUploadWindowClosed(DateTimeOffset now) => IsAwaitingDocuments && now - SubmittedAt > DocumentUploadWindow;
+
     public bool IsPastRetention(DateTimeOffset now) =>
-        now - SubmittedAt > MaximumRetention
+        HasUploadWindowClosed(now)
+        || now - SubmittedAt > MaximumRetention
         || (Status == PrescriptionStatus.Collected && now - StatusChangedAt > RetentionAfterCollection);
 }

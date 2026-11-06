@@ -28,6 +28,8 @@ export type Invoice = {
 	periodEnd: Date | undefined;
 	customerName: string;
 	customerAddressLines: string[];
+	/** Le SIREN du client, quand il est connu : « 123456789 ». */
+	customerSiren: string | undefined;
 	lines: InvoiceLine[];
 	subtotalCents: number;
 	vatRatePercent: number;
@@ -65,7 +67,7 @@ export async function chargeAndInvoice(charge: ChargeToInvoice): Promise<Invoice
 	return runWithBillingAccess(platformBillingAccess, (transaction) => chargeAndInvoiceInTransaction(transaction, charge, customer));
 }
 
-export type InvoiceCustomer = { name: string; addressLines: string[] };
+export type InvoiceCustomer = { name: string; addressLines: string[]; siren?: string | undefined };
 
 /** Pour qui a déjà sa transaction (un événement d'abonnement) : le client se lit avant de l'ouvrir. */
 export async function chargeAndInvoiceInTransaction(
@@ -111,6 +113,7 @@ export async function chargeAndInvoiceInTransaction(
 			periodEnd: charge.periodEnd ?? null,
 			customerName: customer.name,
 			customerAddressLines: customer.addressLines,
+			customerSiren: customer.siren ?? null,
 			lines: [...charge.lines],
 			...amounts,
 			vatRatePercent,
@@ -223,7 +226,8 @@ export async function describeInvoiceCustomer(payer: Payer): Promise<InvoiceCust
 		const pharmacyProfile = await getPharmacyProfile(payer.tenantId);
 		return {
 			name: pharmacyProfile.name,
-			addressLines: [pharmacyProfile.street, `${pharmacyProfile.postalCode} ${pharmacyProfile.city}`]
+			addressLines: [pharmacyProfile.street, `${pharmacyProfile.postalCode} ${pharmacyProfile.city}`],
+			siren: pharmacyProfile.siret?.toSiren()
 		};
 	}
 	const group = await getPharmacyGroupForPlatform(payer.groupId);
@@ -249,6 +253,7 @@ function toInvoice(invoiceRow: typeof invoices.$inferSelect): Invoice {
 		periodEnd: invoiceRow.periodEnd ?? undefined,
 		customerName: invoiceRow.customerName,
 		customerAddressLines: invoiceRow.customerAddressLines,
+		customerSiren: invoiceRow.customerSiren ?? undefined,
 		lines: invoiceRow.lines,
 		subtotalCents: invoiceRow.subtotalCents,
 		vatRatePercent: invoiceRow.vatRatePercent,

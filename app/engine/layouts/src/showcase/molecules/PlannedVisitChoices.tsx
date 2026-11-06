@@ -1,7 +1,7 @@
 import { createSignal, For, onMount, Show } from 'solid-js';
 import { listPlannedVisitChoices, type PlannedVisitChoice } from '@crystal-pharm/renderer';
 
-/** Quand passer : « dès que c'est prêt » par défaut, les autres moments dépendent de l'heure, donc n'apparaissent qu'une fois la page ouverte. */
+/** Quand passer, en grandes tuiles : « dès que c'est prêt » sur toute la largeur, les autres moments dessous ; ils dépendent de l'heure, donc n'apparaissent qu'une fois la page ouverte. */
 export function PlannedVisitChoices(props: { value: string; error: string | undefined; onChange: (value: string) => void }) {
   const [choices, setChoices] = createSignal<PlannedVisitChoice[]>([]);
   const [isChoosingAnotherMoment, setIsChoosingAnotherMoment] = createSignal(false);
@@ -17,26 +17,28 @@ export function PlannedVisitChoices(props: { value: string; error: string | unde
   return (
     <div class="sc-field">
       <span class="sc-field__label">Quand passez-vous ?</span>
-      <div class="sc-choice" role="group" aria-label="Quand passez-vous ?">
-        <button type="button" aria-pressed={isChosen('')} onClick={() => choose('')}>
-          Dès que c'est prêt
+      <div class="sc-tiles" role="group" aria-label="Quand passez-vous ?">
+        <button type="button" class="sc-tiles__tile sc-tiles__tile--wide" aria-pressed={isChosen('')} onClick={() => choose('')}>
+          <span class="sc-tiles__title">Dès que c'est prêt</span>
+          <span class="sc-tiles__caption">Nous vous prévenons.</span>
         </button>
         <For each={choices()}>
           {(choice) => (
-            <button type="button" aria-pressed={isChosen(choice.plannedVisitAt)} onClick={() => choose(choice.plannedVisitAt)}>
-              {choice.label}
+            <button type="button" class="sc-tiles__tile" aria-pressed={isChosen(choice.plannedVisitAt)} onClick={() => choose(choice.plannedVisitAt)}>
+              <span class="sc-tiles__title">{choice.label}</span>
             </button>
           )}
         </For>
         <button
           type="button"
+          class="sc-tiles__tile"
           aria-pressed={isChoosingAnotherMoment()}
           onClick={() => {
             setIsChoosingAnotherMoment(true);
             props.onChange('');
           }}
         >
-          Un autre jour
+          <span class="sc-tiles__title">Un autre jour</span>
         </button>
       </div>
       <Show when={isChoosingAnotherMoment()}>

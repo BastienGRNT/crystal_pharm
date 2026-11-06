@@ -1,4 +1,5 @@
 import { definePage } from '@crystal-pharm/renderer';
+import { clearManifest } from '../clearManifest';
 import type { ClearSettings } from '../clearManifest';
 import { QuickActions } from '../organisms/QuickActions';
 import { StatusPanel } from '../organisms/StatusPanel';
@@ -27,7 +28,7 @@ export default definePage<ClearSettings>({
             <props.pageKit.Module name="dutyHotline" />
           </div>
           {/* L'ordonnance a sa page, le 3237 est à côté des horaires : sur l'accueil, le reste dans l'ordre choisi par la pharmacie. */}
-          <props.pageKit.PlacedModules accepts={['appointment', 'services', 'team', 'news', 'onlineOrder', 'loyaltyCard', 'brands']} />
+          <props.pageKit.PlacedModules accepts={clearManifest.orderableModules} />
           <props.pageKit.FixedSection name="findUs" />
         </ClearPageTemplate>
       ),

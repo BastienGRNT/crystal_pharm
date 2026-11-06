@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { maximumPersonNameLength, normalizePersonName } from './personNameCasing';
+import { maximumPersonNameLength, normalizeFirstName } from '@crystal-pharm/auth/account-rules';
 
 /** Un prénom, toujours écrit de la même façon : « Jean-Pierre », jamais « JEAN-PIERRE » ni « jean-pierre ». */
 export class FirstName {
@@ -7,7 +7,7 @@ export class FirstName {
 
 	/** Lit un prénom tel qu'on le tape ; `undefined` si ce n'en est pas un. */
 	static parse(typedFirstName: string): FirstName | undefined {
-		const normalizedFirstName = normalizePersonName(typedFirstName);
+		const normalizedFirstName = normalizeFirstName(typedFirstName);
 		return normalizedFirstName === undefined ? undefined : new FirstName(normalizedFirstName);
 	}
 

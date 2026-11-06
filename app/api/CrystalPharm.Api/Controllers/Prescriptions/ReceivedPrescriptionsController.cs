@@ -31,7 +31,23 @@ public sealed class ReceivedPrescriptionsController(IPrescriptionSubmissionServi
         return submission is null ? NotFound() : Ok(submission);
     }
 
-    /// <summary>Le fichier en flux, affiché dans le navigateur sans être deviné ni mis en cache.</summary>
+    /// <summary>
+    /// Un lien pré-signé vers le fichier, valable 30 secondes : la page le lit en arrière-plan depuis le stockage HDS,
+    /// avec le type reconnu au contenu et sans cache.
+    /// </summary>
+    [HttpGet("{submissionId:guid}/documents/{documentId:guid}/link")]
+    [ProducesResponseType<ReceivedDocumentLinkDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ReceivedDocumentLinkDto>> CreateDocumentLink(Guid submissionId, Guid documentId, CancellationToken cancellationToken)
+    {
+        var link = await submissionService.CreateReceivedDocumentLinkAsync(submissionId, documentId, cancellationToken);
+        return link is null ? NotFound() : Ok(link);
+    }
+
+    /// <summary>
+    /// Le fichier en flux, affiché dans le navigateur sans être deviné ni mis en cache. Gardé le temps que
+    /// <c>pharmacy</c> passe au lien pré-signé (cf. <c>CreateDocumentLink</c>).
+    /// </summary>
     [HttpGet("{submissionId:guid}/documents/{documentId:guid}")]
     [Produces("image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf")]
     [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]

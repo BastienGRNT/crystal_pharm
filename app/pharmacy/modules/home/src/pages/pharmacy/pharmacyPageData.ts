@@ -125,7 +125,8 @@ export const emptyContactDetails: PharmacyContactDetailsInput = {
 	postalCode: '',
 	city: '',
 	phoneNumber: '',
-	email: ''
+	email: '',
+	siret: ''
 };
 
 /** Envoyé à `true` quand la photo actuelle d'un membre est retirée. */

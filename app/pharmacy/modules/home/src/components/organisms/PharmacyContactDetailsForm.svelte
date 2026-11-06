@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		PhoneNumber,
+		Siret,
 		wholeFormErrorKey,
 		type FieldErrors,
 		type PharmacyContactDetailsFieldName,
@@ -33,6 +34,11 @@
 		contactDetails.city = chosenAddress.city;
 	}
 
+	function formatSiret(): void {
+		const siret = Siret.parse(contactDetails.siret);
+		if (siret) contactDetails.siret = siret.toDisplayFormat();
+	}
+
 	function formatPhoneNumber(): void {
 		const phoneNumber = PhoneNumber.parse(contactDetails.phoneNumber);
 		if (phoneNumber) contactDetails.phoneNumber = phoneNumber.toDisplayFormat();
@@ -43,6 +49,21 @@
 	<Field label="Nom de la pharmacie" errorMessage={fieldErrors.name}>
 		{#snippet control(controlAttributes)}
 			<Input {...controlAttributes} name="name" autocomplete="organization" required bind:value={contactDetails.name} />
+		{/snippet}
+	</Field>
+
+	<Field label="SIRET" hint="14 chiffres, sur votre Kbis. Il figure sur vos factures." errorMessage={fieldErrors.siret}>
+		{#snippet control(controlAttributes)}
+			<Input
+				{...controlAttributes}
+				name="siret"
+				inputmode="numeric"
+				autocomplete="off"
+				placeholder="123 456 789 00012"
+				required
+				bind:value={contactDetails.siret}
+				onblur={formatSiret}
+			/>
 		{/snippet}
 	</Field>
 
@@ -89,7 +110,7 @@
 				/>
 			{/snippet}
 		</Field>
-		<Field label="Email de contact (facultatif)" errorMessage={fieldErrors.email}>
+		<Field label="Email de contact" hint="Affiché sur votre site, et utilisé par nous pour vous joindre." errorMessage={fieldErrors.email}>
 			{#snippet control(controlAttributes)}
 				<Input {...controlAttributes} type="email" name="email" autocomplete="email" bind:value={contactDetails.email} />
 			{/snippet}

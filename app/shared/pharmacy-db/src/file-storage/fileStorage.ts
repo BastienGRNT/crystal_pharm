@@ -1,7 +1,7 @@
 /**
- * Où vivent les fichiers déposés (les photos de l'équipe). Le dossier local
- * (`localDirectoryFileStorage`) sert en dev ; un stockage objet (S3, Scaleway…)
- * le remplacera par un adaptateur choisi dans `getFileStorage`, sans autre changement.
+ * Où vivent les fichiers déposés (les photos de l'équipe, les images des groupements) :
+ * un stockage objet S3 (`objectStorageFileStorage`), ou un dossier local
+ * (`localDirectoryFileStorage`) quand aucun n'est configuré ; choisi par `getFileStorage`.
  *
  * Une clé est un chemin relatif fait de segments en minuscules, chiffres et
  * tirets (`tenants/<tenantId>/employee-photos/<photoId>`) : jamais un chemin

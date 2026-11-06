@@ -1,4 +1,5 @@
 import { definePage } from '@crystal-pharm/renderer';
+import { neighborhoodManifest } from '../neighborhoodManifest';
 import type { NeighborhoodSettings } from '../neighborhoodManifest';
 import { QuickActions } from '../organisms/QuickActions';
 import { TodayPanel } from '../organisms/TodayPanel';
@@ -26,7 +27,7 @@ export default definePage<NeighborhoodSettings>({
             <props.pageKit.FixedSection name="findUs" />
           </div>
           {/* L'ordonnance a sa page et le 3237 sa tuile : sur l'accueil, la démarche en tête suffit. */}
-          <props.pageKit.PlacedModules accepts={['appointment', 'services', 'onlineOrder', 'team', 'news', 'loyaltyCard', 'brands']} />
+          <props.pageKit.PlacedModules accepts={neighborhoodManifest.orderableModules} />
         </NeighborhoodPageTemplate>
       ),
     }),

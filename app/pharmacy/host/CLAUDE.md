@@ -12,7 +12,9 @@ métier** : il branche les modules de `pharmacy/modules/`.
 - `hooks.server.ts` : `createCustomerAuthenticationHandle` de `shared/auth`
   (avec `PHARMACY_URL`) et `Cache-Control: no-store` sur `/booking` et
   `/prescriptions`.
-- Il sert Better Auth (`/api/auth/*`) et le JWKS interne lu par le C#.
+- Il sert Better Auth (`/api/auth/*`), dont le JWT court demandé par les
+  pages et le JWKS public lu par le C#. Sa CSP autorise `connect-src` vers
+  `API_URL`, rien d'autre hors de son domaine.
 - Le menu : `src/lib/toolLinks.ts`, passé à `AppShell` de `ui`
   avec la personne connectée (le `load` du cadre vient de `home`).
 - L'API pour un client déployé à part : `src/routes/api/v1/<module>/`

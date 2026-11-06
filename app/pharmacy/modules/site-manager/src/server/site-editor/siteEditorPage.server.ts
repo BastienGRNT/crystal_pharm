@@ -63,7 +63,7 @@ function toSavedSiteEdition({ content }: SiteEditorSources, base: SiteEditorBase
 	// Sans actualité à lui, un premier site montre celles de son groupement, s'il en a.
 	const newsSource: NewsSource = base.group && base.group.articles.length > 0 ? 'group' : 'pharmacy';
 	const sections = createEmptySectionDrafts();
-	const availableModuleData = collectAvailableModuleData(base, { sections, services: [], brands: [], articles: [], newsSource });
+	const availableModuleData = collectAvailableModuleData(base, { layoutId: layoutManifests[0]?.layoutId ?? '', sections, services: [], brands: [], articles: [], newsSource });
 	return {
 		layoutId: layoutManifests[0]?.layoutId ?? '',
 		layoutSettingsByLayoutId: {},

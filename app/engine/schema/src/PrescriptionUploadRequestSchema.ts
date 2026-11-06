@@ -55,22 +55,20 @@ const checkboxSchema = v.pipe(
 /** Un texte facultatif : vide veut dire « non renseigné », pour que le formulaire n'envoie rien. */
 const emptyAsMissing = v.transform((text: string) => (text === '' ? undefined : text));
 
-export const OptionalEmailSchema = v.pipe(
+export const RequiredEmailSchema = v.pipe(
   v.string(),
   v.trim(),
   v.toLowerCase(),
-  emptyAsMissing,
-  v.check(
-    (email) => email === undefined || (email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)),
-    'Cette adresse email ne semble pas valide, par exemple : prenom.nom@gmail.com.',
-  ),
+  v.nonEmpty('Indiquez votre adresse email.'),
+  v.maxLength(254, 'Cette adresse email est trop longue.'),
+  v.regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Cette adresse email ne semble pas valide, par exemple : prenom.nom@gmail.com.'),
 );
 
 /**
  * Ce que le formulaire d'ordonnance envoie à l'API, validé à l'identique dans le navigateur et sur le serveur.
  * La carte Vitale (photo ou numéro) et la mutuelle sont facultatives : elles font gagner du temps au comptoir.
  * Un client déjà venu ne les envoie pas (la pharmacie les a) : l'API les ignore s'ils arrivent quand même.
- * L'email et l'heure de passage sont facultatifs : sans heure, le patient passe « dès que c'est prêt ».
+ * L'email et le téléphone sont obligatoires ; l'heure de passage est facultative : sans heure, le patient passe « dès que c'est prêt ».
  */
 export const PrescriptionUploadRequestSchema = v.object({
   firstName: requiredText('Indiquez votre prénom.'),
@@ -86,7 +84,7 @@ export const PrescriptionUploadRequestSchema = v.object({
     v.regex(/^(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}$/, 'Indiquez un numéro de téléphone valide, par exemple 06 12 34 56 78.'),
   ),
   /** Pour prévenir le patient quand c'est prêt. */
-  email: v.optional(OptionalEmailSchema),
+  email: RequiredEmailSchema,
   /** Date et heure locales de la pharmacie, `2026-03-14T17:30` ; vide : « dès que c'est prêt ». */
   plannedVisitAt: v.optional(
     v.pipe(

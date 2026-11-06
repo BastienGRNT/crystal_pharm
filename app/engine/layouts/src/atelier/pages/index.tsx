@@ -1,9 +1,7 @@
 import { definePage } from '@crystal-pharm/renderer';
+import { atelierManifest } from '../atelierManifest';
 import type { AtelierSettings } from '../atelierManifest';
 import { AsymmetricGridTemplate } from '../templates/AsymmetricGridTemplate';
-
-/** L'équipe et l'ordonnance ont leur propre page. */
-const homeModuleNames = ['services', 'brands', 'appointment', 'onlineOrder', 'dutyHotline', 'loyaltyCard', 'news'] as const;
 
 export default definePage<AtelierSettings>({
   title: 'Accueil',
@@ -15,7 +13,7 @@ export default definePage<AtelierSettings>({
           <props.pageKit.FixedSection name="hero" />
           <props.pageKit.FixedSection name="onDuty" />
           <props.pageKit.FixedSection name="openingHours" />
-          <props.pageKit.PlacedModules accepts={homeModuleNames} />
+          <props.pageKit.PlacedModules accepts={atelierManifest.orderableModules} />
           <props.pageKit.FixedSection name="findUs" />
         </AsymmetricGridTemplate>
       ),

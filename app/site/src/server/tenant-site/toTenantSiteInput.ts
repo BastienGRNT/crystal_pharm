@@ -27,7 +27,7 @@ export function toTenantSiteInput(sources: TenantSiteSources): {
   isGroupNewsMissing: boolean;
 } {
   const { content, pharmacyProfile, group } = sources;
-  const editedContent = resolveEditedContent(content, toSiteImageUrlResolver());
+  const editedContent = resolveEditedContent(content, toSiteImageUrlResolver(content.layoutId));
   const { tenantSiteInput, unavailableMandatoryModules } = assembleDisplayedTenantSite({
     tenantId: sources.tenantId,
     layoutId: content.layoutId,

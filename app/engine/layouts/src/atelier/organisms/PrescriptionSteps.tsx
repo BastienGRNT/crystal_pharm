@@ -116,7 +116,7 @@ export function PrescriptionSteps(props: PrescriptionUploadModuleProps) {
                   <FormField label="Téléphone" error={errorsByField().phone}>
                     <input class="at-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
                   </FormField>
-                  <FormField label="Email (facultatif)" hint="Pour être prévenu quand c'est prêt." error={errorsByField().email}>
+                  <FormField label="Email" hint="Pour être prévenu quand c'est prêt." error={errorsByField().email}>
                     <input class="at-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
                   </FormField>
                   <FormField label="Un mot pour l'équipe (facultatif)" error={errorsByField().noteFromPatient}>

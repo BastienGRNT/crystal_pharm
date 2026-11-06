@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // Se lance avec `pnpm --filter @crystal-pharm/pharmacy-db test:integration`,
 // Postgres démarré (`make start`) et migré (`make migrate`). Les fonctions
 // écrivent pour de vrai : tout ce qui est créé ici est effacé à la fin.
-const repositoryEnvironmentFile = new URL('../../../../../.env', import.meta.url);
+const repositoryEnvironmentFile = new URL('../../../../../env/development/web.env', import.meta.url);
 if (existsSync(repositoryEnvironmentFile)) process.loadEnvFile(repositoryEnvironmentFile);
 
 const { deleteCustomerAccountsWithEmailEnding, ensureCustomerAccount } = await import('@crystal-pharm/auth');
@@ -34,13 +34,14 @@ beforeAll(async () => {
 		postalCode: '75002',
 		city: 'Paris',
 		phoneNumber: '01 23 45 67 89',
-		email: ''
+		email: 'contact@pharmacie-des-tests.fr',
+		siret: '73282932000074'
 	});
 	if (!tenantCreation.isSaved) throw new Error('The test pharmacy was refused.');
 	tenantId = tenantCreation.tenantId;
 
 	await pharmacyDatabase.addEmployee(tenantId, { firstName: 'Camille', lastName: 'Fontaine', jobTitle: 'Préparatrice' }, { kind: 'unchanged' });
-	const [employee] = await pharmacyDatabase.listEmployees(tenantId);
+	const employee = (await pharmacyDatabase.listEmployees(tenantId)).find((candidate) => candidate.firstName.toDisplayFormat() === 'Camille');
 	if (!employee) throw new Error('The test employee was refused.');
 	employeeId = employee.employeeId;
 });
@@ -66,6 +67,13 @@ describe('les accès d’un TenantMember', () => {
 
 		expect(ownerAccess?.memberKind).toBe('owner');
 		expect(ownerAccess?.responsibilityKeys).toContain('edit-site');
+	});
+
+	it('place le titulaire dans l’équipe, avec le poste « Titulaire »', async () => {
+		const ownerEmployee = (await pharmacyDatabase.listEmployees(tenantId)).find((candidate) => candidate.firstName.toDisplayFormat() === 'Léa');
+
+		expect(ownerEmployee?.jobTitle.toDisplayFormat()).toBe('Titulaire');
+		expect((await pharmacyDatabase.findActiveTenantMemberAccess(ownerAccountId))?.employeeId).toBe(ownerEmployee?.employeeId);
 	});
 
 	it('ne laisse pas retirer ni rétrograder le dernier Owner', async () => {

@@ -1,4 +1,5 @@
 import type { SiteImageUrlResolver } from '@crystal-pharm/content-db/domain';
+import { findLayoutDefaultImageUrl, findLayoutImageUrl } from '@crystal-pharm/layouts/manifest';
 
 // Des adresses relatives : le navigateur les demande au domaine du site, donc
 // la passerelle y pose le même tenant que pour la page.
@@ -11,8 +12,10 @@ export function toGroupImageUrl(imageId: string): string {
   return `/__media/group-images/${imageId}`;
 }
 
-export function toSiteImageUrlResolver(): SiteImageUrlResolver {
+export function toSiteImageUrlResolver(layoutId: string): SiteImageUrlResolver {
   return {
+    toLayoutImageUrl: (slot, imageKey) => findLayoutImageUrl(layoutId, slot, imageKey),
+    toDefaultImageUrl: (slot) => findLayoutDefaultImageUrl(layoutId, slot),
     toSuggestionUrl: (suggestionKey) => `/__media/suggestions/${suggestionKey}`,
     toUploadUrl: (imageId) => `/__media/site-images/${imageId}`,
   };

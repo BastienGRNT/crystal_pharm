@@ -12,7 +12,7 @@ import { PlannedVisitChoices } from '../molecules/PlannedVisitChoices';
 import { PrescriptionPagesList } from '../molecules/PrescriptionPagesList';
 import { CounterTimeSavers } from './CounterTimeSavers';
 
-/** Tous les champs visibles d'un coup, rangés en trois groupes : l'ordonnance, le patient, le contact. */
+/** Une seule fiche : chaque information sur sa ligne, libellé à gauche, champ à droite. */
 export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'submitPrescription' | 'validatePrescription'>) {
   const state = createPrescriptionFormState(props);
   const { form, updateField, errorsByField, status } = state;
@@ -39,76 +39,102 @@ export function PrescriptionForm(props: Pick<PrescriptionUploadModuleProps, 'sub
     <Show
       when={status() !== 'sent'}
       fallback={
-        <div class="cl-form__sent" role="status">
-          <p class="cl-form__sent-title">Ordonnance envoyée.</p>
+        <div class="cl-sheet-sent" role="status">
+          <p class="cl-sheet-sent-title">Ordonnance envoyée.</p>
           <p>{form.email ? `Un email part à ${form.email} dès que c'est prêt.` : `Nous vous appelons au ${form.phone} si nous avons une question.`}</p>
           <p>À apporter : l'ordonnance originale, en papier, et votre carte Vitale.</p>
         </div>
       }
     >
       <form
-        class="cl-form"
+        class="cl-sheet"
         novalidate
         onSubmit={(event) => {
           event.preventDefault();
           void send();
         }}
       >
-        <fieldset class="cl-form__group">
-          <legend class="cl-form__group-title">1. L'ordonnance</legend>
-          <PrescriptionPagesList pages={state.prescriptionPages()} error={errorsByField().prescriptionFile ?? errorsByField().additionalPrescriptionPages} onChange={state.setPrescriptionPages} />
-          <label class="cl-checkbox">
-            <input type="checkbox" checked={form.isRenewal} onChange={(event) => updateField('isRenewal', event.currentTarget.checked)} />
-            <span>C'est un renouvellement</span>
-          </label>
-          <PlannedVisitChoices value={form.plannedVisitAt} error={errorsByField().plannedVisitAt} onChange={(value) => updateField('plannedVisitAt', value)} />
-        </fieldset>
-        <fieldset class="cl-form__group">
-          <legend class="cl-form__group-title">2. Le patient</legend>
-          <FormField label="Prénom" error={errorsByField().firstName}>
-            <input class="cl-input" autocomplete="given-name" value={form.firstName} onInput={(event) => updateField('firstName', event.currentTarget.value)} />
-          </FormField>
-          <FormField label="Nom" error={errorsByField().lastName}>
-            <input class="cl-input" autocomplete="family-name" value={form.lastName} onInput={(event) => updateField('lastName', event.currentTarget.value)} />
-          </FormField>
-          <FormField label="Date de naissance" error={errorsByField().birthDate}>
-            <input class="cl-input" type="date" autocomplete="bday" value={form.birthDate} onInput={(event) => updateField('birthDate', event.currentTarget.value)} />
-          </FormField>
-        </fieldset>
-        <fieldset class="cl-form__group">
-          <legend class="cl-form__group-title">3. Pour vous joindre</legend>
-          <FormField label="Téléphone" error={errorsByField().phone}>
-            <input class="cl-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
-          </FormField>
-          <FormField label="Email (facultatif)" hint="C'est par lui que nous vous prévenons quand c'est prêt." error={errorsByField().email}>
-            <input class="cl-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
-          </FormField>
-          <FormField label="Un mot pour l'équipe (facultatif)" error={errorsByField().noteFromPatient}>
-            <textarea class="cl-input" rows="2" maxlength={PrescriptionNoteMaximumLength} value={form.noteFromPatient} onInput={(event) => updateField('noteFromPatient', event.currentTarget.value)} />
-          </FormField>
-        </fieldset>
-        <div class="cl-form__group cl-form__group--wide cl-form__checks">
-          <label class="cl-checkbox">
-            <input type="checkbox" checked={form.hasAlreadyVisited} onChange={(event) => updateField('hasAlreadyVisited', event.currentTarget.checked)} />
-            <span>Je suis déjà venu : vous avez ma carte Vitale et ma mutuelle</span>
-          </label>
-          <label class="cl-checkbox">
-            <input type="checkbox" checked={isRemembered()} onChange={(event) => setIsRemembered(event.currentTarget.checked)} />
-            <span>Retenir mes coordonnées sur cet appareil (pas sur un ordinateur partagé)</span>
-          </label>
+        <div class="cl-sheet__row">
+          <p class="cl-sheet__label">Ordonnance</p>
+          <div class="cl-sheet__control">
+            <PrescriptionPagesList pages={state.prescriptionPages()} error={errorsByField().prescriptionFile ?? errorsByField().additionalPrescriptionPages} onChange={state.setPrescriptionPages} />
+            <label class="cl-checkbox">
+              <input type="checkbox" checked={form.isRenewal} onChange={(event) => updateField('isRenewal', event.currentTarget.checked)} />
+              <span>C'est un renouvellement</span>
+            </label>
+          </div>
+        </div>
+        <div class="cl-sheet__row">
+          <p class="cl-sheet__label">Retrait</p>
+          <div class="cl-sheet__control">
+            <PlannedVisitChoices value={form.plannedVisitAt} error={errorsByField().plannedVisitAt} onChange={(value) => updateField('plannedVisitAt', value)} />
+          </div>
+        </div>
+        <div class="cl-sheet__row">
+          <p class="cl-sheet__label">Patient</p>
+          <div class="cl-sheet__control cl-sheet__control--inline">
+            <FormField label="Prénom" error={errorsByField().firstName}>
+              <input class="cl-input" autocomplete="given-name" value={form.firstName} onInput={(event) => updateField('firstName', event.currentTarget.value)} />
+            </FormField>
+            <FormField label="Nom" error={errorsByField().lastName}>
+              <input class="cl-input" autocomplete="family-name" value={form.lastName} onInput={(event) => updateField('lastName', event.currentTarget.value)} />
+            </FormField>
+            <FormField label="Date de naissance" error={errorsByField().birthDate}>
+              <input class="cl-input" type="date" autocomplete="bday" value={form.birthDate} onInput={(event) => updateField('birthDate', event.currentTarget.value)} />
+            </FormField>
+          </div>
+        </div>
+        <div class="cl-sheet__row">
+          <p class="cl-sheet__label">Contact</p>
+          <div class="cl-sheet__control cl-sheet__control--inline">
+            <FormField label="Téléphone" error={errorsByField().phone}>
+              <input class="cl-input" type="tel" autocomplete="tel" value={form.phone} onInput={(event) => updateField('phone', event.currentTarget.value)} />
+            </FormField>
+            <FormField label="Email" hint="Pour vous prévenir quand c'est prêt." error={errorsByField().email}>
+              <input class="cl-input" type="email" autocomplete="email" value={form.email} onInput={(event) => updateField('email', event.currentTarget.value)} />
+            </FormField>
+          </div>
+        </div>
+        <div class="cl-sheet__row">
+          <p class="cl-sheet__label">Message</p>
+          <div class="cl-sheet__control">
+            <FormField label="Un mot pour l'équipe (facultatif)" error={errorsByField().noteFromPatient}>
+              <textarea class="cl-input" rows="2" maxlength={PrescriptionNoteMaximumLength} value={form.noteFromPatient} onInput={(event) => updateField('noteFromPatient', event.currentTarget.value)} />
+            </FormField>
+          </div>
+        </div>
+        <div class="cl-sheet__row">
+          <p class="cl-sheet__label">Options</p>
+          <div class="cl-sheet__control">
+            <label class="cl-checkbox">
+              <input type="checkbox" checked={form.hasAlreadyVisited} onChange={(event) => updateField('hasAlreadyVisited', event.currentTarget.checked)} />
+              <span>Je suis déjà venu : vous avez ma carte Vitale et ma mutuelle</span>
+            </label>
+            <label class="cl-checkbox">
+              <input type="checkbox" checked={isRemembered()} onChange={(event) => setIsRemembered(event.currentTarget.checked)} />
+              <span>Retenir mes coordonnées sur cet appareil (pas sur un ordinateur partagé)</span>
+            </label>
+          </div>
         </div>
         <Show when={!form.hasAlreadyVisited}>
-          <CounterTimeSavers state={state} />
+          <div class="cl-sheet__row">
+            <p class="cl-sheet__label">Gagner du temps</p>
+            <div class="cl-sheet__control">
+              <CounterTimeSavers state={state} />
+            </div>
+          </div>
         </Show>
-        <button class="cl-form__submit" type="submit" disabled={status() === 'sending'}>
-          {status() === 'sending' ? 'Envoi en cours…' : 'Envoyer mon ordonnance'}
-        </button>
+        <div class="cl-sheet__footer">
+          <p class="cl-sheet__note">Transmis chiffré, chez un hébergeur agréé données de santé, effacé après votre passage.</p>
+          <button class="cl-sheet__submit" type="submit" disabled={status() === 'sending'}>
+            {status() === 'sending' ? 'Envoi en cours…' : 'Envoyer mon ordonnance'}
+          </button>
+        </div>
         <Show when={status() === 'failed'}>
-          <p class="cl-form__status" role="alert">
+          <p class="cl-sheet__status" role="alert">
             L'envoi a échoué. Réessayez, ou appelez directement la pharmacie.
           </p>
         </Show>
-        <p class="cl-form__note cl-form__group--wide">Transmis chiffré, chez un hébergeur agréé données de santé, effacé après votre passage.</p>
       </form>
     </Show>
   );

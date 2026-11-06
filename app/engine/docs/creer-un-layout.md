@@ -145,7 +145,7 @@ fournit tout l'état (motif → jour → heure → coordonnées → `done`) : le
 - Pas d'étape de relecture : le récapitulatif (motif, jour, heure, avec « Changer » →
   `goBackTo('time')`) s'affiche **au-dessus** des coordonnées, et le bouton de cette étape appelle
   `send()`. Une étape de moins, c'est un abandon de moins.
-- `contact` contient `firstName`, `lastName`, `phone`, `email` (facultatif : c'est par lui que part la
+- `contact` contient `firstName`, `lastName`, `phone`, `email` (obligatoire : c'est par lui que part la
   confirmation, dis-le) et `note`. `prefillContact(...)` remplit ce qui est encore vide.
 - `sendStatus()` : `requested` (→ `confirmation()`), `slotTaken` (les créneaux se rechargent seuls),
   `reasonUnavailable`, `failed`.
@@ -186,6 +186,32 @@ export function TeamSection(props: TeamModuleProps) {
 }
 ```
 
+### Les images du layout
+
+Les images du layout sont de vrais fichiers, rangés par emplacement dans son
+dossier : `images/hero/`, `images/service/`, `images/brand/`, `images/article/`
+(jpg, webp, png ou svg ; pas de zip, pas d'image de plus de ~600 Ko).
+
+Le manifeste les déclare (`images` dans `<id>Images.ts`, à côté de lui), par
+emplacement : une liste de propositions (`key`, `label`, `file` : le chemin sous
+`images/`, par exemple `hero/lavande.jpg`) et, au choix, `defaultImageKey`.
+
+- Avec `defaultImageKey`, cette image est montrée tant que le Manager n'en
+  choisit pas. Sans, le layout montre son repli habituel (rien, ou le nom en
+  texte) : c'est le bon choix quand une image n'est pas indispensable, et pour
+  les logos de marque (ce sont des marques déposées : on n'en embarque pas).
+- Le site manager liste ces propositions : le Manager en choisit une, envoie la
+  sienne, ou ne met rien quand l'emplacement le permet.
+- Chaque app obtient l'adresse du fichier par son propre Vite : rien à héberger
+  ni à déclarer ailleurs.
+- Chaque photo vient d'une banque dont la licence permet de la redistribuer ;
+  `images/CREDITS.md` donne, pour chaque fichier, l'auteur, la licence et la
+  source. Une photo sous licence payante ou à compte (iStock…) n'entre pas dans
+  le dépôt.
+- Un layout dont les modules acceptent une image optionnelle (actualités,
+  marques, équipe…) doit rester beau quand certains éléments en ont une et
+  d'autres non.
+
 ## 4. Le formulaire d'ordonnance
 
 C'est ton formulaire : tu choisis la disposition, les étapes, les messages. L'état (valeurs, erreurs,
@@ -221,9 +247,9 @@ Les champs du formulaire (`PrescriptionForm`) :
 
 | Champ | Obligatoire | Note |
 |---|---|---|
-| `firstName`, `lastName`, `birthDate` (`2026-03-14`), `phone` | oui | `<input type="date">` pour la date de naissance |
+| `firstName`, `lastName`, `birthDate` (`2026-03-14`), `phone`, `email` | oui | `<input type="date">` pour la date de naissance |
 | `prescriptionFile`, `additionalPrescriptionPages` | oui (la 1re page) | photo ou PDF ; jusqu'à `MaximumPrescriptionPages` pages : passe par `prescriptionPages()` et `setPrescriptionPages(pages)` plutôt que par les deux champs |
-| `email` | non | c'est par lui que le patient est prévenu quand c'est prêt : dis-le |
+| `email` | oui | c'est par lui que le patient est prévenu quand c'est prêt : dis-le |
 | `plannedVisitAt` (`2026-03-14T17:30`) | non | vide = « dès que c'est prêt » ; propose les choix de `listPlannedVisitChoices(new Date())` (dans un `onMount`), plus un `datetime-local` pour un autre jour |
 | `isRenewal` | non | « c'est un renouvellement » |
 | `noteFromPatient` | non | un mot pour l'équipe, `PrescriptionNoteMaximumLength` caractères au plus |
@@ -399,3 +425,17 @@ Elles contiennent `.legal-notice__title` et `.legal-notice__text`.
 - [ ] Le formulaire d'ordonnance affiche les erreurs, puis « envoyée » ; l'envoi apparaît dans le journal du banc d'essai.
 - [ ] Rien ne déborde horizontalement à 390 px de large.
 - [ ] Chaque couleur et chaque police du thème, essayée dans l'aperçu, garde le texte lisible.
+
+## Thème personnalisable et ordre des modules
+
+- **Couleurs libres** : `themeColorSetting({ title, cssVariable, defaultColor, legacyColors? })` pour chaque couleur
+  du layout (fond, cartes, texte, accent…). `legacyColors` mappe d'anciens noms de couleur enregistrés
+  (`sage` → `#3f6f52`) quand un réglage à liste devient libre : les sites existants restent valides.
+- **Angles** : un `themeChoiceSetting` branché sur une variable CSS de rayon. Dérive les autres rayons du
+  layout de celle-là (`calc(var(--nb-radius) * 1.55)`).
+- **`themePresets`** : des palettes prêtes (`{ key, label, settings }`) ; chaque valeur doit passer le
+  `settingsSchema` (testé). Le Manager les applique d'un clic, tout reste modifiable ensuite.
+- **`themeContrastPairs`** : les paires texte / fond à surveiller (clé de réglage ou `#hex` fixe) ; le
+  Manager avertit sous 4,5 de contraste, sans bloquer.
+- **`orderableModules`** : les modules que la zone `PlacedModules` du layout accepte. La page passe cette même
+  liste à `accepts` ; le Manager ne propose de déplacer que les modules activés de cette liste.

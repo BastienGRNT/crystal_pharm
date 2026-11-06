@@ -1,0 +1,1 @@
+ALTER TABLE "pharmacy"."tenants" ADD COLUMN "siret" text;

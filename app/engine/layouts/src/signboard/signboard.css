@@ -845,6 +845,10 @@
   border-radius: var(--sb-radius);
 }
 
+.layout-signboard .sb-news__card--text-only {
+  border-top: 4px solid var(--sb-color-signal);
+}
+
 .layout-signboard .sb-news__image {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -994,8 +998,9 @@
   flex: 1.4 1 420px;
   min-height: 420px;
   border: 1px solid var(--sb-color-line);
-  border-radius: 8px;
-  filter: invert(0.92) hue-rotate(180deg) saturate(0.4);
+  border-radius: 14px;
+  box-shadow: 0 20px 44px -20px rgb(0 0 0 / 0.7);
+  filter: invert(0.92) hue-rotate(180deg) saturate(0.55) brightness(0.95);
 }
 
 .layout-signboard .sb-find-us__map--empty {
@@ -1269,8 +1274,7 @@
   color: var(--sb-form-muted);
 }
 
-.layout-signboard .sb-field__error,
-.layout-signboard .sb-form__status {
+.layout-signboard .sb-field__error {
   font-size: 0.875em;
   font-weight: 600;
   color: var(--sb-form-error);
@@ -1293,34 +1297,9 @@
 }
 
 .layout-signboard .sb-input:focus-visible,
-.layout-signboard .sb-choice button:focus-visible,
 .layout-signboard .sb-checkbox input:focus-visible {
   outline: 2px solid var(--sb-form-accent);
   outline-offset: 2px;
-}
-
-.layout-signboard .sb-choice {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.layout-signboard .sb-choice button {
-  min-height: 44px;
-  padding: 8px 16px;
-  border: 1px solid var(--sb-form-line);
-  border-radius: var(--sb-form-radius);
-  background: var(--sb-form-field);
-  color: var(--sb-form-text);
-  font: inherit;
-  cursor: pointer;
-}
-
-.layout-signboard .sb-choice button[aria-pressed='true'] {
-  border-color: var(--sb-form-accent);
-  background: var(--sb-form-accent);
-  color: var(--sb-form-on-accent);
-  font-weight: 600;
 }
 
 .layout-signboard .sb-checkbox {
@@ -1338,435 +1317,694 @@
   accent-color: var(--sb-form-accent);
 }
 
-.layout-signboard .sb-pages {
+.layout-signboard .sb-selector__option:focus-visible,
+.layout-signboard .sb-gauge__action:focus-within,
+.layout-signboard .sb-switches__switch:focus-visible,
+.layout-signboard .sb-switches__modes button:focus-visible,
+.layout-signboard .sb-console button:focus-visible,
+.layout-signboard .sb-console__done-link:focus-visible {
+  outline: 2px solid var(--sb-form-accent);
+  outline-offset: 2px;
+}
+
+/* Date de passage : un sélecteur à diodes, une seule allumée. */
+
+.layout-signboard .sb-selector {
   display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-color-night);
+}
+
+.layout-signboard .sb-selector__option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--sb-form-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-selector__option[aria-pressed='true'] {
+  background: var(--sb-color-signal-wash);
+  color: var(--sb-form-text);
+  font-weight: 600;
+}
+
+.layout-signboard .sb-selector__led {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sb-color-led-dim);
+}
+
+.layout-signboard .sb-selector__option[aria-pressed='true'] .sb-selector__led {
+  background: var(--sb-color-signal);
+  box-shadow: 0 0 8px var(--sb-color-signal-glow);
+}
+
+/* Pages de l'ordonnance : une jauge à diodes. */
+
+.layout-signboard .sb-gauge {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.layout-signboard .sb-gauge__leds {
+  display: flex;
   gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.layout-signboard .sb-pages__page {
+.layout-signboard .sb-gauge__led {
+  width: 18px;
+  height: 28px;
+  border-radius: 2px;
+  background: var(--sb-color-led-off);
+  border: 1px solid var(--sb-color-led-dim);
+}
+
+.layout-signboard .sb-gauge__led--lit {
+  border-color: var(--sb-color-signal);
+  background: var(--sb-color-signal);
+  box-shadow: 0 0 8px var(--sb-color-signal-glow);
+}
+
+.layout-signboard .sb-gauge__count {
+  font-family: var(--sb-font-led);
+  font-size: 1.1em;
+  color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-gauge__files {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-signboard .sb-gauge__file {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--sb-form-line);
-  border-radius: var(--sb-form-radius);
-  background: var(--sb-form-field);
+  padding: 8px 12px;
+  border-left: 2px solid var(--sb-color-signal);
+  background: var(--sb-color-night);
 }
 
-.layout-signboard .sb-pages__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.layout-signboard .sb-gauge__file-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.layout-signboard .sb-pages__actions {
+.layout-signboard .sb-gauge__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
-.layout-signboard .sb-pages__button {
+.layout-signboard .sb-gauge__action {
   display: inline-flex;
   align-items: center;
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 18px;
-  border: 1px dashed var(--sb-form-line);
+  border: 1px solid var(--sb-color-signal);
   border-radius: var(--sb-form-radius);
+  color: var(--sb-color-signal);
   font-weight: 600;
   cursor: pointer;
 }
 
-.layout-signboard .sb-pages__button--main {
-  border: 1px solid var(--sb-form-accent);
-  background: var(--sb-form-accent);
-  color: var(--sb-form-on-accent);
+.layout-signboard .sb-gauge__action:hover {
+  background: var(--sb-color-signal-wash);
 }
 
-.layout-signboard .sb-pages__button:focus-within {
-  outline: 2px solid var(--sb-form-accent);
-  outline-offset: 2px;
-}
+/* Carte Vitale et mutuelle : deux interrupteurs. */
 
-.layout-signboard .sb-form {
+.layout-signboard .sb-switches {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+}
+
+.layout-signboard .sb-switches__intro {
+  margin: 0;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-switches__row {
+  display: grid;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-color-night);
+}
+
+.layout-signboard .sb-switches__switch {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sb-form-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-switches__knob {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--sb-color-led-dim);
+}
+
+.layout-signboard .sb-switches__knob::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--sb-color-unlit);
+}
+
+.layout-signboard .sb-switches__switch[aria-checked='true'] .sb-switches__knob {
+  background: var(--sb-color-signal-wash);
+  box-shadow: inset 0 0 0 1px var(--sb-color-signal);
+}
+
+.layout-signboard .sb-switches__switch[aria-checked='true'] .sb-switches__knob::after {
+  left: 23px;
+  background: var(--sb-color-signal);
+  box-shadow: 0 0 8px var(--sb-color-signal-glow);
+}
+
+.layout-signboard .sb-switches__content {
+  display: grid;
+  gap: 12px;
+}
+
+.layout-signboard .sb-switches__modes {
+  display: flex;
+  gap: 18px;
+}
+
+.layout-signboard .sb-switches__modes button {
+  padding: 0 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--sb-form-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-switches__modes button[aria-pressed='true'] {
+  border-bottom-color: var(--sb-color-signal);
+  color: var(--sb-form-text);
+  font-weight: 600;
+}
+
+/* Rendez-vous : un afficheur qui se remplit, puis l'écran de l'étape. */
+
+.layout-signboard .sb-console {
+  display: grid;
   gap: 24px;
   color: var(--sb-form-text);
 }
 
-.layout-signboard .sb-form__group {
+.layout-signboard .sb-console p,
+.layout-signboard .sb-console h3,
+.layout-signboard .sb-console ol,
+.layout-signboard .sb-console ul {
+  margin: 0;
+}
+
+.layout-signboard .sb-console__introduction,
+.layout-signboard .sb-console__privacy {
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-console__privacy {
+  font-size: 0.85em;
+}
+
+.layout-signboard .sb-console__notice,
+.layout-signboard .sb-console__preparation {
+  padding: 12px 16px;
+  border-left: 3px solid var(--sb-color-signal);
+  background: var(--sb-color-signal-wash);
+}
+
+.layout-signboard .sb-console__readout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--sb-color-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-color-line);
+}
+
+.layout-signboard .sb-console__cell {
   display: grid;
   align-content: start;
-  gap: 16px;
+  gap: 4px;
   min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.layout-signboard .sb-form__group--wide,
-.layout-signboard .sb-form__submit,
-.layout-signboard .sb-form__status {
-  grid-column: 1 / -1;
-}
-
-.layout-signboard .sb-form__group-title {
-  margin-bottom: 4px;
-  padding: 0;
-  font-family: var(--sb-form-title-font);
-  font-size: 1.15em;
-  font-weight: 700;
-}
-
-.layout-signboard .sb-form__checks {
-  gap: 12px;
-}
-
-.layout-signboard .sb-form__note {
-  margin: 0;
-  font-size: 0.875em;
-  color: var(--sb-form-muted);
-}
-
-.layout-signboard .sb-form__submit,
-.layout-signboard .sb-wizard__button {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 54px;
-  padding: 0 28px;
-  border: 1px solid var(--sb-form-accent);
-  border-radius: var(--sb-form-radius);
-  background: var(--sb-form-accent);
-  color: var(--sb-form-on-accent);
-  font: inherit;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.layout-signboard .sb-form__submit:disabled,
-.layout-signboard .sb-wizard__button:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-
-.layout-signboard .sb-wizard__button--quiet {
-  background: transparent;
-  color: var(--sb-form-text);
-}
-
-.layout-signboard .sb-form__sent {
-  display: grid;
-  gap: 8px;
-  padding: 24px;
-  border: 1px solid var(--sb-form-accent);
-  border-radius: var(--sb-form-radius);
-  color: var(--sb-form-text);
-}
-
-.layout-signboard .sb-form__sent p {
-  margin: 0;
-}
-
-.layout-signboard .sb-form__sent-title {
-  font-family: var(--sb-form-title-font);
-  font-size: 1.3em;
-  font-weight: 700;
-}
-
-.layout-signboard .sb-wizard {
-  display: grid;
-  gap: 20px;
-  color: var(--sb-form-text);
-}
-
-.layout-signboard .sb-wizard section {
-  display: grid;
-  gap: 16px;
-}
-
-.layout-signboard .sb-wizard p {
-  margin: 0;
-}
-
-.layout-signboard .sb-wizard__title {
-  margin: 0;
-  font-family: var(--sb-form-title-font);
-  font-size: 1.3em;
-  font-weight: 700;
-}
-
-.layout-signboard .sb-wizard__introduction,
-.layout-signboard .sb-wizard__summary,
-.layout-signboard .sb-wizard__privacy {
-  color: var(--sb-form-muted);
-}
-
-.layout-signboard .sb-wizard__privacy {
-  font-size: 0.875em;
-}
-
-.layout-signboard .sb-wizard__notice,
-.layout-signboard .sb-wizard__preparation {
   padding: 12px 16px;
-  border: 1px solid var(--sb-form-line);
-  border-radius: var(--sb-form-radius);
+  background: var(--sb-color-night);
 }
 
-.layout-signboard .sb-wizard__back {
-  justify-self: start;
+.layout-signboard .sb-console__cell--current {
+  box-shadow: inset 0 -2px 0 var(--sb-color-signal);
 }
 
-.layout-signboard .sb-wizard__form {
-  display: grid;
-  gap: 16px;
-}
-
-.layout-signboard .sb-steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.9em;
+.layout-signboard .sb-console__cell-label {
+  font-size: 0.7em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   color: var(--sb-form-muted);
 }
 
-.layout-signboard .sb-steps__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.layout-signboard .sb-console__cell-value {
+  font-family: var(--sb-font-led);
+  font-size: 1.15em;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  color: var(--sb-color-led-dim);
+}
+
+.layout-signboard .sb-console__cell--lit .sb-console__cell-value {
+  color: var(--sb-color-signal);
+  text-shadow: 0 0 8px var(--sb-color-signal-glow);
+}
+
+.layout-signboard .sb-console__cell-change {
+  justify-self: start;
   padding: 0;
   border: 0;
   background: none;
-  color: inherit;
+  color: var(--sb-form-muted);
   font: inherit;
-}
-
-.layout-signboard .sb-steps__label--link {
-  cursor: pointer;
+  font-size: 0.8em;
   text-decoration: underline;
   text-underline-offset: 3px;
+  cursor: pointer;
 }
 
-.layout-signboard .sb-steps__number {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--sb-form-line);
-  border-radius: 50%;
-  font-size: 0.85em;
-  font-weight: 700;
-}
-
-.layout-signboard .sb-steps__item--current {
-  color: var(--sb-form-text);
-  font-weight: 700;
-}
-
-.layout-signboard .sb-steps__item--current .sb-steps__number {
-  border-color: var(--sb-form-accent);
-  background: var(--sb-form-accent);
-  color: var(--sb-form-on-accent);
-}
-
-.layout-signboard .sb-reasons {
+.layout-signboard .sb-console__screen {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-  gap: 10px;
-  margin: 0;
+  gap: 18px;
+}
+
+.layout-signboard .sb-console__title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--sb-font-display);
+  font-size: 1.4em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.layout-signboard .sb-console__prompt {
+  font-family: var(--sb-font-led);
+  color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-console__keys {
+  display: grid;
+  gap: 8px;
   padding: 0;
   list-style: none;
 }
 
-.layout-signboard .sb-reason {
+.layout-signboard .sb-console__key {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 16px;
   width: 100%;
-  height: 100%;
-  padding: 16px;
-  border: 1px solid var(--sb-form-line);
+  padding: 14px 18px;
+  border: 1px solid var(--sb-color-control-line);
   border-radius: var(--sb-form-radius);
-  background: var(--sb-form-field);
+  background: var(--sb-color-night);
   color: var(--sb-form-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.layout-signboard .sb-reason--chosen,
-.layout-signboard .sb-reason:hover {
-  border-color: var(--sb-form-accent);
+.layout-signboard .sb-console__key:hover {
+  border-color: var(--sb-color-signal);
+  box-shadow: 0 0 12px var(--sb-color-signal-wash);
 }
 
-.layout-signboard .sb-reason__label {
+.layout-signboard .sb-console__key-index {
+  font-family: var(--sb-font-led);
+  color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-console__key-label {
   font-weight: 700;
 }
 
-.layout-signboard .sb-reason__duration,
-.layout-signboard .sb-reason__description {
+.layout-signboard .sb-console__key-duration {
+  font-family: var(--sb-font-led);
   color: var(--sb-form-muted);
 }
 
-.layout-signboard .sb-reason__description {
-  grid-column: 1 / -1;
+.layout-signboard .sb-console__key-description {
+  grid-column: 2 / -1;
   font-size: 0.9em;
+  color: var(--sb-form-muted);
 }
 
-.layout-signboard .sb-calendar {
-  display: grid;
-  gap: 12px;
-  max-width: 420px;
-}
-
-.layout-signboard .sb-calendar__header {
+.layout-signboard .sb-console__month {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sb-color-line);
 }
 
-.layout-signboard .sb-calendar__month {
-  font-weight: 700;
-  text-transform: capitalize;
+.layout-signboard .sb-console__month-name {
+  font-family: var(--sb-font-led);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-.layout-signboard .sb-calendar__arrow {
+.layout-signboard .sb-console__arrow {
   width: 44px;
-  height: 44px;
-  border: 1px solid var(--sb-form-line);
+  height: 36px;
+  border: 1px solid var(--sb-color-control-line);
   border-radius: var(--sb-form-radius);
-  background: var(--sb-form-field);
-  color: var(--sb-form-text);
+  background: transparent;
+  color: var(--sb-color-signal);
   font: inherit;
-  font-size: 1.3em;
   cursor: pointer;
 }
 
-.layout-signboard .sb-calendar__arrow:disabled {
-  opacity: 0.4;
+.layout-signboard .sb-console__arrow:disabled {
+  color: var(--sb-color-led-dim);
   cursor: default;
 }
 
-.layout-signboard .sb-calendar__grid {
+.layout-signboard .sb-console__days {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0 10px;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x proximity;
+}
+
+.layout-signboard .sb-console__day {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-  transition: opacity 0.2s;
-}
-
-.layout-signboard .sb-calendar__grid--loading {
-  opacity: 0.5;
-}
-
-.layout-signboard .sb-calendar__weekday {
-  padding: 4px 0;
-  font-size: 0.8em;
-  font-weight: 700;
-  text-align: center;
-  color: var(--sb-form-muted);
-}
-
-.layout-signboard .sb-calendar__day {
-  aspect-ratio: 1;
-  min-height: 40px;
-  border: 1px solid transparent;
+  justify-items: center;
+  gap: 2px;
+  min-width: 96px;
+  padding: 12px 10px;
+  border: 1px solid var(--sb-color-control-line);
   border-radius: var(--sb-form-radius);
-  background: transparent;
-  color: var(--sb-form-muted);
-  font: inherit;
-  opacity: 0.55;
-}
-
-.layout-signboard .sb-calendar__day--free {
-  border-color: var(--sb-form-line);
-  background: var(--sb-form-field);
+  background: var(--sb-color-night);
   color: var(--sb-form-text);
-  font-weight: 700;
-  opacity: 1;
+  font: inherit;
+  scroll-snap-align: start;
   cursor: pointer;
 }
 
-.layout-signboard .sb-calendar__day--chosen {
-  border-color: var(--sb-form-accent);
-  background: var(--sb-form-accent);
-  color: var(--sb-form-on-accent);
-}
-
-.layout-signboard .sb-slots {
-  display: grid;
-  gap: 8px;
-}
-
-.layout-signboard .sb-slots__title {
-  margin: 0;
-  font-size: 0.9em;
+.layout-signboard .sb-console__day-name {
+  font-size: 0.75em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--sb-form-muted);
 }
 
-.layout-signboard .sb-slots__list {
+.layout-signboard .sb-console__day-number {
+  font-family: var(--sb-font-led);
+  font-size: 2em;
+  line-height: 1.1;
+  color: var(--sb-color-signal);
+}
+
+.layout-signboard .sb-console__day-count {
+  font-size: 0.75em;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-console__day:hover,
+.layout-signboard .sb-console__day--chosen {
+  border-color: var(--sb-color-signal);
+  background: var(--sb-color-signal-wash);
+}
+
+.layout-signboard .sb-console__board {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.layout-signboard .sb-console__board th,
+.layout-signboard .sb-console__board td {
+  padding: 12px 0;
+  border-top: 1px solid var(--sb-color-line);
+  vertical-align: middle;
+}
+
+.layout-signboard .sb-console__board th {
+  width: 120px;
+  padding-right: 16px;
+  font-size: 0.75em;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-console__times {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.layout-signboard .sb-slot {
-  min-width: 76px;
+.layout-signboard .sb-console__time {
+  min-width: 84px;
   min-height: 44px;
+  border: 1px solid var(--sb-color-control-line);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-color-night);
+  color: var(--sb-color-signal);
+  font-family: var(--sb-font-led);
+  font-size: 1.1em;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-console__time:hover {
+  border-color: var(--sb-color-signal);
+  background: var(--sb-color-signal);
+  color: var(--sb-color-on-signal);
+}
+
+.layout-signboard .sb-console__form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.layout-signboard .sb-console__wide {
+  grid-column: 1 / -1;
+}
+
+.layout-signboard .sb-console__send {
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-color-signal);
+  color: var(--sb-color-on-signal);
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 0 18px var(--sb-color-signal-glow);
+  cursor: pointer;
+}
+
+.layout-signboard .sb-console__send:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+  cursor: progress;
+}
+
+.layout-signboard .sb-console__done {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 28px;
+  border: 1px solid var(--sb-color-signal);
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-color-night);
+}
+
+.layout-signboard .sb-console__done-kicker {
+  font-size: 0.75em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-console__done-time {
+  font-family: var(--sb-font-led);
+  font-size: 4em;
+  line-height: 1;
+  color: var(--sb-color-signal);
+  text-shadow: 0 0 14px var(--sb-color-signal-glow);
+}
+
+.layout-signboard .sb-console__done-when {
+  font-size: 1.2em;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.layout-signboard .sb-console__done-link {
+  padding: 10px 20px;
+  border: 1px solid var(--sb-color-signal);
+  border-radius: var(--sb-form-radius);
+  color: var(--sb-color-signal);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .layout-signboard .sb-console__readout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .layout-signboard .sb-console__form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .layout-signboard .sb-console__board th {
+    width: 84px;
+  }
+}
+
+/* Ordonnance : une seule rangée pour l'essentiel, le reste se déplie. */
+
+.layout-signboard .sb-strip {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
   border: 1px solid var(--sb-form-line);
   border-radius: var(--sb-form-radius);
   background: var(--sb-form-field);
   color: var(--sb-form-text);
+}
+
+.layout-signboard .sb-strip__line {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.layout-signboard .sb-strip__submit {
+  min-height: 46px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: var(--sb-form-radius);
+  background: var(--sb-form-accent);
+  color: var(--sb-form-on-accent);
   font: inherit;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   cursor: pointer;
 }
 
-.layout-signboard .sb-slot:hover {
-  border-color: var(--sb-form-accent);
+.layout-signboard .sb-strip__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
-.layout-signboard .sb-recap {
+.layout-signboard .sb-strip__more {
+  border-top: 1px dashed var(--sb-form-line);
+  padding-top: 12px;
+}
+
+.layout-signboard .sb-strip__more-toggle {
+  color: var(--sb-form-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layout-signboard .sb-strip__more-body {
+  display: grid;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.layout-signboard .sb-strip__status {
+  margin: 0;
+  color: var(--sb-form-error);
+}
+
+.layout-signboard .sb-strip__note {
+  margin: 0;
+  font-size: 0.8125em;
+  color: var(--sb-form-muted);
+}
+
+.layout-signboard .sb-strip__sent {
   display: grid;
   gap: 8px;
-  margin: 0;
-  padding: 16px;
-  border: 1px solid var(--sb-form-line);
-  border-radius: var(--sb-form-radius);
-}
-
-.layout-signboard .sb-recap div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-}
-
-.layout-signboard .sb-recap dt {
-  min-width: 70px;
-  font-weight: 700;
-}
-
-.layout-signboard .sb-recap dd {
-  margin: 0;
-}
-
-.layout-signboard .sb-done {
   padding: 24px;
   border: 1px solid var(--sb-form-accent);
   border-radius: var(--sb-form-radius);
+  color: var(--sb-form-text);
 }
 
-.layout-signboard .sb-done__when {
+.layout-signboard .sb-strip__sent p {
+  margin: 0;
+}
+
+.layout-signboard .sb-strip__sent-title {
+  font-size: 1.3em;
   font-weight: 700;
+  color: var(--sb-form-accent);
+}
+
+@media (max-width: 880px) {
+  .layout-signboard .sb-strip__line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .layout-signboard .sb-strip__submit {
+    grid-column: 1 / -1;
+  }
 }

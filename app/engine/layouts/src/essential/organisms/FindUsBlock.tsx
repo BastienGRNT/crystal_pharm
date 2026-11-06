@@ -10,6 +10,13 @@ export function FindUsBlock(props: FindUsSectionProps) {
       <p>
         <a href={`tel:${props.phone.replace(/\s/g, '')}`}>{props.phone}</a>
       </p>
+      <Show when={props.email}>
+        {(email) => (
+          <p>
+            <a href={`mailto:${email()}`}>{email()}</a>
+          </p>
+        )}
+      </Show>
       <Show when={props.accessInstructions}>{(instructions) => <p>{instructions()}</p>}</Show>
       <Show when={props.parking}>{(parking) => <p>Stationnement : {parking()}</p>}</Show>
       <Show when={props.publicTransport}>{(publicTransport) => <p>Transports : {publicTransport()}</p>}</Show>

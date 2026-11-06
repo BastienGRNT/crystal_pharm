@@ -4,13 +4,14 @@
 	import SiteImageChooser from '../molecules/SiteImageChooser.svelte';
 
 	type ArticleListEditorProps = {
+		layoutId: string;
 		articles: ArticleDraft[];
 		uploadedImagePreviewUrls: Record<string, string>;
 		/** Appelé à l'ajout d'une actualité : la première rend le module affichable. */
 		onarticleadded?: () => void;
 	};
 
-	let { articles = $bindable(), uploadedImagePreviewUrls = $bindable(), onarticleadded }: ArticleListEditorProps = $props();
+	let { layoutId, articles = $bindable(), uploadedImagePreviewUrls = $bindable(), onarticleadded }: ArticleListEditorProps = $props();
 
 	// La plus récente en haut, comme sur le site.
 	function addArticle(): void {
@@ -53,6 +54,8 @@
 				{/snippet}
 			</Field>
 			<SiteImageChooser
+				imageSlot="article"
+				{layoutId}
 				label="Image de l’actualité"
 				defaultDescription="Sans image, l’actualité s’affiche sans illustration."
 				bind:image={article.image}

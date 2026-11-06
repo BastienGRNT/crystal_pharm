@@ -36,7 +36,9 @@
 	import OnlineOrderEditor from '../components/organisms/OnlineOrderEditor.svelte';
 	import ServiceListEditor from '../components/organisms/ServiceListEditor.svelte';
 	import SitePreviewFrame from '../components/organisms/SitePreviewFrame.svelte';
-	import { toLayoutSettings, toLayoutSettingsFormValues, type LayoutSettingsFormValues } from '../domain/layoutSettingsForm';
+	import { toLayoutSettings, toLayoutSettingsFormValues, upgradeStoredLayoutSettings, type LayoutSettingsFormValues } from '../domain/layoutSettingsForm';
+	import { applyThemePreset, findMatchingThemePreset } from '../domain/themePresets';
+	import { listContrastWarnings } from '../domain/themeContrast';
 	import {
 		findEditorBlockOfHash,
 		findNeighbourEditorBlocks,
@@ -97,7 +99,7 @@
 		const savedFormValues = Object.fromEntries(
 			layoutManifests.map((manifest) => [
 				manifest.layoutId,
-				toLayoutSettingsFormValues(manifest.settingsFields, data.savedEdition.layoutSettingsByLayoutId[manifest.layoutId] ?? {})
+				toLayoutSettingsFormValues(manifest.settingsFields, upgradeStoredLayoutSettings(manifest, data.savedEdition.layoutSettingsByLayoutId[manifest.layoutId] ?? {}))
 			])
 		);
 		if (!failure) return savedFormValues;
@@ -118,9 +120,12 @@
 	const themeSettingsFields = $derived(chosenManifest?.settingsFields.filter((settingsField) => settingsField.isThemeSetting) ?? []);
 	const otherSettingsFields = $derived(chosenManifest?.settingsFields.filter((settingsField) => !settingsField.isThemeSetting) ?? []);
 	const chosenFormValues = $derived(formValuesByLayoutId[layoutId] ?? {});
+	const themePresets = $derived(chosenManifest?.themePresets ?? []);
+	const matchingThemePreset = $derived(findMatchingThemePreset(themePresets, chosenFormValues));
+	const contrastWarnings = $derived(listContrastWarnings(chosenManifest?.themeContrastPairs ?? [], chosenFormValues));
 	const layoutSettingsReading = $derived(chosenManifest && toLayoutSettings(chosenManifest, chosenFormValues));
 	const settingsFieldErrors = $derived(layoutSettingsReading && !layoutSettingsReading.success ? layoutSettingsReading.fieldErrors : {});
-	const contentDraft = $derived({ sections, services, brands, articles, newsSource });
+	const contentDraft = $derived({ layoutId, sections, services, brands, articles, newsSource });
 	const displayedNewsSource = $derived(chooseDisplayedNewsSource(newsSource, data.base.group).source);
 	const moduleChoices = $derived(listSiteModuleChoices(editorBase, contentDraft));
 	const previewedSite = $derived(
@@ -425,6 +430,22 @@
 	</header>
 {/snippet}
 
+{#snippet themePresetPicker()}
+	<div class="grid gap-2">
+		<p class="body-strong text-ink">Palettes du modèle</p>
+		<p class="text-small text-ink-muted">Un point de départ : chaque couleur et chaque réglage reste modifiable ensuite.</p>
+		<div class="flex flex-wrap gap-2">
+			{#each themePresets as themePreset (themePreset.key)}
+				<Button
+					variant={matchingThemePreset?.key === themePreset.key ? 'primary' : 'secondary'}
+					size="compact"
+					onclick={() => (formValuesByLayoutId[layoutId] = applyThemePreset(chosenFormValues, themePreset))}>{themePreset.label}</Button
+				>
+			{/each}
+		</div>
+	</div>
+{/snippet}
+
 {#snippet layoutSettingsFields(title: string, settingsFields: LayoutSettingsField[])}
 	<div class="grid gap-3">
 		<p class="body-strong text-ink">{title}</p>
@@ -551,8 +572,21 @@
 				<div class="grid content-start gap-5 {selectedBlockId === 'appearance' ? '' : 'hidden'}">
 					{@render panelHeader('appearance', 'La mise en page, les couleurs et les polices.')}
 					<ChoiceGroup name="layoutId" legend="Mise en page" options={layoutOptions} layout="cards" bind:value={layoutId} />
+					{#if themePresets.length > 0}
+						{@render themePresetPicker()}
+					{/if}
 					{#if chosenManifest && themeSettingsFields.length > 0}
-						{@render layoutSettingsFields('Couleurs et polices', themeSettingsFields)}
+						{@render layoutSettingsFields('Couleurs, polices et angles', themeSettingsFields)}
+					{/if}
+					{#if contrastWarnings.length > 0}
+						<Alert tone="warning" title="Certaines couleurs risquent d’être difficiles à lire">
+							<ul class="grid gap-1">
+								{#each contrastWarnings as contrastWarning (contrastWarning.label)}
+									<li>{contrastWarning.label} : contraste {contrastWarning.contrastRatio.toFixed(1)} sur 4,5 recommandé.</li>
+								{/each}
+							</ul>
+							Vous pouvez enregistrer quand même.
+						</Alert>
 					{/if}
 					{#if chosenManifest && otherSettingsFields.length > 0}
 						{@render layoutSettingsFields('Autres réglages', otherSettingsFields)}
@@ -561,7 +595,7 @@
 
 				<div class="grid content-start gap-5 {selectedBlockId === 'hero' ? '' : 'hidden'}">
 					{@render panelHeader('hero', 'L’accroche et l’image qui ouvrent votre site.')}
-					<HeroEditor bind:hero={sections.hero} bind:uploadedImagePreviewUrls />
+					<HeroEditor {layoutId} bind:hero={sections.hero} bind:uploadedImagePreviewUrls />
 				</div>
 
 				<div class="grid content-start gap-5 {selectedBlockId === 'findUs' ? '' : 'hidden'}">
@@ -573,7 +607,7 @@
 					<div class="grid content-start gap-5 {selectedBlockId === moduleChoice.moduleName ? '' : 'hidden'}">
 						{@render panelHeader(moduleChoice.moduleName, moduleChoice.description)}
 						{#if moduleChoice.moduleName === 'services'}
-							<ServiceListEditor bind:services bind:uploadedImagePreviewUrls onserviceadded={() => enableModule('services')} />
+							<ServiceListEditor {layoutId} bind:services bind:uploadedImagePreviewUrls onserviceadded={() => enableModule('services')} />
 						{:else if moduleChoice.moduleName === 'news'}
 							{#if data.base.group}
 								<NewsSourceChooser group={data.base.group} bind:newsSource onchange={showGroupNewsWhenAvailable} />
@@ -581,10 +615,10 @@
 							{#if displayedNewsSource === 'group' && data.base.group}
 								<GroupArticleList groupName={data.base.group.name} articles={data.base.group.articles} />
 							{:else}
-								<ArticleListEditor bind:articles bind:uploadedImagePreviewUrls onarticleadded={() => enableModule('news')} />
+								<ArticleListEditor {layoutId} bind:articles bind:uploadedImagePreviewUrls onarticleadded={() => enableModule('news')} />
 							{/if}
 						{:else if moduleChoice.moduleName === 'brands'}
-							<BrandListEditor bind:brands bind:uploadedImagePreviewUrls onbrandadded={() => enableModule('brands')} />
+							<BrandListEditor {layoutId} bind:brands bind:uploadedImagePreviewUrls onbrandadded={() => enableModule('brands')} />
 						{:else if moduleChoice.moduleName === 'appointment'}
 							<AppointmentEditor bind:appointment={sections.appointment} />
 						{:else if moduleChoice.moduleName === 'onlineOrder'}
@@ -619,8 +653,8 @@
 					</div>
 					<div class="grid gap-2">
 						<p class="body-strong text-ink">Ordre des blocs</p>
-						<p class="text-small text-ink-muted">L’accueil, « Nous trouver », la garde et les horaires gardent leur place.</p>
-						<ModuleOrderList bind:moduleOrder titleOf={(moduleName) => moduleTitles[moduleName] ?? moduleName} />
+						<p class="text-small text-ink-muted">Seuls les blocs activés que ce modèle place dans la page d’accueil sont listés. L’en-tête, la garde, les horaires et « Nous trouver » gardent leur place.</p>
+						<ModuleOrderList bind:moduleOrder {enabledModules} orderableModules={chosenManifest?.orderableModules} titleOf={(moduleName) => moduleTitles[moduleName] ?? moduleName} />
 					</div>
 				</div>
 

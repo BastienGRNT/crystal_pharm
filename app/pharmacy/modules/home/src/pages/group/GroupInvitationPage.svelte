@@ -64,7 +64,7 @@
 				<table class="w-full text-body">
 					<thead>
 						<tr class="text-left text-small text-ink-muted">
-							<th class="pb-2 font-medium">Module</th>
+							<th class="pb-2 font-medium">Outil</th>
 							<th class="pb-2 font-medium">Aujourd’hui</th>
 							<th class="pb-2 font-medium">Avec {data.groupName}</th>
 						</tr>
@@ -117,7 +117,7 @@
 				<h2 class="title-2 text-ink">Ce que {data.groupName} verra</h2>
 				<ul class="grid gap-2 text-body">
 					<li class="flex gap-2"><Icon name="check" size={18} class="mt-px text-success" />Le nom et la ville de votre pharmacie</li>
-					<li class="flex gap-2"><Icon name="check" size={18} class="mt-px text-success" />Les modules que vous utilisez</li>
+					<li class="flex gap-2"><Icon name="check" size={18} class="mt-px text-success" />Les outils que vous utilisez</li>
 					<li class="flex gap-2"><Icon name="x" size={18} class="mt-px text-danger" />Jamais vos patients, rendez-vous ni ordonnances</li>
 					<li class="flex gap-2"><Icon name="x" size={18} class="mt-px text-danger" />Jamais votre équipe ni votre planning</li>
 				</ul>

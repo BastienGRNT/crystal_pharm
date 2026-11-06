@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listModulesInDisplayOrder, moveModule } from './moduleOrder';
+import { listModulesInDisplayOrder, listMovableModules, moveModule } from './moduleOrder';
 
 describe('listModulesInDisplayOrder', () => {
 	it('puts the chosen order first and the modules never placed after, in the default order', () => {
@@ -23,5 +23,25 @@ describe('moveModule', () => {
 
 		expect(moveModule(initialOrder, initialOrder[0]!, 'earlier')).toEqual(initialOrder);
 		expect(moveModule(initialOrder, initialOrder.at(-1)!, 'later')).toEqual(initialOrder);
+	});
+});
+
+describe('listMovableModules', () => {
+	it('keeps only the enabled modules the layout places, in the chosen order', () => {
+		const movable = listMovableModules(['news', 'team', 'services'], ['services', 'news', 'brands'], ['services', 'news']);
+
+		expect(movable).toEqual(['news', 'services']);
+	});
+
+	it('accepts every enabled module when the layout does not restrict them', () => {
+		expect(listMovableModules(['news', 'team'], ['team', 'news'], undefined)).toEqual(['news', 'team']);
+	});
+});
+
+describe('moveModule among the visible modules', () => {
+	it('jumps over a hidden module so the move shows on screen', () => {
+		const order = moveModule(['news', 'team', 'services'], 'services', 'earlier', ['news', 'services']);
+
+		expect(order.slice(0, 3)).toEqual(['services', 'team', 'news']);
 	});
 });

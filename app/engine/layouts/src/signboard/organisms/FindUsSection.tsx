@@ -22,6 +22,16 @@ export function FindUsSection(props: FindUsSectionProps) {
                 <a href={telephoneHref(props.phone)}>{props.phone}</a>
               </dd>
             </div>
+            <Show when={props.email}>
+              {(email) => (
+                <div>
+                  <dt>Email</dt>
+                  <dd>
+                    <a href={`mailto:${email()}`}>{email()}</a>
+                  </dd>
+                </div>
+              )}
+            </Show>
             <Show when={props.accessInstructions}>
               {(accessInstructions) => (
                 <div>

@@ -48,12 +48,12 @@ export function resolveEditedContent(content: EditedSiteContent, resolver: SiteI
 	return {
 		hero: {
 			...(content.hero?.headline && { headline: content.hero.headline }),
-			...withUrl('imageUrl', resolveSiteImageUrl(content.hero?.image, resolver))
+			...withUrl('imageUrl', resolveSiteImageUrl(content.hero?.image, resolver, 'hero'))
 		},
 		findUs: content.findUs ?? {},
-		services: content.services.map(({ icon, ...service }) => ({ ...service, ...withUrl('iconUrl', resolveSiteImageUrl(icon, resolver)) })),
-		brands: content.brands.map(({ logo, ...brand }) => ({ ...brand, ...withUrl('logoUrl', resolveSiteImageUrl(logo, resolver)) })),
-		articles: content.articles.map(({ image, ...article }) => ({ ...article, ...withUrl('imageUrl', resolveSiteImageUrl(image, resolver)) })),
+		services: content.services.map(({ icon, ...service }) => ({ ...service, ...withUrl('iconUrl', resolveSiteImageUrl(icon, resolver, 'service')) })),
+		brands: content.brands.map(({ logo, ...brand }) => ({ ...brand, ...withUrl('logoUrl', resolveSiteImageUrl(logo, resolver, 'brand')) })),
+		articles: content.articles.map(({ image, ...article }) => ({ ...article, ...withUrl('imageUrl', resolveSiteImageUrl(image, resolver, 'article')) })),
 		appointment: content.appointment,
 		onlineOrder: content.onlineOrder,
 		onDutyPeriods: content.onDutyPeriods

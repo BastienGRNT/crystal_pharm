@@ -143,7 +143,7 @@ export async function requestToolSelection(
 
 		if (addedToolKeys.length > 0 && !(await readCurrentTermsAcceptance(transaction, tenantId))) {
 			if (!termsAcceptedBy) {
-				return { outcome: 'refused', failureMessage: 'Acceptez les conditions générales de vente pour activer vos modules.' };
+				return { outcome: 'refused', failureMessage: 'Acceptez les conditions générales de vente pour activer votre formule.' };
 			}
 			await recordCurrentTermsAcceptance(transaction, tenantId, termsAcceptedBy, now);
 		}
@@ -314,7 +314,7 @@ function describeMonthlyToolLines(quote: ToolsQuote, toolKeys: readonly ToolKey[
 	}
 	return quote.toolQuotes
 		.filter((toolQuote) => toolKeys.includes(toolQuote.toolKey) && toolQuote.pharmacyPriceCents > 0)
-		.map((toolQuote) => ({ label: `Module ${findTool(toolQuote.toolKey).label}`, amountCents: toolQuote.pharmacyPriceCents }));
+		.map((toolQuote) => ({ label: findTool(toolQuote.toolKey).label, amountCents: toolQuote.pharmacyPriceCents }));
 }
 
 async function readCoveringGroup(

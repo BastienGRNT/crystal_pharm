@@ -126,7 +126,7 @@
 					value={plan.planKey}
 					bind:selectedValue={selectedPlanKey}
 					disabled={plan.isAlreadyIncluded}
-					featuredLabel={plan.isFeatured ? 'Meilleur prix par module' : undefined}
+					featuredLabel={plan.isFeatured ? 'Meilleur prix' : undefined}
 					title={plan.title}
 					description={plan.description}
 					amountLabel={formatPeriodPrice(plan.pharmacyMonthlyPriceCents)}
@@ -183,7 +183,7 @@
 						Aucun paiement aujourd’hui : à partir du {formatDay(subscription.currentPeriodEndsAt)}, vous serez facturé
 						{isYearly ? 'à l’année' : 'chaque mois'}.
 					{:else if removedToolKeys.length > 0}
-						Aucun paiement aujourd’hui. Un module retiré reste actif jusqu’à la fin de la période payée.
+						Aucun paiement aujourd’hui. Un outil retiré reste actif jusqu’à la fin de la période payée.
 					{:else}
 						Aucun paiement aujourd’hui.
 					{/if}

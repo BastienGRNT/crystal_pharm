@@ -18,6 +18,8 @@ RUN pnpm --filter ${APP_PACKAGE} --prod --legacy deploy /runtime \
 
 FROM node:24.22.2-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c
 ENV NODE_ENV=production PORT=3000 HOST=0.0.0.0
+# adapter-node refuse sinon tout corps de plus de 512 Ko : une image de 2 Mo envoyée depuis site-manager n'arriverait jamais.
+ENV BODY_SIZE_LIMIT=3M
 WORKDIR /srv/app
 COPY --from=build --chown=node:node /runtime ./
 USER node

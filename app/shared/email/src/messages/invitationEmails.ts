@@ -21,7 +21,7 @@ export function composePharmacyInvitationEmail({
 		text: [
 			greeting,
 			`${groupName} vous invite à rejoindre son espace sur Crystal Pharm, les outils en ligne de votre pharmacie : site internet, rendez-vous, ordonnances et planning.`,
-			'En ouvrant l’invitation, vous verrez les modules que votre groupement prend en charge et ce qu’il pourra voir de votre pharmacie. Rien ne change tant que vous n’avez pas accepté.',
+			'En ouvrant l’invitation, vous verrez les outils que votre groupement prend en charge et ce qu’il pourra voir de votre pharmacie. Rien ne change tant que vous n’avez pas accepté.',
 			'Cette invitation est valable 14 jours.'
 		].join('\n\n'),
 		actionLinks: [{ label: 'Voir l’invitation', url: invitationUrl }]

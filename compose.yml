@@ -1,19 +1,77 @@
+# Le dev (`make start`) : ce que les apps et l'API C# lancées sur la machine trouvent en production chez
+# leurs fournisseurs, en local. Leurs variables : env/development/. Le plan de la prod : docs/architecture.md.
 services:
+  # Le Postgres du Node (son VPS en prod).
   postgres:
     image: postgres:16
     ports:
       - "5445:5432"
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file: env/development/database.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
       timeout: 5s
       retries: 10
+
+  # Le Postgres HDS managé : les schémas `booking` et `prescriptions`, et eux seuls. L'API C# migre par
+  # son propriétaire (ConnectionStrings__HealthMigrations) et tourne avec un rôle ordinaire, soumis à la RLS.
+  health-postgres:
+    image: postgres:16
+    ports:
+      - "5446:5432"
+    environment:
+      # Les mêmes que dans env/development/api.env
+      POSTGRES_USER: crystal_pharm_health
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: crystal_pharm_health
+      HEALTH_API_ROLE: crystal_pharm_api
+      HEALTH_API_PASSWORD: dev
+    volumes:
+      - health_postgres_data:/var/lib/postgresql/data
+      - ./docker/health-postgres/create-api-role.sh:/docker-entrypoint-initdb.d/create-api-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  # Le stockage objet du Node (R2 ou équivalent en prod) : photos, icônes, documents des pharmacies.
+  # Seuls les serveurs Node y accèdent, jamais le navigateur.
+  object-storage:
+    image: chrislusf/seaweedfs:4.47@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
+    entrypoint: ["/usr/local/bin/start-object-storage.sh"]
+    ports:
+      - "8333:8333"
+    environment:
+      OBJECT_STORAGE_BUCKETS: files
+    volumes:
+      - object_storage_data:/data
+      - ./docker/object-storage/start.sh:/usr/local/bin/start-object-storage.sh:ro
+      - ./docker/object-storage/files.s3.json:/etc/seaweedfs/s3.json:ro
+
+  # Le stockage objet HDS : les fichiers des ordonnances. Le navigateur y dépose et y lit par des liens
+  # pré-signés de l'API C#, la seule à détenir une clé.
+  health-object-storage:
+    image: chrislusf/seaweedfs:4.47@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
+    entrypoint: ["/usr/local/bin/start-object-storage.sh"]
+    ports:
+      - "8334:8333"
+    environment:
+      OBJECT_STORAGE_BUCKETS: prescriptions
+    volumes:
+      - health_object_storage_data:/data
+      - ./docker/object-storage/start.sh:/usr/local/bin/start-object-storage.sh:ro
+      - ./docker/object-storage/health.s3.json:/etc/seaweedfs/s3.json:ro
+
+  # Le service d'envoi (Scaleway TEM en prod, qui ne garde rien) : en dev, tout arrive ici, rien ne part.
+  # La boîte : http://localhost:8025, aussi lue par l'outil de dev.
+  mailpit:
+    image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
   # La passerelle devant `app/site` (lancé par `pnpm dev` sur le port 5177) : elle ne fait
   # que relayer les requêtes ; `app/site` résout l'adresse et garde ses pages en cache.
@@ -28,3 +86,6 @@ services:
 
 volumes:
   postgres_data:
+  health_postgres_data:
+  object_storage_data:
+  health_object_storage_data:

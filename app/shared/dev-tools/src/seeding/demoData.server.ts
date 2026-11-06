@@ -88,7 +88,7 @@ function demoPharmacyOf(personaKey: string, contactDetails: Omit<PharmacyContact
 		accountEmail: persona.email,
 		firstName: persona.firstName,
 		lastName: persona.lastName,
-		contactDetails: { ...contactDetails, phoneNumber: '01 23 45 67 89', email: '' }
+		contactDetails: { ...contactDetails, phoneNumber: '01 23 45 67 89', email: persona.email }
 	};
 }
 
@@ -138,7 +138,7 @@ export async function resetDemoData(): Promise<string> {
 		throw new Error('Demo data are reset by pharmacy/host only: the module seeders are registered there.');
 	}
 	await deleteDemoData();
-	clearDevelopmentOutbox();
+	await clearDevelopmentOutbox();
 	return seedDemoData();
 }
 
@@ -247,13 +247,13 @@ async function seedCatalog(): Promise<void> {
 
 function personaPharmacies(): Record<string, DemoPharmacy> {
 	return {
-		independante: demoPharmacyOf('independante', { name: 'Pharmacie Centrale', street: '12 place de la République', postalCode: '69002', city: 'Lyon' }),
-		abonnee: demoPharmacyOf('abonnee', { name: 'Pharmacie de la Gare', street: '3 avenue de la Gare', postalCode: '33000', city: 'Bordeaux' }),
-		enretard: demoPharmacyOf('enretard', { name: 'Pharmacie du Marché', street: '2 place du Marché', postalCode: '31000', city: 'Toulouse' }),
-		membre: demoPharmacyOf('membre', { name: 'Pharmacie du Port', street: '8 quai du Port', postalCode: '13002', city: 'Marseille' }),
-		ancienmembre: demoPharmacyOf('ancienmembre', { name: 'Pharmacie des Remparts', street: '9 rue des Remparts', postalCode: '84000', city: 'Avignon' }),
-		pharmacien: demoPharmacyOf('pharmacien', { name: 'Pharmacie Saint-Louis', street: '14 rue Saint-Louis', postalCode: '67000', city: 'Strasbourg' }),
-		invitee: demoPharmacyOf('invitee', { name: 'Pharmacie des Tilleuls', street: '27 allée des Tilleuls', postalCode: '44000', city: 'Nantes' })
+		independante: demoPharmacyOf('independante', { name: 'Pharmacie Centrale', street: '12 place de la République', postalCode: '69002', city: 'Lyon', siret: '977 781 880 49170' }),
+		abonnee: demoPharmacyOf('abonnee', { name: 'Pharmacie de la Gare', street: '3 avenue de la Gare', postalCode: '33000', city: 'Bordeaux', siret: '808 689 171 21876' }),
+		enretard: demoPharmacyOf('enretard', { name: 'Pharmacie du Marché', street: '2 place du Marché', postalCode: '31000', city: 'Toulouse', siret: '904 200 323 04553' }),
+		membre: demoPharmacyOf('membre', { name: 'Pharmacie du Port', street: '8 quai du Port', postalCode: '13002', city: 'Marseille', siret: '518 583 171 00898' }),
+		ancienmembre: demoPharmacyOf('ancienmembre', { name: 'Pharmacie des Remparts', street: '9 rue des Remparts', postalCode: '84000', city: 'Avignon', siret: '940 619 848 15141' }),
+		pharmacien: demoPharmacyOf('pharmacien', { name: 'Pharmacie Saint-Louis', street: '14 rue Saint-Louis', postalCode: '67000', city: 'Strasbourg', siret: '510 216 337 85765' }),
+		invitee: demoPharmacyOf('invitee', { name: 'Pharmacie des Tilleuls', street: '27 allée des Tilleuls', postalCode: '44000', city: 'Nantes', siret: '186 385 419 24848' })
 	};
 }
 
@@ -264,13 +264,13 @@ function fillerPharmacies(): DemoPharmacy[] {
 			accountEmail: demoEmail('halles'),
 			firstName: 'Claire',
 			lastName: 'Petit',
-			contactDetails: { name: 'Pharmacie des Halles', street: '5 rue des Halles', postalCode: '75001', city: 'Paris', phoneNumber: '01 40 00 00 01', email: '' }
+			contactDetails: { name: 'Pharmacie des Halles', street: '5 rue des Halles', postalCode: '75001', city: 'Paris', phoneNumber: '01 40 00 00 01', email: demoEmail('halles'), siret: '966 954 913 17386' }
 		},
 		{
 			accountEmail: demoEmail('saint-michel'),
 			firstName: 'Louis',
 			lastName: 'Moreau',
-			contactDetails: { name: 'Pharmacie Saint-Michel', street: '40 boulevard Saint-Michel', postalCode: '75006', city: 'Paris', phoneNumber: '01 40 00 00 02', email: '' }
+			contactDetails: { name: 'Pharmacie Saint-Michel', street: '40 boulevard Saint-Michel', postalCode: '75006', city: 'Paris', phoneNumber: '01 40 00 00 02', email: demoEmail('saint-michel'), siret: '570 848 882 92196' }
 		}
 	];
 }
@@ -303,7 +303,9 @@ const demoTeam = [
 ];
 
 async function addDemoTeam(tenantId: string): Promise<void> {
-	for (const teamMember of demoTeam) {
+	// Le titulaire est déjà dans l'équipe depuis la création de la pharmacie : sa fiche n'est pas ajoutée deux fois.
+	const alreadyInTeam = new Set((await listEmployees(tenantId)).map((employee) => `${employee.firstName.toDisplayFormat()} ${employee.lastName.toDisplayFormat()}`));
+	for (const teamMember of demoTeam.filter((candidate) => !alreadyInTeam.has(`${candidate.firstName} ${candidate.lastName}`))) {
 		const addition = await addEmployee(tenantId, teamMember, { kind: 'unchanged' });
 		if (!addition.isSaved) throw new Error(`The demo employee ${teamMember.firstName} was refused.`);
 	}

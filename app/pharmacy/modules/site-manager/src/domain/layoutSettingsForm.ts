@@ -12,6 +12,12 @@ export function toLayoutSettingFieldName(settingKey: string): string {
 	return `setting.${settingKey}`;
 }
 
+/** Les réglages enregistrés mis à jour par le schéma du layout : un ancien nom de couleur (« sage ») redevient sa vraie couleur. */
+export function upgradeStoredLayoutSettings(manifest: DescribedLayoutManifest, storedLayoutSettings: Record<string, unknown>): Record<string, unknown> {
+	const upgrading = v.safeParse(manifest.settingsSchema, storedLayoutSettings);
+	return upgrading.success ? { ...storedLayoutSettings, ...(upgrading.output as Record<string, unknown>) } : storedLayoutSettings;
+}
+
 /** Le formulaire rempli avec les réglages enregistrés, ou à défaut ceux du layout. */
 export function toLayoutSettingsFormValues(
 	settingsFields: LayoutSettingsField[],
@@ -28,7 +34,13 @@ export function toLayoutSettingsFormValues(
 function toFormValue(settingsField: LayoutSettingsField, settingValue: unknown): string | boolean {
 	if (settingsField.kind === 'toggle') return settingValue === true;
 	if (settingsField.kind === 'json') return settingValue === undefined ? '' : JSON.stringify(settingValue, null, 2);
+	if (settingsField.kind === 'color' && !isSixDigitHexColor(settingValue)) return isSixDigitHexColor(settingsField.defaultValue) ? settingsField.defaultValue : '';
 	return typeof settingValue === 'string' ? settingValue : '';
+}
+
+/** Un site enregistré avant les couleurs libres peut porter un ancien nom de couleur : le formulaire repart alors de la couleur du layout. */
+function isSixDigitHexColor(value: unknown): value is string {
+	return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
 }
 
 /** Une case décochée n'est pas envoyée par le navigateur : son absence veut dire « non ». */

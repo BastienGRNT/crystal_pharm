@@ -9,7 +9,8 @@ const typedContactDetails: PharmacyContactDetailsInput = {
 	postalCode: '80000',
 	city: 'Amiens',
 	phoneNumber: '03.22.12.34.56',
-	email: ''
+	email: ' contact@pharmacie.fr ',
+	siret: '732 829 320 00074'
 };
 
 describe('PharmacyContactDetailsSchema', () => {
@@ -18,13 +19,14 @@ describe('PharmacyContactDetailsSchema', () => {
 
 		expect(contactDetails.name).toBe('Pharmacie du Port');
 		expect(contactDetails.phoneNumber.toDisplayFormat()).toBe('03 22 12 34 56');
-		expect(contactDetails.email).toBeUndefined();
+		expect(contactDetails.email).toBe('contact@pharmacie.fr');
+		expect(contactDetails.siret.toStorageFormat()).toBe('73282932000074');
 	});
 
-	it('garde un email valide', () => {
-		const contactDetails = v.parse(PharmacyContactDetailsSchema, { ...typedContactDetails, email: 'contact@pharmacie.fr' });
+	it('refuse un email vide', () => {
+		const result = v.safeParse(PharmacyContactDetailsSchema, { ...typedContactDetails, email: ' ' });
 
-		expect(contactDetails.email).toBe('contact@pharmacie.fr');
+		expect(collectFieldErrors(result.issues ?? [])).toEqual({ email: 'Indiquez l’email de contact de la pharmacie.' });
 	});
 
 	it('donne un message par champ refusé', () => {
@@ -33,14 +35,16 @@ describe('PharmacyContactDetailsSchema', () => {
 			name: ' ',
 			postalCode: '8000',
 			phoneNumber: '12',
-			email: 'contact@'
+			email: 'contact@',
+			siret: '12345678900012'
 		});
 
 		expect(collectFieldErrors(result.issues ?? [])).toEqual({
 			name: 'Indiquez le nom de la pharmacie.',
 			postalCode: 'Le code postal compte 5 chiffres.',
 			phoneNumber: 'Ce numéro n’est pas un numéro français, par exemple 01 23 45 67 89.',
-			email: 'Cet email n’est pas valide. Vérifiez son orthographe.'
+			email: 'Cet email n’est pas valide. Vérifiez son orthographe.',
+			siret: 'Ce SIRET n’est pas valide : il compte 14 chiffres, à recopier depuis votre Kbis ou votre avis de situation Sirene.'
 		});
 	});
 });

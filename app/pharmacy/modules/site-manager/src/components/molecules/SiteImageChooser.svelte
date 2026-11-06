@@ -1,14 +1,18 @@
 <script lang="ts">
 	import { deserialize } from '$app/forms';
-	import { acceptedUploadedImageTypes, siteImageSuggestions, type SiteImage } from '@crystal-pharm/content-db/domain';
+	import { acceptedUploadedImageTypes, type SiteImage, type SiteImageSlot } from '@crystal-pharm/content-db/domain';
 	import { Button, ChoiceGroup, Field, Input } from '@crystal-pharm/ui';
 	import { untrack } from 'svelte';
+	import { findLayoutDefaultImageUrl, listLayoutImageProposals, toLayoutImageFileUrl } from '@crystal-pharm/layouts/manifest';
 	import { toImageChoiceKind, toPreviewImageUrl, type ImageChoiceKind } from '../../domain/siteImageChoices';
 	import { isValidWebAddress } from '../../domain/webAddress';
 	import { uploadedImageFieldName, uploadImageActionPathname } from '../../pages/siteEditorPageData';
 
 	type SiteImageChooserProps = {
 		label: string;
+		imageSlot: SiteImageSlot;
+		/** Le layout choisi : c'est lui qui propose les images et montre la sienne par défaut. */
+		layoutId: string;
 		/** Ce qui s'affiche tant que le Manager ne choisit rien, dit en une phrase. */
 		defaultDescription: string;
 		image: SiteImage | undefined;
@@ -16,12 +20,12 @@
 		uploadedImagePreviewUrls: Record<string, string>;
 	};
 
-	let { label, defaultDescription, image = $bindable(), uploadedImagePreviewUrls = $bindable() }: SiteImageChooserProps = $props();
+	let { label, imageSlot, layoutId, defaultDescription, image = $bindable(), uploadedImagePreviewUrls = $bindable() }: SiteImageChooserProps = $props();
 
 	const chooserId = $props.id();
-	const modeOptions: Array<{ value: ImageChoiceKind; label: string }> = [
+	const allModeOptions: Array<{ value: ImageChoiceKind; label: string }> = [
 		{ value: 'default', label: 'Par défaut' },
-		{ value: 'suggestion', label: 'Proposition' },
+		{ value: 'suggestion', label: 'Propositions' },
 		{ value: 'upload', label: 'Mon image' },
 		{ value: 'link', label: 'Un lien' }
 	];
@@ -32,7 +36,10 @@
 	let isUploading = $state(false);
 	let fileInputElement: HTMLInputElement | undefined = $state();
 
-	const previewUrl = $derived(toPreviewImageUrl(image, uploadedImagePreviewUrls));
+	const previewUrl = $derived(toPreviewImageUrl(image, imageSlot, layoutId, uploadedImagePreviewUrls));
+	const defaultImageUrl = $derived(findLayoutDefaultImageUrl(layoutId, imageSlot));
+	const proposals = $derived(listLayoutImageProposals(layoutId, imageSlot));
+	const modeOptions = $derived(allModeOptions.filter((option) => option.value !== 'suggestion' || proposals.length > 0));
 	const linkError = $derived(linkText.trim() !== '' && !isValidWebAddress(linkText) ? 'Collez l’adresse complète de l’image (https://…).' : undefined);
 
 	function toLinkImage(text: string): SiteImage | undefined {
@@ -40,11 +47,11 @@
 	}
 
 	function chooseMode(chosenValue: string): void {
-		const chosenMode = modeOptions.find((option) => option.value === chosenValue)?.value ?? 'default';
+		const chosenMode = allModeOptions.find((option) => option.value === chosenValue)?.value ?? 'default';
 		mode = chosenMode;
 		uploadError = undefined;
 		if (chosenMode === 'default') image = undefined;
-		else if (chosenMode === 'suggestion') image = image?.kind === 'suggestion' ? image : { kind: 'suggestion', suggestionKey: siteImageSuggestions[0].key };
+		else if (chosenMode === 'suggestion') image = image?.kind === 'layout' ? image : proposals[0] && { kind: 'layout', imageKey: proposals[0].key };
 		else if (chosenMode === 'link') image = toLinkImage(linkText);
 		else image = image?.kind === 'upload' ? image : undefined;
 	}
@@ -81,18 +88,23 @@
 	<ChoiceGroup name="imageChoice-{chooserId}" legend={label} isLegendVisible options={modeOptions} value={mode} onchange={chooseMode} />
 
 	{#if mode === 'default'}
-		<p class="text-small text-ink-muted">{defaultDescription}</p>
+		<div class="flex items-center gap-3">
+			{#if defaultImageUrl}
+				<img src={defaultImageUrl} alt="" class="size-16 rounded-md border border-line object-cover" />
+			{/if}
+			<p class="text-small text-ink-muted">{defaultDescription}</p>
+		</div>
 	{:else if mode === 'suggestion'}
 		<div class="flex flex-wrap gap-2">
-			{#each siteImageSuggestions as suggestion (suggestion.key)}
+			{#each proposals as proposal (proposal.key)}
 				<button
 					type="button"
-					aria-pressed={image?.kind === 'suggestion' && image.suggestionKey === suggestion.key}
-					aria-label={suggestion.label}
-					title={suggestion.label}
-					class="size-14 cursor-pointer overflow-hidden rounded-md border-2 border-line aria-pressed:border-accent"
-					style="background: linear-gradient(135deg, {suggestion.colors[0]}, {suggestion.colors[1]})"
-					onclick={() => (image = { kind: 'suggestion', suggestionKey: suggestion.key })}
+					aria-pressed={image?.kind === 'layout' && image.imageKey === proposal.key}
+					aria-label={proposal.label}
+					title={proposal.label}
+					class="size-16 cursor-pointer overflow-hidden rounded-md border-2 border-line bg-cover bg-center aria-pressed:border-accent"
+					style="background-image: url('{toLayoutImageFileUrl(layoutId, proposal)}')"
+					onclick={() => (image = { kind: 'layout', imageKey: proposal.key })}
 				></button>
 			{/each}
 		</div>

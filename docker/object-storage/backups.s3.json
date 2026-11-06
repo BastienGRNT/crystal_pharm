@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "backup",
+      "credentials": [{ "accessKey": "dev-backups-writer", "secretKey": "dev-backups-writer-secret-not-for-production" }],
+      "actions": ["Read:backups", "Write:backups", "List:backups"]
+    }
+  ]
+}

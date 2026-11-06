@@ -1,0 +1,1 @@
+ALTER TABLE "billing"."invoices" ADD COLUMN "customer_siren" text;

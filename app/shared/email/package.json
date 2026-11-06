@@ -9,6 +9,9 @@
 		"check": "tsc --project tsconfig.json",
 		"test": "vitest run"
 	},
+	"dependencies": {
+		"nodemailer": "^10.1.7"
+	},
 	"devDependencies": {
 		"@types/node": "^24.19.2",
 		"typescript": "^6.0.3",

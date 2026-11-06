@@ -56,7 +56,7 @@ export type SiteDraft = {
 	newsSource: NewsSource;
 };
 
-export type SiteContentDraft = Pick<SiteDraft, 'sections' | 'services' | 'brands' | 'articles' | 'newsSource'>;
+export type SiteContentDraft = Pick<SiteDraft, 'layoutId' | 'sections' | 'services' | 'brands' | 'articles' | 'newsSource'>;
 
 // Les règles d'affichage sont celles du site en ligne (`content-db`) : l'aperçu montre le même site.
 export function collectAvailableModuleData(base: SiteEditorBase, draft: SiteContentDraft): Partial<ModuleDataByName> {
@@ -76,7 +76,7 @@ function resolveDraftContent(base: SiteEditorBase, draft: SiteContentDraft): Res
 			brands: listCompleteBrands(draft.brands),
 			articles: listCompleteArticles(draft.articles)
 		},
-		createPreviewImageResolver(base.uploadedImagePreviewUrls)
+		createPreviewImageResolver(draft.layoutId, base.uploadedImagePreviewUrls)
 	);
 }
 

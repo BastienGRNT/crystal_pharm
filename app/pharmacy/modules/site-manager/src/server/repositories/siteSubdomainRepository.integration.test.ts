@@ -6,7 +6,7 @@ import { changeSiteSubdomain } from './siteSubdomainRepository.server';
 
 // Se lance avec `pnpm --filter @crystal-pharm/site-manager test:integration`,
 // Postgres démarré et migré. Les lignes de test sont écrites pour de bon, puis effacées.
-const repositoryEnvironmentFile = new URL('../../../../../../../.env', import.meta.url);
+const repositoryEnvironmentFile = new URL('../../../../../../../env/development/web.env', import.meta.url);
 if (existsSync(repositoryEnvironmentFile)) process.loadEnvFile(repositoryEnvironmentFile);
 
 const databaseUrl = process.env.DATABASE_URL;

@@ -6,6 +6,7 @@ export type FindUsSectionProps = {
   /** L'adresse sur une ligne, prête à afficher. */
   addressLabel: string;
   phone: string;
+  email?: string;
   accessInstructions?: string;
   parking?: string;
   publicTransport?: string;
@@ -24,6 +25,7 @@ export function toFindUsSectionProps(pharmacy: PharmacyInfo, data: FindUsSection
     address: pharmacy.address,
     addressLabel,
     phone: pharmacy.phone,
+    email: pharmacy.email,
     accessInstructions: data.accessInstructions,
     parking: data.parking,
     publicTransport: data.publicTransport,

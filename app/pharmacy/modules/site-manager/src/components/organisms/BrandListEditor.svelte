@@ -4,13 +4,14 @@
 	import SiteImageChooser from '../molecules/SiteImageChooser.svelte';
 
 	type BrandListEditorProps = {
+		layoutId: string;
 		brands: BrandDraft[];
 		uploadedImagePreviewUrls: Record<string, string>;
 		/** Appelé à l'ajout d'une marque : la première rend le module affichable. */
 		onbrandadded?: () => void;
 	};
 
-	let { brands = $bindable(), uploadedImagePreviewUrls = $bindable(), onbrandadded }: BrandListEditorProps = $props();
+	let { layoutId, brands = $bindable(), uploadedImagePreviewUrls = $bindable(), onbrandadded }: BrandListEditorProps = $props();
 
 	function addBrand(): void {
 		brands.push(createEmptyBrandDraft());
@@ -45,6 +46,8 @@
 				</Field>
 			</div>
 			<SiteImageChooser
+				imageSlot="brand"
+				{layoutId}
 				label="Logo"
 				defaultDescription="Sans logo, le nom de la marque est affiché."
 				bind:image={brand.logo}

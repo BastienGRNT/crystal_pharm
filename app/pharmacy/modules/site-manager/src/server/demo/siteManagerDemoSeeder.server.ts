@@ -62,7 +62,7 @@ export async function seedSiteManagerDemoData(tenantId: string): Promise<void> {
 	if (!contentListsReading.success) throw new Error(contentListsReading.formError);
 
 	const base = toSiteEditorBase(tenantId, await readSiteEditorSources(tenantId));
-	const contentDraft = { sections: demoSections, services: demoServices, brands: demoBrands, articles, newsSource: 'pharmacy' as const };
+	const contentDraft = { layoutId: manifest.layoutId, sections: demoSections, services: demoServices, brands: demoBrands, articles, newsSource: 'pharmacy' as const };
 	const availableModuleData = collectAvailableModuleData(base, contentDraft);
 	const enabledModules = ModuleNameSchema.options.filter((moduleName) => availableModuleData[moduleName] !== undefined);
 	const draft: SiteDraft = {

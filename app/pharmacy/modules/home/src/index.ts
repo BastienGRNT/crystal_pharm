@@ -1,3 +1,4 @@
+export { default as EmailVerificationPage } from './pages/authentication/EmailVerificationPage.svelte';
 export { default as LoginPage } from './pages/authentication/LoginPage.svelte';
 export { default as RegisterPage } from './pages/authentication/RegisterPage.svelte';
 export { default as GroupInvitationPage } from './pages/group/GroupInvitationPage.svelte';
