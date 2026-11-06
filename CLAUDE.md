@@ -361,6 +361,10 @@ simulée, cf. `docs/architecture.md`) ·
   corps dit pourquoi, sauf pour un changement trivial.
 - **Jamais** de `Co-Authored-By`, de signature ni de trailer d'outil.
 - Tu ne commites et ne pushes que si on te le demande.
+- Une pull request vise **toujours `develop`**, jamais `main` : seules une
+  `release/*` ou un `hotfix/*` vont sur `main`, et c'est nous qui les ouvrons.
+  Avant de créer ou de mettre à jour une PR, tu vérifies sa base
+  (`gh pr create --base develop`).
 
 ## Anciens projets
 
